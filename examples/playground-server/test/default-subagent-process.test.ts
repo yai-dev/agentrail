@@ -19,6 +19,7 @@ import { OrchestrationStore } from "@agentrail/orchestration";
 import {
   createSubAgentProcess,
   createManagedSubAgentInstance,
+  resolveWorkerCwd,
   resolveWorkerExecArgv,
 } from "@agentrail/orchestration/worker";
 
@@ -33,9 +34,15 @@ function getWorkerPath(): string {
 
 class FakeChildProcess extends EventEmitter {
   readonly sent: unknown[] = [];
+  readonly killSignals: Array<NodeJS.Signals | number | undefined> = [];
 
   send(message: unknown): void {
     this.sent.push(message);
+  }
+
+  kill(signal?: NodeJS.Signals | number): boolean {
+    this.killSignals.push(signal);
+    return true;
   }
 }
 
@@ -202,6 +209,28 @@ test("subscribes to autonomous worker lifecycle events", async () => {
   ]);
 });
 
+test("fails fast when the worker never reports ready", async () => {
+  const child = new FakeChildProcess();
+
+  const instancePromise = createManagedSubAgentInstance(child as never, {
+    tenantId: "tenant-test",
+    userId: "user-test",
+    sessionId: "session-test",
+    sessionDir: "/tmp/session-test",
+    input: createInput(),
+    workerPath: getWorkerPath(),
+    runtimeConfig: {},
+    readyTimeoutMs: 20,
+  });
+
+  await assert.rejects(
+    instancePromise,
+    /did not become ready within 20ms/,
+  );
+  assert.equal(child.sent[0] && typeof child.sent[0] === "object", true);
+  assert.deepEqual(child.killSignals, ["SIGTERM"]);
+});
+
 test("real default sub-agent worker completes a wake-driven turn", async () => {
   const sessionDir = await mkdtemp(join(tmpdir(), "default-subagent-process-real-"));
 
@@ -283,6 +312,17 @@ test("filters parent execArgv down to runtime-safe loader flags", () => {
       "-r",
       "./register.js",
     ],
+  );
+});
+
+test("uses the parent working directory for worker process resolution", () => {
+  assert.equal(
+    resolveWorkerCwd("/tmp/worker-entry.ts", "/tmp/example-app"),
+    "/tmp/example-app",
+  );
+  assert.equal(
+    resolveWorkerCwd("/tmp/worker-entry.js", "/tmp/example-app"),
+    "/tmp/example-app",
   );
 });
 

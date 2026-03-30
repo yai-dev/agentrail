@@ -6,7 +6,7 @@
 import { Hono } from "hono";
 import type { Message, Usage } from "@agentrail/runtime-core";
 import { DeepResearchCoordinator } from "./coordinator.js";
-import type { DeepResearchState } from "./types.js";
+import type { DeepResearchEvent, DeepResearchState } from "./types.js";
 import type { DeepResearchRuntimeConfig } from "./runtime.js";
 
 export interface DeepResearchSessionStore {
@@ -34,11 +34,18 @@ export interface DeepResearchBlockingRunInput {
   sessionStore: DeepResearchSessionStore;
   runtime: DeepResearchRuntimeConfig;
   agentId?: string;
+  persistTurn?: (messages: Message[], usage: Usage) => Promise<void>;
 }
 
 export interface DeepResearchBlockingRunResult {
   sessionId: string;
   state: DeepResearchState;
+}
+
+export type DeepResearchStreamingEvent = DeepResearchEvent | Record<string, unknown>;
+
+export interface DeepResearchStreamingRunInput extends DeepResearchBlockingRunInput {
+  onEvent?: (event: DeepResearchStreamingEvent) => Promise<void> | void;
 }
 
 export interface DeepResearchRunRouteOptions {
@@ -56,6 +63,19 @@ interface DeepResearchRunRequest {
 
 export async function runDeepResearchBlocking(
   input: DeepResearchBlockingRunInput,
+): Promise<DeepResearchBlockingRunResult> {
+  return runDeepResearchInternal(input);
+}
+
+export async function runDeepResearchStreaming(
+  input: DeepResearchStreamingRunInput,
+): Promise<DeepResearchBlockingRunResult> {
+  return runDeepResearchInternal(input, (event) => input.onEvent?.(event));
+}
+
+async function runDeepResearchInternal(
+  input: DeepResearchBlockingRunInput,
+  emit?: (event: DeepResearchStreamingEvent) => Promise<void> | void,
 ): Promise<DeepResearchBlockingRunResult> {
   const sessionInfo = await input.sessionStore.getOrCreate(
     input.tenantId,
@@ -77,15 +97,18 @@ export async function runDeepResearchBlocking(
     runtime: input.runtime,
   });
 
-  const state = await coordinator.runBlocking();
+  const state = emit
+    ? await coordinator.runStreaming(emit)
+    : await coordinator.runBlocking();
   await persistDeepResearchTurn(
-    input.sessionStore,
+    input.persistTurn ? undefined : input.sessionStore,
     input.runtime.model.provider,
     input.runtime.model.modelId,
     input.tenantId,
     sessionId,
     input.query,
     state.reportMarkdown,
+    input.persistTurn,
   );
 
   return {
@@ -147,15 +170,17 @@ export function createDeepResearchRunRoute(
 }
 
 async function persistDeepResearchTurn(
-  sessionStore: Pick<DeepResearchSessionStore, "appendMessages" | "recordTurn">,
+  sessionStore: Pick<DeepResearchSessionStore, "appendMessages" | "recordTurn"> | undefined,
   provider: string,
   modelId: string,
   tenantId: string,
   sessionId: string,
   userText: string,
   reportMarkdown: string,
+  persistTurn?: (messages: Message[], usage: Usage) => Promise<void>,
 ): Promise<void> {
   const timestamp = Date.now();
+  const usage = zeroUsage();
   const messages: Message[] = [
     {
       role: "user",
@@ -167,15 +192,24 @@ async function persistDeepResearchTurn(
       content: [{ type: "text", text: reportMarkdown }],
       provider,
       modelId,
-      usage: zeroUsage(),
+      usage,
       stopReason: "stop",
       timestamp: timestamp + 1,
     },
   ];
 
+  if (persistTurn) {
+    await persistTurn(messages, usage);
+    return;
+  }
+
+  if (!sessionStore) {
+    throw new Error("Deep research turn persistence requires either sessionStore or persistTurn.");
+  }
+
   await Promise.all([
     sessionStore.appendMessages(tenantId, sessionId, messages),
-    sessionStore.recordTurn(tenantId, sessionId, zeroUsage()),
+    sessionStore.recordTurn(tenantId, sessionId, usage),
   ]);
 }
 

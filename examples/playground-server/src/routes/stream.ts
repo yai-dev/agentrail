@@ -15,6 +15,7 @@ import {
 import { config } from "../config.js";
 import { playgroundPlugins } from "../plugins/index.js";
 import { resolvePlaygroundProfile } from "../profiles/default-profile.js";
+import { handlePlaygroundDeepResearchModeStream } from "../chat/deep-research.js";
 
 const summarize = buildSummarizeFn();
 
@@ -39,6 +40,7 @@ const stream = createStreamRoute({
       },
     });
   },
+  handleResolvedRequest: handlePlaygroundDeepResearchModeStream,
 });
 
 export { stream };

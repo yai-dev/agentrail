@@ -27,6 +27,7 @@ interface AttachmentInput {
 export interface StreamRequest {
   message: string;
   agentId?: string;
+  mode?: string;
   tenantId: string;
   userId: string;
   sessionId?: string;

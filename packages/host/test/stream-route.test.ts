@@ -279,4 +279,87 @@ describe("createStreamRoute", () => {
     ]);
     expect(contextProvider).toHaveBeenCalledOnce();
   });
+
+  it("lets a resolved stream handler take over SSE and persistence", async () => {
+    const appended: Message[][] = [];
+    const sessionManager = {
+      getOrCreate: vi.fn(async () => ({ sessionId: "session-1" })),
+      getSessionDir: vi.fn(() => "/tmp/session-1"),
+      loadAllMessages: vi.fn(async () => []),
+      compactIfNeeded: vi.fn(async () => {}),
+      loadMessagesWithBudget: vi.fn(async () => []),
+      appendMessages: vi.fn(async (_tenantId: string, _sid: string, messages: Message[]) => {
+        appended.push(messages);
+      }),
+      recordTurn: vi.fn(async () => {}),
+    };
+    const sandboxManager = {
+      ensureSandbox: vi.fn(async () => {}),
+      listWorkspace: vi.fn(async () => []),
+    };
+    const onTurnPersisted = vi.fn(async () => {});
+    const resolveProfile = vi.fn(async () => ({
+      id: "agent-1",
+      name: "Test Agent",
+      createAgent: async () => makeAgent([]),
+    }));
+    const handleResolvedRequest = vi.fn(async (context) => {
+      expect(context.request.mode).toBe("deep_research");
+      await context.writeEvent({ type: "deep_research_start" });
+      await context.persistTurn(
+        [
+          {
+            role: "assistant",
+            content: [{ type: "text", text: "handled" }],
+            provider: "mock",
+            modelId: "mock-model",
+            usage: makeUsage(),
+            stopReason: "stop",
+            timestamp: 1,
+          },
+        ],
+        makeUsage(),
+      );
+      return true;
+    });
+
+    const route = createStreamRoute({
+      dataDir: "/tmp/agentrail",
+      defaultAgentId: "agent-1",
+      sessionStore: sessionManager as never,
+      sandboxManager: sandboxManager as never,
+      summarize: async () => "summary",
+      compaction: {
+        triggerTokens: 100,
+        minMessages: 100,
+      },
+      resolveProfile,
+      onTurnPersisted,
+      handleResolvedRequest,
+    });
+
+    const response = await route.request("http://localhost/", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        message: "research this",
+        tenantId: "tenant-1",
+        userId: "user-1",
+        mode: "deep_research",
+      }),
+    });
+
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("\"type\":\"deep_research_start\"");
+    expect(handleResolvedRequest).toHaveBeenCalledOnce();
+    expect(resolveProfile).not.toHaveBeenCalled();
+    expect(sessionManager.appendMessages).toHaveBeenCalledOnce();
+    expect(appended[0]?.[0]?.role).toBe("assistant");
+    expect(onTurnPersisted).toHaveBeenCalledOnce();
+    expect(sessionManager.loadMessagesWithBudget).not.toHaveBeenCalled();
+  });
 });

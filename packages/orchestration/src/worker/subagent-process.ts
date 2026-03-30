@@ -4,7 +4,6 @@
  */
 
 import { fork } from "node:child_process";
-import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import type {
   AgentInputEnvelope,
@@ -59,13 +58,20 @@ type WorkerResponseMessage =
 interface ChildProcessLike {
   send(message: unknown): void;
   on(event: "message", listener: (message: WorkerResponseMessage) => void): this;
-  once(event: "error", listener: (error: Error) => void): this;
+  on(event: "error", listener: (error: Error) => void): this;
+  on(
+    event: "exit",
+    listener: (code: number | null, signal: NodeJS.Signals | null) => void,
+  ): this;
   once(
     event: "exit",
     listener: (code: number | null, signal: NodeJS.Signals | null) => void,
   ): this;
+  kill?(signal?: NodeJS.Signals | number): boolean;
   stderr?: NodeJS.ReadableStream | null;
 }
+
+export const DEFAULT_SUBAGENT_READY_TIMEOUT_MS = 5_000;
 
 export interface CreateSubAgentProcessInput {
   tenantId: string;
@@ -77,13 +83,14 @@ export interface CreateSubAgentProcessInput {
   // biome-ignore lint/suspicious/noExplicitAny: Runtime config is serialized
   runtimeConfig: any;
   workerConfig?: Partial<SubagentWorkerConfig>;
+  readyTimeoutMs?: number;
 }
 
 export async function createSubAgentProcess(
   options: CreateSubAgentProcessInput,
 ): Promise<ManagedAgentInstance> {
   const child = fork(options.workerPath, [], {
-    cwd: dirname(options.workerPath),
+    cwd: resolveWorkerCwd(options.workerPath),
     execArgv: resolveWorkerExecArgv(),
     env: process.env,
     stdio: ["ignore", "ignore", "pipe", "ipc"],
@@ -106,6 +113,7 @@ export async function createManagedSubAgentInstance(
   let handlers: ManagedAgentEventHandlers | undefined;
   const bufferedEvents: WorkerResponseMessage[] = [];
   const recentStderr: string[] = [];
+  const readyTimeoutMs = options.readyTimeoutMs ?? DEFAULT_SUBAGENT_READY_TIMEOUT_MS;
 
   child.stderr?.on("data", (chunk) => {
     const text = chunk.toString().trim();
@@ -119,15 +127,55 @@ export async function createManagedSubAgentInstance(
     }
   });
 
+  const rejectPending = (error: Error) => {
+    for (const request of pending.values()) {
+      request.reject(error);
+    }
+    pending.clear();
+  };
+  const buildWorkerError = (message: string): Error => {
+    const stderrSuffix =
+      recentStderr.length > 0
+        ? ` stderr=${JSON.stringify(recentStderr.join("\n"))}`
+        : "";
+    return new Error(`${message}${stderrSuffix}`);
+  };
+
+  let settleReady!: () => void;
+  let failReady!: (error: Error) => void;
+  let readySettled = false;
+  let readyTimeout: ReturnType<typeof setTimeout> | undefined;
+  const markReadyResolved = () => {
+    if (readySettled) {
+      return;
+    }
+    readySettled = true;
+    if (readyTimeout) {
+      clearTimeout(readyTimeout);
+    }
+    settleReady();
+  };
+  const markReadyRejected = (error: Error) => {
+    if (readySettled) {
+      return;
+    }
+    readySettled = true;
+    if (readyTimeout) {
+      clearTimeout(readyTimeout);
+    }
+    failReady(error);
+  };
+
   const ready = new Promise<void>((resolve, reject) => {
-    child.once("error", reject);
+    settleReady = resolve;
+    failReady = reject;
     child.on("message", (message: WorkerResponseMessage) => {
       if (!message || typeof message !== "object") {
         return;
       }
 
       if (message.type === "ready") {
-        resolve();
+        markReadyResolved();
         return;
       }
 
@@ -180,25 +228,36 @@ export async function createManagedSubAgentInstance(
           return;
         }
 
-        reject(new Error(message.error));
+        const error = buildWorkerError(message.error);
+        rejectPending(error);
+        markReadyRejected(error);
       }
     });
-    child.once("exit", (code, signal) => {
-      const stderrSuffix =
-        recentStderr.length > 0
-          ? ` stderr=${JSON.stringify(recentStderr.join("\n"))}`
-          : "";
-      const error = new Error(
-        `Sub-agent worker exited before completion (code=${code}, signal=${signal})${stderrSuffix}`,
+    child.on("error", (error) => {
+      rejectPending(error);
+      markReadyRejected(error);
+    });
+    child.on("exit", (code, signal) => {
+      const error = buildWorkerError(
+        `Sub-agent worker exited before completion (code=${code}, signal=${signal})`,
       );
-      for (const request of pending.values()) {
-        request.reject(error);
-      }
-      pending.clear();
+      rejectPending(error);
+      markReadyRejected(error);
     });
   });
+  readyTimeout = setTimeout(() => {
+    const error = buildWorkerError(
+      `Sub-agent worker did not become ready within ${readyTimeoutMs}ms`,
+    );
+    rejectPending(error);
+    terminateChild(child);
+    markReadyRejected(error);
+  }, readyTimeoutMs);
+  if (options.readyTimeoutMs === undefined) {
+    readyTimeout.unref?.();
+  }
 
-  child.send({
+  safeSend(child, {
     type: "init",
     tenantId: options.tenantId,
     userId: options.userId,
@@ -209,7 +268,7 @@ export async function createManagedSubAgentInstance(
       input: options.runtimeConfig?.input ?? options.input,
     },
     workerConfig: options.workerConfig,
-  });
+  }, recentStderr);
   await ready;
 
   return {
@@ -236,10 +295,10 @@ export async function createManagedSubAgentInstance(
 
       return new Promise<ManagedAgentDeliveryResult>((resolve, reject) => {
         pending.set(requestId, { resolve, reject });
-        child.send({
+        safeSend(child, {
           type: "run_turn",
           requestId,
-        });
+        }, recentStderr);
       });
     },
 
@@ -249,10 +308,10 @@ export async function createManagedSubAgentInstance(
           resolve();
         });
       });
-      child.send({
+      safeSend(child, {
         type: "close",
         reason,
-      });
+      }, recentStderr);
       await closed;
     },
   };
@@ -298,4 +357,36 @@ export function resolveWorkerExecArgv(
   }
 
   return nextExecArgv;
+}
+
+export function resolveWorkerCwd(
+  _workerPath: string,
+  parentCwd: string = process.cwd(),
+): string {
+  return parentCwd;
+}
+
+function safeSend(
+  child: ChildProcessLike,
+  message: unknown,
+  recentStderr: string[],
+): void {
+  try {
+    child.send(message);
+  } catch (error) {
+    const stderrSuffix =
+      recentStderr.length > 0
+        ? ` stderr=${JSON.stringify(recentStderr.join("\n"))}`
+        : "";
+    const baseMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Sub-agent worker IPC send failed: ${baseMessage}${stderrSuffix}`);
+  }
+}
+
+function terminateChild(child: ChildProcessLike): void {
+  try {
+    child.kill?.("SIGTERM");
+  } catch {
+    // Best-effort shutdown for hung worker processes.
+  }
 }

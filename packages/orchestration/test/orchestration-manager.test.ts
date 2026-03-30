@@ -376,6 +376,51 @@ describe("OrchestrationManager", () => {
     );
   });
 
+  it("marks the orchestration run as failed when completed with an error", async () => {
+    const sessionDir = await createSessionDir();
+    const runtimeHarness = createRuntimeHarness();
+    const manager = await OrchestrationManager.create({
+      sessionDir,
+      runtime: runtimeHarness.runtime,
+      now: createClock(
+        "2026-03-23T09:04:00.000Z",
+        "2026-03-23T09:04:01.000Z",
+      ),
+    });
+
+    await manager.startRun({
+      runId: "run-failed",
+      initialTask: {
+        id: "task-failed",
+        kind: "deep-research",
+        input: {
+          prompt: "Fail fast on startup timeout",
+        },
+      },
+    });
+
+    await manager.completeRun({
+      status: "failed",
+      error: "Sub-agent worker did not become ready within 5000ms",
+    });
+
+    expect(manager.getSnapshot().run).toMatchObject({
+      id: "run-failed",
+      status: "failed",
+      completedAt: "2026-03-23T09:04:01.000Z",
+    });
+    await expect(OrchestrationStore.loadEvents(sessionDir)).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "run_completed",
+          runId: "run-failed",
+          status: "failed",
+          error: "Sub-agent worker did not become ready within 5000ms",
+        }),
+      ]),
+    );
+  });
+
   it("retries attaching a spawned agent after an initial runtime creation failure", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createFlakyRuntimeHarness();
