@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/events",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Shared event contracts for Agentrail hosts, UIs, and plugins.",
   "type": "module",
   "files": [
