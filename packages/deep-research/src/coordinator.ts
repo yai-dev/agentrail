@@ -158,6 +158,7 @@ export class DeepResearchCoordinator {
       }
 
       this.state.reportMarkdown = await this.generateReport(emit);
+      await this.manager.completeRun({ status: "completed" });
       this.state.run.status = "completed";
       this.state.run.updatedAt = nowIso();
       this.state.run.completedAt = this.state.run.updatedAt;
@@ -180,8 +181,15 @@ export class DeepResearchCoordinator {
       return this.state;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      if (this.manager) {
+        await this.manager.completeRun({
+          status: "failed",
+          error: message,
+        }).catch(() => undefined);
+      }
       this.state.run.status = "failed";
       this.state.run.error = message;
+      this.state.run.completedAt = nowIso();
       this.state.run.updatedAt = nowIso();
       await this.store.writeState(this.state);
       await this.emitDeepResearchEvent(
@@ -482,29 +490,62 @@ export class DeepResearchCoordinator {
     }
 
     const agentId = `${role}:${this.runId}:${stepId}`;
-    await this.manager.spawnAgent({
-      id: agentId,
-      role,
-    });
-    await this.manager.sendInput({
-      id: `input:${agentId}`,
-      agentId,
-      payload: { prompt },
-    });
-    await this.manager.waitForAgents({
-      id: `wait:${agentId}`,
-      agentId,
-      kind: "agent-idle",
-      description: `Wait for ${role} to complete`,
-    });
-    const snapshot = this.manager.getSnapshot();
-    const outputText = snapshot.agents[agentId]?.lastJob?.outputText ?? "";
+    let closeReason = "step completed";
+
+    try {
+      await this.manager.spawnAgent({
+        id: agentId,
+        role,
+      });
+      await this.manager.sendInput({
+        id: `input:${agentId}`,
+        agentId,
+        payload: { prompt },
+      });
+      await this.manager.waitForAgents({
+        id: `wait:${agentId}`,
+        agentId,
+        kind: "agent-idle",
+        description: `Wait for ${role} to complete`,
+      });
+      const snapshot = this.manager.getSnapshot();
+      const lastJob = snapshot.agents[agentId]?.lastJob;
+
+      if (!lastJob) {
+        throw new Error(`${role} agent ${agentId} became idle without reporting a job result.`);
+      }
+
+      if (lastJob.outcome !== "completed") {
+        throw new Error(
+          lastJob.error ??
+            `${role} agent ${agentId} finished with outcome ${lastJob.outcome}.`,
+        );
+      }
+
+      return lastJob.outputText ?? "";
+    } catch (error) {
+      closeReason = `step failed: ${error instanceof Error ? error.message : String(error)}`;
+      throw error;
+    } finally {
+      await this.closeManagedAgent(agentId, closeReason);
+    }
+  }
+
+  private async closeManagedAgent(agentId: string, reason: string): Promise<void> {
+    if (!this.manager) {
+      return;
+    }
+
+    const agent = this.manager.getSnapshot().agents[agentId];
+    if (!agent || agent.status === "closed" || agent.status === "closing") {
+      return;
+    }
+
     await this.manager.closeAgent({
-      id: `close:${agentId}`,
+      id: `close:${agentId}:${randomUUID()}`,
       agentId,
-      reason: "step completed",
-    });
-    return outputText;
+      reason,
+    }).catch(() => undefined);
   }
 
   private async mergeSources(

@@ -19,7 +19,7 @@ import { nowIso } from "./utils.js";
 export function getDeepResearchWorkerPath(): string {
   const currentFile = fileURLToPath(import.meta.url);
   const extension = currentFile.endsWith(".ts") ? ".ts" : ".js";
-  return join(dirname(currentFile), `../agents/deep-research-worker-entry${extension}`);
+  return join(dirname(currentFile), `./agents/deep-research-worker-entry${extension}`);
 }
 
 export function zeroUsage(): Usage {

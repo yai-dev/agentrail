@@ -83,6 +83,23 @@ export interface AgentrailStreamRouteOptions {
     userId: string;
     sessionId: string;
   }) => Promise<OrchestrationManager>;
+  handleResolvedRequest?: (
+    context: AgentrailResolvedStreamContext,
+  ) => Promise<boolean> | boolean;
+}
+
+export interface AgentrailResolvedStreamContext {
+  request: StreamRequest;
+  agentId: string;
+  tenantId: string;
+  userId: string;
+  sessionId: string;
+  sessionDir: string;
+  signal: AbortSignal;
+  sessionStore: AgentrailSessionStore;
+  uploadedFiles: AttachmentFile[];
+  writeEvent: (event: object) => Promise<void>;
+  persistTurn: (messages: Message[], usage: Usage) => Promise<void>;
 }
 
 export function createStreamRoute(
@@ -146,15 +163,17 @@ export function createStreamRoute(
     void options.sandboxManager.ensureSandbox(sid, tenantId, userId);
 
     let forwardSubAgentEvent: (event: object) => void = () => {};
-    const profile = await options.resolveProfile(
-      agentId,
-      { tenantId, userId, sessionId: sid, sessionDir },
-      (event) => forwardSubAgentEvent(event),
-    );
-    if (!profile) {
-      return c.json({ error: `Agent profile '${agentId}' not found` }, 404);
+    let preloadedProfile: AgentrailProfile | null | undefined;
+    if (!options.handleResolvedRequest) {
+      preloadedProfile = await options.resolveProfile(
+        agentId,
+        { tenantId, userId, sessionId: sid, sessionDir },
+        (event) => forwardSubAgentEvent(event),
+      );
+      if (!preloadedProfile) {
+        return c.json({ error: `Agent profile '${agentId}' not found` }, 404);
+      }
     }
-
     const abortController = new AbortController();
     c.req.raw.signal.addEventListener("abort", () => abortController.abort());
     c.header("X-Session-Id", sid);
@@ -164,7 +183,55 @@ export function createStreamRoute(
       forwardSubAgentEvent = forwardEvent;
 
       let unsubscribeOrchestration: (() => void) | undefined;
+      const persistTurn = async (messages: Message[], usage: Usage) => {
+        await Promise.all([
+          options.sessionStore.appendMessages(tenantId, sid, messages),
+          options.sessionStore.recordTurn(tenantId, sid, usage),
+        ]);
+        await options.onTurnPersisted?.(requestContext);
+        await runPluginRequestHook(plugins, "onTurnPersisted", requestContext);
+      };
       try {
+        if (options.handleResolvedRequest) {
+          const handled = await options.handleResolvedRequest({
+            request: {
+              ...body,
+              message: effectiveMessage,
+              agentId,
+              sessionId: sid,
+            },
+            agentId,
+            tenantId,
+            userId,
+            sessionId: sid,
+            sessionDir,
+            signal: abortController.signal,
+            sessionStore: options.sessionStore,
+            uploadedFiles,
+            writeEvent,
+            persistTurn,
+          });
+          if (handled) {
+            return;
+          }
+        }
+
+        const profile = preloadedProfile ?? await options.resolveProfile(
+          agentId,
+          { tenantId, userId, sessionId: sid, sessionDir },
+          (event) => forwardSubAgentEvent(event),
+        );
+        if (!profile) {
+          const errorEvent: AgentrailErrorEvent = {
+            type: "error",
+            error: {
+              message: `Agent profile '${agentId}' not found`,
+            },
+          };
+          await writeEvent(errorEvent);
+          return;
+        }
+
         const agent = await profile.createAgent(
           { tenantId, userId, sessionId: sid, sessionDir },
           (event) => forwardSubAgentEvent(event),
@@ -257,12 +324,7 @@ export function createStreamRoute(
         }
 
         if (capturedMessages && capturedUsage) {
-          await Promise.all([
-            options.sessionStore.appendMessages(tenantId, sid, capturedMessages),
-            options.sessionStore.recordTurn(tenantId, sid, capturedUsage),
-          ]);
-          await options.onTurnPersisted?.(requestContext);
-          await runPluginRequestHook(plugins, "onTurnPersisted", requestContext);
+          await persistTurn(capturedMessages, capturedUsage);
         }
       } finally {
         unsubscribeOrchestration?.();

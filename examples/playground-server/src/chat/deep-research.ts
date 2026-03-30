@@ -3,9 +3,78 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AgentrailChatHandledResponse, AgentrailResolvedChatContext } from "@agentrail/host";
-import { runDeepResearchBlocking } from "@agentrail/deep-research";
+import type {
+  AgentrailChatHandledResponse,
+  AgentrailResolvedChatContext,
+  AgentrailResolvedStreamContext,
+} from "@agentrail/host";
+import type { Message, Usage } from "@agentrail/runtime-core";
+import {
+  runDeepResearchBlocking,
+  runDeepResearchStreaming,
+  type DeepResearchStreamingRunInput,
+} from "@agentrail/deep-research";
 import { config } from "../config.js";
+
+function buildDeepResearchRuntime() {
+  return {
+    dataDir: config.dataDir,
+    model: {
+      provider: config.provider,
+      modelId: config.modelId,
+      ...(config.apiKey ? { apiKey: config.apiKey } : {}),
+      ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
+    },
+    searchProvider: config.searchProvider,
+    tavilyApiKey: config.tavilyApiKey,
+    sandbox: config.sandbox,
+    orchestration: config.orchestration,
+  };
+}
+
+function zeroUsage(): Usage {
+  return {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    totalTokens: 0,
+    cost: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      total: 0,
+    },
+  };
+}
+
+function buildDeepResearchFailureTurn(
+  userText: string,
+  errorMessage: string,
+): { messages: Message[]; usage: Usage } {
+  const timestamp = Date.now();
+  const usage = zeroUsage();
+  return {
+    messages: [
+      {
+        role: "user",
+        content: userText,
+        timestamp,
+      },
+      {
+        role: "assistant",
+        content: [{ type: "text", text: `Deep Research failed: ${errorMessage}` }],
+        provider: config.provider,
+        modelId: config.modelId,
+        usage,
+        stopReason: "error",
+        timestamp: timestamp + 1,
+      },
+    ],
+    usage,
+  };
+}
 
 export async function handlePlaygroundDeepResearchMode(
   context: AgentrailResolvedChatContext,
@@ -20,19 +89,7 @@ export async function handlePlaygroundDeepResearchMode(
     query: context.request.message,
     sessionId: context.sessionId,
     sessionStore: context.sessionStore,
-    runtime: {
-      dataDir: config.dataDir,
-      model: {
-        provider: config.provider,
-        modelId: config.modelId,
-        ...(config.apiKey ? { apiKey: config.apiKey } : {}),
-        ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
-      },
-      searchProvider: config.searchProvider,
-      tavilyApiKey: config.tavilyApiKey,
-      sandbox: config.sandbox,
-      orchestration: config.orchestration,
-    },
+    runtime: buildDeepResearchRuntime(),
   });
 
   return {
@@ -44,3 +101,44 @@ export async function handlePlaygroundDeepResearchMode(
     },
   };
 }
+
+export function createPlaygroundDeepResearchModeStreamHandler(
+  runStreaming: typeof runDeepResearchStreaming = runDeepResearchStreaming,
+) {
+  return async function handlePlaygroundDeepResearchModeStream(
+    context: AgentrailResolvedStreamContext,
+  ): Promise<boolean> {
+    if (context.request.mode !== "deep_research") {
+      return false;
+    }
+
+    try {
+      await runStreaming({
+        tenantId: context.tenantId,
+        userId: context.userId,
+        query: context.request.message,
+        sessionId: context.sessionId,
+        sessionStore: context.sessionStore,
+        persistTurn: context.persistTurn,
+        runtime: buildDeepResearchRuntime(),
+        onEvent: context.writeEvent,
+      } satisfies DeepResearchStreamingRunInput);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const failureTurn = buildDeepResearchFailureTurn(
+        context.request.message,
+        message,
+      );
+      await context.writeEvent({
+        type: "error",
+        error: { message },
+      });
+      await context.persistTurn(failureTurn.messages, failureTurn.usage);
+    }
+
+    return true;
+  };
+}
+
+export const handlePlaygroundDeepResearchModeStream =
+  createPlaygroundDeepResearchModeStreamHandler();

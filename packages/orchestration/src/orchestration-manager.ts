@@ -27,6 +27,7 @@ import type {
   OrchestrationEvent,
   OrchestrationSnapshot,
   RemoveInputInput,
+  RunStatus,
   SpawnAgentInput,
   WaitAgentInput,
   WaitCondition,
@@ -374,6 +375,37 @@ export class OrchestrationManager {
     for (const waitId of pendingWaitIds) {
       await this.reconcileWait(waitId);
     }
+  }
+
+  async completeRun(input: {
+    status: Extract<RunStatus, "completed" | "failed">;
+    error?: string;
+  }): Promise<void> {
+    const run = this.snapshot.run;
+
+    if (!run) {
+      throw new Error("No orchestration run has been started");
+    }
+
+    if (run.status !== "running") {
+      if (
+        run.status === input.status &&
+        run.completedAt
+      ) {
+        return;
+      }
+
+      throw new Error(`Orchestration run ${run.id} is already ${run.status}`);
+    }
+
+    await this.recordEvent({
+      eventId: this.createEventId(),
+      type: "run_completed",
+      occurredAt: this.now(),
+      runId: run.id,
+      status: input.status,
+      error: input.error,
+    });
   }
 
   private async initialize(): Promise<void> {
