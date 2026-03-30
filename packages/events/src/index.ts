@@ -115,6 +115,65 @@ export type AgentrailHostEvent =
 
 export type AgentrailEvent = RuntimeEvent | ExtendedSseEvent | AgentrailHostEvent;
 
+// ─── Unified Workflow Trace ───────────────────────────────────────────────────
+
+/**
+ * The set of event types that are persisted to the trace log.
+ * High-frequency text/token stream events (message_start/end/update, session_id)
+ * are intentionally excluded to avoid noise and log bloat.
+ */
+export const TRACE_PERSISTED_EVENT_TYPES = new Set([
+  // Runtime / skill events
+  "agent_start",
+  "agent_end",
+  "turn_start",
+  "turn_end",
+  "tool_execution_start",
+  "tool_execution_end",
+  "skill_start",
+  "skill_end",
+  "waiting_for_user_input",
+  "context_compaction_start",
+  "context_compaction_end",
+  "error",
+  // Orchestration-mapped events
+  "orchestration_run_start",
+  "orchestration_run_complete",
+  "subagent_spawned",
+  "subagent_status",
+  "subagent_job_started",
+  "subagent_job_completed",
+  "subagent_job_failed",
+  "subagent_message",
+  "wait_registered",
+  "wait_resolved",
+  "subagent_closed",
+]);
+
+export interface WorkflowTraceEventEnvelope {
+  id: string;
+  timestamp: string;
+  sequence: number;
+  source: "runtime" | "orchestration";
+  event: Record<string, unknown>;
+}
+
+let _wrapSeq = 0;
+
+export function wrapTraceEvent(
+  source: "runtime" | "orchestration",
+  event: Record<string, unknown>,
+  sequence?: number,
+): WorkflowTraceEventEnvelope {
+  return {
+    id: `${source}-${Date.now()}-${_wrapSeq++}`,
+    timestamp: new Date().toISOString(),
+    sequence: sequence ?? _wrapSeq,
+    source,
+    event,
+  };
+}
+
 export function mapOrchestrationEvent(
   event: OrchestrationEvent,
 ): AgentrailHostEvent | null {

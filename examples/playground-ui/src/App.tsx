@@ -17,7 +17,7 @@ import { CompactionBanner, CompactionSeparator, ContextUsageIndicator } from "./
 import { WaitingQuestionPrompt, type WaitingQuestionState } from "./components/WaitingQuestionPrompt";
 import { useSessions } from "./hooks/useSessions";
 import { useIdentity } from "./hooks/useIdentity";
-import { useAgentTrace } from "./hooks/useAgentTrace";
+import { useWorkflowTrace } from "./hooks/useWorkflowTrace";
 import { useAuth } from "./hooks/useAuth";
 import { useOrchestrationState } from "./hooks/useOrchestrationState";
 import { useDeepResearchState } from "./hooks/useDeepResearchState";
@@ -118,7 +118,7 @@ export default function App() {
   const skipHistoryLoadRef = useRef(false);
 
   const { sessions, upsert, remove } = useSessions();
-  const { traces, feedEvent: feedTraceEvent, clearTraces } = useAgentTrace();
+  const { traces, envelopes: traceEnvelopes, feedEvent: feedTraceEvent, clearTrace } = useWorkflowTrace(currentSessionId);
   const {
     state: orchestrationState,
     isLoading: orchestrationLoading,
@@ -562,11 +562,11 @@ export default function App() {
     activeSkillRef.current = null;
     setBusy(false);
     setInput("");
-    clearTraces();
+    clearTrace();
     clearOrchestrationState();
     clearDeepResearchState();
     setRequestedWorkspaceTab(null);
-  }, [clearTraces, clearOrchestrationState, clearDeepResearchState]);
+  }, [clearTrace, clearOrchestrationState, clearDeepResearchState]);
 
   const switchSession = useCallback((sessionId: string) => {
     if (sessionId === currentSessionId) return;
@@ -578,13 +578,13 @@ export default function App() {
     setWaitingQuestion(null);
     setQuestionInput("");
     setSelectedOptions([]);
-    clearTraces();
+    clearTrace();
     clearOrchestrationState();
     clearDeepResearchState();
     setRequestedWorkspaceTab(null);
     // Setting sessionId triggers the history-load useEffect
     setCurrentSessionId(sessionId);
-  }, [currentSessionId, clearTraces, clearOrchestrationState, clearDeepResearchState]);
+  }, [currentSessionId, clearTrace, clearOrchestrationState, clearDeepResearchState]);
 
   const deleteSession = useCallback((sessionId: string) => {
     remove(sessionId);
@@ -668,7 +668,7 @@ export default function App() {
       <div className="chat-pane">
         <header className="header">
           <div className="header-left">
-            <div className="logo">eL</div>
+            <div className="logo">AP</div>
             <div>
               <div className="header-title">Agentrail Playground</div>
               <div className="header-subtitle">
@@ -813,6 +813,7 @@ export default function App() {
         <AgentWorkspace
           turns={turns}
           traces={traces}
+          envelopes={traceEnvelopes}
           onClose={closeWorkspace}
           sessionId={currentSessionId ?? undefined}
           onWidthChange={setWorkspaceWidth}

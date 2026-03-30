@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from "react";
-import type { AgentRunTrace, TraceStep, LlmTurnStep, ToolCallStep } from "../types/trace";
+import type { AgentRunTrace, TraceStep, LlmTurnStep, ToolCallStep, WorkflowTraceEventEnvelope } from "../types/trace";
 import { WorkspaceEmptyState } from "./WorkspaceEmptyState";
 
 // ─── Design tokens (matched to WS dark theme) ────────────────────────────────
@@ -595,6 +595,12 @@ function DetailPanel({ step, traceStart }: DetailPanelProps) {
           )}
         </>
       )}
+
+      {/* Raw JSON */}
+      <div>
+        <SectionLabel>Raw JSON</SectionLabel>
+        <CodeBlock text={prettyJson(step)} maxHeight={160} />
+      </div>
     </div>
   );
 }
@@ -628,15 +634,95 @@ function AgentMarker({
   );
 }
 
+// ─── Filter bar ──────────────────────────────────────────────────────────────
+
+type TraceFilter = "all" | "runtime" | "orchestration" | "waits" | "errors";
+
+const FILTER_LABELS: { id: TraceFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "runtime", label: "Runtime" },
+  { id: "orchestration", label: "Orchestration" },
+  { id: "waits", label: "Waits" },
+  { id: "errors", label: "Errors" },
+];
+
+function filterEnvelopes(
+  envelopes: WorkflowTraceEventEnvelope[],
+  filter: TraceFilter,
+): WorkflowTraceEventEnvelope[] {
+  if (filter === "all") return envelopes;
+  return envelopes.filter((e) => {
+    const type = String(e.event.type ?? "");
+    if (filter === "runtime") return e.source === "runtime";
+    if (filter === "orchestration") return e.source === "orchestration";
+    if (filter === "waits")
+      return (
+        type === "waiting_for_user_input" ||
+        type === "wait_registered" ||
+        type === "wait_resolved"
+      );
+    if (filter === "errors") return type === "error";
+    return true;
+  });
+}
+
+function FilterBar({
+  active,
+  onChange,
+}: {
+  active: TraceFilter;
+  onChange: (f: TraceFilter) => void;
+}) {
+  return (
+    <div style={{
+      display: "flex", gap: "4px", padding: "6px 10px",
+      overflowX: "auto", flexShrink: 0,
+      borderBottom: `1px solid ${C.border}`,
+      background: C.surface,
+    }}>
+      {FILTER_LABELS.map(({ id, label }) => (
+        <button
+          key={id}
+          onClick={() => onChange(id)}
+          style={{
+            fontSize: "10px", padding: "2px 9px", borderRadius: "5px",
+            border: `1px solid ${active === id ? "rgba(14,165,233,0.5)" : C.border}`,
+            background: active === id ? "rgba(14,165,233,0.1)" : "transparent",
+            color: active === id ? C.accent : C.muted,
+            cursor: "pointer", whiteSpace: "nowrap", fontWeight: 600,
+            transition: "all 0.12s",
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface TraceDAGViewProps {
   traces: AgentRunTrace[];
+  /** Raw envelopes for filtering; when omitted all filter options still render */
+  envelopes?: WorkflowTraceEventEnvelope[];
 }
 
-export function TraceDAGView({ traces }: TraceDAGViewProps) {
+export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
   const [selectedRunIdx, setSelectedRunIdx] = useState(0);
   const [selectedStep, setSelectedStep] = useState<TraceStep | null>(null);
+  const [activeFilter, setActiveFilter] = useState<TraceFilter>("all");
+
+  const filteredEnvelopes = useMemo(
+    () => filterEnvelopes(envelopes, activeFilter),
+    [envelopes, activeFilter],
+  );
+
+  // When a filter is active and envelopes are available, build a filtered view.
+  // For runtime filter we still use the projected traces; for other filters we
+  // show a raw envelope list (no DAG projection needed).
+  const showEnvelopeList =
+    activeFilter !== "all" && activeFilter !== "runtime" && envelopes.length > 0;
 
   const effectiveIdx = Math.min(selectedRunIdx, Math.max(0, traces.length - 1));
   const trace = traces[effectiveIdx] ?? null;
@@ -665,6 +751,17 @@ export function TraceDAGView({ traces }: TraceDAGViewProps) {
       display: "flex", flexDirection: "column", height: "100%", overflow: "hidden",
       background: C.bg,
     }}>
+      {/* Filter bar */}
+      <FilterBar active={activeFilter} onChange={(f) => { setActiveFilter(f); setSelectedStep(null); }} />
+
+      {/* Envelope list for orchestration / waits / errors filters */}
+      {showEnvelopeList && (
+        <EnvelopeListView envelopes={filteredEnvelopes} />
+      )}
+
+      {/* DAG view for all / runtime filters */}
+      {!showEnvelopeList && (
+      <>
       {/* Run selector */}
       {traces.length > 1 && (
         <div style={{
@@ -777,6 +874,71 @@ export function TraceDAGView({ traces }: TraceDAGViewProps) {
           </div>
         )}
       </div>
+      </>
+      )}
+    </div>
+  );
+}
+
+// ─── Envelope list (orchestration / waits / errors filters) ───────────────────
+
+function EnvelopeListView({ envelopes }: { envelopes: WorkflowTraceEventEnvelope[] }) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const toggle = (id: string) =>
+    setExpanded((p) => ({ ...p, [id]: !p[id] }));
+
+  if (envelopes.length === 0) {
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontSize: "13px" }}>
+        No events match this filter.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "10px" }}>
+      {envelopes.map((env) => {
+        const type = String(env.event.type ?? "");
+        const isExpanded = expanded[env.id] ?? false;
+        return (
+          <div key={env.id} style={{
+            marginBottom: "6px",
+            border: `1px solid ${C.border}`,
+            borderRadius: "7px",
+            background: C.surface,
+            overflow: "hidden",
+          }}>
+            <button
+              onClick={() => toggle(env.id)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: "8px",
+                padding: "7px 10px", background: "none", border: "none", cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <span style={{
+                fontSize: "9px", fontWeight: 700, padding: "2px 6px",
+                borderRadius: "4px", flexShrink: 0,
+                background: env.source === "orchestration" ? "rgba(167,139,250,0.15)" : "rgba(14,165,233,0.12)",
+                color: env.source === "orchestration" ? C.purple : C.accent,
+              }}>
+                {env.source}
+              </span>
+              <span style={{ fontSize: "11px", fontWeight: 600, color: C.text, flex: 1 }}>{type}</span>
+              <span style={{ fontSize: "10px", color: C.muted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                {new Date(env.timestamp).toLocaleTimeString()}
+              </span>
+              <span style={{ fontSize: "9px", color: C.muted }}>{isExpanded ? "▲" : "▼"}</span>
+            </button>
+            {isExpanded && (
+              <div style={{ padding: "0 10px 10px" }}>
+                <CodeBlock text={JSON.stringify(env.event, null, 2)} maxHeight={240} />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

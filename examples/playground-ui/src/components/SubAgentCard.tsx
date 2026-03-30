@@ -46,22 +46,36 @@ function StatusBadge({ status }: { status: OrchestrationAgent["status"] }) {
   );
 }
 
+const outcomeIcon: Record<string, string> = {
+  completed: "✓",
+  failed: "✕",
+  cancelled: "✕",
+  timed_out: "✕",
+};
+
 export function SubAgentCard({ agent, isActive, compact = false }: SubAgentCardProps) {
-  const shortId = agent.id.slice(0, 8);
   const displayName = agent.displayName ?? agent.role;
+
+  const timeParts: string[] = [];
+  timeParts.push(`创建于 ${formatTimeAgo(agent.createdAt)}`);
+  if (agent.lastJob?.completedAt) {
+    timeParts.push(`完成于 ${formatTimeAgo(agent.lastJob.completedAt)}`);
+  }
+  if (agent.closedAt) {
+    timeParts.push(`关闭于 ${formatTimeAgo(agent.closedAt)}`);
+  }
 
   return (
     <div className={`sub-agent-card ${isActive ? "active" : ""} ${compact ? "compact" : ""}`}>
       <div className="sub-agent-card-header">
-        <div className="sub-agent-card-id">{shortId}</div>
+        <div className="sub-agent-card-role" title={agent.role}>
+          {agent.role}
+        </div>
         <StatusBadge status={agent.status} />
       </div>
 
       <div className="sub-agent-card-name" title={displayName}>
         {displayName}
-      </div>
-      <div className="sub-agent-card-role" title={agent.role}>
-        {agent.role}
       </div>
 
       {!compact && (agent.activeJob || agent.lastJob || agent.mailbox?.closeRequested) && (
@@ -78,7 +92,7 @@ export function SubAgentCard({ agent, isActive, compact = false }: SubAgentCardP
             <div className="sub-agent-card-detail">
               <span className="sub-agent-card-detail-label">最近结果</span>
               <span className={`sub-agent-card-detail-value job-outcome-${agent.lastJob.outcome}`}>
-                {agent.lastJob.outcome}
+                {outcomeIcon[agent.lastJob.outcome] ?? ""} {agent.lastJob.outcome}
               </span>
             </div>
           )}
@@ -101,40 +115,16 @@ export function SubAgentCard({ agent, isActive, compact = false }: SubAgentCardP
         </div>
       )}
 
-      {compact && (
+      {compact && agent.lastJob && (
         <div className="sub-agent-card-summary">
-          {agent.lastJob && (
-            <span className={`sub-agent-card-summary-pill job-outcome-${agent.lastJob.outcome}`}>
-              {agent.lastJob.outcome}
-            </span>
-          )}
-          {agent.mailbox && (
-            <span className="sub-agent-card-summary-pill">
-              Mailbox {agent.mailbox.processedEventCount}
-            </span>
-          )}
-          {agent.mailbox?.closeRequested?.reason && (
-            <span className="sub-agent-card-summary-pill">
-              {agent.mailbox.closeRequested.reason}
-            </span>
-          )}
+          <span className={`sub-agent-card-summary-pill job-outcome-${agent.lastJob.outcome}`}>
+            {outcomeIcon[agent.lastJob.outcome] ?? ""} {agent.lastJob.outcome}
+          </span>
         </div>
       )}
 
-      <div className={`sub-agent-card-meta ${compact ? "compact" : ""}`}>
-        <span className="sub-agent-card-time" title={new Date(agent.createdAt).toLocaleString()}>
-          创建于 {formatTimeAgo(agent.createdAt)}
-        </span>
-        {agent.lastJob?.completedAt && (
-          <span className="sub-agent-card-time" title={new Date(agent.lastJob.completedAt).toLocaleString()}>
-            最近完成于 {formatTimeAgo(agent.lastJob.completedAt)}
-          </span>
-        )}
-        {agent.closedAt && (
-          <span className="sub-agent-card-time" title={new Date(agent.closedAt).toLocaleString()}>
-            关闭于 {formatTimeAgo(agent.closedAt)}
-          </span>
-        )}
+      <div className="sub-agent-card-meta">
+        {timeParts.join(" · ")}
       </div>
     </div>
   );

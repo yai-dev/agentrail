@@ -3548,51 +3548,11 @@ body {
   color: var(--ws-text);
 }
 
-.agent-team-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  color: var(--ws-muted, #888);
-  text-align: center;
-}
-
 .agent-team-run-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
-}
-
-.agent-team-empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.6;
-}
-
-.agent-team-empty p {
-  margin: 0 0 8px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--ws-text, #e5e5e5);
-}
-
-.agent-team-empty-hint {
-  font-size: 13px;
-  opacity: 0.8;
-  max-width: 280px;
-  color: var(--ws-muted, #888);
-}
-
-.agent-team-loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 2px solid var(--ws-border, #333);
-  border-top-color: var(--accent, #0ea5e9);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 16px;
 }
 
 /* Run Summary Card */
@@ -3601,23 +3561,41 @@ body {
   border: 1px solid var(--card-border-dark);
   border-radius: 14px;
   box-shadow: var(--card-shadow-dark);
-  padding: 16px;
+  padding: 14px 16px;
   margin-bottom: 20px;
+  /* left status bar */
+  border-left-width: 3px;
+  border-left-style: solid;
 }
+
+.run-card-status-running  { border-left-color: var(--status-running-fg); }
+.run-card-status-completed { border-left-color: var(--status-success-fg); }
+.run-card-status-failed   { border-left-color: var(--status-error-fg); }
 
 .run-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .run-card-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--ws-muted, #888);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: var(--ws-text, #c9d1d9);
+  font-family: var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.03em;
+}
+
+.run-card-duration {
+  font-size: 12px;
+  color: var(--ws-muted, #6e7681);
+  margin-bottom: 10px;
+}
+
+.run-card-duration strong {
+  color: var(--ws-text, #c9d1d9);
+  font-weight: 500;
 }
 
 .run-status-badge {
@@ -3646,18 +3624,23 @@ body {
   color: var(--status-error-fg-soft);
 }
 
-.run-card-id {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 13px;
-  color: var(--ws-text, #e5e5e5);
-  margin-bottom: 8px;
+/* Stat pills used in run card and role summary */
+.agent-team-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--ws-muted, #6e7681);
+  font-size: 12px;
 }
 
-.run-card-time {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: var(--ws-muted, #888);
+.agent-team-stat-pill-wait {
+  background: var(--status-waiting-bg);
+  border-color: var(--status-waiting-border);
+  color: var(--status-waiting-fg-soft);
 }
 
 /* Section Titles */
@@ -3674,8 +3657,30 @@ body {
   border-bottom: 1px solid var(--ws-border, #333);
 }
 
-.agent-team-section-title.collapsed {
-  opacity: 0.7;
+/* Collapsible closed-section toggle */
+.agent-team-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--ws-border, #333);
+  cursor: pointer;
+  padding: 0 0 8px;
+  color: inherit;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.agent-team-section-toggle:hover {
+  color: var(--ws-text, #f8fafc);
+}
+
+.agent-team-chevron {
+  font-size: 12px;
+  color: var(--ws-muted, #6e7681);
+  flex-shrink: 0;
 }
 
 /* Sub Agent Grid */
@@ -3707,15 +3712,15 @@ body {
 .sub-agent-card {
   background: var(--card-bg-dark);
   border: 1px solid var(--card-border-dark);
-  border-radius: 14px;
+  border-left: 3px solid transparent;
+  border-radius: 12px;
   box-shadow: var(--card-shadow-dark);
-  padding: 14px;
+  padding: 12px 14px;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .sub-agent-card.compact {
-  padding: 12px;
-  border-radius: 12px;
+  padding: 10px 12px;
 }
 
 .sub-agent-card:hover {
@@ -3724,72 +3729,63 @@ body {
 }
 
 .sub-agent-card.active {
-  border-color: var(--accent, #0ea5e9);
-  box-shadow: 0 0 0 1px var(--accent, #0ea5e9), var(--card-shadow-dark);
+  border-left-color: var(--accent, #0ea5e9);
 }
 
 .sub-agent-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.sub-agent-card-id {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12px;
-  color: var(--ws-muted, #888);
+  margin-bottom: 4px;
 }
 
 .sub-agent-card-name {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--ws-text, #f8fafc);
-  margin-bottom: 4px;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sub-agent-card-role {
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ws-muted, #94a3b8);
   margin-bottom: 10px;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .sub-agent-card.compact .sub-agent-card-name {
-  font-size: 20px;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.sub-agent-card-role {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ws-muted, #6e7681);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sub-agent-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sub-agent-card-meta.compact {
-  gap: 2px;
+  font-size: 10px;
+  color: var(--ws-muted, #6e7681);
+  line-height: 1.4;
+  margin-top: 4px;
 }
 
 .sub-agent-card-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .sub-agent-card-summary-pill {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 4px 8px;
+  gap: 4px;
+  min-height: 22px;
+  padding: 3px 8px;
   border-radius: 999px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.06);
@@ -3824,11 +3820,6 @@ body {
   color: var(--ws-text, #e5e5e5);
   text-align: right;
   word-break: break-word;
-}
-
-.sub-agent-card-time {
-  font-size: 11px;
-  color: var(--ws-muted, #888);
 }
 
 /* Status Badge */
@@ -3898,52 +3889,62 @@ body {
 .wait-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 12px;
   background: var(--card-bg-dark);
   border: 1px solid var(--card-border-dark);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow-dark);
+  border-radius: 10px;
   font-size: 12px;
 }
 
-.wait-id {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  color: var(--ws-muted, #888);
+.wait-item.wait-status-pending {
+  border-left: 3px solid var(--status-waiting-border);
+  animation: status-waiting-glimmer calc(var(--motion-status-waiting) * 1.35) ease-in-out infinite;
 }
 
-.wait-mode {
-  padding: 2px 6px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 4px;
+.wait-item.wait-status-resolved {
+  border-left: 3px solid var(--status-success-border);
+}
+
+.wait-item.wait-status-timeout {
+  border-left: 3px solid var(--status-error-border);
+}
+
+.wait-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.wait-mode-badge {
+  padding: 2px 7px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--ws-text, #c9d1d9);
+  font-weight: 500;
+}
+
+.wait-agents-count {
+  color: var(--ws-muted, #6e7681);
   font-size: 11px;
 }
 
-.wait-agents {
-  color: var(--ws-muted, #888);
-}
-
-.wait-status {
+.wait-status-label {
   margin-left: auto;
-  padding: 2px 8px;
-  border-radius: 10px;
   font-size: 11px;
   font-weight: 500;
 }
 
-.wait-status-pending {
-  background: var(--status-waiting-bg);
+.wait-status-label.wait-status-pending {
   color: var(--status-waiting-fg-soft);
-  animation: status-waiting-glimmer calc(var(--motion-status-waiting) * 1.35) ease-in-out infinite;
 }
 
-.wait-status-resolved {
-  background: var(--status-success-bg);
+.wait-status-label.wait-status-resolved {
   color: var(--status-success-fg-soft);
 }
 
-.wait-status-timeout {
-  background: var(--status-error-bg);
+.wait-status-label.wait-status-timeout {
   color: var(--status-error-fg-soft);
 }
 

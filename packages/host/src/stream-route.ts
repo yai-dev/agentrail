@@ -12,8 +12,11 @@ import type { SandboxManager } from "@agentrail/sandbox";
 import type { OrchestrationManager } from "@agentrail/orchestration";
 import {
   mapOrchestrationEvent,
+  TRACE_PERSISTED_EVENT_TYPES,
+  wrapTraceEvent,
   type AgentrailContextUsageEvent,
   type AgentrailErrorEvent,
+  type WorkflowTraceEventEnvelope,
 } from "@agentrail/events";
 import type {
   AgentrailProfile,
@@ -86,6 +89,15 @@ export interface AgentrailStreamRouteOptions {
   handleResolvedRequest?: (
     context: AgentrailResolvedStreamContext,
   ) => Promise<boolean> | boolean;
+  /**
+   * Optional observer called after each SSE event is written, for events whose
+   * type is in TRACE_PERSISTED_EVENT_TYPES. Fire-and-forget; must not throw.
+   * Intended for trace persistence in application layers (e.g. playground-server).
+   */
+  onTraceEvent?: (
+    context: { tenantId: string; sessionId: string; sessionDir: string },
+    envelope: WorkflowTraceEventEnvelope,
+  ) => void;
 }
 
 export interface AgentrailResolvedStreamContext {
@@ -183,6 +195,20 @@ export function createStreamRoute(
       forwardSubAgentEvent = forwardEvent;
 
       let unsubscribeOrchestration: (() => void) | undefined;
+      let traceSeq = 0;
+
+      const maybeTraceEvent = (event: object) => {
+        if (!options.onTraceEvent) return;
+        const type = (event as { type?: string }).type;
+        if (!type || !TRACE_PERSISTED_EVENT_TYPES.has(type)) return;
+        const envelope = wrapTraceEvent("runtime", event as Record<string, unknown>, traceSeq++);
+        try {
+          options.onTraceEvent({ tenantId, sessionId: sid, sessionDir }, envelope);
+        } catch {
+          // observer must not break the stream
+        }
+      };
+
       const persistTurn = async (messages: Message[], usage: Usage) => {
         await Promise.all([
           options.sessionStore.appendMessages(tenantId, sid, messages),
@@ -257,6 +283,7 @@ export function createStreamRoute(
           estimateMessageTokens(allMessages) > options.compaction.triggerTokens
         ) {
           await writeEvent({ type: "context_compaction_start" });
+          maybeTraceEvent({ type: "context_compaction_start" });
           await options.sessionStore.compactIfNeeded(
             tenantId,
             sid,
@@ -270,6 +297,7 @@ export function createStreamRoute(
             },
           );
           await writeEvent({ type: "context_compaction_end" });
+          maybeTraceEvent({ type: "context_compaction_end" });
         }
 
         const history = await options.sessionStore.loadMessagesWithBudget(tenantId, sid);
@@ -299,10 +327,12 @@ export function createStreamRoute(
               },
             };
             await writeEvent(errorEvent);
+            maybeTraceEvent(errorEvent);
             break;
           }
 
           await writeEvent(event);
+          maybeTraceEvent(event);
 
           if (event.type === "agent_end") {
             capturedMessages = event.messages;

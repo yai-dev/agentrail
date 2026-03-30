@@ -45,3 +45,15 @@ export interface AgentRunTrace {
   steps: TraceStep[];
   usage?: { inputTokens: number; outputTokens: number };
 }
+
+/**
+ * Unified trace event envelope persisted to sessionDir/trace/events.jsonl
+ * and returned by GET /api/sessions/:sessionId/trace.
+ */
+export interface WorkflowTraceEventEnvelope {
+  id: string;
+  timestamp: string;
+  sequence: number;
+  source: "runtime" | "orchestration";
+  event: Record<string, unknown>;
+}
