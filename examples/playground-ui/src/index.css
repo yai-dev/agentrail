@@ -4149,6 +4149,7 @@ body {
   gap: 14px;
   padding: 14px;
   overflow-y: auto;
+  height: 100%;
 }
 
 .deep-research-panel-empty-shell {
@@ -4208,7 +4209,7 @@ body {
     radial-gradient(circle at top left, rgba(251, 191, 36, 0.16), transparent 26%),
     linear-gradient(180deg, #fffdf8, #fffaf0);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-  overflow: hidden;
+  overflow: clip;
   color: var(--text);
 }
 
@@ -4330,6 +4331,8 @@ body {
 .deep-research-inline-body {
   padding: 0 18px 18px;
   border-top: 1px solid rgba(15, 23, 42, 0.08);
+  max-height: 420px;
+  overflow-y: auto;
 }
 
 .deep-research-inline-section {

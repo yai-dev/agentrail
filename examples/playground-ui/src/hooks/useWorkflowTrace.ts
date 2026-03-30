@@ -60,13 +60,30 @@ export function useWorkflowTrace(
     fetchSessionTrace(sessionId, abortControllerRef.current.signal)
       .then((fetched) => {
         setEnvelopes((prev) => {
-          // If live-stream events arrived before the fetch completed (e.g.
-          // agent_start fires before session_id resolves the sessionId) and the
-          // server hasn't persisted anything yet, keep the live envelopes rather
-          // than wiping them with an empty result.
-          if (prev.length > 0 && fetched.length === 0) return prev;
-          seqRef.current = fetched.length;
-          return fetched;
+          // No server data — keep all live events accumulated so far.
+          if (fetched.length === 0) return prev;
+
+          // Merge: preserve any live runtime events that the server hasn't
+          // persisted yet (e.g. agent_start arrives before session_id resolves,
+          // DeepResearch path never writes trace/events.jsonl so runtime events
+          // only exist client-side). Orchestration envelopes from the server
+          // already cover the orchestration side.
+          const fetchedIds = new Set(fetched.map((e) => e.id));
+          const liveOnly = prev.filter(
+            (e) => e.source === "runtime" && !fetchedIds.has(e.id),
+          );
+
+          if (liveOnly.length === 0) {
+            seqRef.current = fetched.length;
+            return fetched;
+          }
+
+          const merged = [...fetched, ...liveOnly].sort((a, b) => {
+            const t = a.timestamp.localeCompare(b.timestamp);
+            return t !== 0 ? t : a.sequence - b.sequence;
+          });
+          seqRef.current = merged.length;
+          return merged;
         });
       })
       .catch(() => {

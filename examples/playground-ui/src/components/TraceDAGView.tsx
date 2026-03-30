@@ -718,11 +718,23 @@ export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
     [envelopes, activeFilter],
   );
 
+  // When traces are empty but envelopes exist (e.g. DeepResearch, which never
+  // emits turn_*/tool_* so the DAG projection returns []), force-show all
+  // envelopes so the user at least sees orchestration / subagent events.
+  const forceEnvelopeList = traces.length === 0 && envelopes.length > 0;
+
   // When a filter is active and envelopes are available, build a filtered view.
   // For runtime filter we still use the projected traces; for other filters we
   // show a raw envelope list (no DAG projection needed).
   const showEnvelopeList =
-    activeFilter !== "all" && activeFilter !== "runtime" && envelopes.length > 0;
+    forceEnvelopeList ||
+    (activeFilter !== "all" && activeFilter !== "runtime" && envelopes.length > 0);
+
+  // When forced, show all envelopes (respecting the active filter if set).
+  // Otherwise only show the filter-narrowed subset.
+  const envelopesToShow = forceEnvelopeList
+    ? (activeFilter === "all" ? envelopes : filteredEnvelopes)
+    : filteredEnvelopes;
 
   const effectiveIdx = Math.min(selectedRunIdx, Math.max(0, traces.length - 1));
   const trace = traces[effectiveIdx] ?? null;
@@ -736,7 +748,8 @@ export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
     setSelectedStep(prev => prev?.id === step.id ? null : step);
   };
 
-  if (traces.length === 0) {
+  // True empty: no traces AND no envelopes at all.
+  if (traces.length === 0 && envelopes.length === 0) {
     return (
       <WorkspaceEmptyState
         icon="⬡"
@@ -754,9 +767,10 @@ export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
       {/* Filter bar */}
       <FilterBar active={activeFilter} onChange={(f) => { setActiveFilter(f); setSelectedStep(null); }} />
 
-      {/* Envelope list for orchestration / waits / errors filters */}
+      {/* Envelope list for orchestration / waits / errors filters, or when
+          the DAG projection is empty (e.g. DeepResearch with no turn_* events) */}
       {showEnvelopeList && (
-        <EnvelopeListView envelopes={filteredEnvelopes} />
+        <EnvelopeListView envelopes={envelopesToShow} />
       )}
 
       {/* DAG view for all / runtime filters */}
