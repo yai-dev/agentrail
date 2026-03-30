@@ -1,0 +1,44 @@
+{
+  "name": "@agentrail/deep-research",
+  "version": "0.0.1",
+  "description": "Reusable Deep Research workflow package for Agentrail examples.",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --force && mkdir -p dist/prompts && cp src/prompts/*.md dist/prompts/",
+    "typecheck": "tsc -b --pretty false --force",
+    "test": "pnpm exec vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@agentrail/knowledge": "workspace:*",
+    "@agentrail/orchestration": "workspace:*",
+    "@agentrail/prompts": "workspace:*",
+    "@agentrail/runtime-core": "workspace:*",
+    "@agentrail/sandbox": "workspace:*",
+    "hono": "^4.7.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "vitest": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yai-dev/agentrail.git",
+    "directory": "packages/deep-research"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "license": "Apache-2.0"
+}

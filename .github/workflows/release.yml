@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create release PR or publish packages
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          commit: "chore: release packages"
+          title: "chore: release packages"
+          version: pnpm version-packages
+          publish: pnpm release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Detect sandbox package release
+        id: sandbox-package
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const publishedPackages = JSON.parse(process.env.PUBLISHED_PACKAGES || "[]");
+          const sandboxPackage = publishedPackages.find((pkg) => pkg.name === "@agentrail/sandbox");
+
+          if (!sandboxPackage) {
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, "published=false\n");
+            process.exit(0);
+          }
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `published=true\nversion=${sandboxPackage.version}\n`);
+          NODE
+
+      - name: Compute sandbox tags
+        id: sandbox-tags
+        if: steps.sandbox-package.outputs.published == 'true'
+        env:
+          VERSION: ${{ steps.sandbox-package.outputs.version }}
+        run: |
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          {
+            echo "version=$VERSION"
+            echo "major=$major"
+            echo "minor=$major.$minor"
+            echo "image=ghcr.io/yai-dev/agentrail-sandbox"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        if: steps.sandbox-package.outputs.published == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: steps.sandbox-package.outputs.published == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push sandbox image
+        if: steps.sandbox-package.outputs.published == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/sandbox
+          push: true
+          tags: |
+            ${{ steps.sandbox-tags.outputs.image }}:${{ steps.sandbox-tags.outputs.version }}
+            ${{ steps.sandbox-tags.outputs.image }}:${{ steps.sandbox-tags.outputs.minor }}
+            ${{ steps.sandbox-tags.outputs.image }}:${{ steps.sandbox-tags.outputs.major }}
+            ${{ steps.sandbox-tags.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.title=agentrail-sandbox
+            org.opencontainers.image.description=Docker-based sandbox execution and browser automation for Agentrail.
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.sandbox-tags.outputs.version }}

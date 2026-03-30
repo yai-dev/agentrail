@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../runtime-core" },
+    { "path": "../orchestration" },
+    { "path": "../knowledge" },
+    { "path": "../prompts" },
+    { "path": "../sandbox" }
+  ]
+}

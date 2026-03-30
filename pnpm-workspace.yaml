@@ -1,0 +1,4 @@
+packages:
+  - "packages/*"
+  - "examples/*"
+  - "docker/sandbox/browser-server"

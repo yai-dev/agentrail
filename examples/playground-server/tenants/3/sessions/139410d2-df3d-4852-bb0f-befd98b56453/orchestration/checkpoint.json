@@ -1,0 +1,26 @@
+{
+  "run": {
+    "id": "orchestration:139410d2-df3d-4852-bb0f-befd98b56453",
+    "status": "running",
+    "initialTaskId": "task:139410d2-df3d-4852-bb0f-befd98b56453:root",
+    "createdAt": "2026-03-30T05:02:25.293Z",
+    "updatedAt": "2026-03-30T05:02:25.293Z"
+  },
+  "tasks": {
+    "task:139410d2-df3d-4852-bb0f-befd98b56453:root": {
+      "id": "task:139410d2-df3d-4852-bb0f-befd98b56453:root",
+      "runId": "orchestration:139410d2-df3d-4852-bb0f-befd98b56453",
+      "kind": "agentrail-default-orchestration",
+      "input": {
+        "tenantId": "3",
+        "userId": "cmgtq5pyj00038f7wnpiwrla9",
+        "sessionId": "139410d2-df3d-4852-bb0f-befd98b56453"
+      },
+      "createdAt": "2026-03-30T05:02:25.293Z"
+    }
+  },
+  "agents": {},
+  "waits": {},
+  "queuedInputs": [],
+  "lastEventId": "b68e746a-f967-4d3d-a4e6-e1541bef748f"
+}

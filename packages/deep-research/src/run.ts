@@ -1,0 +1,197 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2026 The Agentrail Authors
+ */
+
+import { Hono } from "hono";
+import type { Message, Usage } from "@agentrail/runtime-core";
+import { DeepResearchCoordinator } from "./coordinator.js";
+import type { DeepResearchState } from "./types.js";
+import type { DeepResearchRuntimeConfig } from "./runtime.js";
+
+export interface DeepResearchSessionStore {
+  getOrCreate(
+    tenantId: string,
+    userId: string,
+    agentId: string,
+    sessionId?: string,
+  ): Promise<{ sessionId: string }>;
+  getSessionDir(tenantId: string, sessionId: string): string;
+  loadMessages(tenantId: string, sessionId: string): Promise<Message[]>;
+  appendMessages(
+    tenantId: string,
+    sessionId: string,
+    messages: Message[],
+  ): Promise<void>;
+  recordTurn(tenantId: string, sessionId: string, usage: Usage): Promise<void>;
+}
+
+export interface DeepResearchBlockingRunInput {
+  tenantId: string;
+  userId: string;
+  query: string;
+  sessionId?: string;
+  sessionStore: DeepResearchSessionStore;
+  runtime: DeepResearchRuntimeConfig;
+  agentId?: string;
+}
+
+export interface DeepResearchBlockingRunResult {
+  sessionId: string;
+  state: DeepResearchState;
+}
+
+export interface DeepResearchRunRouteOptions {
+  runtime: DeepResearchRuntimeConfig;
+  sessionStore: DeepResearchSessionStore;
+  agentId?: string;
+}
+
+interface DeepResearchRunRequest {
+  query: string;
+  tenantId: string;
+  userId: string;
+  sessionId?: string;
+}
+
+export async function runDeepResearchBlocking(
+  input: DeepResearchBlockingRunInput,
+): Promise<DeepResearchBlockingRunResult> {
+  const sessionInfo = await input.sessionStore.getOrCreate(
+    input.tenantId,
+    input.userId,
+    input.agentId ?? "deep-research",
+    input.sessionId,
+  );
+  const sessionId = sessionInfo.sessionId;
+  const sessionDir = input.sessionStore.getSessionDir(input.tenantId, sessionId);
+  const history = await input.sessionStore.loadMessages(input.tenantId, sessionId);
+
+  const coordinator = new DeepResearchCoordinator({
+    tenantId: input.tenantId,
+    userId: input.userId,
+    sessionId,
+    sessionDir,
+    query: input.query,
+    history,
+    runtime: input.runtime,
+  });
+
+  const state = await coordinator.runBlocking();
+  await persistDeepResearchTurn(
+    input.sessionStore,
+    input.runtime.model.provider,
+    input.runtime.model.modelId,
+    input.tenantId,
+    sessionId,
+    input.query,
+    state.reportMarkdown,
+  );
+
+  return {
+    sessionId,
+    state,
+  };
+}
+
+export function createDeepResearchRunRoute(
+  options: DeepResearchRunRouteOptions,
+): Hono {
+  const run = new Hono();
+
+  run.post("/", async (c) => {
+    let body: DeepResearchRunRequest;
+    try {
+      body = await c.req.json<DeepResearchRunRequest>();
+    } catch {
+      return c.json({ error: "Invalid JSON body" }, 400);
+    }
+
+    const { query, tenantId, userId, sessionId } = body;
+
+    if (!query || typeof query !== "string") {
+      return c.json({ error: "Field 'query' is required and must be a string" }, 400);
+    }
+    if (!tenantId || typeof tenantId !== "string") {
+      return c.json({ error: "Field 'tenantId' is required" }, 400);
+    }
+    if (!userId || typeof userId !== "string") {
+      return c.json({ error: "Field 'userId' is required" }, 400);
+    }
+
+    try {
+      const result = await runDeepResearchBlocking({
+        tenantId,
+        userId,
+        query,
+        sessionId,
+        sessionStore: options.sessionStore,
+        runtime: options.runtime,
+        agentId: options.agentId,
+      });
+
+      return c.json({
+        sessionId: result.sessionId,
+        runId: result.state.run.id,
+        state: result.state,
+      });
+    } catch (error) {
+      return c.json(
+        { error: error instanceof Error ? error.message : String(error) },
+        500,
+      );
+    }
+  });
+
+  return run;
+}
+
+async function persistDeepResearchTurn(
+  sessionStore: Pick<DeepResearchSessionStore, "appendMessages" | "recordTurn">,
+  provider: string,
+  modelId: string,
+  tenantId: string,
+  sessionId: string,
+  userText: string,
+  reportMarkdown: string,
+): Promise<void> {
+  const timestamp = Date.now();
+  const messages: Message[] = [
+    {
+      role: "user",
+      content: userText,
+      timestamp,
+    },
+    {
+      role: "assistant",
+      content: [{ type: "text", text: reportMarkdown }],
+      provider,
+      modelId,
+      usage: zeroUsage(),
+      stopReason: "stop",
+      timestamp: timestamp + 1,
+    },
+  ];
+
+  await Promise.all([
+    sessionStore.appendMessages(tenantId, sessionId, messages),
+    sessionStore.recordTurn(tenantId, sessionId, zeroUsage()),
+  ]);
+}
+
+function zeroUsage(): Usage {
+  return {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    totalTokens: 0,
+    cost: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      total: 0,
+    },
+  };
+}

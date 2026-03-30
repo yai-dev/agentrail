@@ -1,0 +1,18 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/runtime-core" },
+    { "path": "packages/config" },
+    { "path": "packages/tools" },
+    { "path": "packages/memo" },
+    { "path": "packages/knowledge" },
+    { "path": "packages/skills" },
+    { "path": "packages/sandbox" },
+    { "path": "packages/orchestration" },
+    { "path": "packages/events" },
+    { "path": "packages/host" },
+    { "path": "packages/plugin-user-memory" },
+    { "path": "examples/playground-server" },
+    { "path": "examples/playground-ui" }
+  ]
+}

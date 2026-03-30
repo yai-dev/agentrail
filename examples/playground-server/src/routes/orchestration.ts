@@ -1,0 +1,99 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2026 The Agentrail Authors
+ */
+
+import { Hono } from "hono";
+import type {
+  OrchestrationAgent,
+  OrchestrationEvent,
+} from "@agentrail/orchestration";
+import { OrchestrationStore } from "@agentrail/orchestration";
+import { config } from "../config.js";
+import path from "node:path";
+
+const orchestration = new Hono();
+
+interface OrchestrationHistoryResponse {
+  run: {
+    id: string;
+    status: "running" | "completed" | "failed";
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  agents: Array<{
+    id: string;
+    displayName?: string;
+    role: string;
+    status: OrchestrationAgent["status"];
+    createdAt: string;
+    updatedAt: string;
+    closedAt?: string;
+    lastJob?: OrchestrationAgent["lastJob"];
+    mailbox?: {
+      processedEventCount: number;
+      closeRequested: {
+        reason?: string;
+        occurredAt: string;
+      } | null;
+    };
+  }>;
+  events: OrchestrationEvent[];
+}
+
+/** GET /api/sessions/:sessionId/orchestration?tenantId=default
+ *  Returns the current orchestration state for a session.
+ */
+orchestration.get("/:sessionId/orchestration", async (c) => {
+  const { sessionId } = c.req.param();
+  const tenantId = c.req.query("tenantId") ?? "default";
+
+  try {
+    const sessionDir = path.join(config.dataDir, "tenants", tenantId, "sessions", sessionId);
+    const [{ snapshot }, events] = await Promise.all([
+      OrchestrationStore.recoverState(sessionDir),
+      OrchestrationStore.loadEvents(sessionDir),
+    ]);
+
+    const agents = Object.values(snapshot?.agents ?? {}) as OrchestrationAgent[];
+    const agentStates = await Promise.all(
+      agents.map(async (agent) => ({
+        agent,
+        mailboxState: await OrchestrationStore.loadMailboxState(sessionDir, agent.id),
+      })),
+    );
+
+    const response: OrchestrationHistoryResponse = {
+      run: snapshot?.run
+        ? {
+            id: snapshot.run.id,
+            status: snapshot.run.status,
+            createdAt: snapshot.run.createdAt,
+            updatedAt: snapshot.run.updatedAt,
+          }
+        : null,
+      agents: agentStates.map(({ agent, mailboxState }) => ({
+        id: agent.id,
+        displayName: agent.displayName,
+        role: agent.role,
+        status: agent.status,
+        createdAt: agent.createdAt,
+        updatedAt: agent.updatedAt,
+        closedAt: agent.closedAt,
+        lastJob: agent.lastJob,
+        mailbox: {
+          processedEventCount: mailboxState.processedEventCount,
+          closeRequested: mailboxState.closeRequested,
+        },
+      })),
+      events,
+    };
+
+    return c.json(response);
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    return c.json({ error }, 500);
+  }
+});
+
+export { orchestration };

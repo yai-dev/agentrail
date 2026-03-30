@@ -1,0 +1,102 @@
+# Agentrail local application configuration template.
+# Schema version for this file format. Default: 1.
+version: 1
+
+# LLM provider settings used by the playground server and deep-research example.
+llm:
+  # Primary LLM provider name. Default: anthropic.
+  provider: anthropic
+  # Model ID passed to the runtime. Default: claude-sonnet-4-5.
+  modelId: claude-sonnet-4-5
+  # Primary API key for the configured provider. Default: "".
+  # Sensitive value, store carefully in production.
+  apiKey: ""
+  # Optional provider-compatible base URL override. Default: "".
+  baseUrl: ""
+  fallbackApiKeys:
+    # Fallback Anthropic key used when llm.provider=anthropic and llm.apiKey is empty. Default: "".
+    # Sensitive value, store carefully in production.
+    anthropic: ""
+    # Fallback OpenAI key used when llm.provider=openai and llm.apiKey is empty. Default: "".
+    # Sensitive value, store carefully in production.
+    openai: ""
+
+# Search integration used by the deep-research workflow package.
+search:
+  # Search provider name. Default: tavily.
+  provider: tavily
+  # Tavily API key used when search.provider=tavily. Default: "".
+  # Sensitive value, store carefully in production.
+  tavilyApiKey: ""
+
+# Shared filesystem paths for local development data.
+paths:
+  # Base directory for sessions, memory, orchestration state, and sandbox data. Default: ~/.agentrail.
+  dataDir: ~/.agentrail
+
+# Optional UI authentication shared by the example servers.
+auth:
+  # Bearer token required by the UI when set. Default: "".
+  # Sensitive value, store carefully in production.
+  uiSecretToken: ""
+
+# Sandbox runtime settings for browser and command execution.
+sandbox:
+  # Docker image used for sandbox containers. Default: ghcr.io/yai-dev/agentrail-sandbox:latest.
+  image: ghcr.io/yai-dev/agentrail-sandbox:latest
+  # Milliseconds of inactivity before an idle sandbox container is destroyed. Default: 1800000.
+  idleTimeoutMs: 1800000
+
+# Multi-agent orchestration worker behavior.
+orchestration:
+  subagent:
+    # Poll interval for mailbox-based background work, in milliseconds. Default: 500.
+    pollIntervalMs: 500
+    # Development-only fake execution mode. Allowed values: "" | "echo". Default: "".
+    fakeExecution: ""
+
+# Application-specific settings for the bundled examples.
+apps:
+  playgroundServer:
+    # HTTP port for the playground server. Default: 3000.
+    port: 3001
+    compaction:
+      # Trigger session compaction after this many accumulated tokens. Default: 60000.
+      triggerTokens: 60000
+      # Minimum message count required before compaction is allowed. Default: 6.
+      minMessages: 6
+    userMemory:
+      # Enable background user-memory consolidation. Default: true.
+      enabled: true
+      # Minutes a session must be idle before consolidation becomes eligible. Default: 10.
+      idleMinutes: 10
+      # Scan cadence for consolidation jobs, in minutes. Default: 1.
+      scanIntervalMinutes: 1
+      # Minimum hours between consolidation runs for the same user. Default: 24.
+      minIntervalHours: 24
+      # Minimum changed sessions required before consolidation runs. Default: 5.
+      minChangedSessions: 5
+    userPreferenceSummary:
+      # Enable rolling user preference summaries. Default: true.
+      enabled: true
+      # Minimum number of sessions required before a summary is generated. Default: 2.
+      minSessions: 2
+      # Cooldown between summary refreshes, in hours. Default: 24.
+      cooldownHours: 24
+      # Maximum sessions to inspect while building the summary. Default: 10.
+      maxSessionsToRead: 10
+      # Maximum messages to read per summary pass. Default: 200.
+      maxMessagesPerRun: 200
+    skills:
+      # Allow the skill tool to delegate execution to sub-agents. Default: true.
+      delegateToSubAgent: true
+
+  deepResearch:
+    # HTTP port for the deep-research example server. Default: 3200.
+    port: 3002
+
+  playgroundUi:
+    # Port used by the Vite dev server and preview server. Default: 5173.
+    port: 3003
+    # Backend port the UI proxies API requests to during local development. Default: 3000.
+    backendPort: 3001

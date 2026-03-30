@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/config" },
+    { "path": "../../packages/deep-research" },
+    { "path": "../../packages/events" },
+    { "path": "../../packages/host" },
+    { "path": "../../packages/orchestration" },
+    { "path": "../../packages/knowledge" },
+    { "path": "../../packages/memo" },
+    { "path": "../../packages/plugin-user-memory" },
+    { "path": "../../packages/prompts" },
+    { "path": "../../packages/runtime-core" },
+    { "path": "../../packages/sandbox" },
+    { "path": "../../packages/slash-commands" },
+    { "path": "../../packages/skills" },
+    { "path": "../../packages/tools" }
+  ]
+}
