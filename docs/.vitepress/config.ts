@@ -5,10 +5,11 @@ export default defineConfig({
   description:
     "Open-source agent harness framework for building, hosting, and orchestrating tool-using AI agents.",
 
-  // Deployed at https://yai-dev.github.io/agentrail/docs/
-  base: "/agentrail/docs/",
+  // Deployed at https://yai-dev.github.io/agentrail/
+  base: "/agentrail/",
 
   cleanUrls: true,
+  appearance: "force-dark",
 
   // Links pointing to source files or root-level files outside docs/ are valid
   // when browsing on GitHub but don't resolve inside the VitePress site.
@@ -19,7 +20,7 @@ export default defineConfig({
   ],
 
   head: [
-    ["link", { rel: "icon", type: "image/svg+xml", href: "/agentrail/docs/favicon.svg" }],
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/agentrail/favicon.svg" }],
     ["meta", { property: "og:type", content: "website" }],
     [
       "meta",
@@ -32,17 +33,14 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    logo: { src: "/agentrail/docs/favicon.svg", alt: "Agentrail" },
+    logo: { src: "/agentrail/favicon.svg", alt: "Agentrail" },
     siteTitle: "Agentrail",
 
     nav: [
       { text: "Guide", link: "/guides/quickstart" },
       { text: "Concepts", link: "/concepts/agents" },
       { text: "Reference", link: "/reference/host-defaults" },
-      {
-        text: "Roadmap",
-        link: "https://yai-dev.github.io/agentrail/roadmap.html",
-      },
+      { text: "Roadmap", link: "/roadmap" },
       { text: "GitHub", link: "https://github.com/yai-dev/agentrail" },
     ],
 

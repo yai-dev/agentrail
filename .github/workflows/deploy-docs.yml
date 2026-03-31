@@ -1,10 +1,11 @@
-name: Deploy Docs
+name: Deploy Site
 
 on:
   push:
     branches: [master]
     paths:
       - "docs/**"
+      - ".github/workflows/deploy-docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -34,15 +35,12 @@ jobs:
         run: npm run build
         working-directory: docs
 
-      # Checkout gh-pages, copy built files into /docs/ subdirectory,
-      # then commit — leaving the marketing site files (index.html etc.) untouched.
-      - name: Deploy to gh-pages /docs/
+      - name: Deploy to gh-pages root
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/.vitepress/dist
-          destination_dir: docs
-          keep_files: true
-          commit_message: "docs: deploy VitePress build [skip ci]"
+          force_orphan: true
+          commit_message: "chore: deploy site [skip ci]"
           user_name: "github-actions[bot]"
           user_email: "github-actions[bot]@users.noreply.github.com"
