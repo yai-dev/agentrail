@@ -4,11 +4,8 @@ Agentrail is an open-source agent harness framework for building, hosting, and o
 
 It provides a composable runtime core, a hosted server layer, a prompt SDK, multi-agent orchestration, filesystem-backed memory, sandboxed execution, and optional plugins and workflows.
 
-> [!WARNING]
-> Agentrail is still under active development. Its public APIs, package boundaries, and recommended SDK may change before the first GA release. Expect iteration during the pre-GA phase, and treat the first GA version as the point where the core framework surface becomes stable.
-
 > [!NOTE]
-> Agentrail was extracted and reorganized from a real production codebase with the help of coding agents such as Codex and Claude Code. If you prefer a more mature or more conservative option today, you may be better served by established alternatives such as the Claude Agent SDK or other production-proven agent frameworks.
+> Agentrail is in pre-GA development. Public APIs and package boundaries may change before the first stable release. See [ROADMAP.md](ROADMAP.md) for current status and planned milestones.
 
 ## Why Agentrail
 
@@ -141,6 +138,9 @@ sandbox:
 - [Guides](docs/guides/quickstart.md)
 - [Reference](docs/reference/host-defaults.md)
 - [Examples](docs/examples/playground-server.md)
+- [Troubleshooting](docs/guides/troubleshooting.md)
+- [Deployment](docs/guides/deployment.md)
+- [Roadmap](ROADMAP.md)
 
 Recommended concept-first order:
 

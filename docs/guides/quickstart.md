@@ -8,74 +8,74 @@ It is intentionally opinionated:
 - use `@agentrail/prompts` for system prompt composition
 - keep your first app to one hosted profile and one session store
 
+## What You Will Build
+
+A minimal Hono server that accepts a chat request, sends it to a real LLM provider, and returns the assistant response. No mock agents, no echo stubs.
+
 ## Prerequisites
 
-Read this guide after:
+- Node.js 22+
+- pnpm
 
-- [Agents](../concepts/agents.md)
-- [Host](../concepts/host.md)
-- [Profiles](../concepts/profiles.md)
+Set your LLM provider API key as an environment variable:
 
-## What You Need
+```bash
+# Pick one depending on your provider
+export ANTHROPIC_API_KEY="sk-ant-..."
+# or
+export OPENAI_API_KEY="sk-..."
+```
 
-Before you start, make sure you understand these concepts:
+## Scaffold a New App
 
-- a **profile** defines which agent to run and how it is assembled
-- the **host** owns chat/stream request lifecycles
-- the **session store** owns persistent conversation state
-- the **prompt bundle** assembles the system instructions for a profile
+The fastest way to start is with the CLI scaffolding tool:
 
-## Recommended Imports
+```bash
+pnpm create @agentrail/app my-agent
+cd my-agent
+pnpm install
+```
 
-For a first app, start with these packages only:
+This generates a working app with a profile, prompt bundle, and Hono server already wired together. Skip ahead to [Run It](#run-it) if you used the scaffold.
 
-- `@agentrail/runtime-core`
-- `@agentrail/host`
-- `@agentrail/host/defaults`
-- `@agentrail/prompts`
-- `@agentrail/memo`
-- `@agentrail/sandbox` if you want stream + workspace support
+If you prefer to understand each piece, follow the manual setup below.
 
-## Minimal Flow
+## Manual Setup
 
-The recommended path has five steps:
+### 1. Install dependencies
 
-1. Define a prompt bundle with `@agentrail/prompts`
-2. Define a hosted profile with `defineHostedProfile`
-3. Build a profile resolver with `createHostedProfileResolver`
-4. Mount `createChatRoute` and optionally `createStreamRoute`
-5. Provide a session store and, for streaming, a sandbox manager
+```bash
+mkdir my-agent && cd my-agent
+pnpm init
+pnpm add @agentrail/runtime-core @agentrail/host @agentrail/prompts @agentrail/memo hono
+pnpm add -D typescript tsx
+```
 
-## Minimal Example
+### 2. Register LLM providers
+
+Import the built-in provider side-effect modules so the provider registry knows about Anthropic and OpenAI:
 
 ```ts
-import { Hono } from "hono";
-import { defineAgent } from "@agentrail/runtime-core";
-import { SessionManager } from "@agentrail/memo";
-import {
-  createChatRoute,
-  createStreamRoute,
-} from "@agentrail/host";
-import {
-  defineHostedProfile,
-  createHostedProfileResolver,
-} from "@agentrail/host/defaults";
+import "@agentrail/runtime-core/providers";
+```
+
+This single import registers both providers. The provider is selected at runtime based on the `model.provider` field in your agent config.
+
+### 3. Define a prompt bundle
+
+```ts
 import {
   definePromptBundle,
   definePromptFragment,
   renderPrompt,
 } from "@agentrail/prompts";
-```
 
-### 1. Define a prompt bundle
-
-```ts
 const basePrompt = definePromptBundle({
   fragments: [
     definePromptFragment({
       id: "base",
       content: `
-You are a helpful hosted agent.
+You are a helpful assistant.
 Use tools when they reduce uncertainty.
 Keep answers concise unless the user asks for depth.
       `.trim(),
@@ -84,50 +84,43 @@ Keep answers concise unless the user asks for depth.
 });
 ```
 
-### 2. Define a hosted profile
+### 4. Define a hosted profile
 
 ```ts
+import { defineAgent } from "@agentrail/runtime-core";
+import {
+  defineHostedProfile,
+  createHostedProfileResolver,
+} from "@agentrail/host/defaults";
+
 const defaultProfile = defineHostedProfile({
   id: "default",
   name: "Default Agent",
-  prompt: async () => renderPrompt(basePrompt),
-  async createAgent(context) {
+  promptBuilder: async () => renderPrompt(basePrompt),
+  async createAgent() {
     return defineAgent({
       id: "default",
-      description: "Minimal hosted agent",
-      async invoke(input, runtimeContext) {
-        return {
-          role: "assistant",
-          content: [{ type: "text", text: `Echo: ${input}` }],
-          provider: "example",
-          modelId: "example",
-          usage: {
-            inputTokens: 0,
-            outputTokens: 0,
-            cacheReadTokens: 0,
-            cacheWriteTokens: 0,
-            totalTokens: 0,
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-          },
-          stopReason: "stop",
-          timestamp: Date.now(),
-        };
+      model: {
+        provider: "anthropic",       // or "openai"
+        modelId: "claude-sonnet-4-5", // or "gpt-4o"
+        apiKey: process.env.ANTHROPIC_API_KEY ?? process.env.OPENAI_API_KEY,
       },
+      system: renderPrompt(basePrompt),
     });
   },
 });
 ```
 
-### 3. Create a resolver and session store
+### 5. Create a session store and mount routes
 
 ```ts
+import { Hono } from "hono";
+import { SessionManager } from "@agentrail/memo";
+import { createChatRoute } from "@agentrail/host";
+
 const sessionStore = new SessionManager("/tmp/agentrail");
 const resolveProfile = createHostedProfileResolver([defaultProfile]);
-```
 
-### 4. Mount the host routes
-
-```ts
 const app = new Hono();
 
 app.route(
@@ -138,14 +131,28 @@ app.route(
     resolveProfile,
   }),
 );
+
+export default {
+  port: 3000,
+  fetch: app.fetch,
+};
 ```
 
-Add `createStreamRoute(...)` when you need:
+## Run It
 
-- event streaming
-- long-running tool activity
-- workspace visibility
-- orchestration events
+```bash
+npx tsx main.ts
+```
+
+Test with curl:
+
+```bash
+curl -X POST http://localhost:3000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is Agentrail?", "tenantId": "dev", "userId": "user-1"}'
+```
+
+You should see a real LLM response with token usage information.
 
 ## When To Use `createStreamRoute`
 
@@ -171,24 +178,21 @@ The defaults layer is not a black box. It gives you a stable, recommended assemb
 
 You can adopt these one by one and still drop to lower-level host primitives later.
 
-## Common Next Steps
+## Next Steps
 
-After the minimal setup works, most developers continue in this order:
+Now that you have a working agent, continue in this order:
 
-1. Add a better system prompt and variables
-2. Add tools
-3. Add context providers
-4. Add plugins
-5. Add orchestration or workflow packages
+1. [Build a Profile](build-a-profile.md) — customize your agent's identity and capabilities
+2. [Manage Prompts](manage-prompts.md) — compose system prompts from fragments
+3. [Add Tools](add-tools.md) — give the agent domain-specific abilities
+4. [Add Context](add-context.md) — inject request-time information
+5. [Write a Plugin](write-a-plugin.md) — add cross-cutting host behavior
 
-## Next Guides
+## Deeper Reading
 
-- [Build a Profile](build-a-profile.md)
-- [Add Tools](add-tools.md)
-- [Add Context](add-context.md)
-- [Write a Plugin](write-a-plugin.md)
-- [Manage Prompts](manage-prompts.md)
+To understand the concepts behind what you just built:
 
-## Next Step
-
-Once the minimal app shape makes sense, continue with [Build a Profile](build-a-profile.md).
+- [Agents](../concepts/agents.md)
+- [Host](../concepts/host.md)
+- [Profiles](../concepts/profiles.md)
+- [Prompts](../concepts/prompts.md)

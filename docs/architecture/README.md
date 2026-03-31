@@ -7,6 +7,35 @@ It is easiest to understand Agentrail as a stack with two verticals:
 - a **framework vertical** that provides runtime, host, prompts, orchestration, and capabilities
 - an **application vertical** that composes those pieces into hosted apps, profiles, plugins, and workflows
 
+## Architecture Diagram
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Your App  ·  Profiles  ·  Routes  ·  UI                 │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────┐
+│  Plugins & Workflows                                     │
+│  plugin-user-memory  ·  slash-commands  ·  deep-research │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────┐
+│  Host  ·  host/defaults                                  │
+│                                                          │
+│  ◄── prompts        ◄── orchestration                    │
+│  ◄── memo           ◄── knowledge                        │
+│  ◄── skills         ◄── sandbox  ·  tools  ·  events     │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────┐
+│  runtime-core                                            │
+│  Agent Loop  ·  Tool Contract  ·  LLM Provider API       │
+└──────────────────────────────────────────────────────────┘
+
+Arrow direction: top depends on bottom
+◄── = consumed by Host layer
+```
+
 ## Layer Map
 
 ### 1. `runtime-core`
