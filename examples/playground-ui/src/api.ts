@@ -4,6 +4,7 @@
  */
 
 import type { OrchestrationState, OrchestrationStreamEvent, OrchestrationEvent } from "./types/orchestration.js";
+import type { WorkflowTraceEventEnvelope } from "./types/trace.js";
 import { normalizeHistoryEvents } from "./hooks/orchestrationStateReducer.js";
 import type { DeepResearchState, DeepResearchStreamEvent } from "./types/deepResearch.js";
 
@@ -578,6 +579,20 @@ export async function fetchOrchestrationState(
     events: normalizeHistoryEvents(data.events ?? []),
     waits: data.waits ?? [],
   };
+}
+
+export async function fetchSessionTrace(
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<WorkflowTraceEventEnvelope[]> {
+  const res = await fetch(
+    `/api/sessions/${encodeURIComponent(sessionId)}/trace?tenantId=${encodeURIComponent(_tenantId)}`,
+    { signal, headers: authHeaders() },
+  );
+  if (res.status === 401) { dispatchUnauthorized(); return []; }
+  if (!res.ok) return [];
+  const data = await res.json() as { events?: WorkflowTraceEventEnvelope[] };
+  return data.events ?? [];
 }
 
 export async function fetchDeepResearchState(

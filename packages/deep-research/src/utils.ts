@@ -801,6 +801,13 @@ export function selectBlockedFetchDomains(sources: DeepResearchSource[]): string
     .sort();
 }
 
+/** Coerce a value that should be a string array but may come back from LLM as a bare string. */
+function toStringArray(v: unknown): string[] {
+  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
+  if (typeof v === "string" && v.length > 0) return [v];
+  return [];
+}
+
 export function normalizeEvidenceTable(
   rows: DeepResearchEvidenceRow[] | undefined,
   availableSources: DeepResearchSource[],
@@ -817,8 +824,8 @@ export function normalizeEvidenceTable(
           .filter((sourceId) => allowedSourceIds.has(sourceId))
           .slice(0, 5),
         confidence,
-        conflicts: compressAtomicLines((row.conflicts ?? []).map((item) => sanitizeDigestLine(item)).filter(Boolean), 3),
-        notes: compressAtomicLines((row.notes ?? []).map((item) => sanitizeDigestLine(item)).filter(Boolean), 3),
+        conflicts: compressAtomicLines(toStringArray(row.conflicts).map((item) => sanitizeDigestLine(item)).filter(Boolean), 3),
+        notes: compressAtomicLines(toStringArray(row.notes).map((item) => sanitizeDigestLine(item)).filter(Boolean), 3),
       };
     })
     .filter((row) => row.claim && row.supportingSourceIds.length > 0)

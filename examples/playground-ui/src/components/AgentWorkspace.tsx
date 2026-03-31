@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { DisplayToolCall, TurnActions } from "../App";
 import { extractResultText, fetchWorkspaceFiles, fetchWorkspaceFile, fetchBrowserScreenshot, type WorkspaceFileResult } from "../api";
-import type { AgentRunTrace } from "../types/trace";
+import type { AgentRunTrace, WorkflowTraceEventEnvelope } from "../types/trace";
 import { TraceDAGView } from "./TraceDAGView";
 import { AgentTeamPanel } from "./AgentTeamPanel";
 import { DeepResearchPanel } from "./DeepResearchPanel";
@@ -772,7 +772,7 @@ function WorkspaceFilesTab({
       <WorkspaceEmptyState
         icon="◇"
         title="工作区暂时为空"
-        description="当前会话还没有生成可展示的文件。等 Agent 读取、写入或产出文件后，这里会自动出现。"
+        description="当前会话还没有生成可展示的文件。等智能体读取、写入或产出文件后，这里会自动出现。"
       />
     );
   }
@@ -944,6 +944,7 @@ function BrowserTab({
 interface Props {
   turns: TurnActions[];
   traces: AgentRunTrace[];
+  envelopes?: WorkflowTraceEventEnvelope[];
   onClose: () => void;
   sessionId?: string;
   onWidthChange?: (width: number) => void;
@@ -958,6 +959,7 @@ interface Props {
 function AgentWorkspaceInner({
   turns,
   traces,
+  envelopes,
   onClose,
   sessionId,
   onWidthChange,
@@ -1117,7 +1119,7 @@ function AgentWorkspaceInner({
         )}
 
         {activeTab === "trace" && (
-          <TraceDAGView traces={traces} />
+          <TraceDAGView traces={traces} envelopes={envelopes} />
         )}
       </div>
     </div>

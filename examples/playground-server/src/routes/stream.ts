@@ -4,6 +4,8 @@
  */
 
 import { createStreamRoute } from "@agentrail/host";
+import { mkdir, appendFile } from "node:fs/promises";
+import path from "node:path";
 import { DEFAULT_AGENT_ID } from "../agents/index.js";
 import { buildSummarizeFn } from "../agents/summarizer.js";
 import {
@@ -41,6 +43,16 @@ const stream = createStreamRoute({
     });
   },
   handleResolvedRequest: handlePlaygroundDeepResearchModeStream,
+  onTraceEvent: (ctx, envelope) => {
+    const traceDir = path.join(ctx.sessionDir, "trace");
+    void mkdir(traceDir, { recursive: true }).then(() =>
+      appendFile(
+        path.join(traceDir, "events.jsonl"),
+        `${JSON.stringify(envelope)}\n`,
+        "utf8",
+      ),
+    );
+  },
 });
 
 export { stream };

@@ -722,7 +722,7 @@ Snippet: ${source.snippet ?? ""}`)
     const evidenceRows = this.state.steps.flatMap((step) => step.evidenceTable ?? []);
     const evidenceText = evidenceRows
       .map((row) =>
-        `- Claim: ${row.claim}\n  Confidence: ${row.confidence}\n  Supporting sources: ${row.supportingSourceIds.join(", ")}${row.conflicts.length > 0 ? `\n  Conflicts: ${row.conflicts.join(" | ")}` : ""}${row.notes.length > 0 ? `\n  Notes: ${row.notes.join(" | ")}` : ""}`,
+        `- Claim: ${row.claim}\n  Confidence: ${row.confidence}\n  Supporting sources: ${(row.supportingSourceIds ?? []).join(", ")}${(row.conflicts ?? []).length > 0 ? `\n  Conflicts: ${(row.conflicts ?? []).join(" | ")}` : ""}${(row.notes ?? []).length > 0 ? `\n  Notes: ${(row.notes ?? []).join(" | ")}` : ""}`,
       )
       .join("\n");
     const artifactText = this.state.artifacts

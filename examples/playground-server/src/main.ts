@@ -17,6 +17,7 @@ import { sessions } from "./routes/sessions.js";
 import { knowledge } from "./routes/knowledge.js";
 import { orchestration } from "./routes/orchestration.js";
 import { deepResearch } from "./routes/deep-research.js";
+import { trace } from "./routes/trace.js";
 import { commands } from "./routes/commands.js";
 import { sandboxManager } from "./context/index.js";
 import { playgroundPlugins } from "./plugins/index.js";
@@ -44,6 +45,7 @@ app.route("/api/commands", commands);
 app.route("/api/sessions", sessions);
 app.route("/api/sessions", orchestration);
 app.route("/api/sessions", deepResearch);
+app.route("/api/sessions", trace);
 app.route("/api/knowledge", knowledge);
 
 // Pre-pull sandbox image at startup so the first request doesn't wait.
