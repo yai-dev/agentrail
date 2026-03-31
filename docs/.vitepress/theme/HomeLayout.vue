@@ -277,7 +277,7 @@
     <footer class="at-footer">
       <div class="at-footer-inner">
         <div class="at-footer-logo">
-          <span class="at-dot at-dot-g"></span>
+          <img :src="withBase('/logomark-dark.svg')" alt="Agentrail" width="20" height="20" />
           Agentrail
         </div>
         <ul class="at-footer-links">
@@ -308,6 +308,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { withBase } from 'vitepress'
 
 const installCopied = ref(false)
 
@@ -341,7 +342,6 @@ onMounted(() => {
   color: var(--vp-c-text-1);
   font-family: var(--vp-font-family-base);
   min-height: 100vh;
-  padding-top: var(--vp-nav-height, 64px);
 }
 
 /* ─── HERO ─── */
@@ -352,7 +352,7 @@ onMounted(() => {
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 100px 40px 80px;
+  padding: 80px 40px 80px;
 }
 
 .at-eyebrow {

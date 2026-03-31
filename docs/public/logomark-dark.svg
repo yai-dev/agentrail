@@ -1,5 +1,5 @@
 <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="none">
-  <g id="arms" stroke="#0f0f0f" stroke-width="18" stroke-linecap="round">
+  <g stroke="#c4c4c4" stroke-width="18" stroke-linecap="round">
     <path d="M322,256 C365,241 415,213 444,188"/>
     <path d="M303,303 C344,322 399,339 437,341"/>
     <path d="M256,322 C271,365 299,415 324,444"/>
@@ -9,11 +9,9 @@
     <path d="M256,190 C241,147 213,97 188,68"/>
     <path d="M303,209 C322,168 339,113 341,75"/>
   </g>
-  <g id="body">
-    <circle cx="256" cy="256" r="70" fill="#0f0f0f"/>
-    <circle cx="256" cy="256" r="24" fill="#8ab520"/>
-  </g>
-  <g id="tips" fill="#8ab520">
+  <circle cx="256" cy="256" r="70" fill="#1a1a1a"/>
+  <circle cx="256" cy="256" r="24" fill="#c4ff2e"/>
+  <g fill="#c4ff2e">
     <circle cx="444" cy="188" r="14"/>
     <circle cx="437" cy="341" r="14"/>
     <circle cx="324" cy="444" r="14"/>

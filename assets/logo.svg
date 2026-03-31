@@ -1,41 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" width="240" height="48" fill="none">
-  <defs>
-    <marker id="arr" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto">
-      <path d="M0,0.5 L0,4.5 L4.5,2.5 Z" fill="#8ab520"/>
-    </marker>
-    <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#8ab520" stop-opacity="0.2"/>
-      <stop offset="100%" stop-color="#8ab520"/>
-    </linearGradient>
-    <style><![CDATA[
-      @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
-      .wm { font-family: 'DM Mono', 'Courier New', monospace; }
-    ]]></style>
-  </defs>
+<svg viewBox="0 0 1024 256" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <!-- Icon: octopus scaled 0.5x (512→256) -->
+  <g id="icon" transform="scale(0.5)">
+    <g id="arms" stroke="#0f0f0f" stroke-width="18" stroke-linecap="round">
+      <path d="M322,256 C365,241 415,213 444,188"/>
+      <path d="M303,303 C344,322 399,339 437,341"/>
+      <path d="M256,322 C271,365 299,415 324,444"/>
+      <path d="M209,303 C190,344 174,399 171,437"/>
+      <path d="M190,256 C147,271 97,299 68,324"/>
+      <path d="M209,209 C168,190 113,174 75,171"/>
+      <path d="M256,190 C241,147 213,97 188,68"/>
+      <path d="M303,209 C322,168 339,113 341,75"/>
+    </g>
+    <circle cx="256" cy="256" r="70" fill="#0f0f0f"/>
+    <circle cx="256" cy="256" r="24" fill="#8ab520"/>
+    <g fill="#8ab520">
+      <circle cx="444" cy="188" r="14"/>
+      <circle cx="437" cy="341" r="14"/>
+      <circle cx="324" cy="444" r="14"/>
+      <circle cx="171" cy="437" r="14"/>
+      <circle cx="68"  cy="324" r="14"/>
+      <circle cx="75"  cy="171" r="14"/>
+      <circle cx="188" cy="68"  r="14"/>
+      <circle cx="341" cy="75"  r="14"/>
+    </g>
+  </g>
 
-  <!-- trail: left to middle -->
-  <line x1="14" y1="27" x2="24" y2="20.5" stroke="url(#tg)" stroke-width="1.6" marker-end="url(#arr)" stroke-linecap="round"/>
-  <!-- trail: middle to right -->
-  <line x1="27" y1="20.5" x2="35.5" y2="25" stroke="#8ab520" stroke-width="1.6" marker-end="url(#arr)" stroke-linecap="round"/>
-
-  <!-- left node: solid (origin agent) -->
-  <circle cx="11" cy="28" r="5.5" fill="#0f0f0f" stroke="#d0d0d0" stroke-width="1"/>
-  <circle cx="11" cy="28" r="2.2" fill="#8ab520"/>
-
-  <!-- middle node: dimmed (orchestration layer) -->
-  <circle cx="25.5" cy="18.5" r="5.5" fill="none" stroke="#b0b0b0" stroke-width="1"/>
-  <circle cx="25.5" cy="18.5" r="2" fill="#b0b0b0" fill-opacity="0.5"/>
-
-  <!-- right node: outline accent (output agent) -->
-  <circle cx="38" cy="26" r="5.5" fill="none" stroke="#8ab520" stroke-width="1.5"/>
-  <circle cx="38" cy="26" r="2" fill="#8ab520" fill-opacity="0.45"/>
-
-  <!-- motion dots -->
-  <circle cx="18.8" cy="24" r="1" fill="#8ab520" fill-opacity="0.4"/>
-  <circle cx="31.2" cy="22.5" r="0.7" fill="#8ab520" fill-opacity="0.3"/>
-
-  <!-- wordmark: "agent" bold -->
-  <text x="54" y="31" class="wm" font-size="20" font-weight="500" fill="#0a0a0a" letter-spacing="-0.3">agent</text>
-  <!-- wordmark: "rail" regular, accent -->
-  <text x="131" y="31" class="wm" font-size="20" font-weight="400" fill="#8ab520" letter-spacing="-0.3">rail</text>
+  <!-- Wordmark -->
+  <text y="166" font-family="'Courier New', Courier, monospace" font-size="108" letter-spacing="-2">
+    <tspan x="296" font-weight="700" fill="#0a0a0a">agent</tspan><tspan font-weight="400" fill="#8ab520">rail</tspan>
+  </text>
 </svg>

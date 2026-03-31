@@ -5,9 +5,7 @@ import './custom.css'
 
 export default {
   extends: DefaultTheme,
-  Layout() {
-    return h(DefaultTheme.Layout, null, {})
-  },
+  Layout: () => h(DefaultTheme.Layout),
   enhanceApp({ app }) {
     app.component('HomeLayout', HomeLayout)
   },

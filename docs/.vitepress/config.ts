@@ -33,7 +33,7 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    logo: { src: "/agentrail/favicon.svg", alt: "Agentrail" },
+    logo: { src: "/logomark-dark.svg", alt: "Agentrail" },
     siteTitle: "Agentrail",
 
     nav: [
