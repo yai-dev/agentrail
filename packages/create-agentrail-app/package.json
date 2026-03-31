@@ -1,5 +1,5 @@
 {
-  "name": "create-agentrail-app",
+  "name": "@agentrail/create-agentrail-app",
   "version": "0.0.1",
   "description": "Create a new Agentrail application from a template",
   "type": "module",
