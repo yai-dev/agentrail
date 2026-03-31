@@ -1,32 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none">
-  <defs>
-    <marker id="arr" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto">
-      <path d="M0,0.5 L0,4.5 L4.5,2.5 Z" fill="#c4ff2e"/>
-    </marker>
-    <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#c4ff2e" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#c4ff2e"/>
-    </linearGradient>
-  </defs>
-
-  <!-- trail: left to middle -->
-  <line x1="14" y1="27" x2="24" y2="20.5" stroke="url(#tg)" stroke-width="1.6" marker-end="url(#arr)" stroke-linecap="round"/>
-  <!-- trail: middle to right -->
-  <line x1="27" y1="20.5" x2="35.5" y2="25" stroke="#c4ff2e" stroke-width="1.6" marker-end="url(#arr)" stroke-linecap="round"/>
-
-  <!-- left node: solid (origin agent) -->
-  <circle cx="11" cy="28" r="5.5" fill="#0a0a0a" stroke="#3a3a3a" stroke-width="1"/>
-  <circle cx="11" cy="28" r="2.2" fill="#c4ff2e"/>
-
-  <!-- middle node: dimmed (orchestration layer) -->
-  <circle cx="25.5" cy="18.5" r="5.5" fill="#141414" stroke="#2a2a2a" stroke-width="1"/>
-  <circle cx="25.5" cy="18.5" r="2" fill="#8ab520" fill-opacity="0.7"/>
-
-  <!-- right node: outline (output agent) -->
-  <circle cx="38" cy="26" r="5.5" fill="#0a0a0a" stroke="#c4ff2e" stroke-width="1.5"/>
-  <circle cx="38" cy="26" r="2" fill="#c4ff2e" fill-opacity="0.5"/>
-
-  <!-- motion dots -->
-  <circle cx="18.8" cy="24" r="1" fill="#c4ff2e" fill-opacity="0.4"/>
-  <circle cx="31.2" cy="22.5" r="0.7" fill="#c4ff2e" fill-opacity="0.3"/>
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <g id="arms" stroke="#0f0f0f" stroke-width="18" stroke-linecap="round">
+    <path d="M322,256 C365,241 415,213 444,188"/>
+    <path d="M303,303 C344,322 399,339 437,341"/>
+    <path d="M256,322 C271,365 299,415 324,444"/>
+    <path d="M209,303 C190,344 174,399 171,437"/>
+    <path d="M190,256 C147,271 97,299 68,324"/>
+    <path d="M209,209 C168,190 113,174 75,171"/>
+    <path d="M256,190 C241,147 213,97 188,68"/>
+    <path d="M303,209 C322,168 339,113 341,75"/>
+  </g>
+  <g id="body">
+    <circle cx="256" cy="256" r="70" fill="#0f0f0f"/>
+    <circle cx="256" cy="256" r="24" fill="#8ab520"/>
+  </g>
+  <g id="tips" fill="#8ab520">
+    <circle cx="444" cy="188" r="14"/>
+    <circle cx="437" cy="341" r="14"/>
+    <circle cx="324" cy="444" r="14"/>
+    <circle cx="171" cy="437" r="14"/>
+    <circle cx="68"  cy="324" r="14"/>
+    <circle cx="75"  cy="171" r="14"/>
+    <circle cx="188" cy="68"  r="14"/>
+    <circle cx="341" cy="75"  r="14"/>
+  </g>
 </svg>
