@@ -43,7 +43,6 @@ export class DefaultSubAgentRuntime implements SubAgentRuntime {
     return {
       provider: config.provider,
       modelId: config.modelId,
-      ...(config.apiKey ? { apiKey: config.apiKey } : {}),
       ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
     };
   }

@@ -149,7 +149,6 @@ async function runSummarizeUserPreferences(tenantId: string, userId: string): Pr
     model: {
       provider: config.provider,
       modelId: config.modelId,
-      ...(config.apiKey ? { apiKey: config.apiKey } : {}),
       ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
     },
     system: SYSTEM_PROMPT,

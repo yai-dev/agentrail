@@ -71,28 +71,32 @@ If you want to run the included examples first instead of building a host from s
 pnpm install
 ```
 
-2. Review and update the local YAML config:
+1. Review and update the local YAML config:
 
 ```bash
 sed -n '1,240p' config/agentrail.yaml
 ```
 
-3. Set at least these fields in `config/agentrail.yaml`:
+1. Set these non-sensitive fields in `config/agentrail.yaml`:
 
 - `llm.provider`
 - `llm.modelId`
-- `llm.apiKey`
-- `search.tavilyApiKey` if you want deep-research search support
+- `search.provider`
 - `auth.uiSecretToken` if you want the UI to require an access token
 
-4. Start the example apps:
+1. Set secrets via environment variables (do not store secrets in YAML):
+
+- `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+- `TAVILY_API_KEY` if you want deep-research search support
+
+1. Start the example apps:
 
 ```bash
 pnpm dev:playground-server
 pnpm dev:playground-ui
 ```
 
-5. Open the UI and start with the default playground flow.  
+1. Open the UI and start with the default playground flow.  
    If you only want the workflow example, use:
 
 ```bash

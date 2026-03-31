@@ -23,13 +23,16 @@ The most important fields for this example are:
 
 - `llm.provider`
 - `llm.modelId`
-- `llm.apiKey`
 - `llm.baseUrl`
 - `search.provider`
-- `search.tavilyApiKey`
 - `paths.dataDir`
 - `auth.uiSecretToken`
 - `apps.deepResearch.port`
+
+Set secrets via environment variables:
+
+- `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+- `TAVILY_API_KEY`
 
 ## Endpoints
 

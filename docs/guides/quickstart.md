@@ -19,6 +19,8 @@ A minimal Hono server that accepts a chat request, sends it to a real LLM provid
 
 Set your LLM provider API key as an environment variable:
 
+Do not store API keys in `agentrail.yaml`.
+
 ```bash
 # Pick one depending on your provider
 export ANTHROPIC_API_KEY="sk-ant-..."

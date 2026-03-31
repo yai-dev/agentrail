@@ -5,6 +5,7 @@
 
 
 import Docker from "dockerode";
+import tar from "tar-stream";
 import * as net from "node:net";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
@@ -306,15 +307,34 @@ export class SandboxManager {
   }
 
   async writeFileInContainer(sessionId: string, containerPath: string, content: string): Promise<void> {
-    const b64 = Buffer.from(content, "utf-8").toString("base64");
-    const dir = containerPath.includes("/") ? containerPath.replace(/\/[^/]+$/, "") : "/tmp";
-    const result = await this.runInSandbox(sessionId, [
-      "sh", "-c",
-      `mkdir -p '${dir}' && printf '%s' '${b64}' | base64 -d > '${containerPath}'`,
-    ]);
-    if (result.exitCode !== 0) {
-      throw new Error(result.stderr || `Failed to write '${containerPath}' (exit ${result.exitCode})`);
+    const dirPath = path.posix.dirname(containerPath);
+    const fileName = path.posix.basename(containerPath);
+
+    if (!fileName || fileName === "/" || fileName === ".") {
+      throw new Error(`Invalid file path '${containerPath}'`);
     }
+
+    const mkdirResult = await this.runInSandbox(sessionId, ["mkdir", "-p", dirPath]);
+    if (mkdirResult.exitCode !== 0) {
+      throw new Error(mkdirResult.stderr || `Failed to create directory '${dirPath}' (exit ${mkdirResult.exitCode})`);
+    }
+
+    const pack = tar.pack();
+    const contentBuffer = Buffer.from(content, "utf-8");
+    await new Promise<void>((resolve, reject) => {
+      pack.entry({ name: fileName, size: contentBuffer.length }, contentBuffer, (err?: Error | null) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+    pack.finalize();
+
+    const containerName = `sandbox-${sessionId}`;
+    const container = this.docker.getContainer(containerName);
+    await container.putArchive(pack, { path: dirPath });
   }
 
   getBrowserUrl(sessionId: string, endpointPath: string): string {

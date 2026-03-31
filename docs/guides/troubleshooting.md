@@ -18,7 +18,6 @@ This registers both the Anthropic and OpenAI providers.
 
 - Check that the correct environment variable is set (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`).
 - Make sure the key is not expired or revoked.
-- If using `agentrail.yaml`, verify that `llm.apiKey` is not an empty string.
 - If using a custom `baseUrl`, confirm the endpoint accepts your key format.
 
 ### Wrong model or provider

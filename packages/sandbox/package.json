@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b --pretty false",
     "test": "vitest run --passWithNoTests"
   },
   "main": "./dist/index.js",
@@ -22,11 +22,13 @@
   "dependencies": {
     "@agentrail/runtime-core": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
-    "dockerode": "^4.0.4"
+    "dockerode": "^4.0.4",
+    "tar-stream": "^3.1.8"
   },
   "devDependencies": {
     "@types/dockerode": "^3.3.38",
     "@types/node": "^22.0.0",
+    "@types/tar-stream": "^3.1.4",
     "vitest": "^2.0.0"
   },
   "repository": {

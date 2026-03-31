@@ -32,7 +32,6 @@ export const userMemoryConsolidationService = new UserMemoryConsolidationService
   {
     provider: config.provider,
     modelId: config.modelId,
-    apiKey: config.apiKey,
     baseUrl: config.baseUrl,
     enabled: config.userMemory.enabled,
     idleMinutes: config.userMemory.idleMinutes,

@@ -8,26 +8,13 @@ llm:
   provider: anthropic
   # Model ID passed to the runtime. Default: claude-sonnet-4-5.
   modelId: claude-sonnet-4-5
-  # Primary API key for the configured provider. Default: "".
-  # Sensitive value, store carefully in production.
-  apiKey: ""
   # Optional provider-compatible base URL override. Default: "".
   baseUrl: ""
-  fallbackApiKeys:
-    # Fallback Anthropic key used when llm.provider=anthropic and llm.apiKey is empty. Default: "".
-    # Sensitive value, store carefully in production.
-    anthropic: ""
-    # Fallback OpenAI key used when llm.provider=openai and llm.apiKey is empty. Default: "".
-    # Sensitive value, store carefully in production.
-    openai: ""
 
 # Search integration used by the deep-research workflow package.
 search:
   # Search provider name. Default: tavily.
   provider: tavily
-  # Tavily API key used when search.provider=tavily. Default: "".
-  # Sensitive value, store carefully in production.
-  tavilyApiKey: ""
 
 # Shared filesystem paths for local development data.
 paths:

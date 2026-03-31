@@ -21,12 +21,7 @@ export interface AgentrailConfig {
   llm: {
     provider: string;
     modelId: string;
-    apiKey: string;
     baseUrl: string;
-    fallbackApiKeys: {
-      anthropic: string;
-      openai: string;
-    };
   };
   search: {
     provider: string;
@@ -103,7 +98,6 @@ export interface SubagentRuntimeConfig {
 export interface SharedResolvedAppConfig {
   provider: string;
   modelId: string;
-  apiKey?: string;
   baseUrl?: string;
   searchProvider: string;
   tavilyApiKey?: string;
@@ -137,12 +131,7 @@ export const DEFAULT_AGENTRAIL_CONFIG: AgentrailConfig = {
   llm: {
     provider: "anthropic",
     modelId: "claude-sonnet-4-5",
-    apiKey: "",
     baseUrl: "",
-    fallbackApiKeys: {
-      anthropic: "",
-      openai: "",
-    },
   },
   search: {
     provider: "tavily",
@@ -346,14 +335,7 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   );
 
   const llm = getObject(root, "llm", [], DEFAULT_AGENTRAIL_CONFIG.llm as UnknownRecord);
-  assertNoUnknownKeys(llm, ["provider", "modelId", "apiKey", "baseUrl", "fallbackApiKeys"], ["llm"]);
-  const fallbackApiKeys = getObject(
-    llm,
-    "fallbackApiKeys",
-    ["llm"],
-    DEFAULT_AGENTRAIL_CONFIG.llm.fallbackApiKeys as UnknownRecord,
-  );
-  assertNoUnknownKeys(fallbackApiKeys, ["anthropic", "openai"], ["llm", "fallbackApiKeys"]);
+  assertNoUnknownKeys(llm, ["provider", "modelId", "baseUrl"], ["llm"]);
 
   const search = getObject(root, "search", [], DEFAULT_AGENTRAIL_CONFIG.search as UnknownRecord);
   assertNoUnknownKeys(search, ["provider", "tavilyApiKey"], ["search"]);
@@ -452,22 +434,7 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
     llm: {
       provider: getString(llm, "provider", ["llm"], DEFAULT_AGENTRAIL_CONFIG.llm.provider),
       modelId: getString(llm, "modelId", ["llm"], DEFAULT_AGENTRAIL_CONFIG.llm.modelId),
-      apiKey: getString(llm, "apiKey", ["llm"], DEFAULT_AGENTRAIL_CONFIG.llm.apiKey),
       baseUrl: getString(llm, "baseUrl", ["llm"], DEFAULT_AGENTRAIL_CONFIG.llm.baseUrl),
-      fallbackApiKeys: {
-        anthropic: getString(
-          fallbackApiKeys,
-          "anthropic",
-          ["llm", "fallbackApiKeys"],
-          DEFAULT_AGENTRAIL_CONFIG.llm.fallbackApiKeys.anthropic,
-        ),
-        openai: getString(
-          fallbackApiKeys,
-          "openai",
-          ["llm", "fallbackApiKeys"],
-          DEFAULT_AGENTRAIL_CONFIG.llm.fallbackApiKeys.openai,
-        ),
-      },
     },
     search: {
       provider: getString(search, "provider", ["search"], DEFAULT_AGENTRAIL_CONFIG.search.provider),
@@ -674,14 +641,6 @@ export function loadAgentrailConfig(
 }
 
 function resolveSharedFields(config: AgentrailConfig): SharedResolvedAppConfig {
-  const fallbackApiKey =
-    config.llm.provider === "anthropic"
-      ? config.llm.fallbackApiKeys.anthropic
-      : config.llm.provider === "openai"
-        ? config.llm.fallbackApiKeys.openai
-        : "";
-  const resolvedApiKey = normalizeOptionalString(config.llm.apiKey)
-    ?? normalizeOptionalString(fallbackApiKey);
   const baseUrl = normalizeOptionalString(config.llm.baseUrl);
   const tavilyApiKey = normalizeOptionalString(config.search.tavilyApiKey);
   const uiSecretToken = normalizeOptionalString(config.auth.uiSecretToken);
@@ -689,7 +648,6 @@ function resolveSharedFields(config: AgentrailConfig): SharedResolvedAppConfig {
   return {
     provider: config.llm.provider,
     modelId: config.llm.modelId,
-    ...(resolvedApiKey ? { apiKey: resolvedApiKey } : {}),
     ...(baseUrl ? { baseUrl } : {}),
     searchProvider: config.search.provider,
     ...(tavilyApiKey ? { tavilyApiKey } : {}),
