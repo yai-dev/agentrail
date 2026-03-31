@@ -1,5 +1,3 @@
 ---
-layout: page
+at-home: true
 ---
-
-<HomeLayout />
