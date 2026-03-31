@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+/* ─── BRAND & FONTS ─── */
+:root {
+  --vp-c-brand-1: #c4ff2e;
+  --vp-c-brand-2: #8ab520;
+  --vp-c-brand-3: rgba(196, 255, 46, 0.14);
+  --vp-c-brand-soft: rgba(196, 255, 46, 0.08);
+
+  --vp-font-family-base: 'DM Sans', system-ui, sans-serif;
+  --vp-font-family-mono: 'DM Mono', 'Courier New', monospace;
+
+  /* accent shortcuts used by HomeLayout */
+  --at-accent: #c4ff2e;
+  --at-accent-dim: #8ab520;
+  --at-accent-faint: rgba(196, 255, 46, 0.08);
+  --at-accent-faint-2: rgba(196, 255, 46, 0.04);
+}
+
+/* ─── DARK PALETTE ─── */
+.dark {
+  --vp-c-bg: #060606;
+  --vp-c-bg-soft: #0f0f0f;
+  --vp-c-bg-muted: #141414;
+  --vp-c-bg-elv: #0a0a0a;
+
+  --vp-c-text-1: #eceae3;
+  --vp-c-text-2: #b8b6b0;
+  --vp-c-text-3: #888880;
+
+  --vp-c-border: #1c1c1c;
+  --vp-c-divider: #1c1c1c;
+  --vp-c-gutter: #060606;
+
+  --vp-nav-bg-color: rgba(6, 6, 6, 0.9);
+  --vp-sidebar-bg-color: #060606;
+  --vp-local-nav-bg-color: #060606;
+
+  /* code blocks */
+  --vp-code-block-bg: #0f0f0f;
+  --vp-code-line-highlight-color: rgba(196, 255, 46, 0.05);
+  --vp-code-copy-code-bg: #141414;
+  --vp-code-copy-code-hover-bg: #1c1c1c;
+
+  /* inline code */
+  --vp-c-default-soft: #0f0f0f;
+}
+
+/* ─── NAV ─── */
+.VPNav {
+  border-bottom-color: var(--vp-c-border) !important;
+  background: var(--vp-nav-bg-color) !important;
+  backdrop-filter: blur(12px);
+}
+
+.VPNavBarTitle .title {
+  font-family: 'DM Serif Display', Georgia, serif !important;
+  letter-spacing: 0.05em;
+  color: var(--vp-c-text-1) !important;
+}
+
+/* active nav link uses brand color */
+.VPNavBarMenuLink.active,
+.VPNavBarMenuLink:hover {
+  color: var(--at-accent) !important;
+}
+
+/* ─── SIDEBAR ─── */
+.VPSidebarItem.is-active > .item .link .text {
+  color: var(--at-accent) !important;
+}
+
+.VPSidebarItem .link:hover .text {
+  color: var(--at-accent) !important;
+}
+
+/* ─── CONTENT TYPOGRAPHY ─── */
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+.vp-doc h2 {
+  border-top-color: var(--vp-c-border);
+}
+
+.vp-doc a {
+  color: var(--at-accent);
+  text-decoration: none;
+}
+
+.vp-doc a:hover {
+  text-decoration: underline;
+}
+
+/* ─── CODE ─── */
+.vp-doc :not(pre) > code {
+  background: #0f0f0f;
+  color: var(--at-accent);
+  border: 1px solid #1c1c1c;
+  border-radius: 2px;
+  font-size: 0.85em;
+}
+
+/* ─── BUTTONS ─── */
+.VPButton.brand {
+  background: var(--at-accent) !important;
+  border-color: var(--at-accent) !important;
+  color: #060606 !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.04em !important;
+  border-radius: 2px !important;
+  font-weight: 500 !important;
+}
+
+.VPButton.brand:hover {
+  background: #d4ff50 !important;
+  border-color: #d4ff50 !important;
+}
+
+.VPButton.alt {
+  background: transparent !important;
+  border-color: #262626 !important;
+  color: #b8b6b0 !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.04em !important;
+  border-radius: 2px !important;
+}
+
+.VPButton.alt:hover {
+  border-color: #666660 !important;
+  color: #eceae3 !important;
+}
+
+/* ─── LOCAL SEARCH ─── */
+.VPLocalSearchBox {
+  --vp-local-search-bg: #0f0f0f;
+  --vp-local-search-result-bg: #060606;
+  --vp-local-search-highlight-bg: rgba(196, 255, 46, 0.15);
+  --vp-local-search-highlight-text: var(--at-accent);
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track { background: var(--vp-c-bg); }
+::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #262626; }
+
+/* ─── FOOTER ─── */
+.VPFooter {
+  border-top-color: #1c1c1c !important;
+  background: #060606 !important;
+}
