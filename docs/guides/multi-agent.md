@@ -1,6 +1,6 @@
 # Multi-Agent
 
-Use `@agentrail/orchestration` when one hosted agent needs delegated work.
+Use `@agentrail/orchestration` when one hosted agent needs to delegate work to managed sub-agents.
 
 ## Prerequisites
 
@@ -10,16 +10,146 @@ Read this guide after:
 - [Concepts: Events and Orchestration](../concepts/events-and-orchestration.md)
 - [Host Primitives Reference](../reference/host-primitives.md)
 
-## Typical Workflow
+## When To Use Orchestration
 
-1. Create or reuse an orchestration manager
-2. Spawn sub-agents
-3. Send work items
-4. Wait for completion or idle state
-5. Close sub-agents when work is done
+Use orchestration when:
 
-Deep Research is the main example of this pattern in the repository.
+- A single agent cannot handle the full task alone
+- Work can be parallelized across multiple sub-agents
+- You need structured wait/completion semantics
+- You want recovery from process restarts
 
-## Next Step
+If you just need a single agent with tools, orchestration is unnecessary.
 
-If you want a concrete reference implementation, continue with [Deep Research Example](../examples/deep-research.md).
+## The Five-Step Pattern
+
+### 1. Create an OrchestrationManager
+
+The manager holds the full state of a run. It is created once per session and persists state to the session directory:
+
+```ts
+import { OrchestrationManager } from "@agentrail/orchestration";
+
+const manager = await OrchestrationManager.create({
+  sessionDir: "/path/to/session",
+  runtime: agentFactory,
+});
+```
+
+The `runtime` parameter is an `OrchestrationAgentFactory` — it knows how to create managed agent instances for each role.
+
+### 2. Start a Run
+
+Each orchestration session begins with a single run and an initial task:
+
+```ts
+await manager.startRun({
+  runId: "run-1",
+  initialTask: {
+    id: "task-1",
+    kind: "research",
+    input: { query: "Explain quantum computing" },
+  },
+});
+```
+
+### 3. Spawn Sub-Agents and Send Work
+
+Create sub-agents and send them inputs:
+
+```ts
+const worker = await manager.spawnAgent({
+  id: "worker-1",
+  role: "researcher",
+});
+
+await manager.sendInput({
+  id: "input-1",
+  agentId: "worker-1",
+  payload: { instruction: "Research the basics of quantum computing" },
+});
+```
+
+Each sub-agent has a mailbox. Inputs are queued and delivered one at a time. The manager tracks job starts and completions automatically.
+
+### 4. Wait for Results
+
+Block until sub-agents finish:
+
+```ts
+const result = await manager.waitForAgents({
+  id: "wait-1",
+  agentId: "worker-1",
+  kind: "agent-idle",
+  description: "Wait for researcher to finish",
+});
+
+// result.resolution contains the outcome
+```
+
+Wait supports `match: "all"` (default) or `match: "any"` for multiple agents:
+
+```ts
+await manager.waitForAgents({
+  id: "wait-all",
+  agentId: "worker-1",
+  agentIds: ["worker-1", "worker-2", "worker-3"],
+  kind: "agent-idle",
+  description: "Wait for all researchers",
+  match: "all",
+});
+```
+
+You can also set `timeoutAt` for time-bounded waits.
+
+### 5. Close Agents and Complete the Run
+
+```ts
+await manager.closeAgent({ id: "close-1", agentId: "worker-1" });
+await manager.completeRun({ status: "completed" });
+```
+
+## How It Looks From the Agent Side
+
+In a typical hosted setup, the parent agent does not call `OrchestrationManager` directly. Instead, the host layer provides orchestration tools:
+
+| Tool | Purpose |
+|------|---------|
+| `spawn-agent` | Create a sub-agent with a role |
+| `send-input` | Send a work item to a sub-agent |
+| `wait-agent` | Block until agents reach a condition |
+| `close-agent` | Shut down a sub-agent |
+
+The parent agent uses these tools like any other runtime tool. The host layer translates tool calls into `OrchestrationManager` method calls behind the scenes.
+
+## State and Recovery
+
+All orchestration events are persisted to disk as an append-only event log. On startup, `OrchestrationManager.create()` replays the log to reconstruct the full in-memory state.
+
+This means:
+
+- Sub-agent state survives process restarts
+- Queued inputs are redelivered after recovery
+- Pending waits are re-evaluated
+
+## Subscribing to Events
+
+Use `manager.subscribe()` to observe orchestration state changes in real-time:
+
+```ts
+const unsubscribe = manager.subscribe(({ event, snapshot }) => {
+  console.log(event.type, snapshot.run?.status);
+});
+```
+
+The host layer uses this to forward orchestration events to the UI via SSE.
+
+## Repository Example
+
+The Deep Research workflow is the main example of multi-agent orchestration in this repository. See [Deep Research Example](../examples/deep-research.md).
+
+## Related Docs
+
+- [Events and Orchestration](../concepts/events-and-orchestration.md)
+- [Host Primitives Reference](../reference/host-primitives.md)
+- [Deep Research Example](../examples/deep-research.md)

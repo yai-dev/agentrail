@@ -16,23 +16,29 @@ pnpm install
 
 ## Local Configuration
 
-Agentrail examples now read local app configuration from:
+Agentrail examples read local app configuration from:
 
 ```text
 config/agentrail.yaml
 ```
 
-This file is the single source of truth for local example development. It includes:
+This file controls non-sensitive runtime settings such as:
 
-- LLM provider and model settings
-- search integration settings
-- filesystem paths
-- UI auth token
+- LLM provider name and model ID
 - sandbox image and idle timeout
 - orchestration sub-agent worker settings
 - example app ports and feature toggles
+- filesystem paths
 
-Edit `config/agentrail.yaml` directly instead of creating `.env` files.
+**Secrets (API keys, auth tokens) should be set via environment variables, not in the YAML file.** The config loader respects these environment variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `ANTHROPIC_API_KEY` | Anthropic LLM provider key |
+| `OPENAI_API_KEY` | OpenAI LLM provider key |
+| `TAVILY_API_KEY` | Tavily search integration key |
+
+The YAML fields `llm.apiKey`, `search.tavilyApiKey`, and `auth.uiSecretToken` exist as fallbacks for local-only development but should never contain real credentials in committed files.
 
 ## Daily Development Flow
 
