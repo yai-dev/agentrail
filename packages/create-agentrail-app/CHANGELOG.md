@@ -1,5 +1,13 @@
 # @agentrail/create-agentrail-app
 
+## 0.1.1
+
+### Patch Changes
+
+- [#17](https://github.com/yai-dev/agentrail/pull/17) [`0ef15c2`](https://github.com/yai-dev/agentrail/commit/0ef15c2a2a290c77e90e60afa300e0bf03e403a3) Thanks [@yai-dev](https://github.com/yai-dev)! - Fix missing shebang line causing CLI to fail on execution
+
+  Added `#!/usr/bin/env node` as the first line of `src/index.ts` so the compiled `dist/index.js` is correctly identified as a Node.js script by the OS. Without this, running `npx @agentrail/create-agentrail-app` failed with "Permission denied" and "Syntax error" because the shell tried to interpret the JavaScript file as a shell script.
+
 ## 0.1.0
 
 ### Minor Changes
