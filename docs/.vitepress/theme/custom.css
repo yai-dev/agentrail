@@ -46,6 +46,12 @@
   --vp-c-default-soft: #0f0f0f;
 }
 
+/* ─── NAV LOGO ─── */
+.VPNavBarTitle .logo {
+  width: 24px !important;
+  height: 24px !important;
+}
+
 /* ─── NAV ─── */
 .VPNav {
   border-bottom-color: var(--vp-c-border) !important;
