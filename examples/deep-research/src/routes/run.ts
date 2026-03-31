@@ -14,7 +14,6 @@ const run = createDeepResearchRunRoute({
     model: {
       provider: config.provider,
       modelId: config.modelId,
-      ...(config.apiKey ? { apiKey: config.apiKey } : {}),
       ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
     },
     searchProvider: config.searchProvider,

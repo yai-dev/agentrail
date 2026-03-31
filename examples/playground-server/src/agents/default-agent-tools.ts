@@ -19,7 +19,6 @@ export function getModelConfig() {
   return {
     provider: config.provider,
     modelId: config.modelId,
-    ...(config.apiKey ? { apiKey: config.apiKey } : {}),
     ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
   };
 }

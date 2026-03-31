@@ -107,7 +107,6 @@ knowledge.post("/:kbId/documents/stream", async (c) => {
         modelConfig: {
           provider: config.provider,
           modelId: config.modelId,
-          ...(config.apiKey ? { apiKey: config.apiKey } : {}),
           ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
         },
         onEvent: async (event) => {

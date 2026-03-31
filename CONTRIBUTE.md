@@ -33,12 +33,12 @@ This file controls non-sensitive runtime settings such as:
 **Secrets (API keys, auth tokens) should be set via environment variables, not in the YAML file.** The config loader respects these environment variables:
 
 | Variable | Purpose |
-|----------|---------|
+| ---------- | --------- |
 | `ANTHROPIC_API_KEY` | Anthropic LLM provider key |
 | `OPENAI_API_KEY` | OpenAI LLM provider key |
 | `TAVILY_API_KEY` | Tavily search integration key |
 
-The YAML fields `llm.apiKey`, `search.tavilyApiKey`, and `auth.uiSecretToken` exist as fallbacks for local-only development but should never contain real credentials in committed files.
+Store secrets in environment variables only. Do not add real credentials to `config/agentrail.yaml`.
 
 ## Daily Development Flow
 
