@@ -94,4 +94,4 @@ Use this for container orchestrator liveness and readiness probes.
 
 ## Limitations
 
-The current storage layer is filesystem-based. For horizontal scaling across multiple server instances, you would need a shared filesystem or a custom `AgentrailSessionStore` implementation backed by a database. See [ROADMAP.md](../../ROADMAP.md) for planned improvements.
+The current storage layer is filesystem-based. For horizontal scaling across multiple server instances, you would need a shared filesystem or a custom `AgentrailSessionStore` implementation backed by a database. See the [Roadmap](https://yai-dev.github.io/agentrail/roadmap.html) for planned improvements.
