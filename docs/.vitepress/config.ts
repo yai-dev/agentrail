@@ -10,8 +10,13 @@ export default defineConfig({
 
   cleanUrls: true,
 
-  // Links to source files within the monorepo don't resolve inside the docs site
-  ignoreDeadLinks: [/\/examples\/playground-ui\/src\//],
+  // Links pointing to source files or root-level files outside docs/ are valid
+  // when browsing on GitHub but don't resolve inside the VitePress site.
+  ignoreDeadLinks: [
+    /\.\.\/\.\.\/packages\//,
+    /\.\.\/\.\.\/examples\//,
+    /\.\.\/\.\.\/ROADMAP/,
+  ],
 
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/agentrail/docs/favicon.svg" }],
