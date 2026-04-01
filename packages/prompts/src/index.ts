@@ -58,7 +58,39 @@ const LAYER_ORDER: PromptLayerName[] = [
   "mode",
 ];
 
-const fileCache = new Map<string, CachedPromptFile>();
+/**
+ * A per-instance prompt file loader with its own mtime-based cache.
+ * Using an instance rather than a module-level map prevents cache state
+ * from bleeding between test runs and between independent PromptBuilder
+ * instances.
+ */
+export class PromptLoader {
+  private cache = new Map<string, CachedPromptFile>();
+
+  loadFile(filePath: string, options: LoadPromptFileOptions = {}): string {
+    const { stripMetadata = true, vars = {} } = options;
+    const stats = statSync(filePath);
+    const cached = this.cache.get(filePath);
+
+    let raw: string;
+    if (cached && cached.mtimeMs === stats.mtimeMs) {
+      raw = cached.raw;
+    } else {
+      raw = readFileSync(filePath, "utf8");
+      this.cache.set(filePath, { mtimeMs: stats.mtimeMs, raw });
+    }
+
+    const normalized = stripMetadata ? stripPromptMetadata(raw) : raw.trim();
+    return renderPrompt(normalized, vars);
+  }
+
+  clearCache(): void {
+    this.cache.clear();
+  }
+}
+
+// Module-level loader kept for backward compatibility with loadPromptFile().
+const moduleLoader = new PromptLoader();
 
 export function definePromptFragment<T extends PromptFragment>(fragment: T): T {
   return fragment;
@@ -68,8 +100,9 @@ export function definePromptBundle<T extends PromptBundle>(bundle: T): T {
   return bundle;
 }
 
+/** @deprecated Use a PromptLoader instance or createPromptBuilder instead. */
 export function clearPromptFileCache(): void {
-  fileCache.clear();
+  moduleLoader.clearCache();
 }
 
 export function stripPromptMetadata(content: string): string {
@@ -90,39 +123,25 @@ export function renderPrompt(
   });
 }
 
+/** @deprecated Use a PromptLoader instance for isolated caching. */
 export function loadPromptFile(
   filePath: string,
   options: LoadPromptFileOptions = {},
 ): string {
-  const { stripMetadata = true, vars = {} } = options;
-  const stats = statSync(filePath);
-  const cached = fileCache.get(filePath);
-
-  let raw: string;
-  if (cached && cached.mtimeMs === stats.mtimeMs) {
-    raw = cached.raw;
-  } else {
-    raw = readFileSync(filePath, "utf8");
-    fileCache.set(filePath, {
-      mtimeMs: stats.mtimeMs,
-      raw,
-    });
-  }
-
-  const normalized = stripMetadata ? stripPromptMetadata(raw) : raw.trim();
-  return renderPrompt(normalized, vars);
+  return moduleLoader.loadFile(filePath, options);
 }
 
 export function createPromptBuilder(bundle: PromptBundle): PromptBuilder {
+  const loader = new PromptLoader();
   return {
     render(options: PromptRenderOptions = {}): string {
       const source =
         options.bundle ??
         (options.overlay ? mergePromptBundles(bundle, options.overlay) : bundle);
-      return renderPromptBundle(source, options.vars);
+      return renderPromptBundle(source, options.vars, loader);
     },
     clearCache() {
-      clearPromptFileCache();
+      loader.clearCache();
     },
   };
 }
@@ -130,6 +149,7 @@ export function createPromptBuilder(bundle: PromptBundle): PromptBuilder {
 function renderPromptBundle(
   bundle: PromptBundle,
   vars: PromptVars = {},
+  loader: PromptLoader = moduleLoader,
 ): string {
   const mergedVars = {
     ...(bundle.vars ?? {}),
@@ -148,7 +168,7 @@ function renderPromptBundle(
       ...(layer.vars ?? {}),
     };
     for (const fragment of materializeLayer(layer)) {
-      fragments.push(renderPromptFragment(fragment, layerVars));
+      fragments.push(renderPromptFragment(fragment, layerVars, loader));
     }
   }
 
@@ -158,9 +178,9 @@ function renderPromptBundle(
     .join("\n\n");
 }
 
-function renderPromptFragment(fragment: PromptFragment, vars: PromptVars): string {
+function renderPromptFragment(fragment: PromptFragment, vars: PromptVars, loader: PromptLoader = moduleLoader): string {
   if (fragment.filePath) {
-    return loadPromptFile(fragment.filePath, {
+    return loader.loadFile(fragment.filePath, {
       stripMetadata: fragment.stripMetadata,
       vars,
     });
