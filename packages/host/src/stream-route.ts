@@ -5,7 +5,7 @@
 
 import { Hono } from "hono";
 import { streamText } from "hono/streaming";
-import { estimateMessageTokens } from "@agentrail/memo";
+import { runCompactionIfNeeded } from "./compaction.js";
 import type { Message, TransformContextFn, Usage } from "@agentrail/runtime-core";
 import { isRuntimeError } from "@agentrail/runtime-core";
 import type { SandboxManager } from "@agentrail/sandbox";
@@ -278,27 +278,27 @@ export function createStreamRoute(
         }
 
         const allMessages = await options.sessionStore.loadAllMessages(tenantId, sid);
-        if (
-          allMessages.length >= options.compaction.minMessages &&
-          estimateMessageTokens(allMessages) > options.compaction.triggerTokens
-        ) {
-          await writeEvent({ type: "context_compaction_start" });
-          maybeTraceEvent({ type: "context_compaction_start" });
-          await options.sessionStore.compactIfNeeded(
-            tenantId,
-            sid,
-            options.summarize,
-            {
-              preloadedMessages: allMessages,
-              triggerTokens: options.compaction.triggerTokens,
-              workspaceSnapshot: await options.sandboxManager
-                .listWorkspace(sid)
-                .catch(() => undefined),
+        await runCompactionIfNeeded(
+          options.sessionStore,
+          tenantId,
+          sid,
+          allMessages,
+          options.summarize,
+          options.compaction,
+          {
+            workspaceSnapshot: await options.sandboxManager
+              .listWorkspace(sid)
+              .catch(() => undefined),
+            onBeforeCompact: async () => {
+              await writeEvent({ type: "context_compaction_start" });
+              maybeTraceEvent({ type: "context_compaction_start" });
             },
-          );
-          await writeEvent({ type: "context_compaction_end" });
-          maybeTraceEvent({ type: "context_compaction_end" });
-        }
+            onAfterCompact: async () => {
+              await writeEvent({ type: "context_compaction_end" });
+              maybeTraceEvent({ type: "context_compaction_end" });
+            },
+          },
+        );
 
         const history = await options.sessionStore.loadMessagesWithBudget(tenantId, sid);
         const transformContext = await resolveStreamTransformContext(

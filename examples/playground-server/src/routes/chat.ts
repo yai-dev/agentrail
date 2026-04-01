@@ -5,14 +5,20 @@
 
 import { createChatRoute } from "@agentrail/host";
 import { DEFAULT_AGENT_ID } from "../agents/index.js";
+import { buildSummarizeFn } from "../agents/summarizer.js";
 import { buildContextProviders, sessionManager } from "../context/index.js";
+import { config } from "../config.js";
 import { playgroundPlugins } from "../plugins/index.js";
 import { resolvePlaygroundProfile } from "../profiles/default-profile.js";
 import { handlePlaygroundDeepResearchMode } from "../chat/deep-research.js";
 
+const summarize = buildSummarizeFn();
+
 const chat = createChatRoute({
   defaultAgentId: DEFAULT_AGENT_ID,
   sessionStore: sessionManager,
+  summarize,
+  compaction: config.compaction,
   plugins: playgroundPlugins,
   resolveProfile: resolvePlaygroundProfile,
   getContextProviders: ({ tenantId, userId, sessionId }) =>
