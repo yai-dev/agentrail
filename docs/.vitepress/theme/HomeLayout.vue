@@ -299,7 +299,7 @@
           ></li>
         </ul>
         <p class="at-footer-meta">
-          Pre-GA · APIs may change · © 2025 Agentrail contributors
+          Pre-GA · APIs may change before GA · © 2026 Agentrail contributors
         </p>
       </div>
     </footer>

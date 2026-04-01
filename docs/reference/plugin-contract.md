@@ -36,13 +36,72 @@ The current plugin contract is defined by `AgentrailPlugin` in:
 
 - [packages/host/src/types.ts](../../packages/host/src/types.ts)
 
-The main capabilities are:
+### `AgentrailPlugin` interface
 
-- process lifecycle hooks
-- chat interception
-- request lifecycle hooks
-- context providers
-- attachment handling
+```ts
+interface AgentrailPlugin {
+  /** Stable identifier used in diagnostics and assembly logs */
+  name: string;
+  /** Runs when the host starts the plugin lifecycle */
+  start?(): void | Promise<void>;
+  /** Runs when the host shuts plugins down */
+  stop?(): void | Promise<void>;
+  /** Intercept a chat request before the host runs the normal profile flow */
+  interceptChatRequest?(
+    context: AgentrailChatRequestContext,
+  ): Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
+  /** Static context providers contributed by this plugin */
+  contextProviders?: ContextProvider[];
+  /** Inspect uploaded files and return extra context text */
+  attachmentHandler?: AttachmentHandler;
+  /** Runs at the start of every chat or stream request */
+  onRequestStart?(ctx: AgentrailRequestLifecycleContext): void | Promise<void>;
+  /** Runs after the request lifecycle completes */
+  onRequestEnd?(ctx: AgentrailRequestLifecycleContext): void | Promise<void>;
+  /** Runs after the resulting turn has been persisted */
+  onTurnPersisted?(ctx: AgentrailRequestLifecycleContext): void | Promise<void>;
+}
+```
+
+### `AgentrailRequestLifecycleContext`
+
+```ts
+interface AgentrailRequestLifecycleContext {
+  kind: "chat" | "stream";
+  tenantId: string;
+  userId: string;
+  sessionId: string;
+  agentId: string;
+}
+```
+
+### `AttachmentHandler`
+
+```ts
+interface AttachmentFile {
+  name: string;
+  mimeType: string;
+  containerPath: string;
+  sizeKb: number;
+}
+
+interface AttachmentHandlerResult {
+  contextText?: string;
+}
+
+type AttachmentHandler = (
+  files: AttachmentFile[],
+) => Promise<AttachmentHandlerResult | null> | AttachmentHandlerResult | null;
+```
+
+### `ContextProvider`
+
+```ts
+type ContextProvider = (
+  context: { tenantId: string; userId: string; sessionId: string },
+  messages: Message[],
+) => Promise<Message[]> | Message[];
+```
 
 ## Contract Surface
 
@@ -50,21 +109,16 @@ The main capabilities are:
 
 A stable plugin identifier for diagnostics and assembly.
 
-### `start`
+### `start` / `stop`
 
-Runs when the host application starts the plugin lifecycle.
+Runs when the host starts or shuts down the plugin lifecycle.
 
-Use it for:
+Use `start` for:
 
-- starting timers
+- starting timers and background processes
 - bootstrapping plugin-owned services
-- connecting lightweight host-side background processes
 
-### `stop`
-
-Runs when the host application shuts plugins down.
-
-Use it to clean up anything started in `start`.
+Use `stop` to clean up anything started in `start`.
 
 ### `interceptChatRequest`
 
@@ -75,6 +129,8 @@ This is useful for:
 - slash commands
 - admin-only request handling
 - special command parsing that does not belong in the main runtime agent
+
+Returns `null` to let the request proceed normally, or a response body to short-circuit.
 
 ### `contextProviders`
 
@@ -112,17 +168,87 @@ Runs after the host has persisted the resulting turn.
 
 Use it for behaviors that depend on the conversation state already being durable.
 
-## Hook Context
+## Complete Example Plugin
 
-Lifecycle hooks receive an `AgentrailRequestLifecycleContext`, which currently includes:
+A plugin that combines all hook types:
 
-- `kind`
-- `tenantId`
-- `userId`
-- `sessionId`
-- `agentId`
+```ts
+import type { AgentrailPlugin, ContextProvider } from "@agentrail/host";
 
-This makes plugins suitable for multi-tenant host behavior without forcing them to understand the entire request body shape.
+// --- Context provider ---
+const datestampProvider: ContextProvider = async (ctx, messages) => {
+  return [
+    {
+      role: "user",
+      content: `[System note: Today is ${new Date().toISOString().slice(0, 10)}. Tenant: ${ctx.tenantId}]`,
+    },
+    ...messages,
+  ];
+};
+
+// --- Background heartbeat ---
+let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+
+// --- Full plugin ---
+export const observabilityPlugin: AgentrailPlugin = {
+  name: "observability",
+
+  start() {
+    heartbeatTimer = setInterval(() => {
+      console.log(JSON.stringify({ event: "heartbeat", ts: Date.now() }));
+    }, 60_000);
+  },
+
+  stop() {
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+  },
+
+  // Intercept slash commands before normal agent execution
+  interceptChatRequest(ctx) {
+    if (ctx.request.message === "/ping") {
+      return { status: 200, body: { text: "pong" } };
+    }
+    return null; // continue normally
+  },
+
+  // Inject a datestamp message before conversation history
+  contextProviders: [datestampProvider],
+
+  // Inject a hint about uploaded files
+  attachmentHandler(files) {
+    if (files.length === 0) return null;
+    const list = files.map((f) => `- ${f.name} (${f.mimeType}, ${f.sizeKb} KB)`).join("\n");
+    return { contextText: `Uploaded files:\n${list}` };
+  },
+
+  onRequestStart(ctx) {
+    console.log(JSON.stringify({ event: "request_start", ...ctx }));
+  },
+
+  onRequestEnd(ctx) {
+    console.log(JSON.stringify({ event: "request_end", ...ctx }));
+  },
+
+  onTurnPersisted(ctx) {
+    console.log(JSON.stringify({ event: "turn_persisted", sessionId: ctx.sessionId }));
+  },
+};
+```
+
+Register in route assembly:
+
+```ts
+import { createStreamRoute } from "@agentrail/host";
+import { observabilityPlugin } from "./plugins/observability.js";
+
+app.route(
+  "/api/stream",
+  createStreamRoute({
+    // ...
+    plugins: [observabilityPlugin],
+  }),
+);
+```
 
 ## Execution Model
 

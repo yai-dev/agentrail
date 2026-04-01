@@ -1,143 +1,349 @@
 # Prompt SDK Reference
 
-`@agentrail/prompts` provides the shared prompt-loading and composition model.
+`@agentrail/prompts` provides the shared prompt composition and loading model used across profiles, sub-agents, and workflow packages.
 
 ## When To Read This Page
 
 Read this page when:
 
-- your prompts are growing beyond one or two string literals
-- you need layering, overrides, or file-backed prompt loading
-- you want to understand how Agentrail expects prompts to be structured
+- your prompts are growing beyond a single string literal
+- you need layering, file-backed loading, or variable interpolation
+- you want to understand the Agentrail prompt model before building a profile
 
-It exists so Agentrail profiles, sub-agent runtimes, and workflow packages can all use the same prompt assembly model instead of each inventing a loader and override system.
+The SDK exists so every part of the framework — profiles, sub-agent runtimes, workflow packages — uses the same assembly model instead of inventing its own loader.
 
-## Mental Model
+---
 
-The prompt SDK is built around three ideas:
+## Core Types
 
-- **fragments**: small prompt units with stable identity
-- **bundles**: ordered collections of fragments
-- **builders/renderers**: the runtime layer that composes, overrides, and renders final prompt text
+```ts
+// A named prompt unit
+interface PromptFragment {
+  key: string;
+  content?: string;      // inline content, OR
+  filePath?: string;     // file path (mutually exclusive with content)
+  stripMetadata?: boolean; // strip <!-- --> frontmatter (default: true for loadFile)
+}
 
-This lets you evolve prompts without turning every profile into one large string literal.
+// A layer in the four-level model
+interface PromptLayer {
+  fragments?: PromptFragment[];
+  replace?: Record<string, PromptFragment>; // override a fragment by key
+  vars?: PromptVars;
+}
+
+// A full prompt composed of up to four layers
+interface PromptBundle {
+  vars?: PromptVars;       // bundle-level default variables
+  base?: PromptLayer;
+  capability?: PromptLayer;
+  profile?: PromptLayer;
+  mode?: PromptLayer;
+}
+
+type PromptVars = Record<string, string | number | boolean | null | undefined>;
+type PromptLayerName = "base" | "capability" | "profile" | "mode";
+```
+
+Layers are rendered in order: `base → capability → profile → mode`. Each layer's fragments are joined with double newlines.
+
+---
 
 ## Main APIs
 
-- `definePromptFragment`
-- `definePromptBundle`
-- `createPromptBuilder`
-- `loadPromptFile`
-- `renderPrompt`
-
-## API Roles
-
 ### `definePromptFragment`
 
-Defines a named prompt fragment.
+Defines a named prompt fragment. Returns the fragment unchanged — exists for type safety and IDE autocomplete.
 
-Use a fragment when you want a prompt unit that is:
+```ts
+import { definePromptFragment } from "@agentrail/prompts";
 
-- easy to reuse
-- easy to override by id
-- small enough to reason about independently
+// Inline content
+export const baseInstructions = definePromptFragment({
+  key: "base.instructions",
+  content: `
+You are a helpful AI assistant. Be concise, accurate, and professional.
+When uncertain, ask clarifying questions rather than guessing.
+  `.trim(),
+});
 
-Typical fragment categories:
+// File-backed (loaded at render time, mtime-cached)
+export const safetyRules = definePromptFragment({
+  key: "base.safety",
+  filePath: new URL("./safety.md", import.meta.url).pathname,
+  stripMetadata: true, // strips <!-- --> frontmatter comments (default: true)
+});
 
-- base behavioral instructions
-- tool-usage rules
-- safety/guardrail rules
-- domain-specific context
-- mode-specific instructions
+// With a variable placeholder
+export const personaFragment = definePromptFragment({
+  key: "profile.persona",
+  content: "Your name is ${agentName}. Your role is ${role}.",
+});
+```
+
+---
 
 ### `definePromptBundle`
 
-Defines an ordered bundle of fragments.
+Defines an ordered bundle of fragments across the four layers. Returns the bundle unchanged — exists for type safety.
 
-Use bundles for:
+```ts
+import { definePromptBundle } from "@agentrail/prompts";
+import { baseInstructions, safetyRules, personaFragment } from "./fragments.js";
 
-- a hosted profile system prompt
-- a sub-agent runtime prompt
-- workflow role prompts such as planner / researcher / reporter
+export const supportBundle = definePromptBundle({
+  // Bundle-level default variables (overridable at render time)
+  vars: {
+    agentName: "Support Agent",
+    role: "customer support assistant",
+  },
+
+  base: {
+    fragments: [baseInstructions, safetyRules],
+  },
+
+  capability: {
+    fragments: [
+      definePromptFragment({
+        key: "capability.tools",
+        content: "You have access to file editing and search tools.",
+      }),
+    ],
+  },
+
+  profile: {
+    fragments: [personaFragment],
+  },
+  // mode layer is optional — used for workflow-specific overrides
+});
+```
+
+---
 
 ### `createPromptBuilder`
 
-Creates a builder that can compose bundles, merge layers, inject variables, and apply overrides before rendering.
+Creates a per-instance builder from a bundle. The builder holds its own `PromptLoader` cache (isolated — no shared state between instances or test runs).
 
-This is the piece to use when you want:
+```ts
+import { createPromptBuilder } from "@agentrail/prompts";
+import { supportBundle } from "./prompts/support-bundle.js";
 
-- layered prompt assembly
-- environment- or profile-specific overrides
-- runtime variable injection
+// Create once per profile or per request, not once globally
+const builder = createPromptBuilder(supportBundle);
 
-### `loadPromptFile`
+// Render with default variables from the bundle
+const system = builder.render();
 
-Loads a file-backed prompt fragment from markdown.
+// Render with variable overrides
+const systemWithContext = builder.render({
+  vars: {
+    agentName: "Alex",
+    role: "senior support specialist",
+  },
+});
 
-This is the recommended file-backed path when you want prompts to live outside source string literals.
+// Render with an overlay bundle (merges on top of the base bundle)
+const systemWithMode = builder.render({
+  overlay: {
+    mode: {
+      fragments: [
+        definePromptFragment({
+          key: "mode.research",
+          content: "Focus only on technical documentation questions.",
+        }),
+      ],
+    },
+  },
+});
+
+// Render with an entirely different bundle (replaces the base bundle)
+const systemFromOtherBundle = builder.render({
+  bundle: otherBundle,
+});
+```
+
+#### `PromptBuilder` interface
+
+```ts
+interface PromptBuilder {
+  render(options?: {
+    vars?: PromptVars;
+    overlay?: PromptBundle;  // merge on top of the base bundle
+    bundle?: PromptBundle;   // replace the base bundle entirely
+  }): string;
+  clearCache(): void;        // clear the internal mtime cache
+}
+```
+
+---
 
 ### `renderPrompt`
 
-Renders a final prompt string from one bundle or from a builder result.
+A standalone function that interpolates `${variable}` placeholders in a plain string. Used internally by the bundle renderer.
 
-## Supported Capabilities
+```ts
+import { renderPrompt } from "@agentrail/prompts";
 
-- fragment composition
-- file-backed prompts
-- variable interpolation
-- metadata stripping
-- simple layered bundle overrides
+const template = "Hello, ${name}! You are working on ${project}.";
+const rendered = renderPrompt(template, { name: "Alice", project: "Agentrail" });
+// → "Hello, Alice! You are working on Agentrail."
+
+// Unresolved variables are left as-is (not thrown):
+const partial = renderPrompt("Hello ${name}, your id is ${id}.", { name: "Alice" });
+// → "Hello Alice, your id is ${id}."
+```
+
+Variable syntax: `${key}` where `key` matches `[A-Za-z0-9_]+`. Values are coerced to string; `null` and `undefined` become `""`.
+
+---
+
+### `loadPromptFile` _(deprecated)_
+
+> **Deprecated.** `loadPromptFile` uses a module-level singleton cache that leaks state across test runs and independent instances. Migrate to `createPromptBuilder` instead.
+
+**Migration:**
+
+```ts
+// Before (deprecated)
+import { loadPromptFile } from "@agentrail/prompts";
+const text = loadPromptFile("/path/to/system.md");
+
+// After — use builder.loadFile or a PromptLoader instance
+import { createPromptBuilder, definePromptBundle } from "@agentrail/prompts";
+const builder = createPromptBuilder(
+  definePromptBundle({
+    base: {
+      fragments: [{ key: "main", filePath: "/path/to/system.md" }],
+    },
+  }),
+);
+const text = builder.render();
+```
+
+---
+
+## End-to-End Example
+
+A complete prompt setup for a hosted profile:
+
+```ts
+// prompts/fragments.ts
+import { definePromptFragment } from "@agentrail/prompts";
+
+export const behaviorFragment = definePromptFragment({
+  key: "base.behavior",
+  content: `
+You are a concise, accurate assistant.
+Never guess — ask for clarification when uncertain.
+Today's date is \${currentDate}.
+  `.trim(),
+});
+
+export const toolsFragment = definePromptFragment({
+  key: "capability.tools",
+  content: "You can read and write files using the provided file tools.",
+});
+
+export const personaFragment = definePromptFragment({
+  key: "profile.persona",
+  filePath: new URL("./persona.md", import.meta.url).pathname,
+});
+```
+
+```ts
+// prompts/bundle.ts
+import { definePromptBundle } from "@agentrail/prompts";
+import { behaviorFragment, toolsFragment, personaFragment } from "./fragments.js";
+
+export const agentBundle = definePromptBundle({
+  vars: { currentDate: new Date().toISOString().slice(0, 10) },
+  base: { fragments: [behaviorFragment] },
+  capability: { fragments: [toolsFragment] },
+  profile: { fragments: [personaFragment] },
+});
+```
+
+```ts
+// profiles/my-profile.ts
+import { defineAgent } from "@agentrail/runtime-core";
+import { defineHostedProfile } from "@agentrail/host/defaults";
+import { createPromptBuilder } from "@agentrail/prompts";
+import { agentBundle } from "../prompts/bundle.js";
+
+export const myProfile = defineHostedProfile({
+  id: "default",
+  name: "Default Agent",
+
+  promptBuilder: () => {
+    const builder = createPromptBuilder(agentBundle);
+    return builder.render({
+      vars: { currentDate: new Date().toISOString().slice(0, 10) },
+    });
+  },
+
+  createAgent: async (ctx) => {
+    const builder = createPromptBuilder(agentBundle);
+    const system = builder.render();
+    return defineAgent({
+      id: "default",
+      model: {
+        provider: "anthropic",
+        modelId: "claude-sonnet-4-5",
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      },
+      system,
+      tools: [],
+    });
+  },
+});
+```
+
+---
 
 ## Layering Strategy
 
-The recommended layering order in Agentrail is:
+The four-layer model serves a specific purpose:
 
-1. `base`
-2. `capability`
-3. `profile`
-4. `mode` or `workflow`
+| Layer        | Purpose                     | Examples                                        |
+| ------------ | --------------------------- | ----------------------------------------------- |
+| `base`       | General behavior rules      | Safety, output formatting, uncertainty handling |
+| `capability` | Available tool descriptions | File tools, KB access, skills                   |
+| `profile`    | Role/persona/mission        | "You are a support agent for Acme Corp"         |
+| `mode`       | Workflow-specific narrowing | "Focus only on the research phase"              |
 
-This means:
+A workflow package typically overrides the `mode` layer without touching `base` or `profile`.
 
-- base fragments define general behavior
-- capability fragments describe available tools, memory, or host capabilities
-- profile fragments define the role/persona/mission
-- mode/workflow fragments narrow the prompt for a specific path such as deep research
-
-## Variables
-
-Variable interpolation is intentionally simple.
-
-Use it for data such as:
-
-- profile name
-- runtime mode
-- current date
-- tenant or environment hints
-
-Avoid using variable interpolation as a full template language. If a prompt has highly conditional structure, prefer composing different fragments or bundles instead.
+---
 
 ## Recommended File Organization
 
-For most apps, this works well:
-
-```text
+```
 prompts/
-  base/
-  capabilities/
+  fragments/
+    behavior.ts
+    tools.ts
+    safety.md
   profiles/
-  workflows/
+    support.ts
+    researcher.ts
+  bundles/
+    support-bundle.ts
+    researcher-bundle.ts
 ```
 
-Then define one bundle per hosted profile or workflow role.
+Define one bundle per hosted profile or workflow role. Keep fragment files small and focused.
+
+---
 
 ## What To Avoid
 
-Avoid these patterns:
+- One giant system prompt string with no structure
+- Multiple independent loaders with different metadata stripping rules
+- Embedding prompts directly in route files
+- Sharing a `PromptBuilder` instance across requests (it carries a file cache that can become stale)
 
-- one giant system prompt string with no structure
-- multiple loaders with different metadata stripping rules
-- embedding all prompts directly into route files
-- putting profile prompt logic into host route glue
+## Related Docs
 
-The prompt SDK is meant to keep prompt structure explicit and evolvable as your host grows.
+- [Concepts: Prompts](../concepts/prompts.md)
+- [Manage Prompts Guide](../guides/manage-prompts.md)
+- [Build a Profile Guide](../guides/build-a-profile.md)

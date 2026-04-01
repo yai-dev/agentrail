@@ -54,49 +54,24 @@ import {
   defineHostedProfile,
   createHostedProfileResolver,
 } from "@agentrail/host/defaults";
-import { definePromptBundle, definePromptFragment, renderPrompt } from "@agentrail/prompts";
-
-const supportPrompt = definePromptBundle({
-  fragments: [
-    definePromptFragment({
-      id: "support-base",
-      content: `
-You are a customer support assistant.
-Ask clarifying questions when the request is ambiguous.
-Use tools only when needed.
-      `.trim(),
-    }),
-  ],
-});
 
 export const supportProfile = defineHostedProfile({
   id: "support",
   name: "Support Agent",
-  prompt: async () => renderPrompt(supportPrompt),
-  async createAgent(context, onSubAgentEvent) {
-    return defineAgent({
+  createAgent: async () =>
+    defineAgent({
       id: "support",
-      description: "Minimal support profile",
-      async invoke(input) {
-        return {
-          role: "assistant",
-          content: [{ type: "text", text: `Support reply: ${input}` }],
-          provider: "example",
-          modelId: "example",
-          usage: {
-            inputTokens: 0,
-            outputTokens: 0,
-            cacheReadTokens: 0,
-            cacheWriteTokens: 0,
-            totalTokens: 0,
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-          },
-          stopReason: "stop",
-          timestamp: Date.now(),
-        };
+      model: {
+        provider: "anthropic",
+        modelId: "claude-sonnet-4-5",
+        apiKey: process.env.ANTHROPIC_API_KEY,
       },
-    });
-  },
+      system: `You are a customer support assistant.
+Ask clarifying questions when the request is ambiguous.
+Use tools only when needed.`,
+      tools: [],
+      maxTurns: 20,
+    }),
 });
 
 export const resolveProfile = createHostedProfileResolver([supportProfile]);
@@ -204,6 +179,3 @@ Continue with:
 - [Add Context](add-context.md)
 - [Manage Prompts](manage-prompts.md)
 
-## Next Step
-
-If your profile still needs capabilities, continue with [Add Tools](add-tools.md) or [Add Context](add-context.md).
