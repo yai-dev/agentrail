@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/skills",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Filesystem-backed skill delegation and sub-agent execution for Agentrail.",
   "type": "module",
   "files": [
