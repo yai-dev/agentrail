@@ -43,7 +43,7 @@ export function createDefaultToolset(
       (tool): tool is RuntimeTool => Boolean(tool),
     ),
   ];
-  return tools.sort((a, b) => a.name.localeCompare(b.name));
+  return tools.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
 }
 
 /**
