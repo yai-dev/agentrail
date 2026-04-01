@@ -116,7 +116,7 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
       "tenantId" | "userId" | "sessionId"
     >,
   ): Promise<void> {
-    if (manager.getSnapshot().run) {
+    if (Object.keys(manager.getSnapshot().runs).length > 0) {
       return;
     }
 

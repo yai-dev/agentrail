@@ -104,14 +104,16 @@ export function cloneOrchestrationSnapshot(
 }
 
 function isRunResumable(snapshot: OrchestrationSnapshot): boolean {
-  return (
-    snapshot.run?.status !== "completed" && snapshot.run?.status !== "failed"
+  const runs = Object.values(snapshot.runs);
+  if (runs.length === 0) return true;
+  return runs.some(
+    (run) => run.status !== "completed" && run.status !== "failed",
   );
 }
 
 export function createEmptyOrchestrationSnapshot(): OrchestrationSnapshot {
   return {
-    run: null,
+    runs: {},
     tasks: {},
     agents: {},
     waits: {},
@@ -133,7 +135,7 @@ export function applyOrchestrationEvent(
         createdAt: event.occurredAt,
       };
 
-      snapshot.run = {
+      snapshot.runs[event.runId] = {
         id: event.runId,
         status: "running",
         initialTaskId: task.id,
@@ -144,7 +146,7 @@ export function applyOrchestrationEvent(
       break;
     }
     case "agent_spawned": {
-      const taskId = event.agent.taskId ?? snapshot.run?.initialTaskId ?? event.agent.id;
+      const taskId = event.agent.taskId ?? snapshot.runs[event.runId]?.initialTaskId ?? event.agent.id;
       snapshot.agents[event.agent.id] = {
         id: event.agent.id,
         runId: event.runId,
@@ -249,10 +251,11 @@ export function applyOrchestrationEvent(
       break;
     }
     case "run_completed": {
-      if (snapshot.run) {
-        snapshot.run.status = event.status;
-        snapshot.run.updatedAt = event.occurredAt;
-        snapshot.run.completedAt = event.occurredAt;
+      const run = snapshot.runs[event.runId];
+      if (run) {
+        run.status = event.status;
+        run.updatedAt = event.occurredAt;
+        run.completedAt = event.occurredAt;
       }
       break;
     }

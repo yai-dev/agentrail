@@ -34,7 +34,7 @@ describe("createOrchestrationRegistry", () => {
       });
 
       expect(second).toBe(first);
-      expect(first.getSnapshot().run?.id).toBe("orchestration:session-1");
+      expect(first.getSnapshot().runs["orchestration:session-1"]?.id).toBe("orchestration:session-1");
 
       registry.invalidate("tenant-1", "session-1");
 
@@ -46,7 +46,7 @@ describe("createOrchestrationRegistry", () => {
       });
 
       expect(third).not.toBe(first);
-      expect(third.getSnapshot().run?.id).toBe("orchestration:session-1");
+      expect(third.getSnapshot().runs["orchestration:session-1"]?.id).toBe("orchestration:session-1");
     } finally {
       await rm(dataDir, { recursive: true, force: true });
     }

@@ -17,7 +17,7 @@ function formatSpawnResult(agent: OrchestrationAgent): string {
   });
 }
 
-export function createSpawnAgentTool(manager: OrchestrationManager) {
+export function createSpawnAgentTool(manager: OrchestrationManager, runId: string) {
   return tool()
     .name("spawn_agent")
     .label("spawn_agent")
@@ -41,7 +41,7 @@ export function createSpawnAgentTool(manager: OrchestrationManager) {
       }),
     )
     .execute(async (input) => {
-      const agent = await manager.spawnAgent(input);
+      const agent = await manager.spawnAgent({ ...input, runId });
       return {
         content: [{ type: "text" as const, text: formatSpawnResult(agent) }],
         details: {

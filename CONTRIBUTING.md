@@ -32,11 +32,11 @@ This file controls non-sensitive runtime settings such as:
 
 **Secrets (API keys, auth tokens) should be set via environment variables, not in the YAML file.** The config loader respects these environment variables:
 
-| Variable | Purpose |
-| ---------- | --------- |
-| `ANTHROPIC_API_KEY` | Anthropic LLM provider key |
-| `OPENAI_API_KEY` | OpenAI LLM provider key |
-| `TAVILY_API_KEY` | Tavily search integration key |
+| Variable            | Purpose                       |
+| ------------------- | ----------------------------- |
+| `ANTHROPIC_API_KEY` | Anthropic LLM provider key    |
+| `OPENAI_API_KEY`    | OpenAI LLM provider key       |
+| `TAVILY_API_KEY`    | Tavily search integration key |
 
 Store secrets in environment variables only. Do not add real credentials to `config/agentrail.yaml`.
 
@@ -190,6 +190,10 @@ Then build the local image:
 ```bash
 docker build -t agentrail-sandbox:latest docker/sandbox
 ```
+
+## AI Tools
+
+AI tools are welcome for writing code, tests, and documentation. Contributors are responsible for understanding, testing, and standing behind everything they submit, regardless of how it was generated.
 
 ## Contributor Checklist
 

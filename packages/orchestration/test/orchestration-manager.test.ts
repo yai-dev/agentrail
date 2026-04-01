@@ -220,6 +220,7 @@ describe("OrchestrationManager", () => {
 
     await manager.spawnAgent({
       id: "agent-1",
+      runId: "run-1",
       taskId: "task-1",
       role: "researcher",
     });
@@ -285,6 +286,7 @@ describe("OrchestrationManager", () => {
     await expect(
       manager.spawnAgent({
         id: "agent-root-default",
+        runId: "run-root-default",
         role: "researcher",
       }),
     ).resolves.toMatchObject({
@@ -296,6 +298,7 @@ describe("OrchestrationManager", () => {
     await expect(
       manager.spawnAgent({
         id: "agent-root-default",
+        runId: "run-root-default",
         taskId: "task-root",
         role: "reviewer",
       }),
@@ -330,12 +333,14 @@ describe("OrchestrationManager", () => {
 
     const explicit = await manager.spawnAgent({
       id: "agent-explicit-name",
+      runId: "run-display-name",
       taskId: "task-display-name",
       role: "researcher",
       displayName: "Nova",
     });
     const generated = await manager.spawnAgent({
       id: "agent-generated-name",
+      runId: "run-display-name",
       taskId: "task-display-name",
       role: "analyst",
     });
@@ -368,11 +373,12 @@ describe("OrchestrationManager", () => {
     await expect(
       manager.spawnAgent({
         id: "agent-invalid-task",
+        runId: "run-invalid-task",
         taskId: "task-missing",
         role: "researcher",
       }),
     ).rejects.toThrow(
-      "Unknown orchestration task task-missing. Omit taskId to use the current root task (task-known). Known task IDs: task-known.",
+      "Unknown orchestration task task-missing. Known task IDs: task-known.",
     );
   });
 
@@ -400,11 +406,12 @@ describe("OrchestrationManager", () => {
     });
 
     await manager.completeRun({
+      runId: "run-failed",
       status: "failed",
       error: "Sub-agent worker did not become ready within 5000ms",
     });
 
-    expect(manager.getSnapshot().run).toMatchObject({
+    expect(manager.getSnapshot().runs["run-failed"]).toMatchObject({
       id: "run-failed",
       status: "failed",
       completedAt: "2026-03-23T09:04:01.000Z",
@@ -450,6 +457,7 @@ describe("OrchestrationManager", () => {
     await expect(
       manager.spawnAgent({
         id: "agent-1b",
+        runId: "run-1b",
         taskId: "task-1b",
         role: "worker",
       }),
@@ -458,6 +466,7 @@ describe("OrchestrationManager", () => {
     await expect(
       manager.spawnAgent({
         id: "agent-1b",
+        runId: "run-1b",
         taskId: "task-1b",
         role: "worker",
       }),
@@ -512,6 +521,7 @@ describe("OrchestrationManager", () => {
     });
     await manager.spawnAgent({
       id: "agent-autonomous",
+      runId: "run-autonomous",
       taskId: "task-autonomous",
       role: "worker",
     });
@@ -569,6 +579,7 @@ describe("OrchestrationManager", () => {
     await expect(
       manager.spawnAgent({
         id: "agent-1c",
+        runId: "run-1c",
         taskId: "task-1c",
         role: "worker",
       }),
@@ -591,6 +602,7 @@ describe("OrchestrationManager", () => {
     await expect(
       manager.spawnAgent({
         id: "agent-1c",
+        runId: "run-1c",
         taskId: "task-1c",
         role: "worker",
       }),
@@ -672,6 +684,7 @@ describe("OrchestrationManager", () => {
     await expect(
       manager.spawnAgent({
         id: "agent-1d",
+        runId: "run-1d",
         taskId: "task-1d",
         role: "worker",
       }),
@@ -722,6 +735,7 @@ describe("OrchestrationManager", () => {
     });
     await manager.spawnAgent({
       id: "agent-2",
+      runId: "run-2",
       taskId: "task-2",
       role: "worker",
     });
@@ -800,6 +814,7 @@ describe("OrchestrationManager", () => {
     });
     await manager.spawnAgent({
       id: "agent-queued-return",
+      runId: "run-queued-return",
       taskId: "task-queued-return",
       role: "worker",
     });
@@ -869,6 +884,7 @@ describe("OrchestrationManager", () => {
     });
     await manager.spawnAgent({
       id: "agent-3",
+      runId: "run-3",
       taskId: "task-3",
       role: "worker",
     });
@@ -933,6 +949,7 @@ describe("OrchestrationManager", () => {
     });
     await manager.spawnAgent({
       id: "agent-closing",
+      runId: "run-closing",
       taskId: "task-closing",
       role: "worker",
     });
@@ -1003,6 +1020,7 @@ describe("OrchestrationManager", () => {
     });
     await manager.spawnAgent({
       id: "agent-close-mailbox-state",
+      runId: "run-close-mailbox-state",
       taskId: "task-close-mailbox-state",
       role: "worker",
     });
@@ -1071,6 +1089,7 @@ describe("OrchestrationManager", () => {
     });
     await manager.spawnAgent({
       id: "agent-idle-result",
+      runId: "run-idle-result",
       taskId: "task-idle-result",
       role: "worker",
     });
@@ -1154,6 +1173,7 @@ describe("OrchestrationManager", () => {
     });
     await manager.spawnAgent({
       id: "agent-job-events",
+      runId: "run-job-events",
       taskId: "task-job-events",
       role: "worker",
     });
@@ -1333,6 +1353,7 @@ describe("OrchestrationManager", () => {
     });
     await firstManager.spawnAgent({
       id: "agent-3b",
+      runId: "run-3b",
       taskId: "task-3b",
       role: "worker",
     });
@@ -1439,6 +1460,7 @@ describe("OrchestrationManager", () => {
     });
     await firstManager.spawnAgent({
       id: "agent-4",
+      runId: "run-4",
       taskId: "task-4",
       role: "worker",
     });
@@ -1786,12 +1808,14 @@ describe("OrchestrationManager", () => {
       },
     );
     await OrchestrationStore.writeCheckpoint(sessionDir, {
-      run: {
-        id: "run-mailbox-recovery",
-        status: "running",
-        initialTaskId: "task-mailbox-recovery",
-        createdAt: "2026-03-23T09:55:00.000Z",
-        updatedAt: "2026-03-23T09:55:02.000Z",
+      runs: {
+        "run-mailbox-recovery": {
+          id: "run-mailbox-recovery",
+          status: "running",
+          initialTaskId: "task-mailbox-recovery",
+          createdAt: "2026-03-23T09:55:00.000Z",
+          updatedAt: "2026-03-23T09:55:02.000Z",
+        },
       },
       tasks: {
         "task-mailbox-recovery": {
@@ -1848,5 +1872,74 @@ describe("OrchestrationManager", () => {
     await expect
       .poll(() => recoveredManager.getSnapshot().queuedInputs)
       .toEqual([]);
+  });
+
+  it("supports two concurrent runs on the same manager without interference", async () => {
+    const sessionDir = await createSessionDir();
+    const runtimeHarness = createRuntimeHarness();
+    const manager = await OrchestrationManager.create({
+      sessionDir,
+      runtime: runtimeHarness.runtime,
+      now: createClock(
+        "2026-03-23T12:00:00.000Z",
+        "2026-03-23T12:00:01.000Z",
+        "2026-03-23T12:00:02.000Z",
+        "2026-03-23T12:00:03.000Z",
+        "2026-03-23T12:00:04.000Z",
+        "2026-03-23T12:00:05.000Z",
+      ),
+    });
+
+    await manager.startRun({
+      runId: "run-concurrent-a",
+      initialTask: {
+        id: "task-concurrent-a",
+        kind: "concurrent-test",
+        input: { prompt: "Run A" },
+      },
+    });
+    await manager.startRun({
+      runId: "run-concurrent-b",
+      initialTask: {
+        id: "task-concurrent-b",
+        kind: "concurrent-test",
+        input: { prompt: "Run B" },
+      },
+    });
+
+    await manager.spawnAgent({
+      id: "agent-concurrent-a",
+      runId: "run-concurrent-a",
+      taskId: "task-concurrent-a",
+      role: "worker",
+    });
+    await manager.spawnAgent({
+      id: "agent-concurrent-b",
+      runId: "run-concurrent-b",
+      taskId: "task-concurrent-b",
+      role: "worker",
+    });
+
+    const snapshot = manager.getSnapshot();
+
+    expect(Object.keys(snapshot.runs)).toEqual(
+      expect.arrayContaining(["run-concurrent-a", "run-concurrent-b"]),
+    );
+    expect(snapshot.runs["run-concurrent-a"]?.status).toBe("running");
+    expect(snapshot.runs["run-concurrent-b"]?.status).toBe("running");
+    expect(snapshot.agents["agent-concurrent-a"]?.runId).toBe("run-concurrent-a");
+    expect(snapshot.agents["agent-concurrent-b"]?.runId).toBe("run-concurrent-b");
+
+    await manager.completeRun({ runId: "run-concurrent-a", status: "completed" });
+
+    const afterCompleteA = manager.getSnapshot();
+    expect(afterCompleteA.runs["run-concurrent-a"]?.status).toBe("completed");
+    expect(afterCompleteA.runs["run-concurrent-b"]?.status).toBe("running");
+
+    await manager.completeRun({ runId: "run-concurrent-b", status: "completed" });
+
+    const afterBothComplete = manager.getSnapshot();
+    expect(afterBothComplete.runs["run-concurrent-a"]?.status).toBe("completed");
+    expect(afterBothComplete.runs["run-concurrent-b"]?.status).toBe("completed");
   });
 });

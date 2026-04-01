@@ -109,7 +109,7 @@ describe("wait_agent orchestration", () => {
       },
     });
 
-    const spawnTool = createSpawnAgentTool(manager);
+    const spawnTool = createSpawnAgentTool(manager, "run-tools");
     const sendInputTool = createSendInputTool(manager);
     const waitAgentTool = createWaitAgentTool(manager);
     const closeAgentTool = createCloseAgentTool(manager);
@@ -209,7 +209,7 @@ describe("wait_agent orchestration", () => {
       },
     });
 
-    const spawnTool = createSpawnAgentTool(manager);
+    const spawnTool = createSpawnAgentTool(manager, "run-tools-root-default");
     const spawnResult = await spawnTool.execute("call-spawn-root-default", {
       id: "agent-tools-root-default",
       role: "researcher",
@@ -260,11 +260,13 @@ describe("wait_agent orchestration", () => {
     });
     await manager.spawnAgent({
       id: "agent-4a",
+      runId: "run-4",
       taskId: "task-4",
       role: "reviewer",
     });
     await manager.spawnAgent({
       id: "agent-4b",
+      runId: "run-4",
       taskId: "task-4",
       role: "reviewer",
     });
@@ -347,6 +349,7 @@ describe("wait_agent orchestration", () => {
     });
     await manager.spawnAgent({
       id: "agent-5",
+      runId: "run-5",
       taskId: "task-5",
       role: "worker",
     });

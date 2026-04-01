@@ -111,12 +111,14 @@ function createEvents(): OrchestrationEvent[] {
 
 function createCheckpointSnapshot(): OrchestrationSnapshot {
   return {
-    run: {
-      id: "run-1",
-      status: "running",
-      initialTaskId: "task-1",
-      createdAt: "2026-03-23T09:00:00.000Z",
-      updatedAt: "2026-03-23T09:00:01.000Z",
+    runs: {
+      "run-1": {
+        id: "run-1",
+        status: "running",
+        initialTaskId: "task-1",
+        createdAt: "2026-03-23T09:00:00.000Z",
+        updatedAt: "2026-03-23T09:00:01.000Z",
+      },
     },
     tasks: {
       "task-1": {
@@ -151,12 +153,14 @@ function createRestartSnapshot(
   queuedInput?: AgentInputEnvelope,
 ): OrchestrationSnapshot {
   return {
-    run: {
-      id: "run-2",
-      status: "running",
-      initialTaskId: "task-2",
-      createdAt: "2026-03-23T10:00:00.000Z",
-      updatedAt: "2026-03-23T10:00:03.000Z",
+    runs: {
+      "run-2": {
+        id: "run-2",
+        status: "running",
+        initialTaskId: "task-2",
+        createdAt: "2026-03-23T10:00:00.000Z",
+        updatedAt: "2026-03-23T10:00:03.000Z",
+      },
     },
     tasks: {
       "task-2": {
@@ -199,12 +203,14 @@ function createRestartSnapshot(
 
 function createIncompatibleCheckpointSnapshot(): OrchestrationSnapshot {
   return {
-    run: {
-      id: "stale-run",
-      status: "running",
-      initialTaskId: "stale-task",
-      createdAt: "2026-03-22T23:59:00.000Z",
-      updatedAt: "2026-03-22T23:59:03.000Z",
+    runs: {
+      "stale-run": {
+        id: "stale-run",
+        status: "running",
+        initialTaskId: "stale-task",
+        createdAt: "2026-03-22T23:59:00.000Z",
+        updatedAt: "2026-03-22T23:59:03.000Z",
+      },
     },
     tasks: {
       "stale-task": {
@@ -366,7 +372,7 @@ describe("OrchestrationStore", () => {
 
     const recovered = await OrchestrationStore.recoverState(sessionDir);
 
-    expect(recovered.snapshot.run?.id).toBe("run-1");
+    expect(recovered.snapshot.runs["run-1"]?.id).toBe("run-1");
     expect(recovered.snapshot.agents["agent-1"]?.status).toBe("waiting");
     expect(recovered.snapshot.agents["agent-1"]?.displayName).toBe("Nova");
     expect(recovered.snapshot.waits["wait-1"]?.status).toBe("pending");
@@ -405,7 +411,7 @@ describe("OrchestrationStore", () => {
 
     const recovered = await OrchestrationStore.recoverState(sessionDir);
 
-    expect(recovered.snapshot.run?.status).toBe("completed");
+    expect(recovered.snapshot.runs["run-3"]?.status).toBe("completed");
     expect(recovered.snapshot.waits["wait-3"]?.status).toBe("pending");
     expect(recovered.snapshot.agents["agent-3"]?.status).toBe("waiting");
     expect(recovered.pendingWaits).toEqual([]);
@@ -426,7 +432,7 @@ describe("OrchestrationStore", () => {
 
     const recovered = await OrchestrationStore.recoverState(sessionDir);
 
-    expect(recovered.snapshot.run?.id).toBe("run-1");
+    expect(recovered.snapshot.runs["run-1"]?.id).toBe("run-1");
     expect(recovered.snapshot.tasks["stale-task"]).toBeUndefined();
     expect(recovered.snapshot.agents["stale-agent"]).toBeUndefined();
     expect(recovered.snapshot.waits["stale-wait"]).toBeUndefined();
@@ -451,7 +457,7 @@ describe("OrchestrationStore", () => {
 
     const recovered = await OrchestrationStore.recoverState(sessionDir);
 
-    expect(recovered.snapshot.run?.id).toBe("run-1");
+    expect(recovered.snapshot.runs["run-1"]?.id).toBe("run-1");
     expect(recovered.snapshot.lastEventId).toBe("evt-6");
     expect(recovered.snapshot.agents["agent-1"]?.status).toBe("waiting");
     expect(recovered.snapshot.waits["wait-1"]?.status).toBe("pending");

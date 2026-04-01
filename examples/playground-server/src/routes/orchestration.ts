@@ -63,13 +63,17 @@ orchestration.get("/:sessionId/orchestration", async (c) => {
       })),
     );
 
+    const activeRun = snapshot
+      ? (Object.values(snapshot.runs).find((r) => r.status === "running") ??
+         Object.values(snapshot.runs)[0])
+      : undefined;
     const response: OrchestrationHistoryResponse = {
-      run: snapshot?.run
+      run: activeRun
         ? {
-            id: snapshot.run.id,
-            status: snapshot.run.status,
-            createdAt: snapshot.run.createdAt,
-            updatedAt: snapshot.run.updatedAt,
+            id: activeRun.id,
+            status: activeRun.status,
+            createdAt: activeRun.createdAt,
+            updatedAt: activeRun.updatedAt,
           }
         : null,
       agents: agentStates.map(({ agent, mailboxState }) => ({
