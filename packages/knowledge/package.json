@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/knowledge",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Filesystem-backed knowledge base management for Agentrail.",
   "type": "module",
   "files": [
