@@ -4,7 +4,8 @@
  */
 
 import { Hono } from "hono";
-import type { TransformContextFn } from "@agentrail/runtime-core";
+import type { Message, TransformContextFn } from "@agentrail/runtime-core";
+import { runCompactionIfNeeded } from "./compaction.js";
 import type {
   AgentrailChatRequest,
   AgentrailChatHandledResponse,
@@ -28,6 +29,8 @@ import {
 export interface AgentrailChatRouteOptions {
   defaultAgentId: string;
   sessionStore: AgentrailSessionStore;
+  summarize: (messages: Message[]) => Promise<string>;
+  compaction: { triggerTokens: number; minMessages: number };
   resolveProfile(
     agentId: string,
     context: {
@@ -162,7 +165,16 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         sessionId,
         sessionDir,
       });
-      const history = await options.sessionStore.loadMessages(request.tenantId, sessionId);
+      const allMessages = await options.sessionStore.loadAllMessages(request.tenantId, sessionId);
+      await runCompactionIfNeeded(
+        options.sessionStore,
+        request.tenantId,
+        sessionId,
+        allMessages,
+        options.summarize,
+        options.compaction,
+      );
+      const history = await options.sessionStore.loadMessagesWithBudget(request.tenantId, sessionId);
       const transformContext = await resolveChatTransformContext(
         options,
         plugins,

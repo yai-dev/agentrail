@@ -11,6 +11,7 @@
  */
 export * from "./types.js";
 export * from "./chat-route.js";
+export type { CompactionConfig } from "./compaction.js";
 export * from "./context-pipeline.js";
 export * from "./defaults.js";
 export * from "./orchestration-registry.js";

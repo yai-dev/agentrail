@@ -27,6 +27,7 @@ import {
 } from "../types/agent.types.js";
 import { agentLoop } from "./agent-loop.js";
 import { DefaultLlmClient } from "../llm/default-llm-client.js";
+import { randomUUID } from "node:crypto";
 
 // ============================================================================
 // ============================================================================
@@ -154,7 +155,7 @@ export class AgentImpl implements Agent {
 
 	private buildContext(options?: AgentRunOptions): InternalContext {
 		return {
-			conversationId: `conv-${Date.now()}`,
+			conversationId: randomUUID(),
 			messages: options?.messages ?? [],
 			signal: options?.signal,
 			transformContext: options?.transformContext,
