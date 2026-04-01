@@ -1,5 +1,14 @@
 # @agentrail/plugin-user-memory
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`aac05e2`](https://github.com/yai-dev/agentrail/commit/aac05e2c4f1ce7150729010d73a4429af3f987f8)]:
+  - @agentrail/runtime-core@0.1.0
+  - @agentrail/host@0.0.4
+  - @agentrail/memo@0.0.3
+
 ## 0.0.3
 
 ### Patch Changes
