@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/prompts",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Prompt loading, composition, and rendering utilities for Agentrail.",
   "type": "module",
   "files": [

@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/orchestration",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Managed sub-agent orchestration for Agentrail.",
   "type": "module",
   "files": [
