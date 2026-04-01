@@ -117,4 +117,32 @@ describe("LlmProviderRegistry", () => {
 		expect(registry.resolve("anthropic")).toBe(provider2);
 		vi.restoreAllMocks();
 	});
+
+	it("should allow creating independent instances without affecting the global singleton", () => {
+		const global = LlmProviderRegistry.getInstance();
+		global.register(createMockProvider("global-only"));
+
+		const isolated = new LlmProviderRegistry();
+		isolated.register(createMockProvider("isolated-only"));
+
+		expect(global.has("global-only")).toBe(true);
+		expect(global.has("isolated-only")).toBe(false);
+
+		expect(isolated.has("isolated-only")).toBe(true);
+		expect(isolated.has("global-only")).toBe(false);
+	});
+
+	it("should allow independent instances to coexist without sharing state", () => {
+		const registry1 = new LlmProviderRegistry();
+		const registry2 = new LlmProviderRegistry();
+
+		registry1.register(createMockProvider("provider-a"));
+		registry2.register(createMockProvider("provider-b"));
+
+		expect(registry1.has("provider-a")).toBe(true);
+		expect(registry1.has("provider-b")).toBe(false);
+
+		expect(registry2.has("provider-b")).toBe(true);
+		expect(registry2.has("provider-a")).toBe(false);
+	});
 });

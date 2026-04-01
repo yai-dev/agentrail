@@ -5,6 +5,7 @@
 
 
 import type { Agent } from "../interfaces/agent.js";
+import type { LlmClient } from "../interfaces/llm-client.js";
 import type { AgentConfig, ModelConfig } from "./define-agent.js";
 import type {
 	AgentInput,
@@ -61,6 +62,7 @@ export class AgentImpl implements Agent {
 	readonly name: string;
 
 	private readonly spec: InternalSpec;
+	private readonly llmClient?: LlmClient;
 	private readonly defaultMaxTokens?: number;
 	private readonly defaultTemperature?: number;
 	private readonly defaultThinkingEnabled?: boolean;
@@ -84,6 +86,7 @@ export class AgentImpl implements Agent {
 			maxTurnsMessage: config.maxTurnsMessage,
 		};
 
+		this.llmClient = config.llmClient;
 		this.defaultMaxTokens = config.maxTokens;
 		this.defaultTemperature = config.temperature;
 		this.defaultThinkingEnabled = config.thinkingEnabled;
@@ -100,7 +103,7 @@ export class AgentImpl implements Agent {
 		const context = this.buildContext(options);
 		const userMessage = this.inputToMessage(input);
 
-		const llmClient = new DefaultLlmClient();
+		const llmClient = this.llmClient ?? new DefaultLlmClient();
 		const eventStream = agentLoop([userMessage], context, {
 			spec: mergedSpec,
 			llmClient,

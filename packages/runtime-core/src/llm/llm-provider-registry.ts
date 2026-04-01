@@ -11,7 +11,7 @@ export class LlmProviderRegistry {
 	private static instance: LlmProviderRegistry | null = null;
 	private providers: Map<string, LlmProvider> = new Map();
 
-	private constructor() {}
+	constructor() {}
 
 	static getInstance(): LlmProviderRegistry {
 		if (!LlmProviderRegistry.instance) {
