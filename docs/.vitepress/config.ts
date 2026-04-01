@@ -5,8 +5,8 @@ export default defineConfig({
   description:
     "Open-source agent harness framework for building, hosting, and orchestrating tool-using AI agents.",
 
-  // Deployed at https://yai-dev.github.io/agentrail/
-  base: "/agentrail/",
+  // Custom domain: https://agentrail.run (root path, no sub-directory prefix)
+  base: "/",
 
   cleanUrls: true,
   appearance: "force-dark",
