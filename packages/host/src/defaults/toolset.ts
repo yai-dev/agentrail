@@ -26,11 +26,15 @@ export function createDefaultContextProviders(
 
 /**
  * Assembles the recommended default tool list for a hosted profile.
+ *
+ * Tools are sorted alphabetically by name to ensure a stable order across
+ * requests, which preserves LLM prompt cache hits (providers cache the tools
+ * array as part of the prompt prefix).
  */
 export function createDefaultToolset(
   input: DefaultToolsetInput,
 ): RuntimeTool[] {
-  return [
+  const tools = [
     ...(input.executionTools ?? []),
     ...(input.browserTools ?? []),
     ...(input.orchestrationTools ?? []),
@@ -39,6 +43,7 @@ export function createDefaultToolset(
       (tool): tool is RuntimeTool => Boolean(tool),
     ),
   ];
+  return tools.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
