@@ -30,5 +30,13 @@
     "name": "Yaid",
     "email": "sunzhenyucn@gmail.com",
     "url": "https://github.com/yai-dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yai-dev/agentrail.git"
+  },
+  "homepage": "https://agentrail.run",
+  "bugs": {
+    "url": "https://github.com/yai-dev/agentrail/issues"
   }
 }
