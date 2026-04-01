@@ -31,6 +31,28 @@ The low-level profile contract is defined by `AgentrailProfile` in:
 
 - [packages/host/src/types.ts](../../packages/host/src/types.ts)
 
+### `AgentrailProfile` interface
+
+```ts
+interface AgentrailProfileContext {
+  tenantId: string;
+  userId: string;
+  sessionId: string;
+  sessionDir: string;
+}
+
+interface AgentrailProfile {
+  id: string;
+  name: string;
+  /** Context window size in tokens. Defaults to 200_000. */
+  contextWindow?: number;
+  createAgent(
+    context: AgentrailProfileContext,
+    onSubAgentEvent?: (event: object) => void,
+  ): Promise<Agent>;
+}
+```
+
 At the primitive level, a profile must provide:
 
 - `id`
@@ -53,6 +75,21 @@ Use ids that are:
 
 A human-readable display name for logs, UI, or diagnostics.
 
+### `contextWindow`
+
+Optional. The model's context window size in tokens. Defaults to `200_000`.
+
+The stream route uses this value to compute `budgetUsedPct` in SSE events. Set it to the actual limit of the model used by this profile so the budget percentage displayed to clients is correct.
+
+```ts
+defineHostedProfile({
+  id: "gpt4o",
+  name: "GPT-4o",
+  contextWindow: 128_000, // gpt-4o has 128k context
+  createAgent: async (ctx) => defineAgent({ /* ... */ }),
+});
+```
+
 ### `createAgent`
 
 This method constructs the runtime `Agent` instance for the request.
@@ -64,19 +101,79 @@ It receives:
 
 It should return a runtime agent ready to handle `invoke` or `stream`.
 
+### Custom primitive profile example
+
+```ts
+import { defineAgent } from "@agentrail/runtime-core";
+import type { AgentrailProfile, AgentrailProfileContext } from "@agentrail/host";
+
+// Implement AgentrailProfile directly (no defaults layer)
+export const analyticsProfile: AgentrailProfile = {
+  id: "analytics",
+  name: "Analytics Agent",
+  contextWindow: 128_000,
+
+  async createAgent(ctx: AgentrailProfileContext) {
+    const system = await loadSystemPrompt(ctx.tenantId);
+    const tools = await buildAnalyticsTools(ctx.sessionDir);
+
+    return defineAgent({
+      id: "analytics",
+      model: {
+        provider: "openai",
+        modelId: "gpt-4o",
+        apiKey: process.env.OPENAI_API_KEY,
+      },
+      system,
+      tools,
+      maxTurns: 20,
+    });
+  },
+};
+
+// Wire into a primitive resolver
+import { createProfileResolver } from "@agentrail/host";
+
+export const resolveProfile = createProfileResolver([analyticsProfile]);
+```
+
 ## Recommended Contract
 
 The defaults layer extends the primitive contract with `HostedProfileDefinition`, defined in:
 
 - [packages/host/src/defaults/shared-types.ts](../../packages/host/src/defaults/shared-types.ts)
 
-That recommended shape adds optional fields such as:
+### `HostedProfileDefinition` interface
 
-- `prompt`
-- `promptBuilder`
-- `getContextProviders`
-- `handleChat`
-- future orchestration/workflow hooks such as `createManagedAgent` or `createStartRunInput`
+```ts
+interface HostedProfileDefinition extends AgentrailProfile {
+  /** Static system prompt string */
+  prompt?: string;
+  /** Dynamic system prompt — called per request with profile context */
+  promptBuilder?: (context: AgentrailProfileContext) => string | Promise<string>;
+  /** Additional context providers for this profile's requests */
+  getContextProviders?: (
+    context: AgentrailProfileContext,
+  ) => Promise<ContextProvider[]> | ContextProvider[];
+  /** Intercept a chat request before the agent runs */
+  handleChat?: (context: {
+    request: {
+      message: string;
+      mode?: string;
+      tenantId: string;
+      userId: string;
+      sessionId?: string;
+      agentId?: string;
+    };
+    agentId: string;
+    tenantId: string;
+    userId: string;
+    sessionId: string;
+    sessionDir: string;
+    signal: AbortSignal;
+  }) => Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
+}
+```
 
 This lets a profile stay declarative while still carrying the most common hosted-app extensions.
 

@@ -101,19 +101,19 @@ Context provider messages are prepended before the conversation history.
 Use `start` and `stop` for background services tied to the host process:
 
 ```ts
+let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+
 export const heartbeatPlugin: AgentrailPlugin = {
   name: "heartbeat",
 
-  private timer: NodeJS.Timeout | undefined;
-
   start() {
-    this.timer = setInterval(() => {
+    heartbeatTimer = setInterval(() => {
       console.log("heartbeat", new Date().toISOString());
     }, 60_000);
   },
 
   stop() {
-    if (this.timer) clearInterval(this.timer);
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
   },
 };
 ```

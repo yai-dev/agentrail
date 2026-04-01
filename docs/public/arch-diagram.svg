@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 604" width="900" height="604"
+     role="img" aria-label="Agentrail Architecture Diagram">
+  <defs>
+    <marker id="ah" markerWidth="8" markerHeight="7" refX="4" refY="6" orient="auto">
+      <path d="M1,1 L4,6 L7,1" fill="none" stroke="#4a4a48"
+            stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    </marker>
+  </defs>
+
+  <!-- background panel — slightly lifted from page #060606 -->
+  <rect width="900" height="604" fill="#0d0d0b" rx="4"/>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- LAYER 4  Your App  (dashed, user code)      -->
+  <!-- ─────────────────────────────────────────── -->
+  <rect x="20" y="20" width="860" height="72"
+        fill="none" stroke="#363634" stroke-width="1" stroke-dasharray="5 4" rx="2"/>
+
+  <rect x="40" y="36" width="22" height="22" rx="2" fill="#1e1e1c"/>
+  <text x="51" y="47" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">4</text>
+
+  <text x="73" y="47" dominant-baseline="middle"
+        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#6a6864">Your App</text>
+
+  <text x="73" y="70" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12"
+        fill="#3e3e3c" letter-spacing="0.02em">Profiles  &#183;  Routes  &#183;  UI  &#183;  Business Logic</text>
+
+  <!-- arrow -->
+  <line x1="450" y1="100" x2="450" y2="120"
+        stroke="#444442" stroke-width="1" marker-end="url(#ah)"/>
+  <text x="459" y="110" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="9"
+        fill="#444442" letter-spacing="0.1em">DEPENDS ON</text>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- LAYER 3  Plugins &amp; Workflows            -->
+  <!-- ─────────────────────────────────────────── -->
+  <rect x="20" y="128" width="860" height="84"
+        fill="#101010" stroke="#2a2a28" stroke-width="1" rx="2"/>
+
+  <rect x="40" y="144" width="22" height="22" rx="2" fill="#242422"/>
+  <text x="51" y="155" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="11" fill="#666660">3</text>
+
+  <text x="73" y="155" dominant-baseline="middle"
+        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c8c6c0">Plugins &amp; Workflows</text>
+
+  <text x="73" y="181" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12"
+        fill="#888880" letter-spacing="0.01em">@agentrail/plugin-user-memory  &#183;  @agentrail/slash-commands  &#183;  @agentrail/deep-research</text>
+
+  <!-- arrow -->
+  <line x1="450" y1="220" x2="450" y2="240"
+        stroke="#444442" stroke-width="1" marker-end="url(#ah)"/>
+  <text x="459" y="230" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="9"
+        fill="#444442" letter-spacing="0.1em">DEPENDS ON</text>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- LAYER 2  Host &amp; host/defaults           -->
+  <!-- ─────────────────────────────────────────── -->
+  <rect x="20" y="248" width="860" height="208"
+        fill="rgba(196,255,46,0.05)" stroke="rgba(196,255,46,0.38)" stroke-width="1" rx="2"/>
+
+  <rect x="40" y="264" width="22" height="22" rx="2" fill="#c4ff2e"/>
+  <text x="51" y="275" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="11" fill="#060606" font-weight="bold">2</text>
+
+  <text x="73" y="275" dominant-baseline="middle"
+        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c4ff2e">Host  &amp;  host/defaults</text>
+
+  <text x="73" y="297" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12"
+        fill="rgba(196,255,46,0.45)" letter-spacing="0.01em">@agentrail/host  &#183;  @agentrail/host/defaults</text>
+
+  <!-- consumes divider -->
+  <text x="40" y="320" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="9"
+        fill="#484844" letter-spacing="0.16em">CONSUMES &#8594;</text>
+  <line x1="40" y1="330" x2="860" y2="330" stroke="#222220" stroke-width="1"/>
+
+  <!-- capability packages: 2-column text list with full names -->
+  <!-- left col x=54, right col x=484 -->
+  <text x="54" y="350" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/prompts</text>
+  <text x="484" y="350" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/orchestration</text>
+
+  <text x="54" y="374" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/memo</text>
+  <text x="484" y="374" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/knowledge</text>
+
+  <text x="54" y="398" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/sandbox</text>
+  <text x="484" y="398" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/tools</text>
+
+  <text x="54" y="422" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/events</text>
+  <text x="484" y="422" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/skills</text>
+
+  <!-- arrow -->
+  <line x1="450" y1="464" x2="450" y2="484"
+        stroke="#444442" stroke-width="1" marker-end="url(#ah)"/>
+  <text x="459" y="474" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="9"
+        fill="#444442" letter-spacing="0.1em">DEPENDS ON</text>
+
+  <!-- ─────────────────────────────────────────── -->
+  <!-- LAYER 1  runtime-core  (foundation)         -->
+  <!-- ─────────────────────────────────────────── -->
+  <rect x="20" y="492" width="860" height="96"
+        fill="rgba(196,255,46,0.08)" stroke="#c4ff2e" stroke-width="1" rx="2"/>
+
+  <rect x="40" y="508" width="22" height="22" rx="2" fill="#c4ff2e"/>
+  <text x="51" y="519" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="11" fill="#060606" font-weight="bold">1</text>
+
+  <rect x="732" y="508" width="128" height="22" rx="1" fill="#c4ff2e"/>
+  <text x="796" y="519" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="9"
+        fill="#060606" letter-spacing="0.12em" font-weight="bold">FOUNDATION</text>
+
+  <text x="73" y="519" dominant-baseline="middle"
+        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c4ff2e">runtime-core</text>
+
+  <text x="73" y="543" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12"
+        fill="rgba(196,255,46,0.5)" letter-spacing="0.01em">@agentrail/runtime-core</text>
+
+  <text x="73" y="566" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="11.5"
+        fill="rgba(196,255,46,0.35)" letter-spacing="0.01em">Agent Loop  &#183;  Tool Contract  &#183;  LLM Provider API  &#183;  Usage Tracking</text>
+</svg>

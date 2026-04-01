@@ -7,7 +7,7 @@ Use `@agentrail/orchestration` when one hosted agent needs to delegate work to m
 Read this guide after:
 
 - [Quickstart](quickstart.md)
-- [Concepts: Events and Orchestration](../concepts/events-and-orchestration.md)
+- [Concepts: Events and Orchestration](../concepts/events.md)
 - [Host Primitives Reference](../reference/host-primitives.md)
 
 ## When To Use Orchestration
@@ -150,6 +150,6 @@ The Deep Research workflow is the main example of multi-agent orchestration in t
 
 ## Related Docs
 
-- [Events and Orchestration](../concepts/events-and-orchestration.md)
+- [Events and Orchestration](../concepts/events.md)
 - [Host Primitives Reference](../reference/host-primitives.md)
 - [Deep Research Example](../examples/deep-research.md)

@@ -1,48 +1,116 @@
 # Quickstart
 
-This guide walks through the shortest realistic path to a working hosted agent on top of Agentrail.
-
-It is intentionally opinionated:
-
-- use `@agentrail/host/defaults` first
-- use `@agentrail/prompts` for system prompt composition
-- keep your first app to one hosted profile and one session store
+This guide walks through the fastest realistic path to a working hosted agent on top of Agentrail.
 
 ## What You Will Build
 
-A minimal Hono server that accepts a chat request, sends it to a real LLM provider, and returns the assistant response. No mock agents, no echo stubs.
+A minimal Hono server that accepts chat requests, sends them to a real LLM provider, and streams back the response as SSE events. Sessions are persisted to disk and long conversations are automatically compacted.
 
 ## Prerequisites
 
 - Node.js 22+
 - pnpm
+- An API key for Anthropic or OpenAI
 
-Set your LLM provider API key as an environment variable:
+## Create Your App
 
-Do not store API keys in `agentrail.yaml`.
-
-```bash
-# Pick one depending on your provider
-export ANTHROPIC_API_KEY="sk-ant-..."
-# or
-export OPENAI_API_KEY="sk-..."
-```
-
-## Scaffold a New App
-
-The fastest way to start is with the CLI scaffolding tool:
+The fastest way to start is with the scaffold tool:
 
 ```bash
-pnpm create @agentrail/app my-agent
+pnpm dlx @agentrail/create-agentrail-app my-agent
 cd my-agent
 pnpm install
 ```
 
-This generates a working app with a profile, prompt bundle, and Hono server already wired together. Skip ahead to [Run It](#run-it) if you used the scaffold.
+### Set your API key
 
-If you prefer to understand each piece, follow the manual setup below.
+The scaffold generates a `.env.example` with every supported variable. Copy it and fill in your key:
 
-## Manual Setup
+```bash
+cp .env.example .env
+```
+
+Then edit `.env`:
+
+```bash
+MODEL_PROVIDER=anthropic                    # or "openai"
+MODEL_ID=claude-3-5-sonnet-20241022         # or "gpt-4o"
+ANTHROPIC_API_KEY=sk-ant-...               # set this
+# OPENAI_API_KEY=sk-...                    # or this
+```
+
+> Do not store API keys in `agentrail.yaml`. Always use environment variables.
+
+### Run it
+
+```bash
+pnpm dev
+```
+
+### Test with curl
+
+```bash
+curl -sN -X POST http://localhost:3000/api/stream \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is Agentrail?", "tenantId": "dev", "userId": "user-1"}'
+```
+
+You should see SSE events streaming in — text deltas, tool calls if any, usage, and a final `done` event.
+
+## Walk Through the Generated Code
+
+The scaffold generates three source files. Here is what each one does.
+
+### `src/context.ts` — Storage
+
+```ts
+export const sessionManager = new SessionManager(DATA_DIR);
+export const sandboxManager = new SandboxManager(DATA_DIR);
+```
+
+`SessionManager` is the filesystem-backed session store. It persists message history, handles context compaction, and tracks token usage per turn. `SandboxManager` manages Docker-based execution sandboxes for agents that need to run shell commands or browser automation.
+
+### `src/agent.ts` — Profile and summarizer
+
+```ts
+export const defaultProfile = defineHostedProfile({
+  id: AGENT_ID,
+  name: "my-agent Agent",
+  promptBuilder: async () => "You are a helpful assistant.",
+  createAgent: async () =>
+    defineAgent({
+      id: AGENT_ID,
+      model: { provider: MODEL_PROVIDER, modelId: MODEL_ID },
+      system: "You are a helpful assistant.",
+    }),
+});
+```
+
+A **profile** is the bridge between the host layer and the runtime agent. It defines how to build the agent and what prompt to use. `promptBuilder` is used by the host for context assembly; `system` is the actual system prompt passed to the LLM.
+
+The file also exports `buildSummarizeFn`, which creates a second agent whose only job is to summarize old conversation turns when the session history grows long. It is a real LLM call — not a placeholder — so compaction stays accurate across long sessions.
+
+### `src/main.ts` — Server entry point
+
+```ts
+const stream = createStreamRoute({
+  dataDir: process.env.DATA_DIR ?? "./data",
+  defaultAgentId: "my-agent-agent",
+  sessionStore: sessionManager,
+  sandboxManager,
+  resolveProfile,
+  summarize: buildSummarizeFn(),
+  compaction: { triggerTokens: 40_000, minMessages: 10 },
+});
+
+app.route("/api/stream", stream);
+```
+
+`createStreamRoute` handles the full request lifecycle: session lookup or creation, context assembly, LLM streaming, tool dispatch, compaction, and SSE event forwarding.
+
+## Manual Setup (Without Scaffold)
+
+If you prefer to build from scratch or want to use `createChatRoute` (request/response, no SSE), follow the steps below.
 
 ### 1. Install dependencies
 
@@ -55,73 +123,50 @@ pnpm add -D typescript tsx
 
 ### 2. Register LLM providers
 
-Import the built-in provider side-effect modules so the provider registry knows about Anthropic and OpenAI:
-
 ```ts
 import "@agentrail/runtime-core/providers";
 ```
 
-This single import registers both providers. The provider is selected at runtime based on the `model.provider` field in your agent config.
+This single import registers both Anthropic and OpenAI. The provider is selected at runtime by the `model.provider` field in your agent config.
 
-### 3. Define a prompt bundle
-
-```ts
-import {
-  definePromptBundle,
-  definePromptFragment,
-  renderPrompt,
-} from "@agentrail/prompts";
-
-const basePrompt = definePromptBundle({
-  fragments: [
-    definePromptFragment({
-      id: "base",
-      content: `
-You are a helpful assistant.
-Use tools when they reduce uncertainty.
-Keep answers concise unless the user asks for depth.
-      `.trim(),
-    }),
-  ],
-});
-```
-
-### 4. Define a hosted profile
+### 3. Define a profile
 
 ```ts
 import { defineAgent } from "@agentrail/runtime-core";
-import {
-  defineHostedProfile,
-  createHostedProfileResolver,
-} from "@agentrail/host/defaults";
+import { defineHostedProfile, createHostedProfileResolver } from "@agentrail/host/defaults";
 
 const defaultProfile = defineHostedProfile({
   id: "default",
   name: "Default Agent",
-  promptBuilder: async () => renderPrompt(basePrompt),
-  async createAgent() {
-    return defineAgent({
+  promptBuilder: async () => "You are a helpful assistant.",
+  createAgent: async () =>
+    defineAgent({
       id: "default",
       model: {
-        provider: "anthropic",       // or "openai"
-        modelId: "claude-sonnet-4-5", // or "gpt-4o"
-        apiKey: process.env.ANTHROPIC_API_KEY ?? process.env.OPENAI_API_KEY,
+        provider: "anthropic",
+        modelId: "claude-3-5-sonnet-20241022",
       },
-      system: renderPrompt(basePrompt),
-    });
-  },
+      system: "You are a helpful assistant.",
+    }),
 });
+
+const resolveProfile = createHostedProfileResolver([defaultProfile]);
 ```
 
-### 5. Create a session store and mount routes
+### 4. Mount the chat route
 
 ```ts
+import type { Message } from "@agentrail/runtime-core";
 import { Hono } from "hono";
 import { SessionManager } from "@agentrail/memo";
 import { createChatRoute } from "@agentrail/host";
 
 const sessionStore = new SessionManager("/tmp/agentrail");
-const resolveProfile = createHostedProfileResolver([defaultProfile]);
+
+// In production, replace this with a real LLM summarization call.
+// See src/agent.ts in the scaffold for a complete example.
+const summarize = async (messages: Message[]) =>
+  messages.map((m) => `${m.role}: ${JSON.stringify(m.content)}`).join("\n");
 
 const app = new Hono();
 
@@ -130,23 +175,20 @@ app.route(
   createChatRoute({
     defaultAgentId: "default",
     sessionStore,
+    summarize,
+    compaction: { triggerTokens: 80_000, minMessages: 20 },
     resolveProfile,
   }),
 );
 
-export default {
-  port: 3000,
-  fetch: app.fetch,
-};
+export default { port: 3000, fetch: app.fetch };
 ```
 
-## Run It
+### 5. Run it
 
 ```bash
 npx tsx main.ts
 ```
-
-Test with curl:
 
 ```bash
 curl -X POST http://localhost:3000/chat \
@@ -154,31 +196,15 @@ curl -X POST http://localhost:3000/chat \
   -d '{"message": "What is Agentrail?", "tenantId": "dev", "userId": "user-1"}'
 ```
 
-You should see a real LLM response with token usage information.
+## `createChatRoute` vs `createStreamRoute`
 
-## When To Use `createStreamRoute`
-
-Use chat first if your app only needs request/response semantics.
-
-Use stream when you need:
-
-- token or event streaming
-- tool progress visibility
-- compaction events
-- sandbox and workspace awareness
-- orchestration event forwarding
-
-## What The Defaults Layer Gives You
-
-The defaults layer is not a black box. It gives you a stable, recommended assembly path for:
-
-- hosted profiles
-- profile resolvers
-- default capability tool builders
-- default context/capability message builders
-- orchestration binding helpers
-
-You can adopt these one by one and still drop to lower-level host primitives later.
+|                   | `createChatRoute`    | `createStreamRoute` |
+| ----------------- | -------------------- | ------------------- |
+| Response          | JSON                 | SSE event stream    |
+| Tool progress     | Not visible          | Streamed as events  |
+| Compaction events | Not forwarded        | Forwarded via SSE   |
+| Sandbox support   | No                   | Yes                 |
+| Good for          | Simple APIs, testing | Production UIs      |
 
 ## Next Steps
 
@@ -192,9 +218,7 @@ Now that you have a working agent, continue in this order:
 
 ## Deeper Reading
 
-To understand the concepts behind what you just built:
-
 - [Agents](../concepts/agents.md)
 - [Host](../concepts/host.md)
 - [Profiles](../concepts/profiles.md)
-- [Prompts](../concepts/prompts.md)
+- [Session Store](../reference/session-store.md)
