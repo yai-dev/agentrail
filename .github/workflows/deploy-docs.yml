@@ -44,3 +44,4 @@ jobs:
           commit_message: "chore: deploy site [skip ci]"
           user_name: "github-actions[bot]"
           user_email: "github-actions[bot]@users.noreply.github.com"
+          cname: "agentrail.run"
