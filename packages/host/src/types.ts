@@ -16,6 +16,8 @@ export interface AgentrailProfileContext {
 export interface AgentrailProfile {
   id: string;
   name: string;
+  /** Context window size in tokens for the model used by this profile. Defaults to 200_000. */
+  contextWindow?: number;
   createAgent(
     context: AgentrailProfileContext,
     onSubAgentEvent?: (event: object) => void,
