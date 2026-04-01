@@ -20,7 +20,7 @@ export default defineConfig({
   ],
 
   head: [
-    ["link", { rel: "icon", type: "image/svg+xml", href: "/agentrail/favicon.svg" }],
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
     ["meta", { property: "og:type", content: "website" }],
     [
       "meta",
@@ -56,15 +56,15 @@ export default defineConfig({
         text: "Concepts",
         items: [
           { text: "Agents", link: "/concepts/agents" },
+          { text: "Tools", link: "/concepts/tools" },
           { text: "Host", link: "/concepts/host" },
           { text: "Profiles", link: "/concepts/profiles" },
+          { text: "Sessions", link: "/concepts/sessions" },
+          { text: "Context & Compaction", link: "/concepts/context-and-compaction" },
           { text: "Plugins", link: "/concepts/plugins" },
           { text: "Prompts", link: "/concepts/prompts" },
-          { text: "Memory & Context", link: "/concepts/memory-and-context" },
-          {
-            text: "Events & Orchestration",
-            link: "/concepts/events-and-orchestration",
-          },
+          { text: "Events", link: "/concepts/events" },
+          { text: "Orchestration", link: "/concepts/orchestration" },
         ],
       },
       {
@@ -74,10 +74,16 @@ export default defineConfig({
           { text: "Manage Prompts", link: "/guides/manage-prompts" },
           { text: "Add Tools", link: "/guides/add-tools" },
           { text: "Add Context", link: "/guides/add-context" },
+          { text: "Configure Sessions", link: "/guides/configure-sessions" },
+          { text: "Consume Stream (SSE)", link: "/guides/consume-stream" },
           { text: "Write a Plugin", link: "/guides/write-a-plugin" },
           {
             text: "Multi-Agent Orchestration",
             link: "/guides/multi-agent",
+          },
+          {
+            text: "Use Capability Packages",
+            link: "/guides/use-capability-packages",
           },
           { text: "Deployment", link: "/guides/deployment" },
           { text: "Troubleshooting", link: "/guides/troubleshooting" },
@@ -120,7 +126,7 @@ export default defineConfig({
 
     footer: {
       message: "Released under the Apache 2.0 License.",
-      copyright: "© 2025 Agentrail contributors",
+      copyright: "© 2026 Agentrail contributors",
     },
 
     search: {
