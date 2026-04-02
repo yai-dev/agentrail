@@ -228,13 +228,10 @@ export function guessMimeType(filePath: string): string {
 }
 
 export function slugifyTitle(input: string): string {
-  return (
-    input
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 60) || "artifact"
-  );
+  const dashed = input.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  // Avoid potentially expensive regex backtracking on long hyphen runs.
+  const trimmed = dashed.replace(/^-+/, "").replace(/-+$/, "");
+  return trimmed.slice(0, 60) || "artifact";
 }
 
 function normalizeWhitespace(text: string): string {
@@ -373,7 +370,7 @@ function extractOfficialName(summary: string, query: string): string | null {
   }
 
   const queryMatch = query.match(
-    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]+?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
+    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]{1,120}(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
   );
   return queryMatch?.[1]?.trim() ?? null;
 }
@@ -410,12 +407,12 @@ function extractRelatedEntities(summary: string): string[] {
 function extractAliases(query: string, summary: string, officialName?: string): string[] {
   const candidates: string[] = [];
   const queryName = query.match(
-    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]+?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
+    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]{1,120}(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
   )?.[1];
   if (queryName) candidates.push(queryName);
 
   const mentionMatches = summary.matchAll(
-    /["“]([^"”\n]{2,60}?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))["”]/gu,
+    /["“]([^"”\n]{2,60}(?:公司|集团|企业|Inc\.|Corp\.|Corporation))["”]/gu,
   );
   for (const match of mentionMatches) {
     if (match[1]) candidates.push(match[1]);
@@ -957,14 +954,37 @@ export function extractResearcherSummaryFallback(outputText: string): string | n
   const json = extractJsonObject<{ summary?: string }>(outputText);
   if (json?.summary?.trim()) return sanitizeResearchSummary(json.summary);
 
-  const summaryMatch = outputText.match(
-    /"summary"\s*:\s*"([\s\S]+?)"\s*(?:,\s*"(?:entityProfile|sources|excludedSources)"|\})/,
-  );
-  if (!summaryMatch?.[1]) return null;
+  const keyIndex = outputText.indexOf('"summary"');
+  if (keyIndex < 0) return null;
+  const colonIndex = outputText.indexOf(":", keyIndex);
+  if (colonIndex < 0) return null;
+  const firstQuoteIndex = outputText.indexOf('"', colonIndex + 1);
+  if (firstQuoteIndex < 0) return null;
+
+  let escaped = false;
+  let endQuoteIndex = -1;
+  for (let i = firstQuoteIndex + 1; i < outputText.length; i++) {
+    const ch = outputText[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      endQuoteIndex = i;
+      break;
+    }
+  }
+  if (endQuoteIndex < 0) return null;
+
+  const rawSummary = outputText.slice(firstQuoteIndex + 1, endQuoteIndex);
   try {
-    return JSON.parse(`"${summaryMatch[1]}"`);
+    return JSON.parse(`"${rawSummary}"`);
   } catch {
-    return sanitizeResearchSummary(summaryMatch[1].replace(/\\"/g, '"'));
+    return sanitizeResearchSummary(rawSummary.replace(/\\"/g, '"'));
   }
 }
 
@@ -978,21 +998,45 @@ export function sanitizeReportMarkdown(
   const keptFootnotes = new Set<string>();
 
   const lines = markdown.split("\n").filter((line) => {
-    const match = line.match(/^\[\^([^\]]+)\]:\s*(.+)$/);
-    if (!match) return true;
-    const [, id, body] = match;
-    const urlMatch = body.match(/https?:\/\/\S+/);
-    if (!urlMatch) return false;
-    const normalizedUrl = normalizeResearchUrl(urlMatch[0]);
+    if (!line.startsWith("[^")) return true;
+    const footnoteSep = line.indexOf("]:");
+    if (footnoteSep < 2) return true;
+
+    const id = line.slice(2, footnoteSep);
+    const body = line.slice(footnoteSep + 2).trim();
+    if (!body) return false;
+
+    const urlToken = body
+      .split(/\s+/)
+      .find((token) => token.startsWith("http://") || token.startsWith("https://"));
+    if (!urlToken) return false;
+    const normalizedUrl = normalizeResearchUrl(urlToken);
     if (!allowedUrls.has(normalizedUrl)) return false;
     keptFootnotes.add(id);
     return true;
   });
 
+  const stripUnknownFootnoteRefs = (line: string): string => {
+    let result = "";
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === "[" && line[i + 1] === "^") {
+        const close = line.indexOf("]", i + 2);
+        if (close > i + 2) {
+          const id = line.slice(i + 2, close);
+          if (keptFootnotes.has(id)) {
+            result += line.slice(i, close + 1);
+          }
+          i = close;
+          continue;
+        }
+      }
+      result += line[i];
+    }
+    return result;
+  };
+
   return lines
-    .map((line) =>
-      line.replace(/\[\^([^\]]+)\]/g, (full, id: string) => (keptFootnotes.has(id) ? full : "")),
-    )
+    .map(stripUnknownFootnoteRefs)
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
