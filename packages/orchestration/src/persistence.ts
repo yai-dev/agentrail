@@ -6,7 +6,7 @@
 import type { SessionRef } from "@agentrail/memo";
 import { resolveSessionRef } from "@agentrail/memo";
 import path from "node:path";
-import { OrchestrationStore } from "./orchestration-store.js";
+import { createFilesystemOrchestrationStore } from "./orchestration-store.js";
 import type { RecoveredOrchestrationState } from "./recovery.js";
 import type {
   OrchestrationEvent,
@@ -27,33 +27,29 @@ export interface OrchestrationPersistence {
   writeMailboxState(agentId: string, state: OrchestrationMailboxState): Promise<void>;
 }
 
-export function getSessionDirForRef(dataDir: string, sessionRef: SessionRef): string {
+// Filesystem persistence still resolves a session root internally, but the
+// public API accepts a SessionRef so raw paths do not leak across package boundaries.
+function getSessionDirForRef(dataDir: string, sessionRef: SessionRef): string {
   const { tenantId, sessionId } = resolveSessionRef(sessionRef);
   return path.join(dataDir, "tenants", tenantId, "sessions", sessionId);
 }
 
+/** Creates the default filesystem persistence adapter for one session reference. */
 export function createFilesystemOrchestrationPersistence(
   dataDir: string,
   sessionRef: SessionRef,
 ): OrchestrationPersistence {
   const sessionDir = getSessionDirForRef(dataDir, sessionRef);
-  return createFilesystemOrchestrationPersistenceForSessionDir(sessionDir);
-}
-
-export function createFilesystemOrchestrationPersistenceForSessionDir(
-  sessionDir: string,
-): OrchestrationPersistence {
+  const store = createFilesystemOrchestrationStore(sessionDir);
   return {
-    appendEvent: (event) => OrchestrationStore.appendEvent(sessionDir, event),
-    loadEvents: () => OrchestrationStore.loadEvents(sessionDir),
-    loadSnapshot: () => OrchestrationStore.loadSnapshot(sessionDir),
-    writeCheckpoint: (snapshot) => OrchestrationStore.writeCheckpoint(sessionDir, snapshot),
-    recoverState: () => OrchestrationStore.recoverState(sessionDir),
-    appendMailboxEvent: (agentId, event) =>
-      OrchestrationStore.appendMailboxEvent(sessionDir, agentId, event),
-    loadMailboxEvents: (agentId) => OrchestrationStore.loadMailboxEvents(sessionDir, agentId),
-    loadMailboxState: (agentId) => OrchestrationStore.loadMailboxState(sessionDir, agentId),
-    writeMailboxState: (agentId, state) =>
-      OrchestrationStore.writeMailboxState(sessionDir, agentId, state),
+    appendEvent: (event) => store.appendEvent(event),
+    loadEvents: () => store.loadEvents(),
+    loadSnapshot: () => store.loadSnapshot(),
+    writeCheckpoint: (snapshot) => store.writeCheckpoint(snapshot),
+    recoverState: () => store.recoverState(),
+    appendMailboxEvent: (agentId, event) => store.appendMailboxEvent(agentId, event),
+    loadMailboxEvents: (agentId) => store.loadMailboxEvents(agentId),
+    loadMailboxState: (agentId) => store.loadMailboxState(agentId),
+    writeMailboxState: (agentId, state) => store.writeMailboxState(agentId, state),
   };
 }

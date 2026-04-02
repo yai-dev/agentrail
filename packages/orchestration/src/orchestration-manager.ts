@@ -14,10 +14,7 @@ import {
   normalizeDeliveryResult,
   normalizeWaitInput,
 } from "./orchestration-manager-helpers.js";
-import {
-  createFilesystemOrchestrationPersistenceForSessionDir,
-  type OrchestrationPersistence,
-} from "./persistence.js";
+import type { OrchestrationPersistence } from "./persistence.js";
 import { applyOrchestrationEvent, cloneOrchestrationSnapshot } from "./recovery.js";
 import type {
   AgentInputEnvelope,
@@ -124,16 +121,7 @@ export class OrchestrationManager {
   private readonly now: () => string;
 
   private constructor(options: OrchestrationManagerOptions) {
-    const legacySessionDir = (
-      options as OrchestrationManagerOptions & {
-        sessionDir?: string;
-      }
-    ).sessionDir;
-    this.persistence =
-      options.persistence ??
-      (legacySessionDir
-        ? createFilesystemOrchestrationPersistenceForSessionDir(legacySessionDir)
-        : undefined)!;
+    this.persistence = options.persistence;
     this.runtime = options.runtime;
     this.now = options.now ?? (() => new Date().toISOString());
   }

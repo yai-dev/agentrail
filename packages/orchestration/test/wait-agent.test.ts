@@ -13,7 +13,7 @@ import {
   type ManagedAgentInstance,
   type OrchestrationAgentFactory,
 } from "../src/orchestration-manager.js";
-import { OrchestrationStore } from "../src/orchestration-store.js";
+import { createFilesystemOrchestrationStore } from "../src/orchestration-store.js";
 import { createCloseAgentTool } from "../src/tools/close-agent.js";
 import { createSendInputTool } from "../src/tools/send-input.js";
 import { createSpawnAgentTool } from "../src/tools/spawn-agent.js";
@@ -33,6 +33,24 @@ async function createSessionDir(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "wait-agent-manager-"));
   temporaryDirectories.push(directory);
   return directory;
+}
+
+function createPersistence(sessionDir: string) {
+  const store = createFilesystemOrchestrationStore(sessionDir);
+  return {
+    appendEvent: (event: Parameters<typeof store.appendEvent>[0]) => store.appendEvent(event),
+    loadEvents: () => store.loadEvents(),
+    loadSnapshot: () => store.loadSnapshot(),
+    writeCheckpoint: (snapshot: Parameters<typeof store.writeCheckpoint>[0]) =>
+      store.writeCheckpoint(snapshot),
+    recoverState: () => store.recoverState(),
+    appendMailboxEvent: (agentId: string, event: Parameters<typeof store.appendMailboxEvent>[1]) =>
+      store.appendMailboxEvent(agentId, event),
+    loadMailboxEvents: (agentId: string) => store.loadMailboxEvents(agentId),
+    loadMailboxState: (agentId: string) => store.loadMailboxState(agentId),
+    writeMailboxState: (agentId: string, state: Parameters<typeof store.writeMailboxState>[1]) =>
+      store.writeMailboxState(agentId, state),
+  };
 }
 
 function createClock(...timestamps: string[]): () => string {
@@ -84,7 +102,7 @@ describe("wait_agent orchestration", () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
     const manager = await OrchestrationManager.create({
-      sessionDir,
+      persistence: createPersistence(sessionDir),
       runtime: runtimeHarness.runtime,
       now: createClock(
         "2026-03-23T09:59:00.000Z",
@@ -186,7 +204,7 @@ describe("wait_agent orchestration", () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
     const manager = await OrchestrationManager.create({
-      sessionDir,
+      persistence: createPersistence(sessionDir),
       runtime: runtimeHarness.runtime,
       now: createClock("2026-03-23T10:02:00.000Z", "2026-03-23T10:02:01.000Z"),
     });
@@ -228,7 +246,7 @@ describe("wait_agent orchestration", () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
     const manager = await OrchestrationManager.create({
-      sessionDir,
+      persistence: createPersistence(sessionDir),
       runtime: runtimeHarness.runtime,
       now: createClock(
         "2026-03-23T10:00:00.000Z",
@@ -321,7 +339,7 @@ describe("wait_agent orchestration", () => {
     const sessionDir = await createSessionDir();
     const firstRuntimeHarness = createRuntimeHarness();
     const manager = await OrchestrationManager.create({
-      sessionDir,
+      persistence: createPersistence(sessionDir),
       runtime: firstRuntimeHarness.runtime,
       now: createClock(
         "2026-03-23T11:00:00.000Z",
@@ -359,7 +377,7 @@ describe("wait_agent orchestration", () => {
 
     const secondRuntimeHarness = createRuntimeHarness();
     const recoveredManager = await OrchestrationManager.create({
-      sessionDir,
+      persistence: createPersistence(sessionDir),
       runtime: secondRuntimeHarness.runtime,
       now: createClock("2026-03-23T11:00:10.000Z", "2026-03-23T11:00:11.000Z"),
     });
@@ -383,7 +401,7 @@ describe("wait_agent orchestration", () => {
       },
     });
 
-    const events = await OrchestrationStore.loadEvents(sessionDir);
+    const events = await createFilesystemOrchestrationStore(sessionDir).loadEvents();
     expect(events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

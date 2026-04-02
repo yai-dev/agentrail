@@ -22,6 +22,11 @@ async function readJsonFile<T>(filePath: string): Promise<T | null> {
   }
 }
 
+function getSessionRootDir(dataDir: string, sessionRef: SessionRef): string {
+  const { tenantId, sessionId } = resolveSessionRef(sessionRef);
+  return path.join(dataDir, "tenants", tenantId, "sessions", sessionId);
+}
+
 // Deep Research persistence is intentionally simple: every run has a snapshot
 // state file plus an append-only event log so the UI can recover the latest run
 // and developers can inspect the raw execution history on disk.
@@ -36,10 +41,10 @@ export interface DeepResearchStore {
 }
 
 class FileSystemDeepResearchStore implements DeepResearchStore {
-  constructor(private readonly sessionDir: string) {}
+  constructor(private readonly sessionRootDir: string) {}
 
   private getRootDir(): string {
-    return path.join(this.sessionDir, "deep-research");
+    return path.join(this.sessionRootDir, "deep-research");
   }
 
   private getRunsDir(): string {
@@ -128,11 +133,10 @@ class FileSystemDeepResearchStore implements DeepResearchStore {
   }
 }
 
+/** Creates the default filesystem-backed Deep Research store for a session. */
 export function createFileSystemDeepResearchStore(
   dataDir: string,
   sessionRef: SessionRef,
 ): DeepResearchStore {
-  const { tenantId, sessionId } = resolveSessionRef(sessionRef);
-  const sessionDir = path.join(dataDir, "tenants", tenantId, "sessions", sessionId);
-  return new FileSystemDeepResearchStore(sessionDir);
+  return new FileSystemDeepResearchStore(getSessionRootDir(dataDir, sessionRef));
 }

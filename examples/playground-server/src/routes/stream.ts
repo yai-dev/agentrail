@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { WorkflowTraceEventEnvelope } from "@agentrail/events";
 import { createStreamRoute } from "@agentrail/host";
-import { appendFile, mkdir } from "node:fs/promises";
-import path from "node:path";
+import { createFileSystemSessionTraceStore } from "@agentrail/memo";
 import { DEFAULT_AGENT_ID } from "../agents/index.js";
 import { buildSummarizeFn } from "../agents/summarizer.js";
 import { handlePlaygroundDeepResearchModeStream } from "../chat/deep-research.js";
@@ -45,11 +45,11 @@ const stream = createStreamRoute({
   },
   handleResolvedRequest: handlePlaygroundDeepResearchModeStream,
   onTraceEvent: (ctx, envelope) => {
-    const { tenantId, sessionId } = sessionManager.resolveSessionRef(ctx.sessionRef);
-    const traceDir = sessionManager.getTraceDir(tenantId, sessionId);
-    void mkdir(traceDir, { recursive: true }).then(() =>
-      appendFile(path.join(traceDir, "events.jsonl"), `${JSON.stringify(envelope)}\n`, "utf8"),
+    const traceStore = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(
+      config.dataDir,
+      ctx.sessionRef,
     );
+    void traceStore.appendEnvelope(envelope);
   },
 });
 

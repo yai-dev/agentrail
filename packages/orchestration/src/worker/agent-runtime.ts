@@ -40,7 +40,6 @@ export interface WorkerState {
   userId: string;
   sessionId: string;
   sessionRef: SessionRef;
-  sessionDir: string;
   input: CreateManagedAgentInput;
   history: Message[];
   workerConfig: SubagentWorkerConfig;

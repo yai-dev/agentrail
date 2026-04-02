@@ -7,8 +7,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-
-import { OrchestrationStore } from "../src/orchestration-store.js";
+import { createFilesystemOrchestrationStore } from "../src/orchestration-store.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -26,11 +25,16 @@ async function createSessionDir(): Promise<string> {
   return directory;
 }
 
+function createStore(sessionDir: string) {
+  return createFilesystemOrchestrationStore(sessionDir);
+}
+
 describe("mailbox store", () => {
   it("persists mailbox events and state per agent", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
 
-    await OrchestrationStore.appendMailboxEvent(sessionDir, "agent-mailbox", {
+    await store.appendMailboxEvent("agent-mailbox", {
       eventId: "mailbox-evt-1",
       type: "input_enqueued",
       agentId: "agent-mailbox",
@@ -40,39 +44,32 @@ describe("mailbox store", () => {
         prompt: "Summarize the notes",
       },
     });
-    await OrchestrationStore.writeMailboxState(sessionDir, "agent-mailbox", {
+    await store.writeMailboxState("agent-mailbox", {
       processedEventCount: 1,
       closeRequested: null,
     });
 
-    await expect(
-      OrchestrationStore.loadMailboxEvents(sessionDir, "agent-mailbox"),
-    ).resolves.toEqual([
+    await expect(store.loadMailboxEvents("agent-mailbox")).resolves.toEqual([
       expect.objectContaining({
         eventId: "mailbox-evt-1",
         type: "input_enqueued",
         inputId: "input-1",
       }),
     ]);
-    await expect(OrchestrationStore.loadMailboxState(sessionDir, "agent-mailbox")).resolves.toEqual(
-      {
-        processedEventCount: 1,
-        closeRequested: null,
-      },
-    );
+    await expect(store.loadMailboxState("agent-mailbox")).resolves.toEqual({
+      processedEventCount: 1,
+      closeRequested: null,
+    });
   });
 
   it("returns empty defaults for a missing mailbox", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
 
-    await expect(
-      OrchestrationStore.loadMailboxEvents(sessionDir, "agent-missing"),
-    ).resolves.toEqual([]);
-    await expect(OrchestrationStore.loadMailboxState(sessionDir, "agent-missing")).resolves.toEqual(
-      {
-        processedEventCount: 0,
-        closeRequested: null,
-      },
-    );
+    await expect(store.loadMailboxEvents("agent-missing")).resolves.toEqual([]);
+    await expect(store.loadMailboxState("agent-missing")).resolves.toEqual({
+      processedEventCount: 0,
+      closeRequested: null,
+    });
   });
 });

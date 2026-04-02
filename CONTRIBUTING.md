@@ -56,6 +56,7 @@ Store secrets in environment variables only. Do not add real credentials to `con
 Run these before opening a PR when you touch framework packages:
 
 ```bash
+pnpm format
 pnpm build:packages
 pnpm test
 pnpm typecheck
@@ -199,6 +200,7 @@ AI tools are welcome for writing code, tests, and documentation. Contributors ar
 
 Before requesting review:
 
+- `pnpm format` has been run and any formatting-only changes were reviewed
 - local configuration is represented in `config/agentrail.yaml`
 - code builds locally
 - tests pass locally

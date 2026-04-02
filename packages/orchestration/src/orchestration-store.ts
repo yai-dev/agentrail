@@ -5,7 +5,6 @@
 
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-
 import { recoverOrchestrationState, type RecoveredOrchestrationState } from "./recovery.js";
 import type {
   OrchestrationEvent,
@@ -21,140 +20,19 @@ const SUBAGENTS_DIRECTORY = "subagents";
 const MAILBOX_FILE = "mailbox.jsonl";
 const MAILBOX_STATE_FILE = "mailbox-state.json";
 
-function getOrchestrationDirectory(sessionDir: string): string {
-  return join(sessionDir, ORCHESTRATION_DIRECTORY);
-}
-
-function getEventsPath(sessionDir: string): string {
-  return join(getOrchestrationDirectory(sessionDir), EVENTS_FILE);
-}
-
-function getCheckpointPath(sessionDir: string): string {
-  return join(getOrchestrationDirectory(sessionDir), CHECKPOINT_FILE);
-}
-
-function getSubAgentDirectory(sessionDir: string, agentId: string): string {
-  return join(getOrchestrationDirectory(sessionDir), SUBAGENTS_DIRECTORY, agentId);
-}
-
-function getMailboxPath(sessionDir: string, agentId: string): string {
-  return join(getSubAgentDirectory(sessionDir, agentId), MAILBOX_FILE);
-}
-
-function getMailboxStatePath(sessionDir: string, agentId: string): string {
-  return join(getSubAgentDirectory(sessionDir, agentId), MAILBOX_STATE_FILE);
-}
-
-async function ensureOrchestrationDirectory(sessionDir: string): Promise<void> {
-  await mkdir(getOrchestrationDirectory(sessionDir), { recursive: true });
-}
-
-async function ensureSubAgentDirectory(sessionDir: string, agentId: string): Promise<void> {
-  await mkdir(getSubAgentDirectory(sessionDir, agentId), { recursive: true });
-}
-
-export async function appendEvent(sessionDir: string, event: OrchestrationEvent): Promise<void> {
-  await ensureOrchestrationDirectory(sessionDir);
-  await appendFile(getEventsPath(sessionDir), `${JSON.stringify(event)}\n`, "utf8");
-}
-
-export async function loadEvents(sessionDir: string): Promise<OrchestrationEvent[]> {
-  try {
-    const contents = await readFile(getEventsPath(sessionDir), "utf8");
-    return contents
-      .split("\n")
-      .filter((line: string) => line.trim().length > 0)
-      .map((line: string) => JSON.parse(line) as OrchestrationEvent);
-  } catch (error) {
-    if (isMissingFileError(error)) {
-      return [];
-    }
-
-    throw error;
-  }
-}
-
-export async function loadSnapshot(sessionDir: string): Promise<OrchestrationSnapshot | null> {
-  try {
-    const contents = await readFile(getCheckpointPath(sessionDir), "utf8");
-    return JSON.parse(contents) as OrchestrationSnapshot;
-  } catch (error) {
-    if (isMissingFileError(error) || isInvalidSnapshotError(error)) {
-      return null;
-    }
-
-    throw error;
-  }
-}
-
-export async function writeCheckpoint(
-  sessionDir: string,
-  snapshot: OrchestrationSnapshot,
-): Promise<void> {
-  await ensureOrchestrationDirectory(sessionDir);
-  await writeFile(getCheckpointPath(sessionDir), JSON.stringify(snapshot, null, 2), "utf8");
-}
-
-export async function recoverState(sessionDir: string): Promise<RecoveredOrchestrationState> {
-  const [snapshot, events] = await Promise.all([loadSnapshot(sessionDir), loadEvents(sessionDir)]);
-
-  return recoverOrchestrationState(snapshot, events);
-}
-
-export async function appendMailboxEvent(
-  sessionDir: string,
-  agentId: string,
-  event: OrchestrationMailboxEvent,
-): Promise<void> {
-  await ensureSubAgentDirectory(sessionDir, agentId);
-  await appendFile(getMailboxPath(sessionDir, agentId), `${JSON.stringify(event)}\n`, "utf8");
-}
-
-export async function loadMailboxEvents(
-  sessionDir: string,
-  agentId: string,
-): Promise<OrchestrationMailboxEvent[]> {
-  try {
-    const contents = await readFile(getMailboxPath(sessionDir, agentId), "utf8");
-    return contents
-      .split("\n")
-      .filter((line: string) => line.trim().length > 0)
-      .map((line: string) => JSON.parse(line) as OrchestrationMailboxEvent);
-  } catch (error) {
-    if (isMissingFileError(error)) {
-      return [];
-    }
-
-    throw error;
-  }
-}
-
-export async function loadMailboxState(
-  sessionDir: string,
-  agentId: string,
-): Promise<OrchestrationMailboxState> {
-  try {
-    const contents = await readFile(getMailboxStatePath(sessionDir, agentId), "utf8");
-    return JSON.parse(contents) as OrchestrationMailboxState;
-  } catch (error) {
-    if (isMissingFileError(error) || isInvalidSnapshotError(error)) {
-      return {
-        processedEventCount: 0,
-        closeRequested: null,
-      };
-    }
-
-    throw error;
-  }
-}
-
-export async function writeMailboxState(
-  sessionDir: string,
-  agentId: string,
-  state: OrchestrationMailboxState,
-): Promise<void> {
-  await ensureSubAgentDirectory(sessionDir, agentId);
-  await writeFile(getMailboxStatePath(sessionDir, agentId), JSON.stringify(state, null, 2), "utf8");
+/** Filesystem-backed orchestration store scoped to one session root directory. */
+export interface FilesystemOrchestrationStore {
+  appendEvent(event: OrchestrationEvent): Promise<void>;
+  loadEvents(): Promise<OrchestrationEvent[]>;
+  loadSnapshot(): Promise<OrchestrationSnapshot | null>;
+  writeCheckpoint(snapshot: OrchestrationSnapshot): Promise<void>;
+  recoverState(): Promise<RecoveredOrchestrationState>;
+  appendMailboxEvent(agentId: string, event: OrchestrationMailboxEvent): Promise<void>;
+  loadMailboxEvents(agentId: string): Promise<OrchestrationMailboxEvent[]>;
+  loadMailboxState(agentId: string): Promise<OrchestrationMailboxState>;
+  writeMailboxState(agentId: string, state: OrchestrationMailboxState): Promise<void>;
+  loadAgentHistory(agentId: string): Promise<unknown[]>;
+  writeAgentHistory(agentId: string, history: unknown[]): Promise<void>;
 }
 
 function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
@@ -170,15 +48,119 @@ function isInvalidSnapshotError(error: unknown): error is SyntaxError {
   return error instanceof SyntaxError;
 }
 
-/** Filesystem-backed persistence helpers for orchestration event logs and checkpoints. */
-export const OrchestrationStore = {
-  appendEvent,
-  appendMailboxEvent,
-  loadEvents,
-  loadMailboxEvents,
-  loadMailboxState,
-  loadSnapshot,
-  writeCheckpoint,
-  writeMailboxState,
-  recoverState,
-};
+/**
+ * Creates a session-scoped filesystem orchestration store rooted at one private
+ * session directory. Callers should prefer higher-level persistence adapters
+ * unless they are already operating inside package-internal filesystem code.
+ */
+export function createFilesystemOrchestrationStore(rootDir: string): FilesystemOrchestrationStore {
+  const orchestrationDirectory = join(rootDir, ORCHESTRATION_DIRECTORY);
+  const getEventsPath = () => join(orchestrationDirectory, EVENTS_FILE);
+  const getCheckpointPath = () => join(orchestrationDirectory, CHECKPOINT_FILE);
+  const getSubAgentDirectory = (agentId: string) =>
+    join(orchestrationDirectory, SUBAGENTS_DIRECTORY, agentId);
+  const getMailboxPath = (agentId: string) => join(getSubAgentDirectory(agentId), MAILBOX_FILE);
+  const getMailboxStatePath = (agentId: string) =>
+    join(getSubAgentDirectory(agentId), MAILBOX_STATE_FILE);
+  const getHistoryPath = (agentId: string) => join(getSubAgentDirectory(agentId), "history.json");
+
+  const ensureOrchestrationDirectory = async (): Promise<void> => {
+    await mkdir(orchestrationDirectory, { recursive: true });
+  };
+
+  const ensureSubAgentDirectory = async (agentId: string): Promise<void> => {
+    await mkdir(getSubAgentDirectory(agentId), { recursive: true });
+  };
+
+  return {
+    async appendEvent(event: OrchestrationEvent): Promise<void> {
+      await ensureOrchestrationDirectory();
+      await appendFile(getEventsPath(), `${JSON.stringify(event)}\n`, "utf8");
+    },
+    async loadEvents(): Promise<OrchestrationEvent[]> {
+      try {
+        const contents = await readFile(getEventsPath(), "utf8");
+        return contents
+          .split("\n")
+          .filter((line) => line.trim().length > 0)
+          .map((line) => JSON.parse(line) as OrchestrationEvent);
+      } catch (error) {
+        if (isMissingFileError(error)) {
+          return [];
+        }
+
+        throw error;
+      }
+    },
+    async loadSnapshot(): Promise<OrchestrationSnapshot | null> {
+      try {
+        const contents = await readFile(getCheckpointPath(), "utf8");
+        return JSON.parse(contents) as OrchestrationSnapshot;
+      } catch (error) {
+        if (isMissingFileError(error) || isInvalidSnapshotError(error)) {
+          return null;
+        }
+
+        throw error;
+      }
+    },
+    async writeCheckpoint(snapshot: OrchestrationSnapshot): Promise<void> {
+      await ensureOrchestrationDirectory();
+      await writeFile(getCheckpointPath(), JSON.stringify(snapshot, null, 2), "utf8");
+    },
+    async recoverState(): Promise<RecoveredOrchestrationState> {
+      const [snapshot, events] = await Promise.all([this.loadSnapshot(), this.loadEvents()]);
+      return recoverOrchestrationState(snapshot, events);
+    },
+    async appendMailboxEvent(agentId: string, event: OrchestrationMailboxEvent): Promise<void> {
+      await ensureSubAgentDirectory(agentId);
+      await appendFile(getMailboxPath(agentId), `${JSON.stringify(event)}\n`, "utf8");
+    },
+    async loadMailboxEvents(agentId: string): Promise<OrchestrationMailboxEvent[]> {
+      try {
+        const contents = await readFile(getMailboxPath(agentId), "utf8");
+        return contents
+          .split("\n")
+          .filter((line) => line.trim().length > 0)
+          .map((line) => JSON.parse(line) as OrchestrationMailboxEvent);
+      } catch (error) {
+        if (isMissingFileError(error)) {
+          return [];
+        }
+
+        throw error;
+      }
+    },
+    async loadMailboxState(agentId: string): Promise<OrchestrationMailboxState> {
+      try {
+        const contents = await readFile(getMailboxStatePath(agentId), "utf8");
+        return JSON.parse(contents) as OrchestrationMailboxState;
+      } catch (error) {
+        if (isMissingFileError(error) || isInvalidSnapshotError(error)) {
+          return {
+            processedEventCount: 0,
+            closeRequested: null,
+          };
+        }
+
+        throw error;
+      }
+    },
+    async writeMailboxState(agentId: string, state: OrchestrationMailboxState): Promise<void> {
+      await ensureSubAgentDirectory(agentId);
+      await writeFile(getMailboxStatePath(agentId), JSON.stringify(state, null, 2), "utf8");
+    },
+    async loadAgentHistory(agentId: string): Promise<unknown[]> {
+      try {
+        const contents = await readFile(getHistoryPath(agentId), "utf8");
+        return JSON.parse(contents) as unknown[];
+      } catch {
+        return [];
+      }
+    },
+    async writeAgentHistory(agentId: string, history: unknown[]): Promise<void> {
+      await ensureSubAgentDirectory(agentId);
+      await writeFile(getHistoryPath(agentId), JSON.stringify(history, null, 2), "utf8");
+    },
+  };
+}

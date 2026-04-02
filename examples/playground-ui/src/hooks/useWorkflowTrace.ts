@@ -63,9 +63,9 @@ export function useWorkflowTrace(sessionId: string | null): UseWorkflowTraceResu
 
           // Merge: preserve any live runtime events that the server hasn't
           // persisted yet (e.g. agent_start arrives before session_id resolves,
-          // DeepResearch path never writes trace/events.jsonl so runtime events
-          // only exist client-side). Orchestration envelopes from the server
-          // already cover the orchestration side.
+          // DeepResearch path never writes to the persisted session trace store,
+          // so runtime events only exist client-side). Orchestration envelopes
+          // from the server already cover the orchestration side.
           const fetchedIds = new Set(fetched.map((e) => e.id));
           const liveOnly = prev.filter((e) => e.source === "runtime" && !fetchedIds.has(e.id));
 

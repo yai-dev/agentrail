@@ -22,6 +22,7 @@ import type { SessionRef } from "./session-ref.js";
 import { createSessionRef, resolveSessionRef } from "./session-ref.js";
 import type { TodoStorage } from "./todo-storage.js";
 import { estimateMessageTokens } from "./token-estimator.js";
+import { createFileSystemSessionTraceStore, type SessionTraceStore } from "./trace-store.js";
 import type {
   CompactionMetadata,
   MemoryIndex,
@@ -376,6 +377,12 @@ export class SessionManager {
       read: () => this.readTodoFile(sessionRef),
       write: (content) => this.writeTodoFile(sessionRef, content),
     };
+  }
+
+  createTraceStorage<TEnvelope = Record<string, unknown>>(
+    sessionRef: SessionRef,
+  ): SessionTraceStore<TEnvelope> {
+    return createFileSystemSessionTraceStore<TEnvelope>(this.dataDir, sessionRef);
   }
 
   async persistSkillSubAgentLog(
