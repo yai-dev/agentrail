@@ -3,13 +3,17 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import {
+  createFileSystemDeepResearchStore,
+  type DeepResearchState,
+} from "@agentrail/deep-research";
+import { createSessionRef } from "@agentrail/memo";
+import { Hono } from "hono";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after } from "node:test";
-import { DeepResearchStore, type DeepResearchState } from "@agentrail/deep-research";
-import { Hono } from "hono";
 
 const dataDir = await mkdtemp(join(tmpdir(), "agentrail-deep-research-route-"));
 const configPath = join(dataDir, "agentrail.yaml");
@@ -24,8 +28,7 @@ after(async () => {
 
 test("deep research route returns latest run state and events", async () => {
   const sessionId = "session-deep-research-route";
-  const sessionDir = join(dataDir, "tenants", "default", "sessions", sessionId);
-  const store = new DeepResearchStore(sessionDir);
+  const store = createFileSystemDeepResearchStore(dataDir, createSessionRef("default", sessionId));
 
   const state: DeepResearchState = {
     run: {
@@ -108,7 +111,9 @@ test("deep research artifact route streams raw artifact bytes", async () => {
   app.route("/api/sessions", deepResearch);
 
   const response = await app.request(
-    `/api/sessions/${sessionId}/deep-research/artifact?path=${encodeURIComponent("/workspace/.deep-research/artifacts/chart.svg")}`,
+    `/api/sessions/${sessionId}/deep-research/artifact?path=${encodeURIComponent(
+      "/workspace/.deep-research/artifacts/chart.svg",
+    )}`,
   );
 
   assert.equal(response.status, 200);

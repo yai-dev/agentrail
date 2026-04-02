@@ -122,7 +122,9 @@ app.route(
         messages: [
           {
             role: "user",
-            content: `Summarize the following conversation in 3-5 sentences:\n\n${messages.map((m) => `${m.role}: ${m.content}`).join("\n")}`,
+            content: `Summarize the following conversation in 3-5 sentences:\n\n${messages
+              .map((m) => `${m.role}: ${m.content}`)
+              .join("\n")}`,
           },
         ],
       });

@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { SessionRef } from "@agentrail/memo";
+
 export interface WorkerConfigMessage {
   pollIntervalMs?: number;
   fakeExecution?: "" | "echo";
@@ -14,7 +16,8 @@ export interface WorkerInitMessage {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
+  dataDir: string;
   // biome-ignore lint/suspicious/noExplicitAny: Worker state is serialized
   runtimeConfig: any;
   workerConfig?: WorkerConfigMessage;

@@ -3,15 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message, AssistantMessage, ToolResultMessage } from "../types/message.types.js";
-import type { RuntimeEvent } from "../types/result.types.js";
-import type { Usage } from "../types/usage.types.js";
-import type { RuntimeTool } from "../types/tool.types.js";
-import type { LlmClient, LlmRequest } from "../interfaces/llm-client.js";
-import type { ModelConfig } from "./define-agent.js";
-import type { TransformContextFn } from "../types/agent.types.js";
-import { EventStream } from "../llm/event-stream.js";
 import { executeToolCalls } from "../executor/tool-executor.js";
+import type { LlmClient, LlmRequest } from "../interfaces/llm-client.js";
+import { EventStream } from "../llm/event-stream.js";
+import type { TransformContextFn } from "../types/agent.types.js";
+import type { AssistantMessage, Message, ToolResultMessage } from "../types/message.types.js";
+import type { RuntimeEvent } from "../types/result.types.js";
+import type { RuntimeTool } from "../types/tool.types.js";
+import type { Usage } from "../types/usage.types.js";
+import type { ModelConfig } from "./define-agent.js";
 
 // ============================================================================
 // ============================================================================

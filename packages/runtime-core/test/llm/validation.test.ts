@@ -3,12 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect } from "vitest";
 import { Type } from "@sinclair/typebox";
-import { validateToolArguments, validateToolCall } from "../../src/llm/utils/validation.js";
-import type { ToolDefinition } from "../../src/types/tool.types.js";
-import type { ToolCall } from "../../src/types/content.types.js";
+import { describe, expect, it } from "vitest";
 import { ToolValidationError } from "../../src/errors.js";
+import { validateToolArguments, validateToolCall } from "../../src/llm/utils/validation.js";
+import type { ToolCall } from "../../src/types/content.types.js";
+import type { ToolDefinition } from "../../src/types/tool.types.js";
 
 const stringTool: ToolDefinition = {
   name: "string_tool",

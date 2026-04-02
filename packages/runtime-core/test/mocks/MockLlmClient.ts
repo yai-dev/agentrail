@@ -8,8 +8,8 @@
  */
 
 import type { LlmClient, LlmRequest, LlmStream } from "../../src/interfaces/llm-client.js";
-import type { AssistantMessage, LlmStreamEvent } from "../../src/types/index.js";
 import { EventStream } from "../../src/llm/event-stream.js";
+import type { AssistantMessage, LlmStreamEvent } from "../../src/types/index.js";
 
 /**
  * Mock LLM Client

@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { defineAgent } from "../../src/agent/define-agent.js";
 import { MockLlmClient } from "../mocks/MockLlmClient.js";
 

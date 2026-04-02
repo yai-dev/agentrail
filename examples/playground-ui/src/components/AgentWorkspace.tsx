@@ -3,21 +3,21 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { DisplayToolCall, TurnActions } from "../App";
 import {
   extractResultText,
-  fetchWorkspaceFiles,
-  fetchWorkspaceFile,
   fetchBrowserScreenshot,
+  fetchWorkspaceFile,
+  fetchWorkspaceFiles,
   type WorkspaceFileResult,
 } from "../api";
 import type { AgentRunTrace, WorkflowTraceEventEnvelope } from "../types/trace";
-import { TraceDAGView } from "./TraceDAGView";
 import { AgentTeamPanel } from "./AgentTeamPanel";
 import { DeepResearchPanel } from "./DeepResearchPanel";
+import { TraceDAGView } from "./TraceDAGView";
 import { WorkspaceEmptyState } from "./WorkspaceEmptyState";
 // mammoth imported dynamically inside DocxPreview
 
@@ -673,7 +673,9 @@ function FileTreeNode({
 
   return (
     <div
-      className={`ws-tree-row ws-tree-file-row${isActive ? " active" : ""}${isSelected ? " selected" : ""}`}
+      className={`ws-tree-row ws-tree-file-row${isActive ? " active" : ""}${
+        isSelected ? " selected" : ""
+      }`}
       style={{ paddingLeft: `${8 + depth * 14}px` }}
       onClick={() => onSelectFile(node.fullPath)}
       role="button"

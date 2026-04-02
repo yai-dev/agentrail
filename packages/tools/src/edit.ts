@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { readFile, writeFile } from "node:fs/promises";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { readFile, writeFile } from "node:fs/promises";
 
 const toolName = "Edit";
 const toolLabel = "Edit";

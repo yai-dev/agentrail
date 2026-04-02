@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@agentrail/knowledge": "workspace:*",
+    "@agentrail/memo": "workspace:*",
     "@agentrail/orchestration": "workspace:*",
     "@agentrail/prompts": "workspace:*",
     "@agentrail/runtime-core": "workspace:*",

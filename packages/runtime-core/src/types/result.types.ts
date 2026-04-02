@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message, AssistantMessage, StopReason, ToolResultMessage } from "./message.types.js";
-import type { ToolResult } from "./tool.types.js";
 import type { ToolCall } from "./content.types.js";
+import type { AssistantMessage, Message, StopReason, ToolResultMessage } from "./message.types.js";
+import type { ToolResult } from "./tool.types.js";
 import type { Usage } from "./usage.types.js";
 
 // ============================================================================

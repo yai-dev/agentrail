@@ -3,9 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
+import type { Agent, Message, Usage } from "@agentrail/runtime-core";
 import { describe, expect, it, vi } from "vitest";
 import { createChatRoute } from "../src/chat-route.js";
-import type { Agent, Message, Usage } from "@agentrail/runtime-core";
 
 function makeUsage(): Usage {
   return {
@@ -107,14 +108,20 @@ describe("createChatRoute", () => {
 
   it("invokes the default profile, applies plugin context, and persists the turn", async () => {
     const sessionManager = {
-      getOrCreate: vi.fn(async () => ({ sessionId: "session-1" })),
-      getSessionDir: vi.fn(() => "/tmp/session-1"),
+      getOrCreate: vi.fn(async () => ({
+        sessionId: "session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
+      })),
       loadMessages: vi.fn(async () => []),
       loadMessagesWithBudget: vi.fn(async () => []),
       loadAllMessages: vi.fn(async () => []),
       appendMessages: vi.fn(async () => {}),
       recordTurn: vi.fn(async () => {}),
       compactIfNeeded: vi.fn(async () => false),
+      createTodoStorage: vi.fn(() => ({
+        read: async () => null,
+        write: async () => {},
+      })),
     };
     const invokeSpy = vi.fn();
     const contextProvider = vi.fn(async () => [
@@ -195,8 +202,10 @@ describe("createChatRoute", () => {
 
   it("allows a resolved request handler to short-circuit normal agent invocation", async () => {
     const sessionManager = {
-      getOrCreate: vi.fn(async () => ({ sessionId: "session-1" })),
-      getSessionDir: vi.fn(() => "/tmp/session-1"),
+      getOrCreate: vi.fn(async () => ({
+        sessionId: "session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
+      })),
     };
     const handleResolvedRequest = vi.fn(async () => ({
       body: {

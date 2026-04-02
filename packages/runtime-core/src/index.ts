@@ -14,10 +14,10 @@ export type { Agent } from "./interfaces/agent.js";
 
 export { defineSimpleTool, tool } from "./tools/tool-builder.js";
 /** Fluent tool-builder types exported by the runtime core. */
-export type { ToolBuilder, ToolExecutionContext } from "./tools/tool-builder.js";
 export { Type } from "@sinclair/typebox";
+export type { ToolBuilder, ToolExecutionContext } from "./tools/tool-builder.js";
 /** Re-exported TypeBox helper types used by Agentrail tool schemas. */
-export type { TSchema, Static } from "@sinclair/typebox";
+export type { Static, TSchema } from "@sinclair/typebox";
 
 // ============================================================================
 // ============================================================================

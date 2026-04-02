@@ -3,12 +3,19 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Hono } from "hono";
+import type { SessionRef } from "@agentrail/memo";
 import type { Message, TransformContextFn } from "@agentrail/runtime-core";
+import { Hono } from "hono";
+import {
+  resolveChatTransformContext,
+  respondHandledJson,
+  validateChatRequest,
+} from "./chat-route-internals.js";
 import { runCompactionIfNeeded } from "./compaction.js";
+import { runPluginChatRequestInterceptors, runPluginRequestHook } from "./plugins.js";
 import type {
-  AgentrailChatRequest,
   AgentrailChatHandledResponse,
+  AgentrailChatRequest,
   AgentrailChatSuccessBody,
   AgentrailPlugin,
   AgentrailProfile,
@@ -16,12 +23,6 @@ import type {
   AgentrailSessionStore,
   ContextProvider,
 } from "./types.js";
-import { runPluginChatRequestInterceptors, runPluginRequestHook } from "./plugins.js";
-import {
-  respondHandledJson,
-  resolveChatTransformContext,
-  validateChatRequest,
-} from "./chat-route-internals.js";
 
 /**
  * Configuration for the JSON chat route factory.
@@ -44,7 +45,8 @@ export interface AgentrailChatRouteOptions {
       tenantId: string;
       userId: string;
       sessionId: string;
-      sessionDir: string;
+      sessionRef: SessionRef;
+      sessionStore: AgentrailSessionStore;
     },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
@@ -71,7 +73,7 @@ export interface AgentrailChatRouteOptions {
     tenantId: string;
     userId: string;
     sessionId: string;
-    sessionDir: string;
+    sessionRef: SessionRef;
     signal: AbortSignal;
     sessionStore: AgentrailSessionStore;
   }) => Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
@@ -131,7 +133,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         request.sessionId,
       );
       const sessionId = sessionInfo.sessionId;
-      const sessionDir = options.sessionStore.getSessionDir(request.tenantId, sessionId);
+      const sessionRef = sessionInfo.sessionRef;
 
       requestContext = {
         kind: "chat",
@@ -152,7 +154,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
             tenantId: request.tenantId,
             userId: request.userId,
             sessionId,
-            sessionDir,
+            sessionRef,
             signal,
             sessionStore: options.sessionStore,
           })
@@ -168,7 +170,8 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         tenantId: request.tenantId,
         userId: request.userId,
         sessionId,
-        sessionDir,
+        sessionRef,
+        sessionStore: options.sessionStore,
       });
       if (!profile) {
         return c.json({ error: `Agent profile '${agentId}' not found` }, 404);
@@ -178,7 +181,8 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         tenantId: request.tenantId,
         userId: request.userId,
         sessionId,
-        sessionDir,
+        sessionRef,
+        sessionStore: options.sessionStore,
       });
       const allMessages = await options.sessionStore.loadAllMessages(request.tenantId, sessionId);
       await runCompactionIfNeeded(

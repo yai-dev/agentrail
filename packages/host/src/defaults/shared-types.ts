@@ -3,16 +3,17 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message, ModelConfig, RuntimeTool, UserMessage } from "@agentrail/runtime-core";
-import type { MemoryIndex } from "@agentrail/memo";
 import type { KBMetadata, KnowledgeManager } from "@agentrail/knowledge";
-import type { ExtendedSseEvent, SkillManager, SkillMeta } from "@agentrail/skills";
+import type { MemoryIndex, SessionRef } from "@agentrail/memo";
+import type { Message, ModelConfig, RuntimeTool, UserMessage } from "@agentrail/runtime-core";
 import type { SandboxManager } from "@agentrail/sandbox";
+import type { ExtendedSseEvent, SkillManager, SkillMeta } from "@agentrail/skills";
 import type { WaitHandleRegistry } from "@agentrail/tools";
 import type {
   AgentrailChatHandledResponse,
   AgentrailProfile,
   AgentrailProfileContext,
+  AgentrailSessionStore,
   ContextProvider,
 } from "../types.js";
 
@@ -40,7 +41,6 @@ export interface HostedProfileDefinition extends AgentrailProfile {
     tenantId: string;
     userId: string;
     sessionId: string;
-    sessionDir: string;
     signal: AbortSignal;
   }) => Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
   /** Optional factory for orchestration-managed agents. */
@@ -91,7 +91,8 @@ export interface DefaultCapabilityToolOptions {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
+  sessionStore: AgentrailSessionStore;
   knowledgeManager: KnowledgeManager;
   sandboxManager: SandboxManager;
   waitHandleRegistry: WaitHandleRegistry;
@@ -101,7 +102,6 @@ export interface DefaultCapabilityToolOptions {
   skillManager?: SkillManager;
   onSubAgentEvent?: (event: ExtendedSseEvent) => void;
   containerSkillsDir?: string;
-  subAgentLogDir?: string;
 }
 
 /** Factory that creates a synthetic user message for contextual system hints. */

@@ -3,15 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  RuntimeError,
-  LlmError,
-  ToolExecutionError,
-  ToolValidationError,
-  ProviderNotFoundError,
-  ToolNotFoundError,
   AbortedError,
+  LlmError,
+  ProviderNotFoundError,
+  RuntimeError,
+  ToolExecutionError,
+  ToolNotFoundError,
+  ToolValidationError,
 } from "../src/errors.js";
 
 describe("RuntimeError", () => {

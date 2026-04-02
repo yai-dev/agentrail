@@ -13,6 +13,10 @@ export interface SessionInfo {
   updatedAt: number;
 }
 
+export interface SessionHandle extends SessionInfo {
+  sessionRef: import("./session-ref.js").SessionRef;
+}
+
 /** Lightweight session descriptor for listing sessions by user. */
 export interface SessionMeta {
   sessionId: string;

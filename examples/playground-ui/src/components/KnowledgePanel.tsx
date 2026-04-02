@@ -3,16 +3,16 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  fetchKBList,
   createKB,
   deleteKB,
-  fetchKBDocuments,
   deleteKBDocument,
+  fetchKBDocuments,
+  fetchKBList,
   ingestDocument,
-  type KBDocMeta,
   type IngestionEvent,
+  type KBDocMeta,
 } from "../api";
 
 // ── Ingestion step metadata ────────────────────────────────────────────────

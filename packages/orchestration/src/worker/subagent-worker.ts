@@ -3,16 +3,17 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { defineAgent, type Message } from "@agentrail/runtime-core";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { defineAgent, type Message } from "@agentrail/runtime-core";
 import {
   type AgentInputEnvelope,
   type CreateManagedAgentInput,
   type ManagedAgentDeliveryResult,
   type OrchestrationMailboxState,
-  OrchestrationStore,
 } from "../index.js";
+import { OrchestrationStore } from "../orchestration-store.js";
+import { getSessionDirForRef } from "../persistence.js";
 import {
   type SubAgentRuntime,
   type SubagentWorkerConfig,
@@ -20,9 +21,9 @@ import {
 } from "./agent-runtime.js";
 import {
   type ParentMessage,
-  type WorkerMessage,
   type WorkerCloseMessage,
   type WorkerInitMessage,
+  type WorkerMessage,
   type WorkerRunTurnMessage,
 } from "./worker-messages.js";
 
@@ -81,13 +82,15 @@ async function handleMessage(message: WorkerMessage): Promise<void> {
 }
 
 async function handleInit(message: WorkerInitMessage): Promise<void> {
+  const sessionDir = getSessionDirForRef(message.dataDir, message.sessionRef);
   state = {
     tenantId: message.tenantId,
     userId: message.userId,
     sessionId: message.sessionId,
-    sessionDir: message.sessionDir,
+    sessionRef: message.sessionRef,
+    sessionDir,
     input: message.runtimeConfig.input as CreateManagedAgentInput,
-    history: await loadHistory(message.sessionDir, message.runtimeConfig.input.agentId),
+    history: await loadHistory(sessionDir, message.runtimeConfig.input.agentId),
     workerConfig: {
       pollIntervalMs: message.workerConfig?.pollIntervalMs ?? DEFAULT_WORKER_CONFIG.pollIntervalMs,
       fakeExecution: message.workerConfig?.fakeExecution ?? DEFAULT_WORKER_CONFIG.fakeExecution,
@@ -307,6 +310,7 @@ async function executeTurn(
     currentState.tenantId,
     currentState.userId,
     currentState.sessionId,
+    currentState.sessionRef,
   );
 
   const result = await agent.invoke(formatInputs(inputs), {

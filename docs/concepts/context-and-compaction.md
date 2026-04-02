@@ -13,7 +13,9 @@ const identityProvider: ContextProvider = async (context) => {
   return [
     {
       role: "user",
-      content: `Tenant: ${context.tenantId}\nUser: ${context.userId}\nDate: ${new Date().toISOString()}`,
+      content: `Tenant: ${context.tenantId}\nUser: ${
+        context.userId
+      }\nDate: ${new Date().toISOString()}`,
       timestamp: Date.now(),
     },
   ];

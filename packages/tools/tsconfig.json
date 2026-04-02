@@ -6,5 +6,5 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "references": [{ "path": "../runtime-core" }]
+  "references": [{ "path": "../memo" }, { "path": "../runtime-core" }]
 }

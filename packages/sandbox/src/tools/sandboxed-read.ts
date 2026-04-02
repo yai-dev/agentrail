@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { readFile } from "node:fs/promises";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { readFile } from "node:fs/promises";
 import type { SandboxManager } from "../sandbox-manager.js";
 
 const DEFAULT_READ_LINES = 100;

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { Message } from "@agentrail/runtime-core";
 import { describe, expect, it } from "vitest";
 import { createTransformContext } from "../src/context-pipeline.js";
-import type { Message } from "@agentrail/runtime-core";
 
 describe("createTransformContext", () => {
   it("prepends provider output in registration order", async () => {

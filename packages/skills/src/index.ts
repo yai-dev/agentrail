@@ -7,9 +7,9 @@ export { SkillManager } from "./skill-manager.js";
 export { buildSkillTool } from "./skill-tools.js";
 /** Public skill metadata and event types surfaced by the skills package. */
 export type {
-  SkillMeta,
-  SkillConfig,
-  SkillStartEvent,
-  SkillEndEvent,
   ExtendedSseEvent,
+  SkillConfig,
+  SkillEndEvent,
+  SkillMeta,
+  SkillStartEvent,
 } from "./types.js";

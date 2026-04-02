@@ -3,12 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { mapOrchestrationEvent, type WorkflowTraceEventEnvelope } from "@agentrail/events";
+import { createSessionRef } from "@agentrail/memo";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
 import { Hono } from "hono";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { OrchestrationStore } from "@agentrail/orchestration";
-import { mapOrchestrationEvent, type WorkflowTraceEventEnvelope } from "@agentrail/events";
 import { config } from "../config.js";
+import { sessionManager } from "../context/index.js";
 
 const trace = new Hono();
 
@@ -19,12 +21,16 @@ const trace = new Hono();
 trace.get("/:sessionId/trace", async (c) => {
   const { sessionId } = c.req.param();
   const tenantId = c.req.query("tenantId") ?? "default";
+  const sessionRef = createSessionRef(tenantId, sessionId);
 
-  const sessionDir = path.join(config.dataDir, "tenants", tenantId, "sessions", sessionId);
+  const { tenantId: resolvedTenantId, sessionId: resolvedSessionId } =
+    sessionManager.resolveSessionRef(sessionRef);
+  const sessionDir = sessionManager.getSessionDir(resolvedTenantId, resolvedSessionId);
+  const persistence = createFilesystemOrchestrationPersistence(config.dataDir, sessionRef);
 
   const [runtimeEnvelopes, orchestrationEvents] = await Promise.all([
     loadRuntimeEnvelopes(sessionDir),
-    OrchestrationStore.loadEvents(sessionDir).catch(() => []),
+    persistence.loadEvents().catch(() => []),
   ]);
 
   // Map orchestration events to envelopes, assigning sequence after runtime

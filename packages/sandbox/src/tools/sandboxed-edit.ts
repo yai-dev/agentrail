@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { readFile, writeFile } from "node:fs/promises";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { readFile, writeFile } from "node:fs/promises";
 import type { SandboxManager } from "../sandbox-manager.js";
 
 const toolDescription = `Performs exact string replacements in files inside the sandbox workspace.

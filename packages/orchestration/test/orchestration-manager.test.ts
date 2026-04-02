@@ -8,7 +8,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { OrchestrationStore } from "../src/orchestration-store.js";
 import {
   OrchestrationManager,
   type ManagedAgentEventHandlers,
@@ -16,6 +15,7 @@ import {
   type OrchestrationAgentFactory,
   type OrchestrationManagerEvent,
 } from "../src/orchestration-manager.js";
+import { OrchestrationStore } from "../src/orchestration-store.js";
 import type { AgentInputEnvelope, ManagedAgentDeliveryResult } from "../src/types.js";
 
 const temporaryDirectories: string[] = [];

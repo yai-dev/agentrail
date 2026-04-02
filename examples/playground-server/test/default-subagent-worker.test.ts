@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
 import assert from "node:assert/strict";
 import { fork } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -10,7 +12,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { OrchestrationStore } from "@agentrail/orchestration";
 
 interface WorkerMessage {
   type: string;
@@ -24,8 +25,13 @@ function resolveWorkerPath(): string {
 }
 
 test("worker polls mailbox and drains pending work without an explicit wake", async () => {
-  const sessionDir = await mkdtemp(join(tmpdir(), "default-subagent-worker-"));
+  const dataDir = await mkdtemp(join(tmpdir(), "default-subagent-worker-"));
   const agentId = "agent-worker-poll";
+  const tenantId = "tenant-test";
+  const sessionId = "session-test";
+  const sessionRef = createSessionRef(tenantId, sessionId);
+  const sessionDir = join(dataDir, "tenants", tenantId, "sessions", sessionId);
+  const persistence = createFilesystemOrchestrationPersistence(dataDir, sessionRef);
   const worker = fork(resolveWorkerPath(), [], {
     cwd: dirname(resolveWorkerPath()),
     execArgv: process.execArgv,
@@ -41,10 +47,11 @@ test("worker polls mailbox and drains pending work without an explicit wake", as
   try {
     worker.send({
       type: "init",
-      tenantId: "tenant-test",
+      tenantId,
       userId: "user-test",
-      sessionId: "session-test",
-      sessionDir,
+      sessionId,
+      sessionRef,
+      dataDir,
       runtimeConfig: {
         input: {
           agentId,
@@ -61,7 +68,7 @@ test("worker polls mailbox and drains pending work without an explicit wake", as
 
     await waitForMessage(messages, (message) => message.type === "ready");
 
-    await OrchestrationStore.appendMailboxEvent(sessionDir, agentId, {
+    await persistence.appendMailboxEvent(agentId, {
       eventId: "mailbox-worker-1",
       type: "input_enqueued",
       agentId,
@@ -87,11 +94,11 @@ test("worker polls mailbox and drains pending work without an explicit wake", as
     );
     await waitForMessage(messages, (message) => message.type === "idle");
 
-    const mailboxState = await OrchestrationStore.loadMailboxState(sessionDir, agentId);
+    const mailboxState = await persistence.loadMailboxState(agentId);
     assert.equal(mailboxState.processedEventCount, 1);
   } finally {
     worker.kill();
-    await rm(sessionDir, { recursive: true, force: true });
+    await rm(dataDir, { recursive: true, force: true });
   }
 });
 

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { OrchestrationEvent } from "@agentrail/orchestration";
 import type { RuntimeEvent } from "@agentrail/runtime-core";
 import type { ExtendedSseEvent } from "@agentrail/skills";
-import type { OrchestrationEvent } from "@agentrail/orchestration";
 
 /** Event emitted before chat history compaction starts. */
 export interface AgentrailContextCompactionStartEvent {

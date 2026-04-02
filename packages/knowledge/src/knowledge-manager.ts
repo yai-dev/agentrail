@@ -3,20 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
-import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type {
-  Taxonomy,
-  KBDocMeta,
-  KnowledgeIndex,
-  KBMetadata,
-  IngestionJob,
-  IngestionStep,
-  SearchResult,
-} from "./types.js";
 import {
   buildKnowledgeMetadata,
   buildTopicSummaries,
@@ -27,6 +18,15 @@ import {
   replaceIndexDocumentPaths,
   writeJsonFile,
 } from "./knowledge-manager-helpers.js";
+import type {
+  IngestionJob,
+  IngestionStep,
+  KBDocMeta,
+  KBMetadata,
+  KnowledgeIndex,
+  SearchResult,
+  Taxonomy,
+} from "./types.js";
 
 const execFileAsync = promisify(execFile);
 

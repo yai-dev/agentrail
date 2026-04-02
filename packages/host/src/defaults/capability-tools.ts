@@ -3,9 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import path from "node:path";
 import { createKbListTool, createKbReadTool, createKbSearchTool } from "@agentrail/knowledge";
-import { buildSkillTool } from "@agentrail/skills";
 import {
   createBrowserAction,
   createBrowserContent,
@@ -17,6 +15,7 @@ import {
   createSandboxedRead,
   createSandboxedWrite,
 } from "@agentrail/sandbox";
+import { buildSkillTool } from "@agentrail/skills";
 import { createAskUserQuestionTool, createTodoWriteTool } from "@agentrail/tools";
 import type { DefaultCapabilityToolOptions, DefaultCapabilityTools } from "./shared-types.js";
 
@@ -30,7 +29,8 @@ export async function buildDefaultCapabilityTools(
     tenantId,
     userId,
     sessionId,
-    sessionDir,
+    sessionRef,
+    sessionStore,
     knowledgeManager,
     sandboxManager,
     waitHandleRegistry,
@@ -40,8 +40,12 @@ export async function buildDefaultCapabilityTools(
     skillManager,
     onSubAgentEvent,
     containerSkillsDir = "/skills",
-    subAgentLogDir = path.join(sessionDir, "subagent-logs"),
   } = options;
+
+  const todoStorage = sessionStore.createTodoStorage?.(sessionRef);
+  if (!todoStorage) {
+    throw new Error("Session store does not implement createTodoStorage(sessionRef)");
+  }
 
   const kbTools = [
     createKbListTool(knowledgeManager, tenantId),
@@ -66,7 +70,7 @@ export async function buildDefaultCapabilityTools(
 
   const executionTools = [
     ...sandboxFileTools,
-    createTodoWriteTool(path.join(sessionDir, "TODO.md")),
+    createTodoWriteTool(todoStorage),
     createAskUserQuestionTool(sessionId, waitHandleRegistry),
     ...kbTools,
   ];
@@ -80,7 +84,7 @@ export async function buildDefaultCapabilityTools(
           onSubAgentEvent,
           delegateSkillsToSubAgent,
           containerSkillsDir,
-          subAgentLogDir,
+          (entry) => sessionStore.persistSkillSubAgentLog?.(sessionRef, entry),
           { tenantId, userId },
         )
       : null;

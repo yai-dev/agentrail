@@ -3,11 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { SessionManager } from "@agentrail/memo";
 import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { SessionManager } from "@agentrail/memo";
 import type { AgentrailSessionStore } from "../src/types.js";
 
 function asSessionStore(store: AgentrailSessionStore): AgentrailSessionStore {

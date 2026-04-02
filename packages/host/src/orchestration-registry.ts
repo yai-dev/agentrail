@@ -3,9 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import path from "node:path";
+import type { SessionRef } from "@agentrail/memo";
 import {
   OrchestrationManager,
+  createFilesystemOrchestrationPersistence,
   type CreateManagedAgentInput,
   type ManagedAgentInstance,
   type StartRunInput,
@@ -21,6 +22,7 @@ export interface AgentrailOrchestrationRegistryRequest {
   tenantId: string;
   userId: string;
   sessionId: string;
+  sessionRef: SessionRef;
   createManagedAgent: CreateSessionManagedAgent;
 }
 
@@ -52,7 +54,7 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
 
     let managerPromise = this.managers.get(key);
     if (!managerPromise) {
-      managerPromise = this.createManager(key, request.tenantId, request.sessionId);
+      managerPromise = this.createManager(key, request);
       this.managers.set(key, managerPromise);
     }
 
@@ -71,23 +73,21 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
     return `${tenantId}:${sessionId}`;
   }
 
-  private getSessionDir(tenantId: string, sessionId: string): string {
-    return path.join(this.options.dataDir, "tenants", tenantId, "sessions", sessionId);
-  }
-
   private async createManager(
     key: string,
-    tenantId: string,
-    sessionId: string,
+    request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "sessionId" | "sessionRef">,
   ): Promise<OrchestrationManager> {
     try {
       return await OrchestrationManager.create({
-        sessionDir: this.getSessionDir(tenantId, sessionId),
+        persistence: createFilesystemOrchestrationPersistence(
+          this.options.dataDir,
+          request.sessionRef,
+        ),
         runtime: {
           createAgent: async (input) => {
             const createManagedAgent = this.bindings.get(key);
             if (!createManagedAgent) {
-              throw new Error(`Missing orchestration binding for session ${sessionId}`);
+              throw new Error(`Missing orchestration binding for session ${request.sessionId}`);
             }
 
             return createManagedAgent(input);

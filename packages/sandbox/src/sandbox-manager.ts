@@ -4,14 +4,12 @@
  */
 
 import Docker from "dockerode";
-import tar from "tar-stream";
+import { randomUUID } from "node:crypto";
+import { mkdir } from "node:fs/promises";
 import * as net from "node:net";
 import * as path from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { mkdir } from "node:fs/promises";
-
-const runDockerCommand = promisify(execFile);
+import { PassThrough } from "node:stream";
+import tar from "tar-stream";
 
 // ============================================================================
 // ============================================================================
@@ -49,10 +47,20 @@ export interface ExecResult {
   timedOut: boolean;
 }
 
+/** Result of a background shell command launched inside the sandbox. */
+export interface BackgroundExecResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  pid: number;
+  timedOut: boolean;
+}
+
 /** Optional overrides for sandbox lifecycle behavior. */
 export interface SandboxManagerOptions {
   image?: string;
   idleTimeoutMs?: number;
+  docker?: Docker;
 }
 
 // ============================================================================
@@ -61,6 +69,10 @@ export interface SandboxManagerOptions {
 function truncate(s: string, max: number): string {
   if (Buffer.byteLength(s, "utf-8") <= max) return s;
   return Buffer.from(s, "utf-8").subarray(0, max).toString("utf-8") + "\n[output truncated]";
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function findAvailablePort(): Promise<number> {
@@ -98,7 +110,7 @@ async function waitForHealth(url: string, timeoutMs: number): Promise<void> {
  * @see {@link https://agentrail.run/guides/use-capability-packages}
  */
 export class SandboxManager {
-  private readonly docker = new Docker();
+  private readonly docker: Docker;
   private readonly sandboxes = new Map<string, SandboxEntry>();
   private readonly pending = new Map<string, Promise<SandboxEntry>>();
   private readonly idleTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -109,11 +121,11 @@ export class SandboxManager {
     private readonly dataDir: string,
     options: SandboxManagerOptions = {},
   ) {
+    this.docker = options.docker ?? new Docker();
     this.image = options.image ?? SANDBOX_IMAGE;
     this.idleTimeoutMs = options.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
   }
 
-  /** Ensures a running sandbox exists for the given session and returns its metadata. */
   async ensureSandbox(sessionId: string, tenantId: string, userId: string): Promise<SandboxEntry> {
     const existing = this.sandboxes.get(sessionId);
     if (existing) {
@@ -187,13 +199,7 @@ export class SandboxManager {
 
     await container.start();
 
-    await runDockerCommand("docker", [
-      "exec",
-      "-d",
-      containerName,
-      "node",
-      "/opt/browser-server/index.js",
-    ]);
+    await this.runDetachedCommand(containerName, ["node", "/opt/browser-server/index.js"]);
 
     await waitForHealth(`http://127.0.0.1:${browserPort}/health`, 20_000);
 
@@ -204,7 +210,6 @@ export class SandboxManager {
     return { containerId: container.id, browserPort, workspaceDir, memoSessionDir, memoUserDir };
   }
 
-  /** Executes a command inside an existing session sandbox. */
   async runInSandbox(sessionId: string, cmd: string[], opts: RunOptions = {}): Promise<ExecResult> {
     const entry = this.sandboxes.get(sessionId);
     if (!entry) throw new Error(`No sandbox found for session '${sessionId}'`);
@@ -213,59 +218,250 @@ export class SandboxManager {
     const containerName = `sandbox-${sessionId}`;
     const workDir = opts.workingDir ?? "/workspace";
     const timeoutMs = opts.timeout ?? 60_000;
+    const pidFile = `/tmp/agentrail-exec-${randomUUID()}.pid`;
+    const wrappedCmd = [
+      "/bin/sh",
+      "-lc",
+      'pid_file="$1"; shift; printf "%s" "$$" > "$pid_file"; exec "$@"',
+      "sh",
+      pidFile,
+      ...cmd,
+    ];
+    const activeExec = await this.startAttachedCommand(containerName, wrappedCmd, {
+      workingDir: workDir,
+    });
 
-    if (timeoutMs === 0) {
-      try {
-        await runDockerCommand("docker", ["exec", "-d", "-w", workDir, containerName, ...cmd]);
-      } catch {
-        // best effort
-      }
-      return { stdout: "", stderr: "", exitCode: 0, timedOut: true };
-    }
-
-    let stdout = "";
-    let stderr = "";
-    let exitCode = 0;
     let timedOut = false;
+    let aborted = false;
+    let terminationPromise: Promise<void> | null = null;
+
+    const terminate = (reason: "timeout" | "abort") => {
+      if (terminationPromise) {
+        return;
+      }
+      timedOut = reason === "timeout";
+      aborted = reason === "abort";
+      terminationPromise = this.terminateCommand(containerName, pidFile).catch(() => undefined);
+    };
+
+    const timer = setTimeout(() => {
+      terminate("timeout");
+    }, timeoutMs);
+    timer.unref?.();
+
+    const abortHandler = () => {
+      terminate("abort");
+    };
+    opts.signal?.addEventListener("abort", abortHandler, { once: true });
 
     try {
-      const result = await runDockerCommand(
-        "docker",
-        ["exec", "-w", workDir, containerName, ...cmd],
-        {
-          timeout: timeoutMs,
-          maxBuffer: MAX_OUTPUT_BYTES,
-          signal: opts.signal,
-        },
-      );
-      stdout = result.stdout;
-      stderr = result.stderr;
-    } catch (err) {
-      const e = err as {
-        killed?: boolean;
-        signal?: string;
-        stdout?: string;
-        stderr?: string;
-        code?: string | number;
-      };
-      stdout = typeof e.stdout === "string" ? e.stdout : "";
-      stderr = typeof e.stderr === "string" ? e.stderr : "";
+      await activeExec.closed;
+      await terminationPromise;
+    } finally {
+      clearTimeout(timer);
+      opts.signal?.removeEventListener("abort", abortHandler);
+    }
 
-      if (e.killed || e.signal === "SIGTERM" || e.signal === "SIGKILL") {
-        timedOut = true;
-      } else if (e.code === "ABORT_ERR") {
-        timedOut = true;
-      } else {
-        exitCode = typeof e.code === "number" ? e.code : 1;
-      }
+    const inspected = await activeExec.exec.inspect();
+    const stdout = truncate(
+      Buffer.concat(activeExec.stdoutChunks).toString("utf-8"),
+      MAX_OUTPUT_BYTES,
+    );
+    const stderr = truncate(
+      Buffer.concat(activeExec.stderrChunks).toString("utf-8"),
+      MAX_OUTPUT_BYTES,
+    );
+
+    if (aborted) {
+      throw new Error("Sandbox command aborted");
     }
 
     return {
-      stdout: truncate(stdout, MAX_OUTPUT_BYTES),
-      stderr: truncate(stderr, MAX_OUTPUT_BYTES),
-      exitCode,
+      stdout,
+      stderr,
+      exitCode: inspected.ExitCode ?? 0,
       timedOut,
     };
+  }
+
+  async runBackgroundShellCommand(
+    sessionId: string,
+    command: string,
+    opts: RunOptions = {},
+  ): Promise<BackgroundExecResult> {
+    const entry = this.sandboxes.get(sessionId);
+    if (!entry) throw new Error(`No sandbox found for session '${sessionId}'`);
+    this.resetIdleTimer(sessionId);
+
+    const containerName = `sandbox-${sessionId}`;
+    const workDir = opts.workingDir ?? "/workspace";
+    const timeoutMs = opts.timeout ?? 30_000;
+    const execId = randomUUID();
+    const stdoutFile = `/tmp/agentrail-bash-${execId}.stdout`;
+    const stderrFile = `/tmp/agentrail-bash-${execId}.stderr`;
+    const statusFile = `/tmp/agentrail-bash-${execId}.status`;
+    const pidFile = `/tmp/agentrail-bash-${execId}.pid`;
+
+    const launcher = [
+      "/bin/sh",
+      "-lc",
+      'stdout_file="$1"; stderr_file="$2"; status_file="$3"; pid_file="$4"; work_dir="$5"; : > "$stdout_file"; : > "$stderr_file"; rm -f "$status_file" "$pid_file"; nohup /bin/sh -lc \'cd "$1" && /bin/sh -lc "$2"; status=$?; printf "%s" "$status" > "$3"\' sh "$work_dir" "$AGENTRAIL_BASH_COMMAND" "$status_file" > "$stdout_file" 2> "$stderr_file" < /dev/null & printf "%s" "$!" > "$pid_file"',
+      "sh",
+      stdoutFile,
+      stderrFile,
+      statusFile,
+      pidFile,
+      workDir,
+    ];
+    const launchResult = await this.runCommand(containerName, launcher, {
+      env: [`AGENTRAIL_BASH_COMMAND=${command}`],
+    });
+    if (launchResult.exitCode !== 0) {
+      throw new Error(launchResult.stderr || "Failed to start background command");
+    }
+
+    const pidValue = await this.readContainerFileIfPresent(containerName, pidFile);
+    const pid = Number(pidValue?.trim() ?? "0");
+    if (!Number.isFinite(pid) || pid <= 0) {
+      throw new Error("Sandbox background command did not report a pid");
+    }
+
+    const deadline = Date.now() + timeoutMs;
+    while (timeoutMs > 0 && Date.now() < deadline) {
+      if (opts.signal?.aborted) {
+        throw new Error("Sandbox command aborted");
+      }
+
+      const status = await this.readContainerFileIfPresent(containerName, statusFile);
+      if (status !== null && status.trim() !== "") {
+        return {
+          stdout: (await this.readContainerFileIfPresent(containerName, stdoutFile)) ?? "",
+          stderr: (await this.readContainerFileIfPresent(containerName, stderrFile)) ?? "",
+          exitCode: Number(status.trim()),
+          pid,
+          timedOut: false,
+        };
+      }
+
+      await sleep(100);
+    }
+
+    if (opts.signal?.aborted) {
+      throw new Error("Sandbox command aborted");
+    }
+
+    return {
+      stdout: (await this.readContainerFileIfPresent(containerName, stdoutFile)) ?? "",
+      stderr: (await this.readContainerFileIfPresent(containerName, stderrFile)) ?? "",
+      exitCode: null,
+      pid,
+      timedOut: true,
+    };
+  }
+
+  private async startAttachedCommand(
+    containerName: string,
+    cmd: string[],
+    opts: {
+      workingDir?: string;
+      env?: string[];
+    } = {},
+  ): Promise<{
+    exec: Docker.Exec;
+    stdoutChunks: Buffer[];
+    stderrChunks: Buffer[];
+    closed: Promise<void>;
+  }> {
+    const container = this.docker.getContainer(containerName);
+    const exec = await container.exec({
+      Cmd: cmd,
+      WorkingDir: opts.workingDir,
+      AttachStdout: true,
+      AttachStderr: true,
+      ...(opts.env ? { Env: opts.env } : {}),
+    });
+    const execStream = await exec.start({ hijack: true, stdin: false });
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    const stdoutPT = new PassThrough();
+    const stderrPT = new PassThrough();
+    stdoutPT.on("data", (c: Buffer) => stdoutChunks.push(c));
+    stderrPT.on("data", (c: Buffer) => stderrChunks.push(c));
+    this.docker.modem.demuxStream(execStream, stdoutPT, stderrPT);
+    return {
+      exec,
+      stdoutChunks,
+      stderrChunks,
+      closed: new Promise<void>((resolve, reject) => {
+        execStream.on("close", resolve);
+        execStream.on("error", reject);
+      }),
+    };
+  }
+
+  private async runCommand(
+    containerName: string,
+    cmd: string[],
+    opts: {
+      workingDir?: string;
+      env?: string[];
+    } = {},
+  ): Promise<ExecResult> {
+    const activeExec = await this.startAttachedCommand(containerName, cmd, opts);
+    await activeExec.closed;
+    const inspected = await activeExec.exec.inspect();
+    return {
+      stdout: truncate(Buffer.concat(activeExec.stdoutChunks).toString("utf-8"), MAX_OUTPUT_BYTES),
+      stderr: truncate(Buffer.concat(activeExec.stderrChunks).toString("utf-8"), MAX_OUTPUT_BYTES),
+      exitCode: inspected.ExitCode ?? 0,
+      timedOut: false,
+    };
+  }
+
+  private async runDetachedCommand(
+    containerName: string,
+    cmd: string[],
+    opts: {
+      workingDir?: string;
+      env?: string[];
+    } = {},
+  ): Promise<void> {
+    const container = this.docker.getContainer(containerName);
+    const exec = await container.exec({
+      Cmd: cmd,
+      WorkingDir: opts.workingDir,
+      AttachStdout: false,
+      AttachStderr: false,
+      ...(opts.env ? { Env: opts.env } : {}),
+    });
+    await exec.start({ Detach: true });
+  }
+
+  private async readContainerFileIfPresent(
+    containerName: string,
+    containerPath: string,
+  ): Promise<string | null> {
+    const result = await this.runCommand(containerName, [
+      "/bin/sh",
+      "-lc",
+      'file_path="$1"; if [ -f "$file_path" ]; then cat "$file_path"; fi',
+      "sh",
+      containerPath,
+    ]);
+    if (result.exitCode !== 0) {
+      return null;
+    }
+    return result.stdout;
+  }
+
+  private async terminateCommand(containerName: string, pidFile: string): Promise<void> {
+    await this.runCommand(containerName, [
+      "/bin/sh",
+      "-lc",
+      'pid_file="$1"; if [ ! -f "$pid_file" ]; then exit 0; fi; pid="$(cat "$pid_file")"; if [ -z "$pid" ]; then exit 0; fi; kill -TERM "$pid" 2>/dev/null || true; for _ in 1 2 3 4 5 6 7 8 9 10; do if ! kill -0 "$pid" 2>/dev/null; then exit 0; fi; sleep 0.1; done; kill -KILL "$pid" 2>/dev/null || true',
+      "sh",
+      pidFile,
+    ]).catch(() => undefined);
   }
 
   translateToHostPath(sessionId: string, containerPath: string): string {

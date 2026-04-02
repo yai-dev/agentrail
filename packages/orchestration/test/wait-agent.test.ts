@@ -8,16 +8,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { OrchestrationStore } from "../src/orchestration-store.js";
 import {
   OrchestrationManager,
   type ManagedAgentInstance,
   type OrchestrationAgentFactory,
 } from "../src/orchestration-manager.js";
-import { createSpawnAgentTool } from "../src/tools/spawn-agent.js";
-import { createSendInputTool } from "../src/tools/send-input.js";
-import { createWaitAgentTool } from "../src/tools/wait-agent.js";
+import { OrchestrationStore } from "../src/orchestration-store.js";
 import { createCloseAgentTool } from "../src/tools/close-agent.js";
+import { createSendInputTool } from "../src/tools/send-input.js";
+import { createSpawnAgentTool } from "../src/tools/spawn-agent.js";
+import { createWaitAgentTool } from "../src/tools/wait-agent.js";
 
 const temporaryDirectories: string[] = [];
 

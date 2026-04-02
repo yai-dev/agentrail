@@ -27,6 +27,7 @@
     "@changesets/cli": "^2.30.0",
     "concurrently": "^9.2.1",
     "prettier": "^3.6.2",
+    "prettier-plugin-organize-imports": "^4.3.0",
     "typescript": "^5.9.3"
   },
   "author": {

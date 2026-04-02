@@ -3,18 +3,18 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import path from "node:path";
-import fs from "node:fs/promises";
-import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
-import { writeTool } from "@agentrail/tools";
-import { createKbReadTool } from "@agentrail/knowledge";
 import type {
   IngestionEvent,
   IngestionStep,
-  Taxonomy,
   KnowledgeManager,
+  Taxonomy,
 } from "@agentrail/knowledge";
+import { createKbReadTool } from "@agentrail/knowledge";
 import type { ModelConfig } from "@agentrail/runtime-core";
+import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
+import { writeTool } from "@agentrail/tools";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 // ---- types ------------------------------------------------------------------
 

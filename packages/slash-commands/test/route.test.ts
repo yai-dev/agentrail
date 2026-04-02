@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createCommandsRoute } from "../src/route.js";
 import { createSlashCommandRegistry } from "../src/registry.js";
+import { createCommandsRoute } from "../src/route.js";
 
 describe("createCommandsRoute", () => {
   const route = createCommandsRoute(

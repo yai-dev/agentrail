@@ -3,14 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   createPromptBuilder,
   definePromptBundle,
   definePromptFragment,
   type PromptVars,
 } from "@agentrail/prompts";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

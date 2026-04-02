@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useRef, useEffect, useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SlashCommandMeta } from "../api";
 
 export interface PendingAttachment {
@@ -268,7 +268,9 @@ export function InputBar({
           onKeyDown={handleKey}
         />
         <button
-          className={`send-btn ${disabled ? "loading" : ""} ${mode === "deep_research" ? "deep-research-action" : ""}`}
+          className={`send-btn ${disabled ? "loading" : ""} ${
+            mode === "deep_research" ? "deep-research-action" : ""
+          }`}
           disabled={disabled || !canSend}
           onClick={() => onSend(value)}
           aria-label="Send"
@@ -318,7 +320,9 @@ export function InputBar({
             <button
               key={command.name}
               type="button"
-              className={`slash-command-item ${index === highlightedIndex ? "active" : ""} ${command.available ? "" : "disabled"}`}
+              className={`slash-command-item ${index === highlightedIndex ? "active" : ""} ${
+                command.available ? "" : "disabled"
+              }`}
               onMouseDown={(e) => {
                 e.preventDefault();
                 applySuggestion(command);

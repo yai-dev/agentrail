@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import type { OrchestrationState, OrchestrationEvent } from "../types/orchestration.js";
+import type { OrchestrationEvent, OrchestrationState } from "../types/orchestration.js";
 
 interface AgentTracePanelProps {
   state: OrchestrationState | null;

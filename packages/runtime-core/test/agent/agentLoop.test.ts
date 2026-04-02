@@ -3,19 +3,19 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   agentLoop,
   agentLoopContinue,
-  type AgentLoopConfig,
   type InternalContext as AgentContext,
+  type AgentLoopConfig,
   type InternalSpec as AgentSpec,
 } from "../../src/agent/agent-loop.js";
+import type { EventStream } from "../../src/llm/event-stream.js";
+import type { AssistantMessage, Message, UserMessage } from "../../src/types/message.types.js";
+import type { RuntimeEvent } from "../../src/types/result.types.js";
 import { MockLlmClient } from "../mocks/MockLlmClient.js";
 import { createMockTool } from "../mocks/MockRuntimeTool.js";
-import type { Message, UserMessage, AssistantMessage } from "../../src/types/message.types.js";
-import type { RuntimeEvent } from "../../src/types/result.types.js";
-import type { EventStream } from "../../src/llm/event-stream.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Type } from "@sinclair/typebox";
 import { tool } from "@agentrail/runtime-core";
+import { Type } from "@sinclair/typebox";
 
 // ============================================================================
 // ============================================================================

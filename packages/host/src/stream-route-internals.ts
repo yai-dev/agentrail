@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { TransformContextFn } from "@agentrail/runtime-core";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createTransformContext } from "./context-pipeline.js";
@@ -13,7 +14,6 @@ import type {
   AttachmentHandler,
   ContextProvider,
 } from "./types.js";
-import type { TransformContextFn } from "@agentrail/runtime-core";
 
 interface AttachmentInput {
   name: string;

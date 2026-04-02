@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createDeepResearchRunRoute, runDeepResearchBlocking } from "../src/run.js";
 import type { DeepResearchState } from "../src/index.js";
+import { createDeepResearchRunRoute, runDeepResearchBlocking } from "../src/run.js";
 
 vi.mock("../src/coordinator.js", () => {
   class MockDeepResearchCoordinator {

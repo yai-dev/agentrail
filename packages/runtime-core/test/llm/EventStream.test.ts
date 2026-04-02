@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect } from "vitest";
-import { EventStream, AssistantMessageEventStream } from "../../src/llm/event-stream.js";
+import { describe, expect, it } from "vitest";
+import { AssistantMessageEventStream, EventStream } from "../../src/llm/event-stream.js";
 import type { AssistantMessage } from "../../src/types/index.js";
 
 describe("EventStream", () => {

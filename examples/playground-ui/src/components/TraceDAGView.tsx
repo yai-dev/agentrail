@@ -3,12 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import type {
   AgentRunTrace,
-  TraceStep,
   LlmTurnStep,
   ToolCallStep,
+  TraceStep,
   WorkflowTraceEventEnvelope,
 } from "../types/trace";
 import { WorkspaceEmptyState } from "./WorkspaceEmptyState";
@@ -642,8 +642,12 @@ function DetailPanel({ step, traceStart }: DetailPanelProps) {
             width: "34px",
             height: "34px",
             borderRadius: "8px",
-            background: `linear-gradient(135deg, rgba(${step.kind === "llm" ? "167,139,250" : "14,165,233"},0.2), rgba(${step.kind === "llm" ? "139,92,246" : "2,132,199"},0.1))`,
-            border: `1px solid ${step.kind === "llm" ? "rgba(167,139,250,0.3)" : "rgba(14,165,233,0.3)"}`,
+            background: `linear-gradient(135deg, rgba(${
+              step.kind === "llm" ? "167,139,250" : "14,165,233"
+            },0.2), rgba(${step.kind === "llm" ? "139,92,246" : "2,132,199"},0.1))`,
+            border: `1px solid ${
+              step.kind === "llm" ? "rgba(167,139,250,0.3)" : "rgba(14,165,233,0.3)"
+            }`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1028,7 +1032,9 @@ export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
                         extra={[
                           formatDuration(trace.startTime, trace.endTime),
                           trace.usage
-                            ? `↑${(trace.usage.inputTokens / 1000).toFixed(1)}K ↓${(trace.usage.outputTokens / 1000).toFixed(1)}K`
+                            ? `↑${(trace.usage.inputTokens / 1000).toFixed(1)}K ↓${(
+                                trace.usage.outputTokens / 1000
+                              ).toFixed(1)}K`
                             : undefined,
                         ]
                           .filter(Boolean)

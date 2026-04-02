@@ -3,12 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { Message } from "@agentrail/runtime-core";
 import assert from "node:assert/strict";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after } from "node:test";
-import type { Message } from "@agentrail/runtime-core";
 import { SessionManager } from "../src/session-manager.js";
 
 const dataDir = await mkdtemp(join(tmpdir(), "agentrail-memo-test-"));

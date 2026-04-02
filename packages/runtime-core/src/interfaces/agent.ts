@@ -5,8 +5,8 @@
 
 import type {
   AgentInput,
-  AgentRunOptions,
   AgentResult,
+  AgentRunOptions,
   AgentStream,
 } from "../types/agent.types.js";
 

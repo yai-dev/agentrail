@@ -1,5 +1,5 @@
-import { defineAgent, isRuntimeError, type Message } from "@agentrail/runtime-core";
 import { createHostedProfileResolver, defineHostedProfile } from "@agentrail/host/defaults";
+import { defineAgent, isRuntimeError, type Message } from "@agentrail/runtime-core";
 
 const MODEL_PROVIDER = (process.env.MODEL_PROVIDER ?? "anthropic") as "anthropic" | "openai";
 const MODEL_ID = process.env.MODEL_ID ?? "claude-3-5-sonnet-20241022";

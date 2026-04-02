@@ -3,31 +3,30 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { randomUUID } from "node:crypto";
 import type { Agent } from "../interfaces/agent.js";
 import type { LlmClient } from "../interfaces/llm-client.js";
-import type { AgentConfig, ModelConfig } from "./define-agent.js";
+import { DefaultLlmClient } from "../llm/default-llm-client.js";
 import type {
   AgentInput,
-  AgentRunOptions,
   AgentResult,
+  AgentRunOptions,
   AgentStream,
   TransformContextFn,
 } from "../types/agent.types.js";
-import type { Message, UserMessage } from "../types/message.types.js";
-import type { UserContent } from "../types/content.types.js";
-import type { Usage } from "../types/usage.types.js";
-import type { StopReason } from "../types/message.types.js";
-import type { RuntimeEvent } from "../types/result.types.js";
-import type { RuntimeTool } from "../types/tool.types.js";
-import { isAssistantMessage, isUserMessage } from "../types/message.types.js";
 import {
+  createEmptyAssistantMessage,
   extractText,
   extractToolCalls,
-  createEmptyAssistantMessage,
 } from "../types/agent.types.js";
+import type { UserContent } from "../types/content.types.js";
+import type { Message, StopReason, UserMessage } from "../types/message.types.js";
+import { isAssistantMessage, isUserMessage } from "../types/message.types.js";
+import type { RuntimeEvent } from "../types/result.types.js";
+import type { RuntimeTool } from "../types/tool.types.js";
+import type { Usage } from "../types/usage.types.js";
 import { agentLoop } from "./agent-loop.js";
-import { DefaultLlmClient } from "../llm/default-llm-client.js";
-import { randomUUID } from "node:crypto";
+import type { AgentConfig, ModelConfig } from "./define-agent.js";
 
 // ============================================================================
 // ============================================================================

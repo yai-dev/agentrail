@@ -3,8 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, expect, it } from "vitest";
+import { createSessionRef } from "@agentrail/memo";
 import type { Message, RuntimeTool } from "@agentrail/runtime-core";
+import { describe, expect, it } from "vitest";
 import {
   buildDefaultCapabilityTools,
   createDefaultCapabilityContextProviders,
@@ -32,7 +33,8 @@ describe("@agentrail/host/defaults", () => {
         tenantId: "tenant-1",
         userId: "user-1",
         sessionId: "session-1",
-        sessionDir: "/tmp/session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
+        sessionStore: {} as never,
       }),
     ).resolves.toBe(profile);
   });
@@ -108,7 +110,13 @@ describe("@agentrail/host/defaults", () => {
       tenantId: "tenant-1",
       userId: "user-1",
       sessionId: "session-1",
-      sessionDir: "/tmp/session-1",
+      sessionRef: createSessionRef("tenant-1", "session-1"),
+      sessionStore: {
+        createTodoStorage: () => ({
+          read: async () => null,
+          write: async () => {},
+        }),
+      } as never,
       knowledgeManager: {} as never,
       sandboxManager: {} as never,
       waitHandleRegistry: {} as never,

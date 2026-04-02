@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useEffect } from "react";
-import { setAuthToken, getAuthToken } from "../api";
+import { useEffect, useState } from "react";
+import { getAuthToken, setAuthToken } from "../api";
 
 /**
  * Manages UI authentication state.

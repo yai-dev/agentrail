@@ -63,7 +63,7 @@ export function createSandboxedBash(
       const timeoutMs = timeout ?? DEFAULT_TIMEOUT_MS;
       const workDir = working_directory ?? "/workspace";
 
-      const result = await manager.runInSandbox(sessionId, ["/bin/sh", "-c", command], {
+      const result = await manager.runBackgroundShellCommand(sessionId, command, {
         timeout: timeoutMs,
         workingDir: workDir,
         signal,
@@ -77,11 +77,11 @@ export function createSandboxedBash(
         if (result.stdout) parts.push(result.stdout);
         if (result.stderr) parts.push(`[stderr]\n${result.stderr}`);
         if (parts.length === 0) parts.push("(no output)");
-        parts.push(`\n[exit code: ${result.exitCode}]`);
+        parts.push(`\n[exit code: ${result.exitCode ?? 0}]`);
         text = parts.join("\n");
         details = {
           mode: "foreground",
-          exit_code: result.exitCode,
+          exit_code: result.exitCode ?? 0,
           stdout: result.stdout,
           stderr: result.stderr,
         };

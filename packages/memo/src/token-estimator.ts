@@ -7,7 +7,6 @@ import type {
   AssistantContent,
   ImageContent,
   Message,
-  TextContent,
   ToolResultContent,
   UserContent,
 } from "@agentrail/runtime-core";
