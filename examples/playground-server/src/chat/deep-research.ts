@@ -124,10 +124,7 @@ export function createPlaygroundDeepResearchModeStreamHandler(
       } satisfies DeepResearchStreamingRunInput);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const failureTurn = buildDeepResearchFailureTurn(
-        context.request.message,
-        message,
-      );
+      const failureTurn = buildDeepResearchFailureTurn(context.request.message, message);
       await context.writeEvent({
         type: "error",
         error: { message },

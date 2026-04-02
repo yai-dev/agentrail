@@ -147,11 +147,7 @@ export class InMemorySessionStore implements AgentrailSessionStore {
     return `/tmp/sessions/${tenantId}/${sessionId}`;
   }
 
-  async loadMessages(
-    tenantId: string,
-    sessionId: string,
-    limit?: number,
-  ): Promise<Message[]> {
+  async loadMessages(tenantId: string, sessionId: string, limit?: number): Promise<Message[]> {
     const session = this.sessions.get(sessionId);
     if (!session) return [];
     const msgs = session.messages;
@@ -183,11 +179,7 @@ export class InMemorySessionStore implements AgentrailSessionStore {
     return this.sessions.get(sessionId)?.messages ?? [];
   }
 
-  async appendMessages(
-    tenantId: string,
-    sessionId: string,
-    messages: Message[],
-  ): Promise<void> {
+  async appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promise<void> {
     const session = this.sessions.get(sessionId);
     if (session) {
       session.messages.push(...messages);

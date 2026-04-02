@@ -2,6 +2,7 @@
 name: 'System Prompt: Memory Management'
 description: Guidelines for how the agent should use and maintain its filesystem-based memory
 -->
+
 ## Memory Management
 
 Each conversation turn begins with a **Memory Index** listing available memory files with their paths and summaries.

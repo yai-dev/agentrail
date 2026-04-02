@@ -84,7 +84,9 @@ function RunSummaryCard({
         <span className="agent-team-stat-pill">◉ 活跃 {activeCount}</span>
         <span className="agent-team-stat-pill">✓ 已关闭 {closedCount}</span>
         {waitCount > 0 && (
-          <span className="agent-team-stat-pill agent-team-stat-pill-wait">⏳ 等待 {waitCount}</span>
+          <span className="agent-team-stat-pill agent-team-stat-pill-wait">
+            ⏳ 等待 {waitCount}
+          </span>
         )}
       </div>
     </div>
@@ -150,9 +152,7 @@ export function AgentTeamPanel({ state, isLoading }: AgentTeamPanelProps) {
 
       {activeAgents.length > 0 && (
         <div className="agent-team-section">
-          <h4 className="agent-team-section-title">
-            活跃 Agent ({activeAgents.length})
-          </h4>
+          <h4 className="agent-team-section-title">活跃 Agent ({activeAgents.length})</h4>
           <div className="agent-team-grid">
             {activeAgents.map((agent) => (
               <SubAgentCard key={agent.id} agent={agent} isActive />
@@ -192,19 +192,19 @@ export function AgentTeamPanel({ state, isLoading }: AgentTeamPanelProps) {
 
       {state.waits.length > 0 && (
         <div className="agent-team-section">
-          <h4 className="agent-team-section-title">
-            等待条件 ({state.waits.length})
-          </h4>
+          <h4 className="agent-team-section-title">等待条件 ({state.waits.length})</h4>
           <div className="agent-team-waits">
             {state.waits.map((wait) => (
               <div key={wait.id} className={`wait-item wait-status-${wait.status}`}>
                 <span className="wait-icon">{waitIcons[wait.status] ?? "·"}</span>
-                <span className="wait-mode-badge">
-                  {wait.mode === "any" ? "任意" : "全部"}
-                </span>
+                <span className="wait-mode-badge">{wait.mode === "any" ? "任意" : "全部"}</span>
                 <span className="wait-agents-count">{wait.agentIds.length} 个 Agent</span>
                 <span className={`wait-status-label ${waitColors[wait.status] ?? ""}`}>
-                  {wait.status === "pending" ? "等待中" : wait.status === "resolved" ? "已解决" : "超时"}
+                  {wait.status === "pending"
+                    ? "等待中"
+                    : wait.status === "resolved"
+                      ? "已解决"
+                      : "超时"}
                 </span>
               </div>
             ))}

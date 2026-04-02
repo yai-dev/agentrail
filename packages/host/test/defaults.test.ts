@@ -39,7 +39,12 @@ describe("@agentrail/host/defaults", () => {
 
   it("creates default context providers and toolsets without extra glue", async () => {
     const provider = async () => [];
-    const tool = { id: "tool-a", description: "A", inputSchema: {}, execute: async () => ({ ok: true }) } as unknown as RuntimeTool;
+    const tool = {
+      id: "tool-a",
+      description: "A",
+      inputSchema: {},
+      execute: async () => ({ ok: true }),
+    } as unknown as RuntimeTool;
 
     expect(
       createDefaultContextProviders({
@@ -99,21 +104,20 @@ describe("@agentrail/host/defaults", () => {
   });
 
   it("builds default capability tools with skills disabled", async () => {
-    const { executionTools, browserTools, skillTool } =
-      await buildDefaultCapabilityTools({
-        tenantId: "tenant-1",
-        userId: "user-1",
-        sessionId: "session-1",
-        sessionDir: "/tmp/session-1",
-        knowledgeManager: {} as never,
-        sandboxManager: {} as never,
-        waitHandleRegistry: {} as never,
-        modelConfig: {
-          provider: "mock",
-          modelId: "mock-model",
-        },
-        includeSkillTool: false,
-      });
+    const { executionTools, browserTools, skillTool } = await buildDefaultCapabilityTools({
+      tenantId: "tenant-1",
+      userId: "user-1",
+      sessionId: "session-1",
+      sessionDir: "/tmp/session-1",
+      knowledgeManager: {} as never,
+      sandboxManager: {} as never,
+      waitHandleRegistry: {} as never,
+      modelConfig: {
+        provider: "mock",
+        modelId: "mock-model",
+      },
+      includeSkillTool: false,
+    });
 
     expect(executionTools).toHaveLength(10);
     expect(browserTools).toHaveLength(4);

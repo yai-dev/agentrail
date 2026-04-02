@@ -1,6 +1,5 @@
 <template>
   <div class="at-home">
-
     <!-- ─── HERO ─── -->
     <section class="at-hero">
       <div class="at-hero-left">
@@ -11,14 +10,11 @@
           AI agents.
         </h1>
         <p class="at-hero-desc">
-          Agentrail gives you a composable runtime, a hosted server layer,
-          multi-agent orchestration, and a clear extension model — without
-          locking you into any platform.
+          Agentrail gives you a composable runtime, a hosted server layer, multi-agent
+          orchestration, and a clear extension model — without locking you into any platform.
         </p>
         <div class="at-hero-actions">
-          <a href="/guides/quickstart" class="at-btn at-btn-primary">
-            Quickstart →
-          </a>
+          <a href="/guides/quickstart" class="at-btn at-btn-primary"> Quickstart → </a>
           <a
             href="https://github.com/yai-dev/agentrail"
             target="_blank"
@@ -38,7 +34,9 @@
             <span class="at-dot at-dot-g"></span>
             <span class="at-file-name">agent.ts</span>
           </div>
-          <pre class="at-code-body"><span class="kw">import</span> <span class="op">{</span> <span class="fn">defineAgent</span> <span class="op">}</span> <span class="kw">from</span> <span class="str">"@agentrail/runtime-core"</span><span class="op">;</span>
+          <pre
+            class="at-code-body"
+          ><span class="kw">import</span> <span class="op">{</span> <span class="fn">defineAgent</span> <span class="op">}</span> <span class="kw">from</span> <span class="str">"@agentrail/runtime-core"</span><span class="op">;</span>
 <span class="kw">import</span> <span class="op">{</span> <span class="fn">createWebSearchTool</span> <span class="op">}</span> <span class="kw">from</span> <span class="str">"@agentrail/tools"</span><span class="op">;</span>
 
 <span class="kw">export const</span> <span class="prop">researchAgent</span> <span class="op">=</span> <span class="fn">defineAgent</span><span class="op">({</span>
@@ -66,9 +64,8 @@
         <p class="at-section-label">Why Agentrail</p>
         <h2 class="at-section-title">The right level of abstraction.</h2>
         <p class="at-section-sub">
-          Most teams land between two extremes — scripts that break at scale
-          and platforms that make you dependent. Agentrail is designed to sit
-          in between.
+          Most teams land between two extremes — scripts that break at scale and platforms that make
+          you dependent. Agentrail is designed to sit in between.
         </p>
 
         <div class="at-why-grid">
@@ -116,8 +113,7 @@
       <p class="at-section-label">What's included</p>
       <h2 class="at-section-title">Everything you need to ship agents.</h2>
       <p class="at-section-sub">
-        A focused set of packages — each with a clear responsibility, each
-        independently usable.
+        A focused set of packages — each with a clear responsibility, each independently usable.
       </p>
 
       <div class="at-feature-grid">
@@ -125,9 +121,8 @@
           <p class="at-feature-pkg">@agentrail/runtime-core</p>
           <h3 class="at-feature-title">Agent Runtime</h3>
           <p class="at-feature-desc">
-            Define agents with typed tool contracts. The LLM loop, tool
-            dispatch, provider abstractions, and usage tracking — all in one
-            stable core.
+            Define agents with typed tool contracts. The LLM loop, tool dispatch, provider
+            abstractions, and usage tracking — all in one stable core.
           </p>
         </div>
 
@@ -135,8 +130,8 @@
           <p class="at-feature-pkg">@agentrail/host</p>
           <h3 class="at-feature-title">Host Layer</h3>
           <p class="at-feature-desc">
-            Chat and stream request lifecycles, profile resolution, session
-            context assembly, and a plugin system for cross-cutting behavior.
+            Chat and stream request lifecycles, profile resolution, session context assembly, and a
+            plugin system for cross-cutting behavior.
           </p>
         </div>
 
@@ -144,9 +139,8 @@
           <p class="at-feature-pkg">@agentrail/orchestration</p>
           <h3 class="at-feature-title">Multi-Agent Orchestration</h3>
           <p class="at-feature-desc">
-            Spawn sub-agents, send typed work, wait on conditions, and recover
-            from failures. Persistent state across restarts via JSONL-backed
-            mailboxes.
+            Spawn sub-agents, send typed work, wait on conditions, and recover from failures.
+            Persistent state across restarts via JSONL-backed mailboxes.
           </p>
         </div>
 
@@ -154,9 +148,8 @@
           <p class="at-feature-pkg">@agentrail/prompts</p>
           <h3 class="at-feature-title">Prompt SDK</h3>
           <p class="at-feature-desc">
-            Compose system prompts from versioned fragments and bundles.
-            File-based prompt authoring with hot-reload and variable
-            interpolation.
+            Compose system prompts from versioned fragments and bundles. File-based prompt authoring
+            with hot-reload and variable interpolation.
           </p>
         </div>
 
@@ -164,8 +157,8 @@
           <p class="at-feature-pkg">@agentrail/memo</p>
           <h3 class="at-feature-title">Session Memory</h3>
           <p class="at-feature-desc">
-            Filesystem-backed session storage with append-only JSONL history,
-            automatic context compaction, and conversation branching.
+            Filesystem-backed session storage with append-only JSONL history, automatic context
+            compaction, and conversation branching.
           </p>
         </div>
 
@@ -173,8 +166,8 @@
           <p class="at-feature-pkg">@agentrail/sandbox</p>
           <h3 class="at-feature-title">Sandboxed Execution</h3>
           <p class="at-feature-desc">
-            Docker-based isolated execution environment. Browser automation,
-            shell commands, and file I/O — all safely contained per session.
+            Docker-based isolated execution environment. Browser automation, shell commands, and
+            file I/O — all safely contained per session.
           </p>
         </div>
       </div>
@@ -187,12 +180,10 @@
         <div class="at-install-cmd">
           <code>npm install @agentrail/runtime-core</code>
           <button class="at-copy-btn" @click="copyInstall" :class="{ copied: installCopied }">
-            {{ installCopied ? 'copied!' : 'copy' }}
+            {{ installCopied ? "copied!" : "copy" }}
           </button>
         </div>
-        <a href="/guides/quickstart" class="at-btn at-btn-primary">
-          Read the quickstart →
-        </a>
+        <a href="/guides/quickstart" class="at-btn at-btn-primary"> Read the quickstart → </a>
       </div>
     </div>
 
@@ -201,8 +192,8 @@
       <p class="at-section-label">Architecture</p>
       <h2 class="at-section-title">Layered by design.</h2>
       <p class="at-section-sub" style="margin-bottom: 48px">
-        Start with the opinionated SDK, then drop to lower-level primitives
-        only when you need tighter control.
+        Start with the opinionated SDK, then drop to lower-level primitives only when you need
+        tighter control.
       </p>
 
       <div class="at-arch-diagram">
@@ -283,20 +274,17 @@
         <ul class="at-footer-links">
           <li><a href="/guides/quickstart">Docs</a></li>
           <li><a href="/roadmap">Roadmap</a></li>
-          <li
-          ><a
-              href="https://github.com/yai-dev/agentrail"
-              target="_blank"
-              rel="noopener"
-            >GitHub</a
-          ></li>
-          <li
-          ><a
+          <li>
+            <a href="https://github.com/yai-dev/agentrail" target="_blank" rel="noopener">GitHub</a>
+          </li>
+          <li>
+            <a
               href="https://github.com/yai-dev/agentrail/blob/master/LICENSE"
               target="_blank"
               rel="noopener"
-            >Apache 2.0</a
-          ></li>
+              >Apache 2.0</a
+            >
+          </li>
         </ul>
         <p class="at-footer-meta">
           Pre-GA · APIs may change before GA · © 2026 Agentrail contributors
@@ -307,16 +295,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { withBase } from 'vitepress'
+import { ref, onMounted } from "vue";
+import { withBase } from "vitepress";
 
-const installCopied = ref(false)
+const installCopied = ref(false);
 
 function copyInstall() {
-  navigator.clipboard.writeText('npm install @agentrail/runtime-core').then(() => {
-    installCopied.value = true
-    setTimeout(() => { installCopied.value = false }, 2000)
-  })
+  navigator.clipboard.writeText("npm install @agentrail/runtime-core").then(() => {
+    installCopied.value = true;
+    setTimeout(() => {
+      installCopied.value = false;
+    }, 2000);
+  });
 }
 
 onMounted(() => {
@@ -324,15 +314,15 @@ onMounted(() => {
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('at-visible')
-          observer.unobserve(entry.target)
+          entry.target.classList.add("at-visible");
+          observer.unobserve(entry.target);
         }
-      })
+      });
     },
-    { threshold: 0.1 }
-  )
-  document.querySelectorAll('.at-fade').forEach((el) => observer.observe(el))
-})
+    { threshold: 0.1 },
+  );
+  document.querySelectorAll(".at-fade").forEach((el) => observer.observe(el));
+});
 </script>
 
 <style scoped>
@@ -365,7 +355,7 @@ onMounted(() => {
 }
 
 .at-hero-title {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: "DM Serif Display", Georgia, serif;
   font-size: clamp(2.6rem, 4vw, 4.2rem);
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -402,7 +392,10 @@ onMounted(() => {
   border-radius: 2px;
   border: 1px solid transparent;
   text-decoration: none !important;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
   cursor: pointer;
   line-height: 1;
 }
@@ -452,9 +445,15 @@ onMounted(() => {
   border-radius: 50%;
   display: inline-block;
 }
-.at-dot-r { background: #ff5f57; }
-.at-dot-y { background: #febc2e; }
-.at-dot-g { background: var(--at-accent); }
+.at-dot-r {
+  background: #ff5f57;
+}
+.at-dot-y {
+  background: #febc2e;
+}
+.at-dot-g {
+  background: var(--at-accent);
+}
 
 .at-file-name {
   font-family: var(--vp-font-family-mono);
@@ -477,22 +476,52 @@ onMounted(() => {
 }
 
 /* code highlight tokens */
-.at-code-body :deep(.kw) { color: #c4a0ff; }
-.at-code-body :deep(.fn) { color: #7dd3fc; }
-.at-code-body :deep(.str) { color: #86efac; }
-.at-code-body :deep(.op) { color: #94a3b8; }
-.at-code-body :deep(.prop) { color: #e2e8f0; }
-.at-code-body :deep(.type) { color: var(--at-accent); }
-.at-code-body :deep(.com) { color: #475569; font-style: italic; }
+.at-code-body :deep(.kw) {
+  color: #c4a0ff;
+}
+.at-code-body :deep(.fn) {
+  color: #7dd3fc;
+}
+.at-code-body :deep(.str) {
+  color: #86efac;
+}
+.at-code-body :deep(.op) {
+  color: #94a3b8;
+}
+.at-code-body :deep(.prop) {
+  color: #e2e8f0;
+}
+.at-code-body :deep(.type) {
+  color: var(--at-accent);
+}
+.at-code-body :deep(.com) {
+  color: #475569;
+  font-style: italic;
+}
 
 /* inline spans for syntax colors (no :deep needed for scoped children) */
-.at-code-body .kw { color: #c4a0ff; }
-.at-code-body .fn { color: #7dd3fc; }
-.at-code-body .str { color: #86efac; }
-.at-code-body .op { color: #94a3b8; }
-.at-code-body .prop { color: #e2e8f0; }
-.at-code-body .type { color: var(--at-accent); }
-.at-code-body .com { color: #475569; font-style: italic; }
+.at-code-body .kw {
+  color: #c4a0ff;
+}
+.at-code-body .fn {
+  color: #7dd3fc;
+}
+.at-code-body .str {
+  color: #86efac;
+}
+.at-code-body .op {
+  color: #94a3b8;
+}
+.at-code-body .prop {
+  color: #e2e8f0;
+}
+.at-code-body .type {
+  color: var(--at-accent);
+}
+.at-code-body .com {
+  color: #475569;
+  font-style: italic;
+}
 
 .at-cursor {
   display: inline-block;
@@ -504,8 +533,13 @@ onMounted(() => {
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 /* ─── SECTION SHARED ─── */
@@ -525,7 +559,7 @@ onMounted(() => {
 }
 
 .at-section-title {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: "DM Serif Display", Georgia, serif;
   font-size: clamp(2rem, 3vw, 2.8rem);
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -567,7 +601,9 @@ onMounted(() => {
   position: relative;
 }
 
-.at-why-col:last-child { border-right: none; }
+.at-why-col:last-child {
+  border-right: none;
+}
 
 .at-why-featured {
   background: rgba(196, 255, 46, 0.03);
@@ -592,7 +628,7 @@ onMounted(() => {
 }
 
 .at-why-col-title {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: "DM Serif Display", Georgia, serif;
   font-size: 1.3rem;
   margin-bottom: 20px;
   color: var(--vp-c-text-1);
@@ -620,7 +656,7 @@ onMounted(() => {
 }
 
 .at-why-list li::before {
-  content: '—';
+  content: "—";
   position: absolute;
   left: 0;
   color: #333330;
@@ -659,7 +695,7 @@ onMounted(() => {
 }
 
 .at-feature-title {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: "DM Serif Display", Georgia, serif;
   font-size: 1.05rem;
   color: var(--vp-c-text-1);
   margin-bottom: 10px;
@@ -690,7 +726,7 @@ onMounted(() => {
 }
 
 .at-install-label {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: "DM Serif Display", Georgia, serif;
   font-size: 1.1rem;
   color: var(--vp-c-text-1);
   margin: 0;
@@ -731,12 +767,19 @@ onMounted(() => {
   cursor: pointer;
   height: 100%;
   min-height: 44px;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
   white-space: nowrap;
 }
 
-.at-copy-btn:hover { color: var(--vp-c-text-1); background: #141414; }
-.at-copy-btn.copied { color: var(--at-accent); }
+.at-copy-btn:hover {
+  color: var(--vp-c-text-1);
+  background: #141414;
+}
+.at-copy-btn.copied {
+  color: var(--at-accent);
+}
 
 /* ─── ARCH DIAGRAM ─── */
 .at-arch-diagram {
@@ -757,7 +800,7 @@ onMounted(() => {
 }
 
 .at-arch-arrow::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   top: 0;
@@ -820,7 +863,7 @@ onMounted(() => {
 }
 
 .at-arch-name {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: "DM Serif Display", Georgia, serif;
   font-size: 1rem;
   color: var(--vp-c-text-1);
 }
@@ -893,7 +936,7 @@ onMounted(() => {
 }
 
 .at-footer-logo {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: "DM Serif Display", Georgia, serif;
   font-size: 1rem;
   display: flex;
   align-items: center;
@@ -931,21 +974,55 @@ onMounted(() => {
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 1024px) {
-  .at-hero { grid-template-columns: 1fr; gap: 40px; padding-top: 60px; }
-  .at-feature-grid { grid-template-columns: 1fr 1fr; }
-  .at-why-grid { grid-template-columns: 1fr; }
-  .at-why-col { border-right: none; border-bottom: 1px solid #1c1c1c; }
-  .at-why-col:last-child { border-bottom: none; }
-  .at-why-featured { margin: 0; }
+  .at-hero {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-top: 60px;
+  }
+  .at-feature-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .at-why-grid {
+    grid-template-columns: 1fr;
+  }
+  .at-why-col {
+    border-right: none;
+    border-bottom: 1px solid #1c1c1c;
+  }
+  .at-why-col:last-child {
+    border-bottom: none;
+  }
+  .at-why-featured {
+    margin: 0;
+  }
 }
 
 @media (max-width: 640px) {
-  .at-hero { padding: 60px 24px 40px; }
-  .at-section { padding: 60px 24px; }
-  .at-why-inner { padding: 60px 24px; }
-  .at-feature-grid { grid-template-columns: 1fr; }
-  .at-install-inner { padding: 40px 24px; flex-direction: column; align-items: flex-start; }
-  .at-install-cmd { max-width: 100%; width: 100%; }
-  .at-footer-inner { flex-direction: column; gap: 20px; padding: 32px 24px; }
+  .at-hero {
+    padding: 60px 24px 40px;
+  }
+  .at-section {
+    padding: 60px 24px;
+  }
+  .at-why-inner {
+    padding: 60px 24px;
+  }
+  .at-feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .at-install-inner {
+    padding: 40px 24px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .at-install-cmd {
+    max-width: 100%;
+    width: 100%;
+  }
+  .at-footer-inner {
+    flex-direction: column;
+    gap: 20px;
+    padding: 32px 24px;
+  }
 }
 </style>

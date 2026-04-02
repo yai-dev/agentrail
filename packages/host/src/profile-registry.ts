@@ -5,6 +5,7 @@
 
 import type { AgentrailProfile, AgentrailProfileContext } from "./types.js";
 
+/** Creates a profile resolver backed by a fixed list of hosted profiles. */
 export function createProfileResolver(
   profiles: AgentrailProfile[],
 ): (

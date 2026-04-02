@@ -14,19 +14,14 @@ import type {
   ContextProvider,
 } from "./types.js";
 
-type RequestHookName =
-  | "onRequestStart"
-  | "onRequestEnd"
-  | "onTurnPersisted";
+type RequestHookName = "onRequestStart" | "onRequestEnd" | "onTurnPersisted";
 
+/** Collects static context providers exposed by installed plugins. */
 export function collectPluginContextProviders(
   plugins: AgentrailPlugin[],
   baseProviders: ContextProvider[] = [],
 ): ContextProvider[] {
-  return [
-    ...baseProviders,
-    ...plugins.flatMap((plugin) => plugin.contextProviders ?? []),
-  ];
+  return [...baseProviders, ...plugins.flatMap((plugin) => plugin.contextProviders ?? [])];
 }
 
 export async function runPluginLifecycle(

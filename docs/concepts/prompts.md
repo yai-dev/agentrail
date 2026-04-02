@@ -5,6 +5,7 @@ Agentrail provides a structured prompt SDK instead of ad hoc string concatenatio
 ## Why a Prompt SDK
 
 As an agent application grows, system prompts accumulate:
+
 - base behavioral instructions
 - tool-usage rules
 - capability descriptions

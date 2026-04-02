@@ -5,11 +5,7 @@
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createPromptBuilder,
-  definePromptBundle,
-  definePromptFragment,
-} from "@agentrail/prompts";
+import { createPromptBuilder, definePromptBundle, definePromptFragment } from "@agentrail/prompts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPTS_DIR = join(__dirname, "prompts");

@@ -113,12 +113,12 @@ await manager.completeRun({ status: "completed" });
 
 In a typical hosted setup, the parent agent does not call `OrchestrationManager` directly. Instead, the host layer provides orchestration tools:
 
-| Tool | Purpose |
-|------|---------|
-| `spawn-agent` | Create a sub-agent with a role |
-| `send-input` | Send a work item to a sub-agent |
-| `wait-agent` | Block until agents reach a condition |
-| `close-agent` | Shut down a sub-agent |
+| Tool          | Purpose                              |
+| ------------- | ------------------------------------ |
+| `spawn-agent` | Create a sub-agent with a role       |
+| `send-input`  | Send a work item to a sub-agent      |
+| `wait-agent`  | Block until agents reach a condition |
+| `close-agent` | Shut down a sub-agent                |
 
 The parent agent uses these tools like any other runtime tool. The host layer translates tool calls into `OrchestrationManager` method calls behind the scenes.
 

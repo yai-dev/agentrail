@@ -99,9 +99,7 @@ export function createDefaultCapabilityContextProviders(
 ): ContextProvider[] {
   return createDefaultContextProviders({
     baseProviders: [
-      createContextProviderFromTransform(
-        createDefaultCapabilityTransformContext(options),
-      ),
+      createContextProviderFromTransform(createDefaultCapabilityTransformContext(options)),
     ],
   });
 }

@@ -19,34 +19,34 @@ Usage:
 - Only use emojis if the user explicitly requests it. Avoid writing emojis to files unless asked.`;
 
 const parametersSchema = Type.Object({
-    file_path: Type.String({
-        description: "The absolute path of the file to write.",
-    }),
-    contents: Type.String({
-        description: "The content to write to the file.",
-    }),
+  file_path: Type.String({
+    description: "The absolute path of the file to write.",
+  }),
+  contents: Type.String({
+    description: "The content to write to the file.",
+  }),
 });
 
 export const writeTool = tool()
-    .name(toolName)
-    .label(toolLabel)
-    .description(toolDescription)
-    .parameters(parametersSchema)
-    .execute(async ({ file_path, contents }) => {
-        try {
-            await mkdir(dirname(file_path), { recursive: true });
-            await writeFile(file_path, contents, "utf-8");
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            return {
-                content: [{ type: "text" as const, text: `Error writing file: ${message}` }],
-                details: { error: message },
-            };
-        }
+  .name(toolName)
+  .label(toolLabel)
+  .description(toolDescription)
+  .parameters(parametersSchema)
+  .execute(async ({ file_path, contents }) => {
+    try {
+      await mkdir(dirname(file_path), { recursive: true });
+      await writeFile(file_path, contents, "utf-8");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        content: [{ type: "text" as const, text: `Error writing file: ${message}` }],
+        details: { error: message },
+      };
+    }
 
-        return {
-            content: [{ type: "text" as const, text: `Successfully wrote ${file_path}` }],
-            details: { file_path },
-        };
-    })
-    .build();
+    return {
+      content: [{ type: "text" as const, text: `Successfully wrote ${file_path}` }],
+      details: { file_path },
+    };
+  })
+  .build();

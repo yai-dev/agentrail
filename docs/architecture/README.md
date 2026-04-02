@@ -4,7 +4,7 @@ Agentrail is organized as a layered framework. Understanding the layers is the f
 
 ## The Stack
 
-![Agentrail architecture: four layers from top — Your App (dashed), Plugins &amp; Workflows, Host with capability packages, and runtime-core at the foundation.](/arch-diagram.svg)
+![Agentrail architecture: four layers from top — Your App (dashed), Plugins & Workflows, Host with capability packages, and runtime-core at the foundation.](/arch-diagram.svg)
 
 Two design axes govern the stack:
 
@@ -103,9 +103,11 @@ Approach the framework in this order to keep complexity proportional to need:
 A useful boundary for contributors:
 
 **Framework core** (belongs in framework packages):
+
 - runtime-core, host, prompts, orchestration, capability packages
 
 **Application code** (belongs in your app or example projects):
+
 - concrete prompt content, concrete hosted profiles, app-local plugins, route composition, UI-specific event rendering, workflow business logic
 
 Keeping this boundary clean is what makes Agentrail reusable as a framework rather than collapsing into a monolithic app.

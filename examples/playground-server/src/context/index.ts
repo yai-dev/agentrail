@@ -92,8 +92,7 @@ export function buildTransformContext(
     includeSkillsContext: options.includeSkillsContext,
     delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
     cacheTtlMs: TRANSFORM_CACHE_TTL_MS,
-    buildMemoryIndex: () =>
-      sessionManager.buildMemoryIndex(tenantId, userId, sessionId),
+    buildMemoryIndex: () => sessionManager.buildMemoryIndex(tenantId, userId, sessionId),
     listKnowledgeMetadatas: async () => {
       const kbList = await knowledgeManager.listKbs(tenantId);
       return Promise.all(kbList.map((id) => knowledgeManager.getMetadata(tenantId, id)));
@@ -117,8 +116,7 @@ export function buildContextProviders(
     includeSkillsContext: options.includeSkillsContext,
     delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
     cacheTtlMs: TRANSFORM_CACHE_TTL_MS,
-    buildMemoryIndex: () =>
-      sessionManager.buildMemoryIndex(tenantId, userId, sessionId),
+    buildMemoryIndex: () => sessionManager.buildMemoryIndex(tenantId, userId, sessionId),
     listKnowledgeMetadatas: async () => {
       const kbList = await knowledgeManager.listKbs(tenantId);
       return Promise.all(kbList.map((id) => knowledgeManager.getMetadata(tenantId, id)));

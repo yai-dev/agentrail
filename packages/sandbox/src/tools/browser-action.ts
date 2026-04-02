@@ -36,7 +36,10 @@ const parametersSchema = Type.Object({
     { description: "The type of browser action to perform." },
   ),
   selector: Type.Optional(
-    Type.String({ description: "CSS selector of the target element (required for click, fill, select, hover, press)." }),
+    Type.String({
+      description:
+        "CSS selector of the target element (required for click, fill, select, hover, press).",
+    }),
   ),
   value: Type.Optional(
     Type.String({ description: "Value to fill/select, or key to press (e.g. 'Enter')." }),
@@ -46,6 +49,7 @@ const parametersSchema = Type.Object({
   ),
 });
 
+/** Creates the browser action tool for click, type, and related page interactions. */
 export function createBrowserAction(
   manager: SandboxManager,
   sessionId: string,
@@ -81,7 +85,7 @@ export function createBrowserAction(
         };
       }
 
-      const data = await res.json() as { result?: unknown; error?: string };
+      const data = (await res.json()) as { result?: unknown; error?: string };
 
       if (!res.ok || data.error) {
         const errMsg = data.error ?? res.statusText;
@@ -91,9 +95,10 @@ export function createBrowserAction(
         };
       }
 
-      const resultText = data.result !== undefined
-        ? `Action '${type}' completed. Result: ${JSON.stringify(data.result)}`
-        : `Action '${type}' completed successfully.`;
+      const resultText =
+        data.result !== undefined
+          ? `Action '${type}' completed. Result: ${JSON.stringify(data.result)}`
+          : `Action '${type}' completed successfully.`;
 
       return {
         content: [{ type: "text" as const, text: resultText }],

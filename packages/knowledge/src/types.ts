@@ -7,6 +7,7 @@ export interface Taxonomy {
   [category: string]: Taxonomy | Record<string, never>;
 }
 
+/** Metadata recorded for one stored knowledge-base document. */
 export interface KBDocMeta {
   docId: string;
   title: string;
@@ -22,6 +23,7 @@ export interface KBDocMeta {
   updatedAt: number;
 }
 
+/** Searchable topic index for a knowledge base. */
 export interface KnowledgeIndex {
   kbId: string;
   kbDir: string;
@@ -30,13 +32,10 @@ export interface KnowledgeIndex {
   topics: Array<{ topic: string; hasIndex: boolean; docCount: number }>;
 }
 
-export type IngestionStep =
-  | "analyze"
-  | "classify"
-  | "summarize"
-  | "index_update"
-  | "register";
+/** Ordered pipeline step used during document ingestion. */
+export type IngestionStep = "analyze" | "classify" | "summarize" | "index_update" | "register";
 
+/** Status record for one knowledge-base ingestion job. */
 export interface IngestionJob {
   jobId: string;
   docId: string;
@@ -50,6 +49,7 @@ export interface IngestionJob {
   updatedAt: number;
 }
 
+/** Progress event emitted while a knowledge-base document is ingested. */
 export type IngestionEvent =
   | { type: "job_created"; jobId: string; docId: string }
   | { type: "step_start"; step: IngestionStep; message: string }
@@ -58,6 +58,7 @@ export type IngestionEvent =
   | { type: "job_complete"; meta: KBDocMeta }
   | { type: "job_failed"; error: string };
 
+/** Search hit returned from a knowledge-base query. */
 export interface SearchResult {
   docId: string;
   path: string;
@@ -66,6 +67,7 @@ export interface SearchResult {
   context: string[];
 }
 
+/** High-level metadata summary for one knowledge base. */
 export interface KBMetadata {
   kbId: string;
   name: string;

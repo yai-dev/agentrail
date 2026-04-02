@@ -14,6 +14,8 @@
     "changeset:cli": "changeset",
     "test": "pnpm -r --filter \"./packages/**\" test",
     "typecheck": "pnpm -r --filter \"./packages/**\" typecheck && pnpm -r --filter \"./examples/**\" typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "dev:playground-server": "pnpm --filter @agentrail/playground-server dev",
     "dev:playground-ui": "pnpm --filter @agentrail/playground-ui dev",
     "dev:deep-research": "pnpm --filter @agentrail/deep-research-example dev",
@@ -24,6 +26,7 @@
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.30.0",
     "concurrently": "^9.2.1",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.3"
   },
   "author": {

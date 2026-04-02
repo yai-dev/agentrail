@@ -31,7 +31,7 @@ export const customerLookupTool = tool()
   .parameters(
     Type.Object({
       accountId: Type.String({ description: "The account identifier" }),
-    })
+    }),
   )
   .execute(async (params, ctx) => {
     const record = await db.customers.findById(params.accountId);
@@ -139,12 +139,13 @@ Tools are assembled in the profile's `createAgent` function, not in route files:
 ```ts
 defineHostedProfile({
   id: "default",
-  createAgent: ({ tools }) => defineAgent({
-    id: "default",
-    model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
-    system: systemPrompt,
-    tools: [...tools, customerLookupTool, pingTool],
-  }),
+  createAgent: ({ tools }) =>
+    defineAgent({
+      id: "default",
+      model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+      system: systemPrompt,
+      tools: [...tools, customerLookupTool, pingTool],
+    }),
 });
 ```
 

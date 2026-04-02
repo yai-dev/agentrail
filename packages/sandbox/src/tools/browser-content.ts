@@ -19,12 +19,14 @@ Usage:
 const parametersSchema = Type.Object({
   include_html: Type.Optional(
     Type.Boolean({
-      description: "If true, also return raw HTML (useful for finding selectors). Defaults to false.",
+      description:
+        "If true, also return raw HTML (useful for finding selectors). Defaults to false.",
       default: false,
     }),
   ),
 });
 
+/** Creates the browser content tool that reads the current page state. */
 export function createBrowserContent(
   manager: SandboxManager,
   sessionId: string,
@@ -55,7 +57,7 @@ export function createBrowserContent(
         };
       }
 
-      const data = await res.json() as { textContent?: string; html?: string; error?: string };
+      const data = (await res.json()) as { textContent?: string; html?: string; error?: string };
 
       if (!res.ok || data.error) {
         const errMsg = data.error ?? res.statusText;

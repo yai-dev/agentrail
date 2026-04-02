@@ -11,10 +11,12 @@ import {
   type StartRunInput,
 } from "@agentrail/orchestration";
 
+/** Factory that creates a managed agent bound to one session. */
 export type CreateSessionManagedAgent = (
   input: CreateManagedAgentInput,
 ) => Promise<ManagedAgentInstance>;
 
+/** Request context used when resolving a session orchestration manager. */
 export interface AgentrailOrchestrationRegistryRequest {
   tenantId: string;
   userId: string;
@@ -22,20 +24,17 @@ export interface AgentrailOrchestrationRegistryRequest {
   createManagedAgent: CreateSessionManagedAgent;
 }
 
+/** Registry that returns one orchestration manager per session. */
 export interface AgentrailOrchestrationRegistry {
-  getManager(
-    request: AgentrailOrchestrationRegistryRequest,
-  ): Promise<OrchestrationManager>;
+  getManager(request: AgentrailOrchestrationRegistryRequest): Promise<OrchestrationManager>;
   invalidate(tenantId: string, sessionId: string): void;
 }
 
+/** Inputs required to create the default orchestration registry. */
 export interface CreateOrchestrationRegistryOptions {
   dataDir: string;
   createStartRunInput?: (
-    request: Pick<
-      AgentrailOrchestrationRegistryRequest,
-      "tenantId" | "userId" | "sessionId"
-    >,
+    request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "userId" | "sessionId">,
   ) => StartRunInput;
 }
 
@@ -45,9 +44,7 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
 
   constructor(private readonly options: CreateOrchestrationRegistryOptions) {}
 
-  async getManager(
-    request: AgentrailOrchestrationRegistryRequest,
-  ): Promise<OrchestrationManager> {
+  async getManager(request: AgentrailOrchestrationRegistryRequest): Promise<OrchestrationManager> {
     const key = this.getKey(request.tenantId, request.sessionId);
     if (!this.bindings.has(key)) {
       this.bindings.set(key, request.createManagedAgent);
@@ -75,13 +72,7 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
   }
 
   private getSessionDir(tenantId: string, sessionId: string): string {
-    return path.join(
-      this.options.dataDir,
-      "tenants",
-      tenantId,
-      "sessions",
-      sessionId,
-    );
+    return path.join(this.options.dataDir, "tenants", tenantId, "sessions", sessionId);
   }
 
   private async createManager(
@@ -111,10 +102,7 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
 
   private async ensureRun(
     manager: OrchestrationManager,
-    request: Pick<
-      AgentrailOrchestrationRegistryRequest,
-      "tenantId" | "userId" | "sessionId"
-    >,
+    request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "userId" | "sessionId">,
   ): Promise<void> {
     if (Object.keys(manager.getSnapshot().runs).length > 0) {
       return;
@@ -137,6 +125,11 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
   }
 }
 
+/**
+ * Creates a registry that lazily initializes one orchestration manager per session.
+ *
+ * @see {@link https://agentrail.run/reference/host-primitives}
+ */
 export function createOrchestrationRegistry(
   options: CreateOrchestrationRegistryOptions,
 ): AgentrailOrchestrationRegistry {

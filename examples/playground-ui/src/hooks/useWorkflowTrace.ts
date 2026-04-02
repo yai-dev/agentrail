@@ -37,9 +37,7 @@ export interface UseWorkflowTraceResult {
  * - feedEvent() appends live SSE events
  * - clearTrace() resets immediately for visual feedback on session switch
  */
-export function useWorkflowTrace(
-  sessionId: string | null,
-): UseWorkflowTraceResult {
+export function useWorkflowTrace(sessionId: string | null): UseWorkflowTraceResult {
   const [envelopes, setEnvelopes] = useState<WorkflowTraceEventEnvelope[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -69,9 +67,7 @@ export function useWorkflowTrace(
           // only exist client-side). Orchestration envelopes from the server
           // already cover the orchestration side.
           const fetchedIds = new Set(fetched.map((e) => e.id));
-          const liveOnly = prev.filter(
-            (e) => e.source === "runtime" && !fetchedIds.has(e.id),
-          );
+          const liveOnly = prev.filter((e) => e.source === "runtime" && !fetchedIds.has(e.id));
 
           if (liveOnly.length === 0) {
             seqRef.current = fetched.length;
@@ -164,9 +160,7 @@ const TRACE_EVENT_TYPES = new Set([
  * Converts a flat list of WorkflowTraceEventEnvelope into AgentRunTrace[].
  * Logic is equivalent to useAgentTrace.feedEvent applied in sequence.
  */
-function projectEnvelopesToTraces(
-  envelopes: WorkflowTraceEventEnvelope[],
-): AgentRunTrace[] {
+function projectEnvelopesToTraces(envelopes: WorkflowTraceEventEnvelope[]): AgentRunTrace[] {
   const traces: AgentRunTrace[] = [];
   let currentTrace: AgentRunTrace | null = null;
   const activeLlmId: { main?: string; skill?: string } = {};
@@ -180,9 +174,7 @@ function projectEnvelopesToTraces(
 
   const patchStep = (stepId: string, updater: (s: TraceStep) => TraceStep) => {
     if (!currentTrace) return;
-    currentTrace.steps = currentTrace.steps.map((s) =>
-      s.id === stepId ? updater(s) : s,
-    );
+    currentTrace.steps = currentTrace.steps.map((s) => (s.id === stepId ? updater(s) : s));
   };
 
   for (const envelope of envelopes) {

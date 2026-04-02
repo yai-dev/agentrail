@@ -17,6 +17,7 @@ function formatWaitResult(wait: WaitCondition): string {
   });
 }
 
+/** Creates the runtime tool that registers a wait condition for managed agents. */
 export function createWaitAgentTool(manager: OrchestrationManager) {
   return tool()
     .name("wait_agent")
@@ -32,9 +33,9 @@ export function createWaitAgentTool(manager: OrchestrationManager) {
           }),
         ),
         kind: Type.String({
-  description:
-    "Condition kind. 'agent-closed' waits for explicit close; 'agent-idle' waits for task completion (idle or closed).",
-}),
+          description:
+            "Condition kind. 'agent-closed' waits for explicit close; 'agent-idle' waits for task completion (idle or closed).",
+        }),
         description: Type.String({ description: "Human-readable wait description." }),
         match: Type.Optional(
           Type.Union([Type.Literal("any"), Type.Literal("all")], {

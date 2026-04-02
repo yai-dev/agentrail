@@ -4,15 +4,9 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import type {
-  OrchestrationState,
-  OrchestrationStreamEvent,
-} from "../types/orchestration.js";
+import type { OrchestrationState, OrchestrationStreamEvent } from "../types/orchestration.js";
 import { fetchOrchestrationState } from "../api.js";
-import {
-  applyEventToState,
-  createStateFromEvent,
-} from "./orchestrationStateReducer.js";
+import { applyEventToState, createStateFromEvent } from "./orchestrationStateReducer.js";
 
 /**
  * Result type for useOrchestrationState hook.
@@ -40,9 +34,7 @@ export interface UseOrchestrationStateResult {
  * @param sessionId The session ID to track orchestration for, or null
  * @returns Orchestration state and control functions
  */
-export function useOrchestrationState(
-  sessionId: string | null
-): UseOrchestrationStateResult {
+export function useOrchestrationState(sessionId: string | null): UseOrchestrationStateResult {
   const [state, setState] = useState<OrchestrationState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);

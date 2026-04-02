@@ -72,9 +72,7 @@ const sessionStore = new SessionManager(
 For **production**, point `dataDir` at a persistent volume so sessions survive container restarts:
 
 ```ts
-const sessionStore = new SessionManager(
-  process.env.AGENTRAIL_DATA_DIR ?? "/data/agentrail",
-);
+const sessionStore = new SessionManager(process.env.AGENTRAIL_DATA_DIR ?? "/data/agentrail");
 ```
 
 In Docker, mount a named volume at `/data/agentrail`:

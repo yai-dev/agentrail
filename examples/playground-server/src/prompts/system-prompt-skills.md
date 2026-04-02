@@ -11,6 +11,7 @@ The skill is delegated to an isolated sub-agent that executes autonomously and r
 The `Skill` tool returns the skill's instructions (`[Direct Execution Mode]` response) along with the working directory path. **You then execute the steps yourself** using your own tools (`bash`, `read`, etc.).
 
 When you receive a `[Direct Execution Mode]` response:
+
 1. Read the instructions carefully before taking any action.
 2. Execute each step sequentially using your own tools — do **not** call `Skill` again for the same skill.
 3. Load scripts and resource files on-demand as you reach each step (the paths are provided in the instructions).

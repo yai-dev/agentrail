@@ -106,6 +106,7 @@ export const sandboxManager = new SandboxManager("/data/agentrail", {
 ### Docker Requirements
 
 The sandbox requires:
+
 - A running Docker daemon accessible from the server process
 - The sandbox image pulled or built locally
 

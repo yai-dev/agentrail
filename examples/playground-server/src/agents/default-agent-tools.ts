@@ -9,11 +9,7 @@ import type { ExtendedSseEvent } from "@agentrail/skills";
 
 import { waitHandleRegistry } from "../wait-handle-registry.js";
 import { config } from "../config.js";
-import {
-  knowledgeManager,
-  skillManager,
-  sandboxManager,
-} from "../context/index.js";
+import { knowledgeManager, skillManager, sandboxManager } from "../context/index.js";
 
 export function getModelConfig() {
   return {

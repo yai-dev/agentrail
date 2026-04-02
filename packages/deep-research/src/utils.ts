@@ -74,7 +74,7 @@ function tryParseJsonWithRepairs<T>(text: string): T | null {
 
   const repaired = text
     .replace(/,\s*([}\]])/g, "$1")
-    .replace(/[“”]/g, "\"")
+    .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'");
   return tryParseJson<T>(repaired);
 }
@@ -96,7 +96,7 @@ function extractBalancedJsonObject(text: string): string | null {
         escaped = true;
         continue;
       }
-      if (char === "\"") {
+      if (char === '"') {
         inString = !inString;
         continue;
       }
@@ -128,7 +128,10 @@ function inferStepType(description: string): "research" | "analysis" | "processi
  * every later stage receives a stable shape, even if the planner output is a
  * little incomplete.
  */
-export function normalizePlan(query: string, plannerOutput: PlannerOutput | null): DeepResearchPlan {
+export function normalizePlan(
+  query: string,
+  plannerOutput: PlannerOutput | null,
+): DeepResearchPlan {
   const fallback = buildFallbackPlan(query);
   if (!plannerOutput) return fallback;
 
@@ -164,7 +167,8 @@ export function normalizePlan(query: string, plannerOutput: PlannerOutput | null
 }
 
 export function buildFallbackPlan(query: string): DeepResearchPlan {
-  const processingNeeded = /(统计|对比|比较|趋势|比例|分布|chart|plot|trend|compare|stat|统计图|图表)/i.test(query);
+  const processingNeeded =
+    /(统计|对比|比较|趋势|比例|分布|chart|plot|trend|compare|stat|统计图|图表)/i.test(query);
   return {
     title: `Deep Research: ${query.slice(0, 60)}`,
     thought: "Collect external sources, synthesize them, and produce a sourced report.",
@@ -191,7 +195,10 @@ export function buildFallbackPlan(query: string): DeepResearchPlan {
   };
 }
 
-export function guessArtifactKind(filePath: string, mimeType: string): DeepResearchArtifact["kind"] {
+export function guessArtifactKind(
+  filePath: string,
+  mimeType: string,
+): DeepResearchArtifact["kind"] {
   const ext = path.extname(filePath).toLowerCase();
   if (mimeType.startsWith("image/") || ext === ".png" || ext === ".svg") return "chart";
   if (ext === ".csv") return "table";
@@ -221,11 +228,13 @@ export function guessMimeType(filePath: string): string {
 }
 
 export function slugifyTitle(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60) || "artifact";
+  return (
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "artifact"
+  );
 }
 
 function normalizeWhitespace(text: string): string {
@@ -239,7 +248,7 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&#39;/g, "'")
-    .replace(/&quot;/gi, "\"");
+    .replace(/&quot;/gi, '"');
 }
 
 export function normalizeResearchUrl(rawUrl: string): string {
@@ -254,7 +263,10 @@ export function normalizeResearchUrl(rawUrl: string): string {
   }
 }
 
-function uniqueStrings(values: Array<string | undefined | null>, normalizer = normalizeWhitespace): string[] {
+function uniqueStrings(
+  values: Array<string | undefined | null>,
+  normalizer = normalizeWhitespace,
+): string[] {
   const seen = new Set<string>();
   const output: string[] = [];
   for (const value of values) {
@@ -325,7 +337,9 @@ function toCandidateLines(text: string): string[] {
     .map((line) => sanitizeDigestLine(line))
     .filter((line) => !isNoiseLine(line));
 
-  return uniqueStrings([...lines, ...splitIntoSentences(text)], (value) => sanitizeDigestLine(value));
+  return uniqueStrings([...lines, ...splitIntoSentences(text)], (value) =>
+    sanitizeDigestLine(value),
+  );
 }
 
 function compressAtomicLines(lines: string[], limit: number): string[] {
@@ -358,7 +372,9 @@ function extractOfficialName(summary: string, query: string): string | null {
     }
   }
 
-  const queryMatch = query.match(/([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]+?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u);
+  const queryMatch = query.match(
+    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]+?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
+  );
   return queryMatch?.[1]?.trim() ?? null;
 }
 
@@ -393,26 +409,33 @@ function extractRelatedEntities(summary: string): string[] {
 
 function extractAliases(query: string, summary: string, officialName?: string): string[] {
   const candidates: string[] = [];
-  const queryName = query.match(/([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]+?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u)?.[1];
+  const queryName = query.match(
+    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]+?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
+  )?.[1];
   if (queryName) candidates.push(queryName);
 
-  const mentionMatches = summary.matchAll(/["“]([^"”\n]{2,60}?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))["”]/gu);
+  const mentionMatches = summary.matchAll(
+    /["“]([^"”\n]{2,60}?(?:公司|集团|企业|Inc\.|Corp\.|Corporation))["”]/gu,
+  );
   for (const match of mentionMatches) {
     if (match[1]) candidates.push(match[1]);
   }
 
-  return uniqueStrings(candidates).filter((name) => normalizeName(name) !== normalizeName(officialName ?? ""));
+  return uniqueStrings(candidates).filter(
+    (name) => normalizeName(name) !== normalizeName(officialName ?? ""),
+  );
 }
 
 function sanitizeScopeTerms(values: string[]): string[] {
   return uniqueStrings(values)
     .map((item) => sanitizeDigestLine(item))
-    .filter((item) =>
-      item.length >= 2 &&
-      item.length <= 48 &&
-      !/[{}[\]]/.test(item) &&
-      !/^"(summary|entityProfile|sources?)"/i.test(item) &&
-      !/\\n/.test(item),
+    .filter(
+      (item) =>
+        item.length >= 2 &&
+        item.length <= 48 &&
+        !/[{}[\]]/.test(item) &&
+        !/^"(summary|entityProfile|sources?)"/i.test(item) &&
+        !/\\n/.test(item),
     )
     .slice(0, 10);
 }
@@ -420,13 +443,17 @@ function sanitizeScopeTerms(values: string[]): string[] {
 function deriveScopeTerms(query: string, summary: string): string[] {
   const phrases = [
     ...query.split(/[，。,、;；]/),
-    ...summary.match(/(?:市场|产品|预测|趋势|反馈|增长|份额|营收|竞争|采用|技术|自动驾驶|机器人|电池|储能)[^\n。；;]{0,24}/gu) ?? [],
+    ...(summary.match(
+      /(?:市场|产品|预测|趋势|反馈|增长|份额|营收|竞争|采用|技术|自动驾驶|机器人|电池|储能)[^\n。；;]{0,24}/gu,
+    ) ?? []),
   ];
   return sanitizeScopeTerms(phrases);
 }
 
 function inferProfileModeFromQuery(query: string): DeepResearchEntityProfile["mode"] {
-  return /(公司|集团|主体|法定代表人|统一社会信用代码|工商|注册资本|运营状况|资质|认证|同名|企业全称|企业名称)/u.test(query)
+  return /(公司|集团|主体|法定代表人|统一社会信用代码|工商|注册资本|运营状况|资质|认证|同名|企业全称|企业名称)/u.test(
+    query,
+  )
     ? "entity_disambiguation"
     : "topic_scope";
 }
@@ -475,10 +502,8 @@ export function normalizeResearchProfile(
     source?: DeepResearchEntityProfile["source"];
   },
 ): DeepResearchEntityProfile {
-  const mode = options?.preferredMode
-    ?? profile?.mode
-    ?? existing?.mode
-    ?? inferProfileModeFromQuery(query);
+  const mode =
+    options?.preferredMode ?? profile?.mode ?? existing?.mode ?? inferProfileModeFromQuery(query);
   const officialName = sanitizeDigestLine(profile?.officialName ?? existing?.officialName ?? "");
 
   return {
@@ -488,25 +513,41 @@ export function normalizeResearchProfile(
       .map((item) => sanitizeDigestLine(item))
       .filter((item) => item.length >= 2 && item.length <= 80 && !/[{}[\]]/.test(item))
       .slice(0, 8),
-    scopeTerms: sanitizeScopeTerms([...(existing?.scopeTerms ?? []), ...(profile?.scopeTerms ?? [])]),
+    scopeTerms: sanitizeScopeTerms([
+      ...(existing?.scopeTerms ?? []),
+      ...(profile?.scopeTerms ?? []),
+    ]),
     disambiguationNotes: compressAtomicLines(
-      uniqueStrings([...(existing?.disambiguationNotes ?? []), ...(profile?.disambiguationNotes ?? [])])
+      uniqueStrings([
+        ...(existing?.disambiguationNotes ?? []),
+        ...(profile?.disambiguationNotes ?? []),
+      ])
         .map((item) => sanitizeDigestLine(item))
         .filter(Boolean),
       6,
     ),
-    excludedEntities: mode === "entity_disambiguation"
-      ? uniqueStrings([...(existing?.excludedEntities ?? []), ...(profile?.excludedEntities ?? [])])
-        .map((item) => sanitizeDigestLine(item))
-        .filter((item) => item.length >= 2 && item.length <= 80)
-        .slice(0, 8)
-      : [],
-    relatedEntities: uniqueStrings([...(existing?.relatedEntities ?? []), ...(profile?.relatedEntities ?? [])])
+    excludedEntities:
+      mode === "entity_disambiguation"
+        ? uniqueStrings([
+            ...(existing?.excludedEntities ?? []),
+            ...(profile?.excludedEntities ?? []),
+          ])
+            .map((item) => sanitizeDigestLine(item))
+            .filter((item) => item.length >= 2 && item.length <= 80)
+            .slice(0, 8)
+        : [],
+    relatedEntities: uniqueStrings([
+      ...(existing?.relatedEntities ?? []),
+      ...(profile?.relatedEntities ?? []),
+    ])
       .map((item) => sanitizeDigestLine(item))
       .filter((item) => item.length >= 2 && item.length <= 80)
       .slice(0, 12),
     confidence: sanitizeProfileConfidence(profile?.confidence ?? existing?.confidence),
-    source: sanitizeProfileSource(profile?.source ?? options?.source, options?.source ?? existing?.source ?? "fallback_rules"),
+    source: sanitizeProfileSource(
+      profile?.source ?? options?.source,
+      options?.source ?? existing?.source ?? "fallback_rules",
+    ),
   };
 }
 
@@ -523,24 +564,29 @@ export function deriveEntityProfile(
   existing?: DeepResearchEntityProfile | null,
 ): DeepResearchEntityProfile | null {
   const preferredMode = existing?.mode ?? inferProfileModeFromQuery(query);
-  const officialName = preferredMode === "entity_disambiguation"
-    ? extractOfficialName(summary, query) ?? existing?.officialName
-    : existing?.officialName;
+  const officialName =
+    preferredMode === "entity_disambiguation"
+      ? (extractOfficialName(summary, query) ?? existing?.officialName)
+      : existing?.officialName;
   const aliases = extractAliases(query, summary, officialName);
   const scopeTerms = deriveScopeTerms(query, summary);
   const disambiguationNotes = uniqueStrings(
-    toCandidateLines(summary).filter((line) =>
-      /(正式名称|可能为同一实体|不同实体|区分|同名|无“|无"|核实|命名)/u.test(line),
-    ).slice(0, 4),
+    toCandidateLines(summary)
+      .filter((line) =>
+        /(正式名称|可能为同一实体|不同实体|区分|同名|无“|无"|核实|命名)/u.test(line),
+      )
+      .slice(0, 4),
   );
-  const excludedEntities = preferredMode === "entity_disambiguation"
-    ? extractExcludedEntities(summary)
-    : [];
-  const relatedEntities = preferredMode === "topic_scope"
-    ? extractRelatedEntities(summary)
-    : [];
+  const excludedEntities =
+    preferredMode === "entity_disambiguation" ? extractExcludedEntities(summary) : [];
+  const relatedEntities = preferredMode === "topic_scope" ? extractRelatedEntities(summary) : [];
 
-  if (!officialName && aliases.length === 0 && scopeTerms.length === 0 && disambiguationNotes.length === 0) {
+  if (
+    !officialName &&
+    aliases.length === 0 &&
+    scopeTerms.length === 0 &&
+    disambiguationNotes.length === 0
+  ) {
     return existing ?? null;
   }
 
@@ -587,11 +633,16 @@ export function buildStepDigest(
 
   const candidates = toCandidateLines(text);
   const findings = compressAtomicLines(
-    candidates.filter((line) => !/(待确认|仍需|open question|unknown|未知|不确定|可能|尚未|未披露|未证实)/i.test(line)),
+    candidates.filter(
+      (line) =>
+        !/(待确认|仍需|open question|unknown|未知|不确定|可能|尚未|未披露|未证实)/i.test(line),
+    ),
     5,
   );
   const openQuestions = compressAtomicLines(
-    candidates.filter((line) => /(待确认|仍需|建议.*核实|open question|uncertain|未查到|未披露|可能|不确定|仍待)/i.test(line)),
+    candidates.filter((line) =>
+      /(待确认|仍需|建议.*核实|open question|uncertain|未查到|未披露|可能|不确定|仍待)/i.test(line),
+    ),
     3,
   );
 
@@ -607,12 +658,14 @@ export function buildStepDigest(
 }
 
 export function formatStepDigest(digest: DeepResearchStepDigest): string {
-  const findings = digest.findings.length > 0
-    ? digest.findings.map((finding) => `- ${finding}`).join("\n")
-    : "- No key findings recorded yet.";
-  const openQuestions = digest.openQuestions.length > 0
-    ? `Open questions:\n${digest.openQuestions.map((item) => `- ${item}`).join("\n")}`
-    : "";
+  const findings =
+    digest.findings.length > 0
+      ? digest.findings.map((finding) => `- ${finding}`).join("\n")
+      : "- No key findings recorded yet.";
+  const openQuestions =
+    digest.openQuestions.length > 0
+      ? `Open questions:\n${digest.openQuestions.map((item) => `- ${item}`).join("\n")}`
+      : "";
 
   return [
     `[${digest.type}] ${digest.title}`,
@@ -645,7 +698,9 @@ function classifyAgainstProfile(
   const matchedExcluded = excludedNames.find((name) => haystack.includes(name));
 
   if (matchedExcluded && !mentionsOfficial) {
-    const originalName = profile.excludedEntities.find((name) => normalizeName(name) === matchedExcluded) ?? matchedExcluded;
+    const originalName =
+      profile.excludedEntities.find((name) => normalizeName(name) === matchedExcluded) ??
+      matchedExcluded;
     return {
       status: "related_but_excluded",
       note: `Matched excluded entity: ${originalName}`,
@@ -660,11 +715,32 @@ export function scoreSourceConfidence(source: DeepResearchSource): DeepResearchS
   let score = 0;
 
   if (/^(www\.)?(openai|tesla)\.com$/.test(domain)) score += 20;
-  if (/(reuters\.com|bloomberg\.com|ft\.com|fortune\.com|cnbc\.com|wsj\.com|nytimes\.com|bbc\.com|techcrunch\.com|arstechnica\.com)/.test(domain)) score += 14;
-  if (/(sec\.gov|gov\.cn|gov$|europa\.eu|arxiv\.org|github\.com|theicct\.org)/.test(domain)) score += 12;
-  if (/(menlovc\.com|a16z\.com|cbinsights\.com|pitchbook\.com|statista\.com|gallup\.com|gartner\.com|autovistagroup\.com|coxautoinc\.com)/.test(domain)) score += 8;
-  if (/(reddit\.com|polymarket\.com|manifold\.markets|medium\.com|substack\.com|blogspot\.com|wordpress\.com)/.test(domain)) score -= 14;
-  if (/(trading|investorplace|windowsforum|taptwice|ai-supremacy|usama\.codes|futuresearch|bullfincher|basenor|teslahubs|teslarati)/.test(domain)) score -= 8;
+  if (
+    /(reuters\.com|bloomberg\.com|ft\.com|fortune\.com|cnbc\.com|wsj\.com|nytimes\.com|bbc\.com|techcrunch\.com|arstechnica\.com)/.test(
+      domain,
+    )
+  )
+    score += 14;
+  if (/(sec\.gov|gov\.cn|gov$|europa\.eu|arxiv\.org|github\.com|theicct\.org)/.test(domain))
+    score += 12;
+  if (
+    /(menlovc\.com|a16z\.com|cbinsights\.com|pitchbook\.com|statista\.com|gallup\.com|gartner\.com|autovistagroup\.com|coxautoinc\.com)/.test(
+      domain,
+    )
+  )
+    score += 8;
+  if (
+    /(reddit\.com|polymarket\.com|manifold\.markets|medium\.com|substack\.com|blogspot\.com|wordpress\.com)/.test(
+      domain,
+    )
+  )
+    score -= 14;
+  if (
+    /(trading|investorplace|windowsforum|taptwice|ai-supremacy|usama\.codes|futuresearch|bullfincher|basenor|teslahubs|teslarati)/.test(
+      domain,
+    )
+  )
+    score -= 8;
   if (/\.pdf($|\?)/i.test(source.url)) score -= 2;
   if (source.usedByStepIds.length > 1) score += 2;
   if (source.evidenceLevel === "body_verified") score += 8;
@@ -684,7 +760,8 @@ export function scoreSourceConfidence(source: DeepResearchSource): DeepResearchS
 export function scoreSourceTier(source: DeepResearchSource): DeepResearchSourceTier | undefined {
   if ((source.status ?? "accepted") !== "accepted") return undefined;
   if (source.confidence === "high_confidence") return "primary";
-  if (source.confidence === "medium_confidence" && source.evidenceLevel === "body_verified") return "primary";
+  if (source.confidence === "medium_confidence" && source.evidenceLevel === "body_verified")
+    return "primary";
   return "supporting";
 }
 
@@ -697,7 +774,10 @@ export function classifySource(
   },
 ): { status: DeepResearchSourceStatus; note?: string } {
   const normalizedUrl = normalizeResearchUrl(source.url);
-  if (options?.explicitExcludedUrls?.has(normalizedUrl) || options?.explicitExcludedUrls?.has(source.url)) {
+  if (
+    options?.explicitExcludedUrls?.has(normalizedUrl) ||
+    options?.explicitExcludedUrls?.has(source.url)
+  ) {
     return {
       status: "related_but_excluded",
       note: options.note ?? "Explicitly excluded by researcher due to entity mismatch",
@@ -824,8 +904,18 @@ export function normalizeEvidenceTable(
           .filter((sourceId) => allowedSourceIds.has(sourceId))
           .slice(0, 5),
         confidence,
-        conflicts: compressAtomicLines(toStringArray(row.conflicts).map((item) => sanitizeDigestLine(item)).filter(Boolean), 3),
-        notes: compressAtomicLines(toStringArray(row.notes).map((item) => sanitizeDigestLine(item)).filter(Boolean), 3),
+        conflicts: compressAtomicLines(
+          toStringArray(row.conflicts)
+            .map((item) => sanitizeDigestLine(item))
+            .filter(Boolean),
+          3,
+        ),
+        notes: compressAtomicLines(
+          toStringArray(row.notes)
+            .map((item) => sanitizeDigestLine(item))
+            .filter(Boolean),
+          3,
+        ),
       };
     })
     .filter((row) => row.claim && row.supportingSourceIds.length > 0)
@@ -867,12 +957,14 @@ export function extractResearcherSummaryFallback(outputText: string): string | n
   const json = extractJsonObject<{ summary?: string }>(outputText);
   if (json?.summary?.trim()) return sanitizeResearchSummary(json.summary);
 
-  const summaryMatch = outputText.match(/"summary"\s*:\s*"([\s\S]+?)"\s*(?:,\s*"(?:entityProfile|sources|excludedSources)"|\})/);
+  const summaryMatch = outputText.match(
+    /"summary"\s*:\s*"([\s\S]+?)"\s*(?:,\s*"(?:entityProfile|sources|excludedSources)"|\})/,
+  );
   if (!summaryMatch?.[1]) return null;
   try {
     return JSON.parse(`"${summaryMatch[1]}"`);
   } catch {
-    return sanitizeResearchSummary(summaryMatch[1].replace(/\\"/g, "\""));
+    return sanitizeResearchSummary(summaryMatch[1].replace(/\\"/g, '"'));
   }
 }
 
@@ -881,29 +973,26 @@ export function sanitizeReportMarkdown(
   allowedSources: DeepResearchSource[],
 ): string {
   const allowedUrls = new Set(
-    allowedSources
-      .map((source) => source.normalizedUrl ?? source.url)
-      .filter(Boolean),
+    allowedSources.map((source) => source.normalizedUrl ?? source.url).filter(Boolean),
   );
   const keptFootnotes = new Set<string>();
 
-  const lines = markdown
-    .split("\n")
-    .filter((line) => {
-      const match = line.match(/^\[\^([^\]]+)\]:\s*(.+)$/);
-      if (!match) return true;
-      const [, id, body] = match;
-      const urlMatch = body.match(/https?:\/\/\S+/);
-      if (!urlMatch) return false;
-      const normalizedUrl = normalizeResearchUrl(urlMatch[0]);
-      if (!allowedUrls.has(normalizedUrl)) return false;
-      keptFootnotes.add(id);
-      return true;
-    });
+  const lines = markdown.split("\n").filter((line) => {
+    const match = line.match(/^\[\^([^\]]+)\]:\s*(.+)$/);
+    if (!match) return true;
+    const [, id, body] = match;
+    const urlMatch = body.match(/https?:\/\/\S+/);
+    if (!urlMatch) return false;
+    const normalizedUrl = normalizeResearchUrl(urlMatch[0]);
+    if (!allowedUrls.has(normalizedUrl)) return false;
+    keptFootnotes.add(id);
+    return true;
+  });
 
   return lines
     .map((line) =>
-      line.replace(/\[\^([^\]]+)\]/g, (full, id: string) => (keptFootnotes.has(id) ? full : "")))
+      line.replace(/\[\^([^\]]+)\]/g, (full, id: string) => (keptFootnotes.has(id) ? full : "")),
+    )
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();

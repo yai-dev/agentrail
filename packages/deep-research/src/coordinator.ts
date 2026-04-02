@@ -8,9 +8,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { defineAgent, type Message, type RuntimeEvent } from "@agentrail/runtime-core";
 import { SandboxManager } from "@agentrail/sandbox";
-import {
-  OrchestrationManager,
-} from "@agentrail/orchestration";
+import { OrchestrationManager } from "@agentrail/orchestration";
 import type { DeepResearchRuntimeConfig } from "./runtime.js";
 import { DeepResearchStore } from "./store.js";
 import type {
@@ -100,10 +98,7 @@ export class DeepResearchCoordinator {
       entityProfile: null,
     };
     this.store = new DeepResearchStore(options.sessionDir);
-    this.sandboxManager = new SandboxManager(
-      options.runtime.dataDir,
-      options.runtime.sandbox,
-    );
+    this.sandboxManager = new SandboxManager(options.runtime.dataDir, options.runtime.sandbox);
   }
 
   async runStreaming(emit: EmitFn): Promise<DeepResearchState> {
@@ -182,11 +177,13 @@ export class DeepResearchCoordinator {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (this.manager) {
-        await this.manager.completeRun({
-          runId: this.runId,
-          status: "failed",
-          error: message,
-        }).catch(() => undefined);
+        await this.manager
+          .completeRun({
+            runId: this.runId,
+            status: "failed",
+            error: message,
+          })
+          .catch(() => undefined);
       }
       this.state.run.status = "failed";
       this.state.run.error = message;
@@ -277,11 +274,8 @@ export class DeepResearchCoordinator {
 
     try {
       const prompt = this.buildStepPrompt(step);
-      const role = step.type === "processing"
-        ? "coder"
-        : step.type === "analysis"
-          ? "analyst"
-          : "researcher";
+      const role =
+        step.type === "processing" ? "coder" : step.type === "analysis" ? "analyst" : "researcher";
       const outputText = await this.executeManagedStep(role, step.id, prompt);
       step.output = outputText;
 
@@ -289,7 +283,7 @@ export class DeepResearchCoordinator {
         const parsed = extractJsonObject<ResearcherOutput>(outputText);
         step.summary = parsed?.summary
           ? sanitizeResearchSummary(parsed.summary)
-          : extractResearcherSummaryFallback(outputText) ?? sanitizeResearchSummary(outputText);
+          : (extractResearcherSummaryFallback(outputText) ?? sanitizeResearchSummary(outputText));
         step.profileUpdateReason = this.mergeEntityProfile(parsed?.entityProfile, step.summary);
         await this.refreshSourceClassifications(emit);
         await this.mergeSources(step.id, parsed?.sources ?? [], emit, {
@@ -299,7 +293,9 @@ export class DeepResearchCoordinator {
           entityProfile: this.state.entityProfile,
           explicitExcludedUrls: new Set(
             (parsed?.excludedSources ?? [])
-              .flatMap((source) => source?.url ? [normalizeResearchUrl(source.normalizedUrl ?? source.url)] : [])
+              .flatMap((source) =>
+                source?.url ? [normalizeResearchUrl(source.normalizedUrl ?? source.url)] : [],
+              )
               .filter(Boolean),
           ),
           note: "Excluded from usable evidence due to entity mismatch or weak relevance",
@@ -321,8 +317,7 @@ export class DeepResearchCoordinator {
         step,
         this.state.sources.filter(
           (source) =>
-            (source.status ?? "accepted") === "accepted" &&
-            source.usedByStepIds.includes(step.id),
+            (source.status ?? "accepted") === "accepted" && source.usedByStepIds.includes(step.id),
         ),
       );
       step.status = "completed";
@@ -353,16 +348,23 @@ export class DeepResearchCoordinator {
     // Only a compressed slice of prior work is carried into the next step.
     // This keeps prompts small and prevents one malformed summary from
     // polluting the rest of the run.
-    const completedSteps = this.state.steps
-      .filter((item) => item.index < step.index && item.summary);
+    const completedSteps = this.state.steps.filter(
+      (item) => item.index < step.index && item.summary,
+    );
     const recentDigests = completedSteps
       .slice(-2)
-      .flatMap((item) => item.digest ? [formatStepDigest(item.digest)] : [])
+      .flatMap((item) => (item.digest ? [formatStepDigest(item.digest)] : []))
       .join("\n\n");
-    const acceptedSources = this.state.sources.filter((source) => (source.status ?? "accepted") === "accepted");
-    const contextualSources = step.type === "research"
-      ? selectSourcesForResearchContext(acceptedSources, `${this.options.query}\n${step.title}\n${step.description}`)
-      : acceptedSources;
+    const acceptedSources = this.state.sources.filter(
+      (source) => (source.status ?? "accepted") === "accepted",
+    );
+    const contextualSources =
+      step.type === "research"
+        ? selectSourcesForResearchContext(
+            acceptedSources,
+            `${this.options.query}\n${step.title}\n${step.description}`,
+          )
+        : acceptedSources;
     const sources = contextualSources
       .map((source) => {
         const sourceMeta = [
@@ -437,7 +439,9 @@ export class DeepResearchCoordinator {
         sources ? `Accepted known sources:\n${sources}` : "",
         excludedSources ? `Known excluded/related-but-not-target sources:\n${excludedSources}` : "",
         fetchBudgetText ? `Fetch results so far by domain:\n${fetchBudgetText}` : "",
-        blockedDomains.length > 0 ? `Avoid FetchUrl for these blocked domains in this run unless absolutely necessary: ${blockedDomains.join(", ")}` : "",
+        blockedDomains.length > 0
+          ? `Avoid FetchUrl for these blocked domains in this run unless absolutely necessary: ${blockedDomains.join(", ")}`
+          : "",
         artifacts ? `Known artifacts:\n${artifacts}` : "",
         "Research requirements:",
         this.state.entityProfile?.mode === "entity_disambiguation"
@@ -455,7 +459,10 @@ export class DeepResearchCoordinator {
 
     const acceptedForAnalysis = acceptedSources
       .filter((source) => source.confidence !== "low_confidence")
-      .map((source) => `- [${source.id}] ${source.title} (${source.domain}) — ${source.confidence ?? "medium_confidence"} / ${source.evidenceLevel ?? "unverified"}`)
+      .map(
+        (source) =>
+          `- [${source.id}] ${source.title} (${source.domain}) — ${source.confidence ?? "medium_confidence"} / ${source.evidenceLevel ?? "unverified"}`,
+      )
       .join("\n");
     const evidenceTableText = completedSteps
       .flatMap((item) => item.evidenceTable ?? [])
@@ -519,8 +526,7 @@ export class DeepResearchCoordinator {
 
       if (lastJob.outcome !== "completed") {
         throw new Error(
-          lastJob.error ??
-            `${role} agent ${agentId} finished with outcome ${lastJob.outcome}.`,
+          lastJob.error ?? `${role} agent ${agentId} finished with outcome ${lastJob.outcome}.`,
         );
       }
 
@@ -543,11 +549,13 @@ export class DeepResearchCoordinator {
       return;
     }
 
-    await this.manager.closeAgent({
-      id: `close:${agentId}:${randomUUID()}`,
-      agentId,
-      reason,
-    }).catch(() => undefined);
+    await this.manager
+      .closeAgent({
+        id: `close:${agentId}:${randomUUID()}`,
+        agentId,
+        reason,
+      })
+      .catch(() => undefined);
   }
 
   private async mergeSources(
@@ -595,9 +603,8 @@ export class DeepResearchCoordinator {
       };
       draftSource.confidence = scoreSourceConfidence(draftSource);
       draftSource.tier = scoreSourceTier(draftSource);
-      draftSource.excludeReason = draftSource.status === "related_but_excluded"
-        ? draftSource.note
-        : undefined;
+      draftSource.excludeReason =
+        draftSource.status === "related_but_excluded" ? draftSource.note : undefined;
       if (existing) {
         if (!existing.usedByStepIds.includes(stepId)) {
           existing.usedByStepIds.push(stepId);
@@ -624,11 +631,17 @@ export class DeepResearchCoordinator {
         existing.fetchStatus = draftSource.fetchStatus;
         existing.confidence = scoreSourceConfidence(existing);
         existing.tier = scoreSourceTier(existing);
-        existing.excludeReason = existing.status === "related_but_excluded" ? existing.note : undefined;
+        existing.excludeReason =
+          existing.status === "related_but_excluded" ? existing.note : undefined;
         if (changed) {
           await this.store.writeState(this.state);
           await this.emitDeepResearchEvent(
-            { type: "deep_research_source", runId: this.runId, source: { ...existing }, timestamp: nowIso() },
+            {
+              type: "deep_research_source",
+              runId: this.runId,
+              source: { ...existing },
+              timestamp: nowIso(),
+            },
             emit,
           );
         }
@@ -643,7 +656,12 @@ export class DeepResearchCoordinator {
       this.state.sources.push(normalized);
       await this.store.writeState(this.state);
       await this.emitDeepResearchEvent(
-        { type: "deep_research_source", runId: this.runId, source: normalized, timestamp: nowIso() },
+        {
+          type: "deep_research_source",
+          runId: this.runId,
+          source: normalized,
+          timestamp: nowIso(),
+        },
         emit,
       );
     }
@@ -662,7 +680,9 @@ export class DeepResearchCoordinator {
       );
       const persistedDir = this.store.getArtifactsDir(this.runId);
       await mkdir(persistedDir, { recursive: true });
-      const ext = artifact.path.includes(".") ? artifact.path.slice(artifact.path.lastIndexOf(".")) : "";
+      const ext = artifact.path.includes(".")
+        ? artifact.path.slice(artifact.path.lastIndexOf("."))
+        : "";
       const persistedFilePath = join(
         persistedDir,
         `${Date.now()}-${slugifyTitle(artifact.title ?? artifact.path)}${ext}`,
@@ -675,16 +695,29 @@ export class DeepResearchCoordinator {
         storedFileName: persistedFilePath.split("/").pop(),
         title: artifact.title?.trim() || artifact.path.split("/").pop() || "Artifact",
         mimeType: artifact.mimeType?.trim() || guessMimeType(artifact.path),
-        kind: artifact.kind === "text" || artifact.kind === "table" || artifact.kind === "chart" || artifact.kind === "data" || artifact.kind === "file"
-          ? artifact.kind
-          : guessArtifactKind(artifact.path, artifact.mimeType?.trim() || guessMimeType(artifact.path)),
+        kind:
+          artifact.kind === "text" ||
+          artifact.kind === "table" ||
+          artifact.kind === "chart" ||
+          artifact.kind === "data" ||
+          artifact.kind === "file"
+            ? artifact.kind
+            : guessArtifactKind(
+                artifact.path,
+                artifact.mimeType?.trim() || guessMimeType(artifact.path),
+              ),
         createdAt: nowIso(),
         stepId,
       };
       this.state.artifacts.push(normalized);
       await this.store.writeState(this.state);
       await this.emitDeepResearchEvent(
-        { type: "deep_research_artifact", runId: this.runId, artifact: normalized, timestamp: nowIso() },
+        {
+          type: "deep_research_artifact",
+          runId: this.runId,
+          artifact: normalized,
+          timestamp: nowIso(),
+        },
         emit,
       );
     }
@@ -706,25 +739,26 @@ export class DeepResearchCoordinator {
     const planText = JSON.stringify(this.state.plan, null, 2);
     const stepText = this.state.steps
       .map((step) => {
-        const digest = step.digest
-          ? `Digest:\n${formatStepDigest(step.digest)}`
-          : "";
+        const digest = step.digest ? `Digest:\n${formatStepDigest(step.digest)}` : "";
         return `Step ${step.index + 1}: [${step.type}] ${step.title}\n${digest}\n${step.summary ?? step.output ?? ""}`;
       })
       .join("\n\n");
     const reportSources = selectSourcesForReport(this.state.sources, 4);
     const sourceText = reportSources
-      .map((source) => `[${source.id}] ${source.title}
+      .map(
+        (source) => `[${source.id}] ${source.title}
 URL: ${source.normalizedUrl ?? source.url}
 Tier: ${source.tier ?? "supporting"}
 Confidence: ${source.confidence ?? "medium_confidence"}
 Evidence: ${source.evidenceLevel ?? "unverified"}
-Snippet: ${source.snippet ?? ""}`)
+Snippet: ${source.snippet ?? ""}`,
+      )
       .join("\n\n");
     const evidenceRows = this.state.steps.flatMap((step) => step.evidenceTable ?? []);
     const evidenceText = evidenceRows
-      .map((row) =>
-        `- Claim: ${row.claim}\n  Confidence: ${row.confidence}\n  Supporting sources: ${(row.supportingSourceIds ?? []).join(", ")}${(row.conflicts ?? []).length > 0 ? `\n  Conflicts: ${(row.conflicts ?? []).join(" | ")}` : ""}${(row.notes ?? []).length > 0 ? `\n  Notes: ${(row.notes ?? []).join(" | ")}` : ""}`,
+      .map(
+        (row) =>
+          `- Claim: ${row.claim}\n  Confidence: ${row.confidence}\n  Supporting sources: ${(row.supportingSourceIds ?? []).join(", ")}${(row.conflicts ?? []).length > 0 ? `\n  Conflicts: ${(row.conflicts ?? []).join(" | ")}` : ""}${(row.notes ?? []).length > 0 ? `\n  Notes: ${(row.notes ?? []).join(" | ")}` : ""}`,
       )
       .join("\n");
     const artifactText = this.state.artifacts
@@ -732,7 +766,10 @@ Snippet: ${source.snippet ?? ""}`)
       .join("\n");
     const imageHints = this.state.artifacts
       .filter((artifact) => artifact.mimeType.startsWith("image/"))
-      .map((artifact) => `![${artifact.title}](/api/sessions/${encodeURIComponent(this.options.sessionId)}/deep-research/artifact?runId=${encodeURIComponent(this.runId)}&artifactId=${encodeURIComponent(artifact.id)})`)
+      .map(
+        (artifact) =>
+          `![${artifact.title}](/api/sessions/${encodeURIComponent(this.options.sessionId)}/deep-research/artifact?runId=${encodeURIComponent(this.runId)}&artifactId=${encodeURIComponent(artifact.id)})`,
+      )
       .join("\n");
 
     const prompt = [
@@ -793,7 +830,9 @@ Snippet: ${source.snippet ?? ""}`)
     const current = this.state.entityProfile ?? null;
     const fallbackProfile = deriveEntityProfile(this.options.query, summary, current);
     const researcherProfile = outputProfile
-      ? normalizeResearchProfile(this.options.query, outputProfile, current, { source: "researcher_upgrade" })
+      ? normalizeResearchProfile(this.options.query, outputProfile, current, {
+          source: "researcher_upgrade",
+        })
       : null;
     const candidate = researcherProfile ?? fallbackProfile;
 
@@ -824,10 +863,15 @@ Snippet: ${source.snippet ?? ""}`)
         ...candidate,
         mode: nextMode,
         source: shouldUpgradeToEntity ? "researcher_upgrade" : current.source,
-        confidence: shouldUpgradeToEntity ? "medium" : (researcherProfile?.confidence ?? fallbackProfile?.confidence ?? current.confidence),
+        confidence: shouldUpgradeToEntity
+          ? "medium"
+          : (researcherProfile?.confidence ?? fallbackProfile?.confidence ?? current.confidence),
       },
       current,
-      { preferredMode: nextMode, source: shouldUpgradeToEntity ? "researcher_upgrade" : current.source },
+      {
+        preferredMode: nextMode,
+        source: shouldUpgradeToEntity ? "researcher_upgrade" : current.source,
+      },
     );
 
     if (current.mode === "entity_disambiguation") {
@@ -846,8 +890,17 @@ Snippet: ${source.snippet ?? ""}`)
       const classification = classifySource(source, { entityProfile: this.state.entityProfile });
       const nextStatus = classification.status;
       const nextNote = classification.note ?? source.note;
-      const nextConfidence = scoreSourceConfidence({ ...source, status: nextStatus, note: nextNote });
-      const nextTier = scoreSourceTier({ ...source, status: nextStatus, note: nextNote, confidence: nextConfidence });
+      const nextConfidence = scoreSourceConfidence({
+        ...source,
+        status: nextStatus,
+        note: nextNote,
+      });
+      const nextTier = scoreSourceTier({
+        ...source,
+        status: nextStatus,
+        note: nextNote,
+        confidence: nextConfidence,
+      });
       if (
         (source.status ?? "accepted") === nextStatus &&
         (source.note ?? "") === (nextNote ?? "") &&
@@ -863,7 +916,12 @@ Snippet: ${source.snippet ?? ""}`)
       source.excludeReason = nextStatus === "related_but_excluded" ? nextNote : undefined;
       await this.store.writeState(this.state);
       await this.emitDeepResearchEvent(
-        { type: "deep_research_source", runId: this.runId, source: { ...source }, timestamp: nowIso() },
+        {
+          type: "deep_research_source",
+          runId: this.runId,
+          source: { ...source },
+          timestamp: nowIso(),
+        },
         emit,
       );
     }
@@ -878,7 +936,15 @@ function normalizeEvidenceLevel(value?: string): DeepResearchSource["evidenceLev
 }
 
 function normalizeFetchStatus(value?: string): DeepResearchSource["fetchStatus"] {
-  if (value === "success" || value === "401" || value === "403" || value === "timeout" || value === "empty_content" || value === "error" || value === "skipped") {
+  if (
+    value === "success" ||
+    value === "401" ||
+    value === "403" ||
+    value === "timeout" ||
+    value === "empty_content" ||
+    value === "error" ||
+    value === "skipped"
+  ) {
     return value;
   }
   return undefined;

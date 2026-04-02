@@ -8,14 +8,20 @@ import os from "node:os";
 import path from "node:path";
 import { parseDocument } from "yaml";
 
+/** Current on-disk Agentrail config schema version. */
 export const AGENTRAIL_CONFIG_VERSION = 1 as const;
+/** Default project-relative config path used when no override is supplied. */
 export const DEFAULT_CONFIG_RELATIVE_PATH = path.join("config", "agentrail.yaml");
+/** Environment variable that overrides config file discovery. */
 export const CONFIG_PATH_OVERRIDE_ENV_VAR = "AGENTRAIL_CONFIG_PATH";
+/** Default root data directory for local Agentrail state. */
 export const DEFAULT_DATA_DIR = path.join(os.homedir(), ".agentrail");
+/** Default sandbox image used by local apps. */
 export const DEFAULT_SANDBOX_IMAGE = "ghcr.io/yai-dev/agentrail-sandbox:latest";
 
 type UnknownRecord = Record<string, unknown>;
 
+/** Full validated YAML config schema used by Agentrail apps and examples. */
 export interface AgentrailConfig {
   version: 1;
   llm: {
@@ -78,23 +84,28 @@ export interface AgentrailConfig {
   };
 }
 
+/** Options for resolving the Agentrail config path. */
 export interface ResolveAgentrailConfigPathOptions {
   configPath?: string;
   cwd?: string;
 }
 
+/** Options for loading and parsing the Agentrail config file. */
 export interface LoadAgentrailConfigOptions extends ResolveAgentrailConfigPathOptions {}
 
+/** Resolved sandbox runtime settings consumed by applications. */
 export interface SandboxRuntimeConfig {
   image: string;
   idleTimeoutMs: number;
 }
 
+/** Resolved sub-agent runtime settings consumed by orchestration layers. */
 export interface SubagentRuntimeConfig {
   pollIntervalMs: number;
   fakeExecution: "" | "echo";
 }
 
+/** Shared resolved settings inherited by multiple local apps. */
 export interface SharedResolvedAppConfig {
   provider: string;
   modelId: string;
@@ -109,6 +120,7 @@ export interface SharedResolvedAppConfig {
   };
 }
 
+/** Resolved config consumed by the playground server example. */
 export interface PlaygroundServerConfig extends SharedResolvedAppConfig {
   port: number;
   compaction: AgentrailConfig["apps"]["playgroundServer"]["compaction"];
@@ -117,15 +129,18 @@ export interface PlaygroundServerConfig extends SharedResolvedAppConfig {
   skillDelegateToSubAgent: boolean;
 }
 
+/** Resolved config consumed by the deep research example app. */
 export interface DeepResearchConfig extends SharedResolvedAppConfig {
   port: number;
 }
 
+/** Resolved config consumed by the playground UI app. */
 export interface PlaygroundUiConfig {
   port: number;
   backendPort: number;
 }
 
+/** Default config values applied before user overrides are parsed. */
 export const DEFAULT_AGENTRAIL_CONFIG: AgentrailConfig = {
   version: AGENTRAIL_CONFIG_VERSION,
   llm: {
@@ -199,11 +214,7 @@ function assertObject(value: unknown, parts: string[]): UnknownRecord {
   return value as UnknownRecord;
 }
 
-function assertNoUnknownKeys(
-  value: UnknownRecord,
-  allowedKeys: string[],
-  parts: string[],
-): void {
+function assertNoUnknownKeys(value: UnknownRecord, allowedKeys: string[], parts: string[]): void {
   const allowed = new Set(allowedKeys);
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) {
@@ -302,6 +313,7 @@ function requireFile(filePath: string): string {
   return resolvedPath;
 }
 
+/** Resolves the config file path using explicit options, env override, then upward discovery. */
 export function resolveAgentrailConfigPath(
   options: ResolveAgentrailConfigPathOptions = {},
 ): string {
@@ -326,6 +338,7 @@ export function resolveAgentrailConfigPath(
   }
 }
 
+/** Parses raw YAML data into a validated `AgentrailConfig` object. */
 export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   const root = assertObject(raw, []);
   assertNoUnknownKeys(
@@ -373,28 +386,44 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
     ["apps"],
     DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer as UnknownRecord,
   );
-  assertNoUnknownKeys(playgroundServer, ["port", "compaction", "userMemory", "userPreferenceSummary", "skills"], ["apps", "playgroundServer"]);
+  assertNoUnknownKeys(
+    playgroundServer,
+    ["port", "compaction", "userMemory", "userPreferenceSummary", "skills"],
+    ["apps", "playgroundServer"],
+  );
   const compaction = getObject(
     playgroundServer,
     "compaction",
     ["apps", "playgroundServer"],
     DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction as UnknownRecord,
   );
-  assertNoUnknownKeys(compaction, ["triggerTokens", "minMessages"], ["apps", "playgroundServer", "compaction"]);
+  assertNoUnknownKeys(
+    compaction,
+    ["triggerTokens", "minMessages"],
+    ["apps", "playgroundServer", "compaction"],
+  );
   const userMemory = getObject(
     playgroundServer,
     "userMemory",
     ["apps", "playgroundServer"],
     DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.userMemory as UnknownRecord,
   );
-  assertNoUnknownKeys(userMemory, ["enabled", "idleMinutes", "scanIntervalMinutes", "minIntervalHours", "minChangedSessions"], ["apps", "playgroundServer", "userMemory"]);
+  assertNoUnknownKeys(
+    userMemory,
+    ["enabled", "idleMinutes", "scanIntervalMinutes", "minIntervalHours", "minChangedSessions"],
+    ["apps", "playgroundServer", "userMemory"],
+  );
   const userPreferenceSummary = getObject(
     playgroundServer,
     "userPreferenceSummary",
     ["apps", "playgroundServer"],
     DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.userPreferenceSummary as UnknownRecord,
   );
-  assertNoUnknownKeys(userPreferenceSummary, ["enabled", "minSessions", "cooldownHours", "maxSessionsToRead", "maxMessagesPerRun"], ["apps", "playgroundServer", "userPreferenceSummary"]);
+  assertNoUnknownKeys(
+    userPreferenceSummary,
+    ["enabled", "minSessions", "cooldownHours", "maxSessionsToRead", "maxMessagesPerRun"],
+    ["apps", "playgroundServer", "userPreferenceSummary"],
+  );
   const skills = getObject(
     playgroundServer,
     "skills",
@@ -621,9 +650,8 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   };
 }
 
-export function loadAgentrailConfig(
-  options: LoadAgentrailConfigOptions = {},
-): AgentrailConfig {
+/** Loads, parses, and validates the Agentrail config file from disk. */
+export function loadAgentrailConfig(options: LoadAgentrailConfigOptions = {}): AgentrailConfig {
   const configPath = resolveAgentrailConfigPath(options);
   const source = readFileSync(configPath, "utf8");
   const document = parseDocument(source, {
@@ -666,6 +694,7 @@ function resolveSharedFields(config: AgentrailConfig): SharedResolvedAppConfig {
   };
 }
 
+/** Returns the resolved config shape used by the playground server example. */
 export function getPlaygroundServerConfig(
   config: AgentrailConfig = loadAgentrailConfig(),
 ): PlaygroundServerConfig {
@@ -680,6 +709,7 @@ export function getPlaygroundServerConfig(
   };
 }
 
+/** Returns the resolved config shape used by the deep research example. */
 export function getDeepResearchConfig(
   config: AgentrailConfig = loadAgentrailConfig(),
 ): DeepResearchConfig {
@@ -690,6 +720,7 @@ export function getDeepResearchConfig(
   };
 }
 
+/** Returns the resolved config shape used by the playground UI example. */
 export function getPlaygroundUiConfig(
   config: AgentrailConfig = loadAgentrailConfig(),
 ): PlaygroundUiConfig {

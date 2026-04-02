@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap");
 
 /* ─── BRAND & FONTS ─── */
 :root {
@@ -7,8 +7,8 @@
   --vp-c-brand-3: rgba(196, 255, 46, 0.14);
   --vp-c-brand-soft: rgba(196, 255, 46, 0.08);
 
-  --vp-font-family-base: 'DM Sans', system-ui, sans-serif;
-  --vp-font-family-mono: 'DM Mono', 'Courier New', monospace;
+  --vp-font-family-base: "DM Sans", system-ui, sans-serif;
+  --vp-font-family-mono: "DM Mono", "Courier New", monospace;
 
   /* accent shortcuts used by HomeLayout */
   --at-accent: #c4ff2e;
@@ -60,7 +60,7 @@
 }
 
 .VPNavBarTitle .title {
-  font-family: 'DM Serif Display', Georgia, serif !important;
+  font-family: "DM Serif Display", Georgia, serif !important;
   letter-spacing: 0.05em;
   color: var(--vp-c-text-1) !important;
 }
@@ -85,7 +85,7 @@
 .vp-doc h2,
 .vp-doc h3,
 .vp-doc h4 {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: "DM Serif Display", Georgia, serif;
   letter-spacing: -0.01em;
 }
 
@@ -116,7 +116,7 @@
   background: var(--at-accent) !important;
   border-color: var(--at-accent) !important;
   color: #060606 !important;
-  font-family: 'DM Mono', monospace !important;
+  font-family: "DM Mono", monospace !important;
   font-size: 0.82rem !important;
   letter-spacing: 0.04em !important;
   border-radius: 2px !important;
@@ -132,7 +132,7 @@
   background: transparent !important;
   border-color: #262626 !important;
   color: #b8b6b0 !important;
-  font-family: 'DM Mono', monospace !important;
+  font-family: "DM Mono", monospace !important;
   font-size: 0.82rem !important;
   letter-spacing: 0.04em !important;
   border-radius: 2px !important;
@@ -156,9 +156,16 @@
   width: 4px;
   height: 4px;
 }
-::-webkit-scrollbar-track { background: var(--vp-c-bg); }
-::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #262626; }
+::-webkit-scrollbar-track {
+  background: var(--vp-c-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: #1c1c1c;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #262626;
+}
 
 /* ─── FOOTER ─── */
 .VPFooter {

@@ -6,10 +6,7 @@
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import {
-  recoverOrchestrationState,
-  type RecoveredOrchestrationState,
-} from "./recovery.js";
+import { recoverOrchestrationState, type RecoveredOrchestrationState } from "./recovery.js";
 import type {
   OrchestrationEvent,
   OrchestrationMailboxEvent,
@@ -52,24 +49,16 @@ async function ensureOrchestrationDirectory(sessionDir: string): Promise<void> {
   await mkdir(getOrchestrationDirectory(sessionDir), { recursive: true });
 }
 
-async function ensureSubAgentDirectory(
-  sessionDir: string,
-  agentId: string,
-): Promise<void> {
+async function ensureSubAgentDirectory(sessionDir: string, agentId: string): Promise<void> {
   await mkdir(getSubAgentDirectory(sessionDir, agentId), { recursive: true });
 }
 
-export async function appendEvent(
-  sessionDir: string,
-  event: OrchestrationEvent,
-): Promise<void> {
+export async function appendEvent(sessionDir: string, event: OrchestrationEvent): Promise<void> {
   await ensureOrchestrationDirectory(sessionDir);
   await appendFile(getEventsPath(sessionDir), `${JSON.stringify(event)}\n`, "utf8");
 }
 
-export async function loadEvents(
-  sessionDir: string,
-): Promise<OrchestrationEvent[]> {
+export async function loadEvents(sessionDir: string): Promise<OrchestrationEvent[]> {
   try {
     const contents = await readFile(getEventsPath(sessionDir), "utf8");
     return contents
@@ -85,9 +74,7 @@ export async function loadEvents(
   }
 }
 
-export async function loadSnapshot(
-  sessionDir: string,
-): Promise<OrchestrationSnapshot | null> {
+export async function loadSnapshot(sessionDir: string): Promise<OrchestrationSnapshot | null> {
   try {
     const contents = await readFile(getCheckpointPath(sessionDir), "utf8");
     return JSON.parse(contents) as OrchestrationSnapshot;
@@ -105,20 +92,11 @@ export async function writeCheckpoint(
   snapshot: OrchestrationSnapshot,
 ): Promise<void> {
   await ensureOrchestrationDirectory(sessionDir);
-  await writeFile(
-    getCheckpointPath(sessionDir),
-    JSON.stringify(snapshot, null, 2),
-    "utf8",
-  );
+  await writeFile(getCheckpointPath(sessionDir), JSON.stringify(snapshot, null, 2), "utf8");
 }
 
-export async function recoverState(
-  sessionDir: string,
-): Promise<RecoveredOrchestrationState> {
-  const [snapshot, events] = await Promise.all([
-    loadSnapshot(sessionDir),
-    loadEvents(sessionDir),
-  ]);
+export async function recoverState(sessionDir: string): Promise<RecoveredOrchestrationState> {
+  const [snapshot, events] = await Promise.all([loadSnapshot(sessionDir), loadEvents(sessionDir)]);
 
   return recoverOrchestrationState(snapshot, events);
 }
@@ -176,11 +154,7 @@ export async function writeMailboxState(
   state: OrchestrationMailboxState,
 ): Promise<void> {
   await ensureSubAgentDirectory(sessionDir, agentId);
-  await writeFile(
-    getMailboxStatePath(sessionDir, agentId),
-    JSON.stringify(state, null, 2),
-    "utf8",
-  );
+  await writeFile(getMailboxStatePath(sessionDir, agentId), JSON.stringify(state, null, 2), "utf8");
 }
 
 function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
@@ -196,6 +170,7 @@ function isInvalidSnapshotError(error: unknown): error is SyntaxError {
   return error instanceof SyntaxError;
 }
 
+/** Filesystem-backed persistence helpers for orchestration event logs and checkpoints. */
 export const OrchestrationStore = {
   appendEvent,
   appendMailboxEvent,

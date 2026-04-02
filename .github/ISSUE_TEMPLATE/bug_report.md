@@ -32,10 +32,10 @@ What actually happened. Include error messages or stack traces if available.
 
 ## Environment
 
-- Node.js version: 
-- pnpm version: 
-- Affected package(s) and version(s): 
-- OS: 
+- Node.js version:
+- pnpm version:
+- Affected package(s) and version(s):
+- OS:
 
 ## Additional context
 

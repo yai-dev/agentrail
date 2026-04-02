@@ -15,10 +15,7 @@ function getEventTimestamp(event: { timestamp?: string }): string {
   return event.timestamp ?? new Date().toISOString();
 }
 
-function appendEvent(
-  state: OrchestrationState,
-  event: OrchestrationEvent,
-): OrchestrationState {
+function appendEvent(state: OrchestrationState, event: OrchestrationEvent): OrchestrationState {
   return {
     ...state,
     events: [...state.events, event],
@@ -45,9 +42,7 @@ function createEventId(): string {
   return `evt-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function createStateFromEvent(
-  event: OrchestrationStreamEvent,
-): OrchestrationState | null {
+export function createStateFromEvent(event: OrchestrationStreamEvent): OrchestrationState | null {
   const timestamp = getEventTimestamp(event);
   const baseState: OrchestrationState = {
     run: null,
@@ -211,9 +206,7 @@ export function applyEventToState(
         {
           ...state,
           agents: state.agents.map((agent) =>
-            agent.id === event.agentId
-              ? { ...agent, updatedAt: timestamp }
-              : agent,
+            agent.id === event.agentId ? { ...agent, updatedAt: timestamp } : agent,
           ),
         },
         toEventRecord(event),
@@ -232,9 +225,7 @@ export function applyEventToState(
         {
           ...state,
           waits: state.waits.some((wait) => wait.id === newWait.id)
-            ? state.waits.map((wait) =>
-                wait.id === newWait.id ? { ...wait, ...newWait } : wait,
-              )
+            ? state.waits.map((wait) => (wait.id === newWait.id ? { ...wait, ...newWait } : wait))
             : [...state.waits, newWait],
         },
         toEventRecord(event),
@@ -249,8 +240,7 @@ export function applyEventToState(
             wait.id === event.waitId
               ? {
                   ...wait,
-                  status:
-                    event.timedOut ? "timeout" : "resolved",
+                  status: event.timedOut ? "timeout" : "resolved",
                   resolvedAt: timestamp,
                 }
               : wait,
@@ -303,9 +293,7 @@ export function applyEventToState(
   }
 }
 
-export function normalizeHistoryEvents(
-  events: OrchestrationEvent[],
-): OrchestrationEvent[] {
+export function normalizeHistoryEvents(events: OrchestrationEvent[]): OrchestrationEvent[] {
   return events.map((event) => ({
     ...event,
     id:

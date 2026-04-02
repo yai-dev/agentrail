@@ -13,11 +13,7 @@ export default defineConfig({
 
   // Links pointing to source files or root-level files outside docs/ are valid
   // when browsing on GitHub but don't resolve inside the VitePress site.
-  ignoreDeadLinks: [
-    /\.\.\/\.\.\/packages\//,
-    /\.\.\/\.\.\/examples\//,
-    /\.\.\/\.\.\/ROADMAP/,
-  ],
+  ignoreDeadLinks: [/\.\.\/\.\.\/packages\//, /\.\.\/\.\.\/examples\//, /\.\.\/\.\.\/ROADMAP/],
 
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
@@ -115,14 +111,11 @@ export default defineConfig({
     ],
 
     editLink: {
-      pattern:
-        "https://github.com/yai-dev/agentrail/edit/master/docs/:path",
+      pattern: "https://github.com/yai-dev/agentrail/edit/master/docs/:path",
       text: "Edit this page on GitHub",
     },
 
-    socialLinks: [
-      { icon: "github", link: "https://github.com/yai-dev/agentrail" },
-    ],
+    socialLinks: [{ icon: "github", link: "https://github.com/yai-dev/agentrail" }],
 
     footer: {
       message: "Released under the Apache 2.0 License.",

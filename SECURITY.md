@@ -27,11 +27,11 @@ A useful report includes:
 
 ### Response timeline
 
-| Action | Target |
-|--------|--------|
-| Acknowledge receipt | 48 hours |
-| Initial triage and severity assessment | 5 business days |
-| Fix or mitigation released | 14 days for critical, 30 days for others |
+| Action                                 | Target                                   |
+| -------------------------------------- | ---------------------------------------- |
+| Acknowledge receipt                    | 48 hours                                 |
+| Initial triage and severity assessment | 5 business days                          |
+| Fix or mitigation released             | 14 days for critical, 30 days for others |
 
 We will credit reporters in the release notes unless you prefer to remain anonymous.
 

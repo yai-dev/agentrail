@@ -67,11 +67,7 @@ Use them like this:
 ```ts
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createPromptBuilder,
-  definePromptBundle,
-  definePromptFragment,
-} from "@agentrail/prompts";
+import { createPromptBuilder, definePromptBundle, definePromptFragment } from "@agentrail/prompts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

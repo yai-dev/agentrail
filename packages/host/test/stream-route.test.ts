@@ -125,11 +125,11 @@ describe("createStreamRoute", () => {
     const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toContain("\"type\":\"context_compaction_start\"");
-    expect(body).toContain("\"type\":\"context_compaction_end\"");
-    expect(body).toContain("\"type\":\"agent_start\"");
-    expect(body).toContain("\"type\":\"agent_end\"");
-    expect(body).toContain("\"type\":\"context_usage\"");
+    expect(body).toContain('"type":"context_compaction_start"');
+    expect(body).toContain('"type":"context_compaction_end"');
+    expect(body).toContain('"type":"agent_start"');
+    expect(body).toContain('"type":"agent_end"');
+    expect(body).toContain('"type":"context_usage"');
     expect(sessionManager.compactIfNeeded).toHaveBeenCalledOnce();
     expect(sessionManager.appendMessages).toHaveBeenCalledOnce();
     expect(appended[0]).toHaveLength(2);
@@ -270,9 +270,7 @@ describe("createStreamRoute", () => {
     ];
     expect(message).toContain("[Plugin Attachment]");
     await expect(
-      streamOptions.transformContext([
-        { role: "user", content: "original", timestamp: 2 },
-      ]),
+      streamOptions.transformContext([{ role: "user", content: "original", timestamp: 2 }]),
     ).resolves.toEqual([
       { role: "user", content: "plugin-context", timestamp: 1 },
       { role: "user", content: "original", timestamp: 2 },
@@ -354,7 +352,7 @@ describe("createStreamRoute", () => {
     const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toContain("\"type\":\"deep_research_start\"");
+    expect(body).toContain('"type":"deep_research_start"');
     expect(handleResolvedRequest).toHaveBeenCalledOnce();
     expect(resolveProfile).not.toHaveBeenCalled();
     expect(sessionManager.appendMessages).toHaveBeenCalledOnce();

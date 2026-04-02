@@ -26,10 +26,7 @@ import {
 function getWorkerPath(): string {
   const currentFile = fileURLToPath(import.meta.url);
   const extension = currentFile.endsWith(".ts") ? ".ts" : ".js";
-  return join(
-    dirname(currentFile),
-    "../src/agents/default-subagent-worker-entry" + extension,
-  );
+  return join(dirname(currentFile), "../src/agents/default-subagent-worker-entry" + extension);
 }
 
 class FakeChildProcess extends EventEmitter {
@@ -175,13 +172,15 @@ test("subscribes to autonomous worker lifecycle events", async () => {
   });
   child.emit("message", {
     type: "run_turn_result",
-    requestId: (child.sent.find(
-      (message): message is { type: "run_turn"; requestId: string } =>
-        typeof message === "object" &&
-        message !== null &&
-        "type" in message &&
-        (message as { type?: string }).type === "run_turn",
-    ) as { requestId: string }).requestId,
+    requestId: (
+      child.sent.find(
+        (message): message is { type: "run_turn"; requestId: string } =>
+          typeof message === "object" &&
+          message !== null &&
+          "type" in message &&
+          (message as { type?: string }).type === "run_turn",
+      ) as { requestId: string }
+    ).requestId,
     result: {
       jobId: "job:input-process-test",
       consumedInputIds: ["input-process-test"],
@@ -223,10 +222,7 @@ test("fails fast when the worker never reports ready", async () => {
     readyTimeoutMs: 20,
   });
 
-  await assert.rejects(
-    instancePromise,
-    /did not become ready within 20ms/,
-  );
+  await assert.rejects(instancePromise, /did not become ready within 20ms/);
   assert.equal(child.sent[0] && typeof child.sent[0] === "object", true);
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
 });
@@ -276,11 +272,7 @@ test("real default sub-agent worker completes a wake-driven turn", async () => {
     const result = await instance.deliverInput(createEnvelope());
     assert.equal(result.outputText, "process me");
     await waitFor(() => seen.includes("idle"));
-    assert.deepEqual(seen, [
-      "started:input-process-test",
-      "completed:process me",
-      "idle",
-    ]);
+    assert.deepEqual(seen, ["started:input-process-test", "completed:process me", "idle"]);
 
     await instance.close("done");
   } finally {
@@ -316,32 +308,17 @@ test("filters parent execArgv down to runtime-safe loader flags", () => {
 });
 
 test("uses the parent working directory for worker process resolution", () => {
-  assert.equal(
-    resolveWorkerCwd("/tmp/worker-entry.ts", "/tmp/example-app"),
-    "/tmp/example-app",
-  );
-  assert.equal(
-    resolveWorkerCwd("/tmp/worker-entry.js", "/tmp/example-app"),
-    "/tmp/example-app",
-  );
+  assert.equal(resolveWorkerCwd("/tmp/worker-entry.ts", "/tmp/example-app"), "/tmp/example-app");
+  assert.equal(resolveWorkerCwd("/tmp/worker-entry.js", "/tmp/example-app"), "/tmp/example-app");
 });
 
 test("real default sub-agent worker reports malformed mailbox data as a failed turn", async () => {
   const sessionDir = await mkdtemp(join(tmpdir(), "default-subagent-process-bad-mailbox-"));
 
   try {
-    const agentDirectory = join(
-      sessionDir,
-      "orchestration",
-      "subagents",
-      "agent-process-test",
-    );
+    const agentDirectory = join(sessionDir, "orchestration", "subagents", "agent-process-test");
     await mkdir(agentDirectory, { recursive: true });
-    await writeFile(
-      join(agentDirectory, "mailbox.jsonl"),
-      "{this-is-not-json}\n",
-      "utf8",
-    );
+    await writeFile(join(agentDirectory, "mailbox.jsonl"), "{this-is-not-json}\n", "utf8");
 
     const instance = await createSubAgentProcess({
       tenantId: "tenant-test",

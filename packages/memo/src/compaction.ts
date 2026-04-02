@@ -3,9 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message, ToolResultMessage } from "@agentrail/runtime-core";
+import type {
+  ImageContent,
+  Message,
+  TextContent,
+  ToolResultMessage,
+} from "@agentrail/runtime-core";
 import { estimateMessageTokens } from "./token-estimator.js";
 
+/** Thresholds that control view-only compaction of large tool results. */
 export interface ToolResultCompactionOptions {
   /** Tool results larger than this (in tokens) are replaced with a placeholder. Default: 1500 */
   maxTokensPerToolResult?: number;
@@ -50,12 +56,10 @@ export function compactToolResults(
     const trm = m as ToolResultMessage;
 
     // Separate text and image blocks
-    const textBlocks = trm.content.filter((b) => "text" in b);
-    const imageBlocks = trm.content.filter(
-      (b) => (b as { type: string }).type === "image",
-    );
+    const textBlocks = trm.content.filter((b): b is TextContent => "text" in b);
+    const imageBlocks = trm.content.filter((b): b is ImageContent => b.type === "image");
 
-    const fullText = textBlocks.map((b) => ("text" in b ? b.text : "")).join("");
+    const fullText = textBlocks.map((b) => b.text).join("");
     const preview = fullText.slice(0, 200).replace(/\n+/g, " ").trim();
 
     const compactedContent: ToolResultMessage["content"] = [

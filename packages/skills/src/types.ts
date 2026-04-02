@@ -5,6 +5,7 @@
 
 import type { RuntimeEvent } from "@agentrail/runtime-core";
 
+/** Public metadata describing one installed reusable skill. */
 export interface SkillMeta {
   /** Skill directory name (used as skill identifier) */
   name: string;
@@ -24,12 +25,14 @@ export interface SkillConfig {
 }
 
 // SSE bracket events: extend the event stream without modifying runtime-core's RuntimeEvent
+/** Event emitted when a skill execution begins. */
 export type SkillStartEvent = {
   type: "skill_start";
   skillName: string;
   task: string;
 };
 
+/** Event emitted when a skill execution finishes. */
 export type SkillEndEvent = {
   type: "skill_end";
   skillName: string;

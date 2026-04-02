@@ -176,9 +176,7 @@ describe("createChatRoute", () => {
       { transformContext: (messages: Message[]) => Promise<Message[]> },
     ];
     await expect(
-      invokeOptions.transformContext([
-        { role: "user", content: "original", timestamp: 2 },
-      ]),
+      invokeOptions.transformContext([{ role: "user", content: "original", timestamp: 2 }]),
     ).resolves.toEqual([
       { role: "user", content: "plugin-context", timestamp: 1 },
       { role: "user", content: "original", timestamp: 2 },

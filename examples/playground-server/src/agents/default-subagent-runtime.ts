@@ -14,10 +14,7 @@ import type {
 import { waitHandleRegistry } from "../wait-handle-registry.js";
 import { config } from "../config.js";
 import { buildSystemPrompt } from "../prompts/index.js";
-import {
-  knowledgeManager,
-  sandboxManager,
-} from "../context/index.js";
+import { knowledgeManager, sandboxManager } from "../context/index.js";
 
 export interface DefaultSubAgentRuntimeConfig {
   tenantId: string;

@@ -28,7 +28,8 @@ const parametersSchema = Type.Object({
   command: Type.String({ description: "The shell command to execute inside the sandbox." }),
   working_directory: Type.Optional(
     Type.String({
-      description: "Absolute path inside the sandbox (e.g. /workspace/myproject). Defaults to /workspace.",
+      description:
+        "Absolute path inside the sandbox (e.g. /workspace/myproject). Defaults to /workspace.",
     }),
   ),
   timeout: Type.Optional(
@@ -44,6 +45,7 @@ type BashDetails =
   | { mode: "foreground"; exit_code: number; stdout: string; stderr: string }
   | { mode: "background"; stdout: string; stderr: string };
 
+/** Creates the shell execution tool that runs commands inside the session sandbox. */
 export function createSandboxedBash(
   manager: SandboxManager,
   sessionId: string,
@@ -61,11 +63,11 @@ export function createSandboxedBash(
       const timeoutMs = timeout ?? DEFAULT_TIMEOUT_MS;
       const workDir = working_directory ?? "/workspace";
 
-      const result = await manager.runInSandbox(
-        sessionId,
-        ["/bin/sh", "-c", command],
-        { timeout: timeoutMs, workingDir: workDir, signal },
-      );
+      const result = await manager.runInSandbox(sessionId, ["/bin/sh", "-c", command], {
+        timeout: timeoutMs,
+        workingDir: workDir,
+        signal,
+      });
 
       let text: string;
       let details: BashDetails;
@@ -77,7 +79,12 @@ export function createSandboxedBash(
         if (parts.length === 0) parts.push("(no output)");
         parts.push(`\n[exit code: ${result.exitCode}]`);
         text = parts.join("\n");
-        details = { mode: "foreground", exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr };
+        details = {
+          mode: "foreground",
+          exit_code: result.exitCode,
+          stdout: result.stdout,
+          stderr: result.stderr,
+        };
       } else {
         const parts: string[] = ["Process moved to background (still running in sandbox)"];
         if (result.stdout) parts.push(result.stdout);

@@ -26,6 +26,7 @@ import {
   type WorkerRunTurnMessage,
 } from "./worker-messages.js";
 
+/** Dependencies required to bootstrap a managed sub-agent worker process. */
 export interface WorkerOptions {
   runtime: SubAgentRuntime;
 }
@@ -46,6 +47,7 @@ function getPollIntervalMs(): number {
   return requireState().workerConfig.pollIntervalMs;
 }
 
+/** Initializes IPC listeners and starts the managed sub-agent worker loop. */
 export function initializeWorker(options: WorkerOptions): void {
   runtimeInstance = options.runtime;
 
@@ -87,10 +89,8 @@ async function handleInit(message: WorkerInitMessage): Promise<void> {
     input: message.runtimeConfig.input as CreateManagedAgentInput,
     history: await loadHistory(message.sessionDir, message.runtimeConfig.input.agentId),
     workerConfig: {
-      pollIntervalMs:
-        message.workerConfig?.pollIntervalMs ?? DEFAULT_WORKER_CONFIG.pollIntervalMs,
-      fakeExecution:
-        message.workerConfig?.fakeExecution ?? DEFAULT_WORKER_CONFIG.fakeExecution,
+      pollIntervalMs: message.workerConfig?.pollIntervalMs ?? DEFAULT_WORKER_CONFIG.pollIntervalMs,
+      fakeExecution: message.workerConfig?.fakeExecution ?? DEFAULT_WORKER_CONFIG.fakeExecution,
     },
   };
   send({ type: "ready" });
@@ -166,10 +166,7 @@ async function drainTurns(): Promise<void> {
       continue;
     }
 
-    if (
-      result.outcome === "completed" &&
-      (await hasPendingMailboxWorkSafely())
-    ) {
+    if (result.outcome === "completed" && (await hasPendingMailboxWorkSafely())) {
       continue;
     }
 
@@ -179,18 +176,14 @@ async function drainTurns(): Promise<void> {
   }
 }
 
-async function runTurn(
-  requestId?: string,
-): Promise<ManagedAgentDeliveryResult | null> {
+async function runTurn(requestId?: string): Promise<ManagedAgentDeliveryResult | null> {
   const currentState = requireState();
   const currentRuntime = requireRuntime();
   let mailboxState: OrchestrationMailboxState = {
     processedEventCount: 0,
     closeRequested: null,
   };
-  let mailboxEvents: Awaited<
-    ReturnType<typeof OrchestrationStore.loadMailboxEvents>
-  > = [];
+  let mailboxEvents: Awaited<ReturnType<typeof OrchestrationStore.loadMailboxEvents>> = [];
   let inputs: AgentInputEnvelope[] = [];
   let jobId = `job:error:${Date.now()}`;
 
@@ -251,11 +244,7 @@ async function runTurn(
     const result = await executeTurn(currentState, inputs, agent, currentRuntime);
 
     currentState.history.push(...result.messages);
-    await writeHistory(
-      currentState.sessionDir,
-      currentState.input.agentId,
-      currentState.history,
-    );
+    await writeHistory(currentState.sessionDir, currentState.input.agentId, currentState.history);
     await OrchestrationStore.writeMailboxState(
       currentState.sessionDir,
       currentState.input.agentId,
@@ -309,9 +298,7 @@ async function executeTurn(
 ): Promise<{ outputText: string; messages: Message[] }> {
   if (currentState.workerConfig.fakeExecution === "echo") {
     return {
-      outputText: inputs
-        .map((input) => String(input.payload.prompt ?? input.id))
-        .join("\n"),
+      outputText: inputs.map((input) => String(input.payload.prompt ?? input.id)).join("\n"),
       messages: [],
     };
   }
@@ -351,14 +338,8 @@ function formatInputs(inputs: AgentInputEnvelope[]): string {
 async function hasPendingMailboxWork(): Promise<boolean> {
   const currentState = requireState();
   const [mailboxState, mailboxEvents] = await Promise.all([
-    OrchestrationStore.loadMailboxState(
-      currentState.sessionDir,
-      currentState.input.agentId,
-    ),
-    OrchestrationStore.loadMailboxEvents(
-      currentState.sessionDir,
-      currentState.input.agentId,
-    ),
+    OrchestrationStore.loadMailboxState(currentState.sessionDir, currentState.input.agentId),
+    OrchestrationStore.loadMailboxEvents(currentState.sessionDir, currentState.input.agentId),
   ]);
 
   return mailboxEvents
@@ -428,10 +409,7 @@ function getHistoryPath(sessionDir: string, agentId: string): string {
   return join(getAgentDirectory(sessionDir, agentId), "history.json");
 }
 
-async function loadHistory(
-  sessionDir: string,
-  agentId: string,
-): Promise<Message[]> {
+async function loadHistory(sessionDir: string, agentId: string): Promise<Message[]> {
   try {
     const contents = await readFile(getHistoryPath(sessionDir, agentId), "utf8");
     return JSON.parse(contents) as Message[];
@@ -446,11 +424,7 @@ async function writeHistory(
   history: Message[],
 ): Promise<void> {
   await mkdir(getAgentDirectory(sessionDir, agentId), { recursive: true });
-  await writeFile(
-    getHistoryPath(sessionDir, agentId),
-    JSON.stringify(history, null, 2),
-    "utf8",
-  );
+  await writeFile(getHistoryPath(sessionDir, agentId), JSON.stringify(history, null, 2), "utf8");
 }
 
 function send(message: ParentMessage): void {

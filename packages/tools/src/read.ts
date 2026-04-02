@@ -30,88 +30,86 @@ Usage:
 `;
 
 const parametersSchema = Type.Object({
-    file_path: Type.String({
-        description: "The absolute path of the file to read.",
+  file_path: Type.String({
+    description: "The absolute path of the file to read.",
+  }),
+  offset: Type.Optional(
+    Type.Integer({
+      description:
+        "The line number to start reading from (1-indexed). Negative values count backwards from the end of the file (e.g. -1 is the last line). Defaults to 1.",
+      minimum: -Infinity,
     }),
-    offset: Type.Optional(
-        Type.Integer({
-            description:
-                "The line number to start reading from (1-indexed). Negative values count backwards from the end of the file (e.g. -1 is the last line). Defaults to 1.",
-            minimum: -Infinity,
-        }),
-    ),
-    limit: Type.Optional(
-        Type.Integer({
-            description: `The maximum number of lines to read. Defaults to ${DEFAULT_READ_LINES}.`,
-            minimum: 1,
-        }),
-    ),
+  ),
+  limit: Type.Optional(
+    Type.Integer({
+      description: `The maximum number of lines to read. Defaults to ${DEFAULT_READ_LINES}.`,
+      minimum: 1,
+    }),
+  ),
 });
 
 export const readTool = tool()
-    .name(toolName)
-    .label(toolLabel)
-    .description(toolDescription)
-    .parameters(parametersSchema)
-    .execute(async ({ file_path, offset, limit }) => {
-        let raw: string;
-        try {
-            raw = await readFile(file_path, "utf-8");
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            return {
-                content: [{ type: "text" as const, text: `Error reading file: ${message}` }],
-                details: { error: message },
-            };
-        }
+  .name(toolName)
+  .label(toolLabel)
+  .description(toolDescription)
+  .parameters(parametersSchema)
+  .execute(async ({ file_path, offset, limit }) => {
+    let raw: string;
+    try {
+      raw = await readFile(file_path, "utf-8");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        content: [{ type: "text" as const, text: `Error reading file: ${message}` }],
+        details: { error: message },
+      };
+    }
 
-        const allLines = raw.split("\n");
-        const totalLines = allLines.length;
+    const allLines = raw.split("\n");
+    const totalLines = allLines.length;
 
-        if (raw === "") {
-            return {
-                content: [
-                    {
-                        type: "text" as const,
-                        text: "<system-reminder>File exists but has empty contents.</system-reminder>",
-                    },
-                ],
-                details: { totalLines: 0, lines: [] },
-            };
-        }
+    if (raw === "") {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: "<system-reminder>File exists but has empty contents.</system-reminder>",
+          },
+        ],
+        details: { totalLines: 0, lines: [] },
+      };
+    }
 
-        const maxLines = limit ?? DEFAULT_READ_LINES;
+    const maxLines = limit ?? DEFAULT_READ_LINES;
 
-        let startIndex: number;
-        if (offset === undefined || offset === null) {
-            startIndex = 0;
-        } else if (offset < 0) {
-            startIndex = Math.max(0, totalLines + offset);
-        } else {
-            startIndex = Math.max(0, offset - 1);
-        }
+    let startIndex: number;
+    if (offset === undefined || offset === null) {
+      startIndex = 0;
+    } else if (offset < 0) {
+      startIndex = Math.max(0, totalLines + offset);
+    } else {
+      startIndex = Math.max(0, offset - 1);
+    }
 
-        const selectedLines = allLines.slice(startIndex, startIndex + maxLines);
+    const selectedLines = allLines.slice(startIndex, startIndex + maxLines);
 
-        const formattedLines = selectedLines.map((line, i) => {
-            const lineNum = startIndex + i + 1;
-            const truncated =
-                line.length > MAX_LINE_LENGTH
-                    ? line.slice(0, MAX_LINE_LENGTH) + " [truncated]"
-                    : line;
-            return `${String(lineNum).padStart(6)}|${truncated}`;
-        });
+    const formattedLines = selectedLines.map((line, i) => {
+      const lineNum = startIndex + i + 1;
+      const truncated =
+        line.length > MAX_LINE_LENGTH ? line.slice(0, MAX_LINE_LENGTH) + " [truncated]" : line;
+      return `${String(lineNum).padStart(6)}|${truncated}`;
+    });
 
-        const text = formattedLines.join("\n");
+    const text = formattedLines.join("\n");
 
-        return {
-            content: [{ type: "text" as const, text }],
-            details: {
-                totalLines,
-                startLine: startIndex + 1,
-                endLine: startIndex + selectedLines.length,
-                lines: selectedLines,
-            },
-        };
-    })
-    .build();
+    return {
+      content: [{ type: "text" as const, text }],
+      details: {
+        totalLines,
+        startLine: startIndex + 1,
+        endLine: startIndex + selectedLines.length,
+        lines: selectedLines,
+      },
+    };
+  })
+  .build();

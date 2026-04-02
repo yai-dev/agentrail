@@ -88,17 +88,19 @@ export async function buildSkillTool(
     .parameters(
       Type.Object({
         skillName: Type.String({
-          description: "Name of the skill to invoke. Must be one of the available skills listed above.",
+          description:
+            "Name of the skill to invoke. Must be one of the available skills listed above.",
         }),
         task: Type.String({
           description: "Clear description of the task for the skill to accomplish.",
         }),
         context: Type.Optional(
           Type.String({
-            description: "Relevant context from the current conversation (e.g. customer names, filters, field values).",
-          })
+            description:
+              "Relevant context from the current conversation (e.g. customer names, filters, field values).",
+          }),
         ),
-      })
+      }),
     )
     .execute(async ({ skillName, task, context }) => {
       let skillContent: string;
@@ -115,9 +117,7 @@ export async function buildSkillTool(
       const hostSkillDir = skillManager.getSkillDir(skillName);
       // Use container-internal path when running inside a sandbox, otherwise
       // fall back to the host-absolute path.
-      const skillDir = containerSkillsDir
-        ? `${containerSkillsDir}/${skillName}`
-        : hostSkillDir;
+      const skillDir = containerSkillsDir ? `${containerSkillsDir}/${skillName}` : hostSkillDir;
 
       // ── Direct execution mode (progressive disclosure) ──────────────
       // Return SKILL.md instructions to the main agent so it can execute
@@ -133,7 +133,9 @@ export async function buildSkillTool(
           `Skill: ${skillName}\n` +
           `Working Directory: ${skillDir}\n` +
           `All scripts are in: ${skillDir}/scripts/\n` +
-          (mergedContextDirect ? `\nTask: ${task}\n\nContext:\n${mergedContextDirect}` : `\nTask: ${task}`) +
+          (mergedContextDirect
+            ? `\nTask: ${task}\n\nContext:\n${mergedContextDirect}`
+            : `\nTask: ${task}`) +
           `\n\n--- Instructions ---\n\n` +
           skillContent;
 
@@ -164,9 +166,7 @@ export async function buildSkillTool(
         ? `tenant_id: ${autoContext.tenantId}, user_id: ${autoContext.userId}`
         : null;
       const mergedContext = [autoCtxPrefix, context].filter(Boolean).join(", ");
-      const input = mergedContext
-        ? `Task: ${task}\n\nContext:\n${mergedContext}`
-        : `Task: ${task}`;
+      const input = mergedContext ? `Task: ${task}\n\nContext:\n${mergedContext}` : `Task: ${task}`;
 
       const subAgent = defineAgent({
         id: `skill-executor-${skillName}`,

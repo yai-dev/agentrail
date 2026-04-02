@@ -6,6 +6,7 @@
 import type { Message, TransformContextFn } from "@agentrail/runtime-core";
 import type { ContextProvider, ContextProviderContext } from "./types.js";
 
+/** Composes multiple context providers into a single transform function. */
 export function createTransformContext(
   providers: ContextProvider[],
   context: ContextProviderContext,
@@ -24,9 +25,8 @@ export function createTransformContext(
   };
 }
 
-export function createContextProviderFromTransform(
-  transform: TransformContextFn,
-): ContextProvider {
+/** Adapts a transform-context function back into the `ContextProvider` interface. */
+export function createContextProviderFromTransform(transform: TransformContextFn): ContextProvider {
   return async (_context, messages) => {
     const transformed = await transform(messages);
     return transformed.slice(0, Math.max(0, transformed.length - messages.length));

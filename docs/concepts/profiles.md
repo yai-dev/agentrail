@@ -85,11 +85,7 @@ The simplest resolver is built with `createHostedProfileResolver` (defaults laye
 ```ts
 import { createHostedProfileResolver } from "@agentrail/host/defaults";
 
-const resolveProfile = createHostedProfileResolver([
-  defaultProfile,
-  adminProfile,
-  researchProfile,
-]);
+const resolveProfile = createHostedProfileResolver([defaultProfile, adminProfile, researchProfile]);
 ```
 
 The resolver looks up the profile by `agentId` from the request. If no matching profile is found, it falls back to the `defaultAgentId` configured on the route.

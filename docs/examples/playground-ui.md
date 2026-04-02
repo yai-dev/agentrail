@@ -112,9 +112,7 @@ function handleEvent(event: AgentrailEvent, state: ChatState): ChatState {
     case "tool_execution_end":
       return {
         ...state,
-        tools: state.tools.map((t) =>
-          t.status === "running" ? { ...t, status: "done" } : t,
-        ),
+        tools: state.tools.map((t) => (t.status === "running" ? { ...t, status: "done" } : t)),
       };
 
     case "context_usage":
@@ -151,7 +149,11 @@ The host returns `X-Session-Id` in the response headers. Store it and pass it in
 let sessionId: string | null = null;
 
 async function chat(message: string) {
-  const newSessionId = await sendMessage(message, { sessionId, text: "", isStreaming: false, tools: [], budgetUsedPct: null }, updateUI);
+  const newSessionId = await sendMessage(
+    message,
+    { sessionId, text: "", isStreaming: false, tools: [], budgetUsedPct: null },
+    updateUI,
+  );
   if (newSessionId) {
     sessionId = newSessionId;
     localStorage.setItem("agentrail-session-id", sessionId);
@@ -216,7 +218,7 @@ async function chatNonStream(message: string): Promise<string> {
     }),
   });
 
-  const data = await response.json() as {
+  const data = (await response.json()) as {
     text: string;
     sessionId: string;
     usage: { inputTokens: number; outputTokens: number };

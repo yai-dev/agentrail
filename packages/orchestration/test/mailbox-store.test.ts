@@ -14,9 +14,9 @@ const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    temporaryDirectories.splice(0).map((directory) =>
-      rm(directory, { recursive: true, force: true }),
-    ),
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
   );
 });
 
@@ -54,12 +54,12 @@ describe("mailbox store", () => {
         inputId: "input-1",
       }),
     ]);
-    await expect(
-      OrchestrationStore.loadMailboxState(sessionDir, "agent-mailbox"),
-    ).resolves.toEqual({
-      processedEventCount: 1,
-      closeRequested: null,
-    });
+    await expect(OrchestrationStore.loadMailboxState(sessionDir, "agent-mailbox")).resolves.toEqual(
+      {
+        processedEventCount: 1,
+        closeRequested: null,
+      },
+    );
   });
 
   it("returns empty defaults for a missing mailbox", async () => {
@@ -68,11 +68,11 @@ describe("mailbox store", () => {
     await expect(
       OrchestrationStore.loadMailboxEvents(sessionDir, "agent-missing"),
     ).resolves.toEqual([]);
-    await expect(
-      OrchestrationStore.loadMailboxState(sessionDir, "agent-missing"),
-    ).resolves.toEqual({
-      processedEventCount: 0,
-      closeRequested: null,
-    });
+    await expect(OrchestrationStore.loadMailboxState(sessionDir, "agent-missing")).resolves.toEqual(
+      {
+        processedEventCount: 0,
+        closeRequested: null,
+      },
+    );
   });
 });

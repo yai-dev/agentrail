@@ -18,6 +18,7 @@ const SUMMARY_RE = /<!--\s*summary:\s*(.+?)\s*-->/;
 const COMPACTION_ARCHIVE_RE = /Archive ID:\s*([0-9]{4,})/i;
 const COMPRESSED_COUNT_RE = /(\d+)\s+messages\s+\(\d+\s+tokens estimated\)\s+were compressed/i;
 
+/** Legacy backup file used by older compaction implementations. */
 export const LEGACY_BACKUP_FILE = "messages.jsonl.bak";
 
 export async function extractSummary(filePath: string): Promise<string | null> {
@@ -39,10 +40,7 @@ export async function statOrNull(filePath: string) {
   }
 }
 
-export async function buildMemoryEntry(
-  name: string,
-  filePath: string,
-): Promise<MemoryIndexEntry> {
+export async function buildMemoryEntry(name: string, filePath: string): Promise<MemoryIndexEntry> {
   const fileStat = await statOrNull(filePath);
   if (!fileStat) {
     return {
@@ -78,10 +76,8 @@ export async function readJsonlMessages(filePath: string): Promise<Message[]> {
   }
 }
 
-export function replaySessionInfo(
-  sessionId: string,
-  raw: string,
-): SessionInfo {
+/** Replays `session.jsonl` events into a current `SessionInfo` snapshot. */
+export function replaySessionInfo(sessionId: string, raw: string): SessionInfo {
   const lines = raw.trim().split("\n").filter(Boolean);
   let info: SessionInfo | undefined;
 
@@ -123,6 +119,7 @@ export function replaySessionInfo(
   return info;
 }
 
+/** Returns the most recent persisted `turn` event from a raw session event log. */
 export function findLastTurnEvent(raw: string): SessionTurnEvent | null {
   const lines = raw.trim().split("\n").filter(Boolean);
   let lastTurn: SessionTurnEvent | null = null;
@@ -141,6 +138,7 @@ export function findLastTurnEvent(raw: string): SessionTurnEvent | null {
   return lastTurn;
 }
 
+/** Parses synthetic compaction message text into structured metadata. */
 export function buildCompactionMetadata(content: string): CompactionMetadata {
   const archiveId = COMPACTION_ARCHIVE_RE.exec(content)?.[1] ?? null;
   const countRaw = COMPRESSED_COUNT_RE.exec(content)?.[1];
@@ -150,9 +148,7 @@ export function buildCompactionMetadata(content: string): CompactionMetadata {
   };
 }
 
-export async function getNextCompactionArchiveId(
-  compactionsDir: string,
-): Promise<string> {
+export async function getNextCompactionArchiveId(compactionsDir: string): Promise<string> {
   await mkdir(compactionsDir, { recursive: true });
 
   let entries: string[];

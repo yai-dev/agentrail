@@ -117,7 +117,12 @@ const app = new Hono();
 app.post("/run", async (c) => {
   const { query, tenantId, userId } = await c.req.json();
   const run = await createDeepResearchRun({
-    query, tenantId, userId, sessionStore, modelConfig, dataDir,
+    query,
+    tenantId,
+    userId,
+    sessionStore,
+    modelConfig,
+    dataDir,
   });
   return c.json({ runId: run.id, status: run.status });
 });
@@ -207,8 +212,8 @@ Once `orchestration_run_complete` arrives, fetch the final artifacts:
 
 ```ts
 const result = await fetch(`/run/${runId}/result`).then((r) => r.json());
-console.log(result.report);    // final Markdown report
-console.log(result.sources);   // scored and deduplicated sources
+console.log(result.report); // final Markdown report
+console.log(result.sources); // scored and deduplicated sources
 console.log(result.artifacts); // generated artifacts (tables, summaries)
 ```
 

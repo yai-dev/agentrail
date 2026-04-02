@@ -40,26 +40,30 @@ function toPreview(text: string, limit = 220): string {
   return `${stripped.slice(0, limit).trimEnd()}...`;
 }
 
-export function deriveDeepResearchState(state: DeepResearchState | null): DeepResearchDerivedState | null {
+export function deriveDeepResearchState(
+  state: DeepResearchState | null,
+): DeepResearchDerivedState | null {
   // The inline card and panel both need a few "display-ready" fields such as
   // the active step and short previews. We compute them here so the rendering
   // components can stay simple.
   if (!state) return null;
 
   const activeStep =
-    state.steps.find((step) => step.status === "running")
-    ?? [...state.steps].reverse().find((step) => step.status === "pending")
-    ?? null;
+    state.steps.find((step) => step.status === "running") ??
+    [...state.steps].reverse().find((step) => step.status === "pending") ??
+    null;
   const completedStepCount = state.steps.filter((step) => step.status === "completed").length;
   const latestSummaryStep = [...state.steps]
     .reverse()
     .find((step) => (step.summary ?? "").trim().length > 0);
-  const latestStepSummary = latestSummaryStep?.summary
-    ? toPreview(latestSummaryStep.summary)
-    : "";
+  const latestStepSummary = latestSummaryStep?.summary ? toPreview(latestSummaryStep.summary) : "";
   const reportPreview = state.reportMarkdown ? toPreview(state.reportMarkdown, 320) : "";
-  const acceptedSources = state.sources.filter((source) => (source.status ?? "accepted") === "accepted");
-  const excludedSources = state.sources.filter((source) => source.status === "related_but_excluded");
+  const acceptedSources = state.sources.filter(
+    (source) => (source.status ?? "accepted") === "accepted",
+  );
+  const excludedSources = state.sources.filter(
+    (source) => source.status === "related_but_excluded",
+  );
 
   return {
     activeStep,

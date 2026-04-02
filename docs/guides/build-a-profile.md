@@ -50,10 +50,7 @@ The usual path looks like this:
 
 ```ts
 import { defineAgent } from "@agentrail/runtime-core";
-import {
-  defineHostedProfile,
-  createHostedProfileResolver,
-} from "@agentrail/host/defaults";
+import { defineHostedProfile, createHostedProfileResolver } from "@agentrail/host/defaults";
 
 export const supportProfile = defineHostedProfile({
   id: "support",
@@ -178,4 +175,3 @@ Continue with:
 - [Add Tools](add-tools.md)
 - [Add Context](add-context.md)
 - [Manage Prompts](manage-prompts.md)
-

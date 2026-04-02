@@ -23,7 +23,7 @@ That means a profile sits between:
 - host request lifecycle code
 - runtime agent construction
 
-Profiles are not route objects and they are not plugins. They are the contract for *agent identity and assembly*.
+Profiles are not route objects and they are not plugins. They are the contract for _agent identity and assembly_.
 
 ## Base Contract
 
@@ -86,7 +86,10 @@ defineHostedProfile({
   id: "gpt4o",
   name: "GPT-4o",
   contextWindow: 128_000, // gpt-4o has 128k context
-  createAgent: async (ctx) => defineAgent({ /* ... */ }),
+  createAgent: async (ctx) =>
+    defineAgent({
+      /* ... */
+    }),
 });
 ```
 

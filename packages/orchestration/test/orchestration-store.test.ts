@@ -19,16 +19,14 @@ const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    temporaryDirectories.splice(0).map((directory) =>
-      rm(directory, { recursive: true, force: true }),
-    ),
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
   );
 });
 
 async function createSessionDir(): Promise<string> {
-  const directory = await mkdtemp(
-    join(tmpdir(), "agent-orchestration-session-"),
-  );
+  const directory = await mkdtemp(join(tmpdir(), "agent-orchestration-session-"));
   temporaryDirectories.push(directory);
   return directory;
 }
@@ -149,9 +147,7 @@ function createCheckpointSnapshot(): OrchestrationSnapshot {
   };
 }
 
-function createRestartSnapshot(
-  queuedInput?: AgentInputEnvelope,
-): OrchestrationSnapshot {
+function createRestartSnapshot(queuedInput?: AgentInputEnvelope): OrchestrationSnapshot {
   return {
     runs: {
       "run-2": {
@@ -329,13 +325,8 @@ describe("OrchestrationStore", () => {
     const eventLogPath = join(sessionDir, "orchestration", "events.jsonl");
     const logContents = await readFile(eventLogPath, "utf8");
 
-    expect(logContents).toBe(
-      `${JSON.stringify(eventOne)}\n${JSON.stringify(eventTwo)}\n`,
-    );
-    await expect(OrchestrationStore.loadEvents(sessionDir)).resolves.toEqual([
-      eventOne,
-      eventTwo,
-    ]);
+    expect(logContents).toBe(`${JSON.stringify(eventOne)}\n${JSON.stringify(eventTwo)}\n`);
+    await expect(OrchestrationStore.loadEvents(sessionDir)).resolves.toEqual([eventOne, eventTwo]);
   });
 
   it("writes orchestration checkpoint snapshots to disk", async () => {
@@ -344,17 +335,11 @@ describe("OrchestrationStore", () => {
 
     await OrchestrationStore.writeCheckpoint(sessionDir, snapshot);
 
-    const checkpointPath = join(
-      sessionDir,
-      "orchestration",
-      "checkpoint.json",
-    );
+    const checkpointPath = join(sessionDir, "orchestration", "checkpoint.json");
     const checkpointContents = await readFile(checkpointPath, "utf8");
 
     expect(JSON.parse(checkpointContents)).toEqual(snapshot);
-    await expect(OrchestrationStore.loadSnapshot(sessionDir)).resolves.toEqual(
-      snapshot,
-    );
+    await expect(OrchestrationStore.loadSnapshot(sessionDir)).resolves.toEqual(snapshot);
   });
 
   it("replays checkpoint state plus tail events during recovery", async () => {
@@ -365,10 +350,7 @@ describe("OrchestrationStore", () => {
       await OrchestrationStore.appendEvent(sessionDir, event);
     }
 
-    await OrchestrationStore.writeCheckpoint(
-      sessionDir,
-      createCheckpointSnapshot(),
-    );
+    await OrchestrationStore.writeCheckpoint(sessionDir, createCheckpointSnapshot());
 
     const recovered = await OrchestrationStore.recoverState(sessionDir);
 
@@ -382,9 +364,7 @@ describe("OrchestrationStore", () => {
       "input-2",
     ]);
     expect(recovered.pendingWaits.map((wait) => wait.id)).toEqual(["wait-1"]);
-    expect(recovered.activeAgents.map((agent) => agent.id)).toEqual([
-      "agent-1",
-    ]);
+    expect(recovered.activeAgents.map((agent) => agent.id)).toEqual(["agent-1"]);
   });
 
   it("recovers pending waits after restart from the persisted checkpoint", async () => {
@@ -397,9 +377,7 @@ describe("OrchestrationStore", () => {
 
     expect(recovered.snapshot).toEqual(restartSnapshot);
     expect(recovered.pendingWaits.map((wait) => wait.id)).toEqual(["wait-2"]);
-    expect(recovered.activeAgents.map((agent) => agent.id)).toEqual([
-      "agent-2",
-    ]);
+    expect(recovered.activeAgents.map((agent) => agent.id)).toEqual(["agent-2"]);
   });
 
   it("does not surface resumable waits or agents for terminal runs", async () => {
@@ -425,10 +403,7 @@ describe("OrchestrationStore", () => {
       await OrchestrationStore.appendEvent(sessionDir, event);
     }
 
-    await OrchestrationStore.writeCheckpoint(
-      sessionDir,
-      createIncompatibleCheckpointSnapshot(),
-    );
+    await OrchestrationStore.writeCheckpoint(sessionDir, createIncompatibleCheckpointSnapshot());
 
     const recovered = await OrchestrationStore.recoverState(sessionDir);
 

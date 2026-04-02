@@ -4,7 +4,13 @@
  */
 
 export { SandboxManager, SANDBOX_IMAGE } from "./sandbox-manager.js";
-export type { SandboxEntry, RunOptions, ExecResult, SandboxManagerOptions } from "./sandbox-manager.js";
+/** Public sandbox runtime types surfaced by the sandbox package. */
+export type {
+  SandboxEntry,
+  RunOptions,
+  ExecResult,
+  SandboxManagerOptions,
+} from "./sandbox-manager.js";
 
 export { createSandboxedBash } from "./tools/sandboxed-bash.js";
 export { createSandboxedRead } from "./tools/sandboxed-read.js";

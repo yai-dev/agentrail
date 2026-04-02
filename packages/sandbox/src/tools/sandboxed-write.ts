@@ -26,6 +26,7 @@ const parametersSchema = Type.Object({
   }),
 });
 
+/** Creates the in-sandbox file write tool. */
 export function createSandboxedWrite(
   manager: SandboxManager,
   sessionId: string,

@@ -67,14 +67,14 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
           </div>
 
           <div className="deep-research-inline-meta">
-            <span>{derived.completedStepCount}/{state.steps.length || 0} 步完成</span>
+            <span>
+              {derived.completedStepCount}/{state.steps.length || 0} 步完成
+            </span>
             <span>{derived.acceptedSources.length} 个有效来源</span>
             {derived.excludedSources.length > 0 && (
               <span>{derived.excludedSources.length} 个已排除来源</span>
             )}
-            {derived.activeStep && (
-              <span>当前：{derived.activeStep.title}</span>
-            )}
+            {derived.activeStep && <span>当前：{derived.activeStep.title}</span>}
           </div>
 
           <div className="deep-research-inline-progress">
@@ -118,7 +118,13 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
               {recentAcceptedSources.length > 0 ? (
                 <div className="deep-research-inline-sources">
                   {recentAcceptedSources.map((source) => (
-                    <a key={source.id} href={source.url} target="_blank" rel="noreferrer" className="deep-research-inline-source">
+                    <a
+                      key={source.id}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="deep-research-inline-source"
+                    >
                       <span className="deep-research-inline-source-title">{source.title}</span>
                       <span className="deep-research-inline-source-domain">
                         {source.domain}

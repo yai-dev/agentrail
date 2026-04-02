@@ -54,8 +54,7 @@ export function summarizeHistory(history: Message[]): string {
       if (message.role === "assistant") {
         const text = message.content
           .filter(
-            (block): block is Extract<typeof block, { type: "text" }> =>
-              block.type === "text",
+            (block): block is Extract<typeof block, { type: "text" }> => block.type === "text",
           )
           .map((block) => block.text)
           .join("\n");
@@ -68,10 +67,7 @@ export function summarizeHistory(history: Message[]): string {
     .join("\n\n");
 }
 
-export function createRun(
-  options: DeepResearchCoordinatorOptions,
-  runId: string,
-): DeepResearchRun {
+export function createRun(options: DeepResearchCoordinatorOptions, runId: string): DeepResearchRun {
   const timestamp = nowIso();
   return {
     id: runId,

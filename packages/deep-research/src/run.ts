@@ -18,11 +18,7 @@ export interface DeepResearchSessionStore {
   ): Promise<{ sessionId: string }>;
   getSessionDir(tenantId: string, sessionId: string): string;
   loadMessages(tenantId: string, sessionId: string): Promise<Message[]>;
-  appendMessages(
-    tenantId: string,
-    sessionId: string,
-    messages: Message[],
-  ): Promise<void>;
+  appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promise<void>;
   recordTurn(tenantId: string, sessionId: string, usage: Usage): Promise<void>;
 }
 
@@ -97,9 +93,7 @@ async function runDeepResearchInternal(
     runtime: input.runtime,
   });
 
-  const state = emit
-    ? await coordinator.runStreaming(emit)
-    : await coordinator.runBlocking();
+  const state = emit ? await coordinator.runStreaming(emit) : await coordinator.runBlocking();
   await persistDeepResearchTurn(
     input.persistTurn ? undefined : input.sessionStore,
     input.runtime.model.provider,
@@ -117,9 +111,7 @@ async function runDeepResearchInternal(
   };
 }
 
-export function createDeepResearchRunRoute(
-  options: DeepResearchRunRouteOptions,
-): Hono {
+export function createDeepResearchRunRoute(options: DeepResearchRunRouteOptions): Hono {
   const run = new Hono();
 
   run.post("/", async (c) => {
@@ -159,10 +151,7 @@ export function createDeepResearchRunRoute(
         state: result.state,
       });
     } catch (error) {
-      return c.json(
-        { error: error instanceof Error ? error.message : String(error) },
-        500,
-      );
+      return c.json({ error: error instanceof Error ? error.message : String(error) }, 500);
     }
   });
 

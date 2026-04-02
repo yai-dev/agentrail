@@ -45,7 +45,7 @@ function extractText(content: unknown): string {
   return content
     .filter(
       (b): b is { type: "text"; text: string } =>
-        typeof b === "object" && b !== null && (b as { type: string }).type === "text"
+        typeof b === "object" && b !== null && (b as { type: string }).type === "text",
     )
     .map((b) => b.text)
     .join("");
@@ -56,7 +56,7 @@ function extractThinking(content: unknown): string | undefined {
   const parts = content
     .filter(
       (b): b is { type: "thinking"; thinking: string } =>
-        typeof b === "object" && b !== null && (b as { type: string }).type === "thinking"
+        typeof b === "object" && b !== null && (b as { type: string }).type === "thinking",
     )
     .map((b) => b.thinking)
     .join("\n");
@@ -133,17 +133,25 @@ sessions.get("/:sessionId/messages", async (c) => {
     for (const item of display) {
       const prev = merged[merged.length - 1];
       const isAssistant = !("type" in item) && (item as DisplayMessage).role === "assistant";
-      const prevIsAssistant = prev !== undefined && !("type" in prev) && (prev as DisplayMessage).role === "assistant";
+      const prevIsAssistant =
+        prev !== undefined && !("type" in prev) && (prev as DisplayMessage).role === "assistant";
       if (isAssistant && prevIsAssistant) {
         const prevMsg = prev as DisplayMessage;
         const currMsg = item as DisplayMessage;
-        const combinedText = prevMsg.text && currMsg.text
-          ? `${prevMsg.text}\n${currMsg.text}`
-          : prevMsg.text || currMsg.text;
-        const combinedThinking = prevMsg.thinking && currMsg.thinking
-          ? `${prevMsg.thinking}\n${currMsg.thinking}`
-          : prevMsg.thinking || currMsg.thinking;
-        merged[merged.length - 1] = { ...prevMsg, text: combinedText, thinking: combinedThinking, usage: currMsg.usage ?? prevMsg.usage };
+        const combinedText =
+          prevMsg.text && currMsg.text
+            ? `${prevMsg.text}\n${currMsg.text}`
+            : prevMsg.text || currMsg.text;
+        const combinedThinking =
+          prevMsg.thinking && currMsg.thinking
+            ? `${prevMsg.thinking}\n${currMsg.thinking}`
+            : prevMsg.thinking || currMsg.thinking;
+        merged[merged.length - 1] = {
+          ...prevMsg,
+          text: combinedText,
+          thinking: combinedThinking,
+          usage: currMsg.usage ?? prevMsg.usage,
+        };
       } else {
         merged.push(item);
       }
@@ -240,9 +248,22 @@ sessions.get("/:sessionId/workspace", async (c) => {
 });
 
 const BINARY_EXTENSIONS = new Set([
-  ".xlsx", ".xls", ".docx", ".pdf",
-  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico",
-  ".zip", ".tar", ".gz", ".rar", ".7z",
+  ".xlsx",
+  ".xls",
+  ".docx",
+  ".pdf",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".ico",
+  ".zip",
+  ".tar",
+  ".gz",
+  ".rar",
+  ".7z",
 ]);
 
 const MIME_MAP: Record<string, string> = {
@@ -289,7 +310,11 @@ sessions.get("/:sessionId/workspace/file", async (c) => {
     const ext = path.extname(hostPath).toLowerCase();
     if (BINARY_EXTENSIONS.has(ext)) {
       const buf = await readFile(hostPath);
-      return c.json({ content: buf.toString("base64"), encoding: "base64", mimeType: getMimeType(ext) });
+      return c.json({
+        content: buf.toString("base64"),
+        encoding: "base64",
+        mimeType: getMimeType(ext),
+      });
     }
     const content = await readFile(hostPath, "utf-8");
     return c.json({ content });

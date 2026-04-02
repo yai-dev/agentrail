@@ -27,9 +27,7 @@ import type {
   AgentrailPlugin,
   ContextProvider,
 } from "./types.js";
-import {
-  runPluginRequestHook,
-} from "./plugins.js";
+import { runPluginRequestHook } from "./plugins.js";
 import {
   buildEffectiveMessage,
   createSseEventWriter,
@@ -39,11 +37,21 @@ import {
   validateStreamRequest,
 } from "./stream-route-internals.js";
 
+/**
+ * Configuration for the streaming SSE chat route factory.
+ *
+ * @see {@link https://agentrail.run/reference/host-primitives}
+ */
 export interface AgentrailStreamRouteOptions {
+  /** Root data directory used for uploads and session-backed helpers. */
   dataDir: string;
+  /** Default profile ID used when the request omits `agentId`. */
   defaultAgentId: string;
+  /** Session store implementation used for history persistence and compaction. */
   sessionStore: AgentrailSessionStore;
+  /** Sandbox manager used to persist uploads and prepare isolated execution. */
   sandboxManager: SandboxManager;
+  /** Resolves a hosted profile for the given request context. */
   resolveProfile(
     agentId: string,
     context: {
@@ -54,41 +62,41 @@ export interface AgentrailStreamRouteOptions {
     },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
+  /** Summarizer used when streaming history needs compaction. */
   summarize(messages: Message[]): Promise<string>;
+  /** Token thresholds that decide when to compact history. */
   compaction: {
     triggerTokens: number;
     minMessages: number;
   };
+  /** Optional plugins that can observe lifecycle events. */
   plugins?: AgentrailPlugin[];
+  /** Static context providers prepended before conversation history. */
   contextProviders?: ContextProvider[];
+  /** Dynamic context-provider resolver invoked per request. */
   getContextProviders?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
   }) => Promise<ContextProvider[]> | ContextProvider[];
+  /** Dynamic transform-context resolver invoked per request. */
   getTransformContext?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
   }) => Promise<TransformContextFn> | TransformContextFn;
+  /** Optional attachment handler that turns uploaded files into extra context. */
   attachmentHandler?: AttachmentHandler;
-  onRequestStart?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
-  onRequestEnd?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
-  onTurnPersisted?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
+  onRequestStart?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  onRequestEnd?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  onTurnPersisted?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
   getOrchestrationManager?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
   }) => Promise<OrchestrationManager>;
-  handleResolvedRequest?: (
-    context: AgentrailResolvedStreamContext,
-  ) => Promise<boolean> | boolean;
+  /** Optional hook that can fully handle a resolved stream request. */
+  handleResolvedRequest?: (context: AgentrailResolvedStreamContext) => Promise<boolean> | boolean;
   /**
    * Optional observer called after each SSE event is written, for events whose
    * type is in TRACE_PERSISTED_EVENT_TYPES. Fire-and-forget; must not throw.
@@ -100,6 +108,7 @@ export interface AgentrailStreamRouteOptions {
   ) => void;
 }
 
+/** Fully resolved stream request context exposed to custom handlers. */
 export interface AgentrailResolvedStreamContext {
   request: StreamRequest;
   agentId: string;
@@ -114,9 +123,13 @@ export interface AgentrailResolvedStreamContext {
   persistTurn: (messages: Message[], usage: Usage) => Promise<void>;
 }
 
-export function createStreamRoute(
-  options: AgentrailStreamRouteOptions,
-): Hono {
+/**
+ * Creates the hosted streaming route that emits SSE-style newline-delimited events.
+ *
+ * @see {@link https://agentrail.run/guides/consume-stream}
+ * @see {@link https://agentrail.run/reference/host-primitives}
+ */
+export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
   const plugins = options.plugins ?? [];
   const route = new Hono();
 
@@ -254,11 +267,13 @@ export function createStreamRoute(
           }
         }
 
-        const profile = preloadedProfile ?? await options.resolveProfile(
-          agentId,
-          { tenantId, userId, sessionId: sid, sessionDir },
-          (event) => forwardSubAgentEvent(event),
-        );
+        const profile =
+          preloadedProfile ??
+          (await options.resolveProfile(
+            agentId,
+            { tenantId, userId, sessionId: sid, sessionDir },
+            (event) => forwardSubAgentEvent(event),
+          ));
         if (!profile) {
           const errorEvent: AgentrailErrorEvent = {
             type: "error",
@@ -313,11 +328,11 @@ export function createStreamRoute(
         );
 
         const history = await options.sessionStore.loadMessagesWithBudget(tenantId, sid);
-        const transformContext = await resolveStreamTransformContext(
-          options,
-          plugins,
-          { tenantId, userId, sessionId: sid },
-        );
+        const transformContext = await resolveStreamTransformContext(options, plugins, {
+          tenantId,
+          userId,
+          sessionId: sid,
+        });
 
         const agentStream = agent.stream(effectiveMessage, {
           messages: history,
@@ -358,7 +373,9 @@ export function createStreamRoute(
               type: "context_usage",
               inputTokens: totalInputTokens,
               outputTokens: event.usage.outputTokens ?? 0,
-              budgetUsedPct: Math.round((totalInputTokens / (profile?.contextWindow ?? 200_000)) * 100),
+              budgetUsedPct: Math.round(
+                (totalInputTokens / (profile?.contextWindow ?? 200_000)) * 100,
+              ),
             };
             await writeEvent(usageEvent);
             break;
