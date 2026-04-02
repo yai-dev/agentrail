@@ -3,9 +3,9 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { createInterface } from "node:readline/promises";
 import process from "node:process";
+import { createInterface } from "node:readline/promises";
+import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIR, "..");
@@ -364,7 +364,9 @@ async function main() {
 
   console.log(`Created ${filePath}`);
   console.log(
-    `Selected packages: ${selections.map((selection) => `${selection.name} -> ${selection.nextVersion}`).join(", ")}`,
+    `Selected packages: ${selections
+      .map((selection) => `${selection.name} -> ${selection.nextVersion}`)
+      .join(", ")}`,
   );
 }
 

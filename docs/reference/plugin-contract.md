@@ -180,7 +180,9 @@ const datestampProvider: ContextProvider = async (ctx, messages) => {
   return [
     {
       role: "user",
-      content: `[System note: Today is ${new Date().toISOString().slice(0, 10)}. Tenant: ${ctx.tenantId}]`,
+      content: `[System note: Today is ${new Date().toISOString().slice(0, 10)}. Tenant: ${
+        ctx.tenantId
+      }]`,
     },
     ...messages,
   ];

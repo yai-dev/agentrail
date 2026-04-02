@@ -5,7 +5,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { SkillMeta, SkillConfig } from "./types.js";
+import type { SkillConfig, SkillMeta } from "./types.js";
 
 /**
  * Discovers and reads reusable skills stored beneath `{dataDir}/skills`.

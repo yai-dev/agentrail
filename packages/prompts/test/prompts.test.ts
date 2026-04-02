@@ -4,8 +4,8 @@
  */
 
 import { mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   clearPromptFileCache,

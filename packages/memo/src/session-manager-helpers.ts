@@ -3,8 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, readFile, readdir, stat } from "node:fs/promises";
 import type { Message } from "@agentrail/runtime-core";
+import { mkdir, readFile, readdir, stat } from "node:fs/promises";
+import { estimateFileTokens } from "./token-estimator.js";
 import type {
   CompactionMetadata,
   MemoryIndexEntry,
@@ -12,7 +13,6 @@ import type {
   SessionInitEvent,
   SessionTurnEvent,
 } from "./types.js";
-import { estimateFileTokens } from "./token-estimator.js";
 
 const SUMMARY_RE = /<!--\s*summary:\s*(.+?)\s*-->/;
 const COMPACTION_ARCHIVE_RE = /Archive ID:\s*([0-9]{4,})/i;

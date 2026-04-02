@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useRef, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { StreamEvent } from "../api";
 import type { AgentRunTrace, LlmTurnStep, ToolCallStep, TraceStep } from "../types/trace";
 

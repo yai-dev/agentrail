@@ -3,11 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { tool, Type } from "@agentrail/runtime-core";
+import { exec } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { tool, Type } from "@agentrail/runtime-core";
 import type { KnowledgeManager } from "./knowledge-manager.js";
 
 const execAsync = promisify(exec);
@@ -97,7 +97,9 @@ export function createKbListTool(knowledgeManager: KnowledgeManager, tenantId: s
           const topicStr = meta.topics
             .map(
               (t) =>
-                `${t.topic}(${t.docCount} doc${t.docCount !== 1 ? "s" : ""}${t.hasIndex ? ", indexed" : ""})`,
+                `${t.topic}(${t.docCount} doc${t.docCount !== 1 ? "s" : ""}${
+                  t.hasIndex ? ", indexed" : ""
+                })`,
             )
             .join(", ");
           lines.push(`  Topics: ${topicStr}`);

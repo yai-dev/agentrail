@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 export default defineConfig(async () => {
   const { getPlaygroundUiConfig } = await import("@agentrail/config");

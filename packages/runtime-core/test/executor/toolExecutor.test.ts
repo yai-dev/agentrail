@@ -3,18 +3,18 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi } from "vitest";
 import { Type } from "@sinclair/typebox";
+import { describe, expect, it, vi } from "vitest";
 import { executeToolCalls } from "../../src/executor/tool-executor.js";
 import { EventStream } from "../../src/llm/event-stream.js";
+import type { AssistantMessage, Message } from "../../src/types/message.types.js";
+import type { RuntimeEvent } from "../../src/types/result.types.js";
+import type { RuntimeTool, ToolResult } from "../../src/types/tool.types.js";
 import {
   createMockTool,
   createMockToolWithError,
   createMockToolWithResult,
 } from "../mocks/MockRuntimeTool.js";
-import type { AssistantMessage, Message } from "../../src/types/message.types.js";
-import type { RuntimeEvent } from "../../src/types/result.types.js";
-import type { RuntimeTool, ToolResult } from "../../src/types/tool.types.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -3,13 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Hono } from "hono";
-import { streamText } from "hono/streaming";
-import { runCompactionIfNeeded } from "./compaction.js";
-import type { Message, TransformContextFn, Usage } from "@agentrail/runtime-core";
-import { isRuntimeError } from "@agentrail/runtime-core";
-import type { SandboxManager } from "@agentrail/sandbox";
-import type { OrchestrationManager } from "@agentrail/orchestration";
 import {
   mapOrchestrationEvent,
   TRACE_PERSISTED_EVENT_TYPES,
@@ -18,24 +11,32 @@ import {
   type AgentrailErrorEvent,
   type WorkflowTraceEventEnvelope,
 } from "@agentrail/events";
-import type {
-  AgentrailProfile,
-  AgentrailRequestLifecycleContext,
-  AgentrailSessionStore,
-  AttachmentFile,
-  AttachmentHandler,
-  AgentrailPlugin,
-  ContextProvider,
-} from "./types.js";
+import type { SessionRef } from "@agentrail/memo";
+import type { OrchestrationManager } from "@agentrail/orchestration";
+import type { Message, TransformContextFn, Usage } from "@agentrail/runtime-core";
+import { isRuntimeError } from "@agentrail/runtime-core";
+import type { SandboxManager } from "@agentrail/sandbox";
+import { Hono } from "hono";
+import { streamText } from "hono/streaming";
+import { runCompactionIfNeeded } from "./compaction.js";
 import { runPluginRequestHook } from "./plugins.js";
 import {
   buildEffectiveMessage,
   createSseEventWriter,
   persistUploadedFiles,
   resolveStreamTransformContext,
-  type StreamRequest,
   validateStreamRequest,
+  type StreamRequest,
 } from "./stream-route-internals.js";
+import type {
+  AgentrailPlugin,
+  AgentrailProfile,
+  AgentrailRequestLifecycleContext,
+  AgentrailSessionStore,
+  AttachmentFile,
+  AttachmentHandler,
+  ContextProvider,
+} from "./types.js";
 
 /**
  * Configuration for the streaming SSE chat route factory.
@@ -58,7 +59,8 @@ export interface AgentrailStreamRouteOptions {
       tenantId: string;
       userId: string;
       sessionId: string;
-      sessionDir: string;
+      sessionRef: SessionRef;
+      sessionStore: AgentrailSessionStore;
     },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
@@ -94,6 +96,7 @@ export interface AgentrailStreamRouteOptions {
     tenantId: string;
     userId: string;
     sessionId: string;
+    sessionRef: SessionRef;
   }) => Promise<OrchestrationManager>;
   /** Optional hook that can fully handle a resolved stream request. */
   handleResolvedRequest?: (context: AgentrailResolvedStreamContext) => Promise<boolean> | boolean;
@@ -103,7 +106,7 @@ export interface AgentrailStreamRouteOptions {
    * Intended for trace persistence in application layers (e.g. playground-server).
    */
   onTraceEvent?: (
-    context: { tenantId: string; sessionId: string; sessionDir: string },
+    context: { tenantId: string; sessionId: string; sessionRef: SessionRef },
     envelope: WorkflowTraceEventEnvelope,
   ) => void;
 }
@@ -115,7 +118,7 @@ export interface AgentrailResolvedStreamContext {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
   signal: AbortSignal;
   sessionStore: AgentrailSessionStore;
   uploadedFiles: AttachmentFile[];
@@ -162,7 +165,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
       sessionId,
     );
     const sid = sessionInfo.sessionId;
-    const sessionDir = options.sessionStore.getSessionDir(tenantId, sid);
+    const sessionRef = sessionInfo.sessionRef;
     const requestContext: AgentrailRequestLifecycleContext = {
       kind: "stream",
       tenantId,
@@ -192,7 +195,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
     if (!options.handleResolvedRequest) {
       preloadedProfile = await options.resolveProfile(
         agentId,
-        { tenantId, userId, sessionId: sid, sessionDir },
+        { tenantId, userId, sessionId: sid, sessionRef, sessionStore: options.sessionStore },
         (event) => forwardSubAgentEvent(event),
       );
       if (!preloadedProfile) {
@@ -216,7 +219,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         if (!type || !TRACE_PERSISTED_EVENT_TYPES.has(type)) return;
         const envelope = wrapTraceEvent("runtime", event as Record<string, unknown>, traceSeq++);
         try {
-          options.onTraceEvent({ tenantId, sessionId: sid, sessionDir }, envelope);
+          options.onTraceEvent({ tenantId, sessionId: sid, sessionRef }, envelope);
         } catch {
           // observer must not break the stream
         }
@@ -255,7 +258,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             tenantId,
             userId,
             sessionId: sid,
-            sessionDir,
+            sessionRef,
             signal: abortController.signal,
             sessionStore: options.sessionStore,
             uploadedFiles,
@@ -271,7 +274,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           preloadedProfile ??
           (await options.resolveProfile(
             agentId,
-            { tenantId, userId, sessionId: sid, sessionDir },
+            { tenantId, userId, sessionId: sid, sessionRef, sessionStore: options.sessionStore },
             (event) => forwardSubAgentEvent(event),
           ));
         if (!profile) {
@@ -286,7 +289,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         }
 
         const agent = await profile.createAgent(
-          { tenantId, userId, sessionId: sid, sessionDir },
+          { tenantId, userId, sessionId: sid, sessionRef, sessionStore: options.sessionStore },
           (event) => forwardSubAgentEvent(event),
         );
 
@@ -295,6 +298,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             tenantId,
             userId,
             sessionId: sid,
+            sessionRef,
           });
           unsubscribeOrchestration = manager.subscribe(({ event }) => {
             const mapped = mapOrchestrationEvent(event);

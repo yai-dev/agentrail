@@ -3,7 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, readFile, readdir, stat, writeFile, appendFile } from "node:fs/promises";
+import type { SessionRef } from "@agentrail/memo";
+import { resolveSessionRef } from "@agentrail/memo";
+import { appendFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { DeepResearchEvent, DeepResearchState } from "./types.js";
 
@@ -20,14 +22,29 @@ async function readJsonFile<T>(filePath: string): Promise<T | null> {
   }
 }
 
+function getSessionRootDir(dataDir: string, sessionRef: SessionRef): string {
+  const { tenantId, sessionId } = resolveSessionRef(sessionRef);
+  return path.join(dataDir, "tenants", tenantId, "sessions", sessionId);
+}
+
 // Deep Research persistence is intentionally simple: every run has a snapshot
 // state file plus an append-only event log so the UI can recover the latest run
 // and developers can inspect the raw execution history on disk.
-export class DeepResearchStore {
-  constructor(private readonly sessionDir: string) {}
+export interface DeepResearchStore {
+  getArtifactsDir(runId: string): string;
+  initializeRun(state: DeepResearchState): Promise<void>;
+  appendEvent(runId: string, event: DeepResearchEvent): Promise<void>;
+  writeState(state: DeepResearchState): Promise<void>;
+  loadState(runId: string): Promise<DeepResearchState | null>;
+  loadEvents(runId: string): Promise<DeepResearchEvent[]>;
+  loadLatestState(): Promise<DeepResearchState | null>;
+}
+
+class FileSystemDeepResearchStore implements DeepResearchStore {
+  constructor(private readonly sessionRootDir: string) {}
 
   private getRootDir(): string {
-    return path.join(this.sessionDir, "deep-research");
+    return path.join(this.sessionRootDir, "deep-research");
   }
 
   private getRunsDir(): string {
@@ -114,4 +131,12 @@ export class DeepResearchStore {
       return null;
     }
   }
+}
+
+/** Creates the default filesystem-backed Deep Research store for a session. */
+export function createFileSystemDeepResearchStore(
+  dataDir: string,
+  sessionRef: SessionRef,
+): DeepResearchStore {
+  return new FileSystemDeepResearchStore(getSessionRootDir(dataDir, sessionRef));
 }

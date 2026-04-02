@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Context } from "hono";
 import type { TransformContextFn } from "@agentrail/runtime-core";
+import type { Context } from "hono";
 import { createTransformContext } from "./context-pipeline.js";
 import { collectPluginContextProviders } from "./plugins.js";
 import type {

@@ -5,8 +5,8 @@
 
 import { createHostedProfileResolver, defineHostedProfile } from "@agentrail/host/defaults";
 import type { ExtendedSseEvent } from "@agentrail/skills";
-import { buildSystemPrompt } from "../prompts/index.js";
 import { DEFAULT_AGENT_ID, getAgent } from "../agents/index.js";
+import { buildSystemPrompt } from "../prompts/index.js";
 
 export const playgroundDefaultProfile = defineHostedProfile({
   id: DEFAULT_AGENT_ID,
@@ -18,7 +18,8 @@ export const playgroundDefaultProfile = defineHostedProfile({
       context.tenantId,
       context.userId,
       context.sessionId,
-      context.sessionDir,
+      context.sessionRef,
+      context.sessionStore,
       onSubAgentEvent ? (event: ExtendedSseEvent) => onSubAgentEvent(event) : undefined,
     );
     if (!agent) {

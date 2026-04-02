@@ -3,11 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
-import { DefaultLlmClient } from "../../src/llm/default-llm-client.js";
-import { LlmProviderRegistry } from "../../src/llm/llm-provider-registry.js";
+import { beforeEach, describe, expect, it } from "vitest";
 import { ProviderNotFoundError } from "../../src/errors.js";
 import type { LlmProvider, LlmRequest } from "../../src/interfaces/llm-client.js";
+import { DefaultLlmClient } from "../../src/llm/default-llm-client.js";
+import { LlmProviderRegistry } from "../../src/llm/llm-provider-registry.js";
 import { MockLlmClient } from "../mocks/MockLlmClient.js";
 
 function createMockProvider(

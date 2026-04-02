@@ -3,8 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import "@agentrail/runtime-core/providers";
+import type { SessionRef } from "@agentrail/memo";
 import { initializeWorker } from "@agentrail/orchestration/worker";
+import "@agentrail/runtime-core/providers";
 import { DefaultSubAgentRuntime } from "./default-subagent-runtime.js";
 
 interface WorkerInitPayload {
@@ -12,7 +13,8 @@ interface WorkerInitPayload {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
+  dataDir: string;
 }
 
 function isInitMessage(message: unknown): message is WorkerInitPayload {
@@ -24,7 +26,8 @@ function isInitMessage(message: unknown): message is WorkerInitPayload {
     "tenantId" in message &&
     "userId" in message &&
     "sessionId" in message &&
-    "sessionDir" in message,
+    "sessionRef" in message &&
+    "dataDir" in message,
   );
 }
 
@@ -45,7 +48,8 @@ process.on("message", (message) => {
       tenantId: message.tenantId,
       userId: message.userId,
       sessionId: message.sessionId,
-      sessionDir: message.sessionDir,
+      sessionRef: message.sessionRef,
+      dataDir: message.dataDir,
     }),
   });
 

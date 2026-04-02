@@ -3,16 +3,16 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { resolveSessionRef } from "@agentrail/memo";
 import { defineAgent, type Message } from "@agentrail/runtime-core";
+import { join } from "node:path";
 import {
   type AgentInputEnvelope,
   type CreateManagedAgentInput,
   type ManagedAgentDeliveryResult,
   type OrchestrationMailboxState,
-  OrchestrationStore,
 } from "../index.js";
+import { createFilesystemOrchestrationStore } from "../orchestration-store.js";
 import {
   type SubAgentRuntime,
   type SubagentWorkerConfig,
@@ -20,9 +20,9 @@ import {
 } from "./agent-runtime.js";
 import {
   type ParentMessage,
-  type WorkerMessage,
   type WorkerCloseMessage,
   type WorkerInitMessage,
+  type WorkerMessage,
   type WorkerRunTurnMessage,
 } from "./worker-messages.js";
 
@@ -38,6 +38,7 @@ let closeRequested = false;
 const pendingRequestIds: string[] = [];
 let pollTimer: NodeJS.Timeout | null = null;
 let runtimeInstance: SubAgentRuntime | null = null;
+let workerStore: ReturnType<typeof createWorkerStore> | null = null;
 const DEFAULT_WORKER_CONFIG: SubagentWorkerConfig = {
   pollIntervalMs: 500,
   fakeExecution: "",
@@ -81,13 +82,14 @@ async function handleMessage(message: WorkerMessage): Promise<void> {
 }
 
 async function handleInit(message: WorkerInitMessage): Promise<void> {
+  workerStore = createWorkerStore(message.dataDir, message.sessionRef);
   state = {
     tenantId: message.tenantId,
     userId: message.userId,
     sessionId: message.sessionId,
-    sessionDir: message.sessionDir,
+    sessionRef: message.sessionRef,
     input: message.runtimeConfig.input as CreateManagedAgentInput,
-    history: await loadHistory(message.sessionDir, message.runtimeConfig.input.agentId),
+    history: await workerStore.loadHistory(message.runtimeConfig.input.agentId),
     workerConfig: {
       pollIntervalMs: message.workerConfig?.pollIntervalMs ?? DEFAULT_WORKER_CONFIG.pollIntervalMs,
       fakeExecution: message.workerConfig?.fakeExecution ?? DEFAULT_WORKER_CONFIG.fakeExecution,
@@ -178,24 +180,19 @@ async function drainTurns(): Promise<void> {
 
 async function runTurn(requestId?: string): Promise<ManagedAgentDeliveryResult | null> {
   const currentState = requireState();
+  const currentStore = requireWorkerStore();
   const currentRuntime = requireRuntime();
   let mailboxState: OrchestrationMailboxState = {
     processedEventCount: 0,
     closeRequested: null,
   };
-  let mailboxEvents: Awaited<ReturnType<typeof OrchestrationStore.loadMailboxEvents>> = [];
+  let mailboxEvents: Awaited<ReturnType<typeof currentStore.loadMailboxEvents>> = [];
   let inputs: AgentInputEnvelope[] = [];
   let jobId = `job:error:${Date.now()}`;
 
   try {
-    mailboxState = await OrchestrationStore.loadMailboxState(
-      currentState.sessionDir,
-      currentState.input.agentId,
-    );
-    mailboxEvents = await OrchestrationStore.loadMailboxEvents(
-      currentState.sessionDir,
-      currentState.input.agentId,
-    );
+    mailboxState = await currentStore.loadMailboxState(currentState.input.agentId);
+    mailboxEvents = await currentStore.loadMailboxEvents(currentState.input.agentId);
     const unprocessedEvents = mailboxEvents.slice(mailboxState.processedEventCount);
 
     inputs = unprocessedEvents
@@ -244,19 +241,15 @@ async function runTurn(requestId?: string): Promise<ManagedAgentDeliveryResult |
     const result = await executeTurn(currentState, inputs, agent, currentRuntime);
 
     currentState.history.push(...result.messages);
-    await writeHistory(currentState.sessionDir, currentState.input.agentId, currentState.history);
-    await OrchestrationStore.writeMailboxState(
-      currentState.sessionDir,
-      currentState.input.agentId,
-      {
-        processedEventCount: mailboxEvents.length,
-        closeRequested: closeRequested
-          ? {
-              occurredAt: new Date().toISOString(),
-            }
-          : null,
-      },
-    );
+    await currentStore.writeHistory(currentState.input.agentId, currentState.history);
+    await currentStore.writeMailboxState(currentState.input.agentId, {
+      processedEventCount: mailboxEvents.length,
+      closeRequested: closeRequested
+        ? {
+            occurredAt: new Date().toISOString(),
+          }
+        : null,
+    });
     return {
       jobId,
       consumedInputIds: inputs.map((input) => input.id),
@@ -265,18 +258,14 @@ async function runTurn(requestId?: string): Promise<ManagedAgentDeliveryResult |
     };
   } catch (error) {
     try {
-      await OrchestrationStore.writeMailboxState(
-        currentState.sessionDir,
-        currentState.input.agentId,
-        {
-          processedEventCount: mailboxState.processedEventCount,
-          closeRequested: closeRequested
-            ? {
-                occurredAt: new Date().toISOString(),
-              }
-            : null,
-        },
-      );
+      await currentStore.writeMailboxState(currentState.input.agentId, {
+        processedEventCount: mailboxState.processedEventCount,
+        closeRequested: closeRequested
+          ? {
+              occurredAt: new Date().toISOString(),
+            }
+          : null,
+      });
     } catch {
       // Keep the original turn failure as the surfaced error.
     }
@@ -307,6 +296,7 @@ async function executeTurn(
     currentState.tenantId,
     currentState.userId,
     currentState.sessionId,
+    currentState.sessionRef,
   );
 
   const result = await agent.invoke(formatInputs(inputs), {
@@ -337,9 +327,10 @@ function formatInputs(inputs: AgentInputEnvelope[]): string {
 
 async function hasPendingMailboxWork(): Promise<boolean> {
   const currentState = requireState();
+  const currentStore = requireWorkerStore();
   const [mailboxState, mailboxEvents] = await Promise.all([
-    OrchestrationStore.loadMailboxState(currentState.sessionDir, currentState.input.agentId),
-    OrchestrationStore.loadMailboxEvents(currentState.sessionDir, currentState.input.agentId),
+    currentStore.loadMailboxState(currentState.input.agentId),
+    currentStore.loadMailboxEvents(currentState.input.agentId),
   ]);
 
   return mailboxEvents
@@ -401,30 +392,30 @@ function requireRuntime(): SubAgentRuntime {
   return runtimeInstance;
 }
 
-function getAgentDirectory(sessionDir: string, agentId: string): string {
-  return join(sessionDir, "orchestration", "subagents", agentId);
-}
-
-function getHistoryPath(sessionDir: string, agentId: string): string {
-  return join(getAgentDirectory(sessionDir, agentId), "history.json");
-}
-
-async function loadHistory(sessionDir: string, agentId: string): Promise<Message[]> {
-  try {
-    const contents = await readFile(getHistoryPath(sessionDir, agentId), "utf8");
-    return JSON.parse(contents) as Message[];
-  } catch {
-    return [];
+function requireWorkerStore(): ReturnType<typeof createWorkerStore> {
+  if (!workerStore) {
+    throw new Error("Sub-agent worker storage has not been initialized");
   }
+  return workerStore;
 }
 
-async function writeHistory(
-  sessionDir: string,
-  agentId: string,
-  history: Message[],
-): Promise<void> {
-  await mkdir(getAgentDirectory(sessionDir, agentId), { recursive: true });
-  await writeFile(getHistoryPath(sessionDir, agentId), JSON.stringify(history, null, 2), "utf8");
+function createWorkerStore(dataDir: string, sessionRef: WorkerInitMessage["sessionRef"]) {
+  const { tenantId, sessionId } = resolveSessionRef(sessionRef);
+  const sessionDir = join(dataDir, "tenants", tenantId, "sessions", sessionId);
+  const store = createFilesystemOrchestrationStore(sessionDir);
+
+  return {
+    loadMailboxState: (agentId: string) => store.loadMailboxState(agentId),
+    loadMailboxEvents: (agentId: string) => store.loadMailboxEvents(agentId),
+    writeMailboxState: (agentId: string, state: OrchestrationMailboxState) =>
+      store.writeMailboxState(agentId, state),
+    async loadHistory(agentId: string): Promise<Message[]> {
+      const history = await store.loadAgentHistory(agentId);
+      return history as Message[];
+    },
+    writeHistory: (agentId: string, history: Message[]) =>
+      store.writeAgentHistory(agentId, history),
+  };
 }
 
 function send(message: ParentMessage): void {

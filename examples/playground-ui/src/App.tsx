@@ -3,46 +3,46 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  streamChat,
-  fetchSessionMessages,
-  fetchCompactedMessages,
   deleteSession as deleteSessionApi,
-  runCommand,
+  fetchCompactedMessages,
+  fetchSessionMessages,
   fetchSlashCommands,
-  type UsageStat,
-  type ContextUsageStat,
-  type SessionHistoryResult,
+  runCommand,
+  streamChat,
   type CompactionMarker,
+  type ContextUsageStat,
   type HistoryItem,
+  type SessionHistoryResult,
   type SlashCommandMeta,
+  type UsageStat,
 } from "./api";
-import { MessageBubble } from "./components/MessageBubble";
-import { DeepResearchRunCard } from "./components/DeepResearchRunCard";
-import { InputBar, type PendingAttachment } from "./components/InputBar";
-import { SessionSidebar } from "./components/SessionSidebar";
 import { AgentWorkspace, type WorkspaceTab } from "./components/AgentWorkspace";
-import { SettingsModal } from "./components/SettingsModal";
-import { OnboardingTour, shouldShowTour } from "./components/OnboardingTour";
-import { TokenGate } from "./components/TokenGate";
 import {
   CompactionBanner,
   CompactionSeparator,
   ContextUsageIndicator,
 } from "./components/ChatIndicators";
+import { DeepResearchRunCard } from "./components/DeepResearchRunCard";
+import { InputBar, type PendingAttachment } from "./components/InputBar";
+import { MessageBubble } from "./components/MessageBubble";
+import { OnboardingTour, shouldShowTour } from "./components/OnboardingTour";
+import { SessionSidebar } from "./components/SessionSidebar";
+import { SettingsModal } from "./components/SettingsModal";
+import { TokenGate } from "./components/TokenGate";
 import {
   WaitingQuestionPrompt,
   type WaitingQuestionState,
 } from "./components/WaitingQuestionPrompt";
-import { useSessions } from "./hooks/useSessions";
-import { useIdentity } from "./hooks/useIdentity";
-import { useWorkflowTrace } from "./hooks/useWorkflowTrace";
 import { useAuth } from "./hooks/useAuth";
-import { useOrchestrationState } from "./hooks/useOrchestrationState";
 import { useDeepResearchState } from "./hooks/useDeepResearchState";
-import type { OrchestrationStreamEvent } from "./types/orchestration";
+import { useIdentity } from "./hooks/useIdentity";
+import { useOrchestrationState } from "./hooks/useOrchestrationState";
+import { useSessions } from "./hooks/useSessions";
+import { useWorkflowTrace } from "./hooks/useWorkflowTrace";
 import type { DeepResearchStreamEvent } from "./types/deepResearch";
+import type { OrchestrationStreamEvent } from "./types/orchestration";
 
 export interface DisplayToolCall {
   id: string;

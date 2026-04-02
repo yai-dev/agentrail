@@ -7,8 +7,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   collectPluginContextProviders,
   runAttachmentHandlers,
-  runPluginRequestHook,
   runPluginLifecycle,
+  runPluginRequestHook,
 } from "../src/plugins.js";
 
 describe("host plugin helpers", () => {

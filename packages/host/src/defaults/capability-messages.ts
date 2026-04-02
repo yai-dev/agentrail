@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { MemoryIndex, MemoryIndexEntry } from "@agentrail/memo";
 import type { KBMetadata } from "@agentrail/knowledge";
-import type { SkillMeta } from "@agentrail/skills";
+import type { MemoryIndex, MemoryIndexEntry } from "@agentrail/memo";
 import type { UserMessage } from "@agentrail/runtime-core";
+import type { SkillMeta } from "@agentrail/skills";
 
 /** Creates a user-scoped identity hint message for default hosted profiles. */
 export function makeUserIdentityMessage(
@@ -113,7 +113,9 @@ export function makeKnowledgeContextMessage(
       const topicStr = meta.topics
         .map(
           (topic) =>
-            `${topic.topic} (${topic.docCount} doc${topic.docCount !== 1 ? "s" : ""}${topic.hasIndex ? ", has index" : ""})`,
+            `${topic.topic} (${topic.docCount} doc${topic.docCount !== 1 ? "s" : ""}${
+              topic.hasIndex ? ", has index" : ""
+            })`,
         )
         .join(", ");
       lines.push(`Topics: ${topicStr}`);

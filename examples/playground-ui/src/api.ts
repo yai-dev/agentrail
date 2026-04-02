@@ -3,14 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type {
-  OrchestrationState,
-  OrchestrationStreamEvent,
-  OrchestrationEvent,
-} from "./types/orchestration.js";
-import type { WorkflowTraceEventEnvelope } from "./types/trace.js";
 import { normalizeHistoryEvents } from "./hooks/orchestrationStateReducer.js";
 import type { DeepResearchState, DeepResearchStreamEvent } from "./types/deepResearch.js";
+import type {
+  OrchestrationEvent,
+  OrchestrationState,
+  OrchestrationStreamEvent,
+} from "./types/orchestration.js";
+import type { WorkflowTraceEventEnvelope } from "./types/trace.js";
 
 export interface UsageStat {
   inputTokens: number;
@@ -254,7 +254,9 @@ export async function fetchSessionMessages(
   signal?: AbortSignal,
 ): Promise<SessionHistoryResult> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/messages?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/sessions/${encodeURIComponent(sessionId)}/messages?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     { signal, headers: authHeaders() },
   );
   if (res.status === 401) {
@@ -279,7 +281,11 @@ export async function fetchCompactedMessages(
   signal?: AbortSignal,
 ): Promise<HistoryMessage[]> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/compacted-messages?tenantId=${encodeURIComponent(_tenantId)}${archiveId ? `&archiveId=${encodeURIComponent(archiveId)}` : ""}`,
+    `/api/sessions/${encodeURIComponent(
+      sessionId,
+    )}/compacted-messages?tenantId=${encodeURIComponent(_tenantId)}${
+      archiveId ? `&archiveId=${encodeURIComponent(archiveId)}` : ""
+    }`,
     { signal, headers: authHeaders() },
   );
   if (res.status === 401) {
@@ -408,7 +414,9 @@ export async function* ingestDocument(
   signal?: AbortSignal,
 ): AsyncGenerator<IngestionEvent> {
   const res = await fetch(
-    `/api/knowledge/${encodeURIComponent(kbId)}/documents/stream?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/knowledge/${encodeURIComponent(kbId)}/documents/stream?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -450,7 +458,9 @@ export async function* ingestDocument(
 
 export async function fetchKBDocuments(kbId: string, signal?: AbortSignal): Promise<KBDocMeta[]> {
   const res = await fetch(
-    `/api/knowledge/${encodeURIComponent(kbId)}/documents?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/knowledge/${encodeURIComponent(kbId)}/documents?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     { signal, headers: authHeaders() },
   );
   if (res.status === 401) {
@@ -464,14 +474,18 @@ export async function fetchKBDocuments(kbId: string, signal?: AbortSignal): Prom
 
 export async function deleteKBDocument(kbId: string, docId: string): Promise<void> {
   await fetch(
-    `/api/knowledge/${encodeURIComponent(kbId)}/documents/${encodeURIComponent(docId)}?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/knowledge/${encodeURIComponent(kbId)}/documents/${encodeURIComponent(
+      docId,
+    )}?tenantId=${encodeURIComponent(_tenantId)}`,
     { method: "DELETE", headers: authHeaders() },
   );
 }
 
 export async function searchKB(kbId: string, q: string, signal?: AbortSignal): Promise<unknown[]> {
   const res = await fetch(
-    `/api/knowledge/${encodeURIComponent(kbId)}/search?tenantId=${encodeURIComponent(_tenantId)}&q=${encodeURIComponent(q)}`,
+    `/api/knowledge/${encodeURIComponent(kbId)}/search?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}&q=${encodeURIComponent(q)}`,
     { signal, headers: authHeaders() },
   );
   if (res.status === 401) {
@@ -544,7 +558,9 @@ export async function fetchWorkspaceFile(
   signal?: AbortSignal,
 ): Promise<WorkspaceFileResult> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/workspace/file?path=${encodeURIComponent(containerPath)}`,
+    `/api/sessions/${encodeURIComponent(sessionId)}/workspace/file?path=${encodeURIComponent(
+      containerPath,
+    )}`,
     { signal, headers: authHeaders() },
   );
   if (res.status === 401) {
@@ -607,7 +623,9 @@ export async function fetchOrchestrationState(
   signal?: AbortSignal,
 ): Promise<OrchestrationState | null> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/orchestration?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/sessions/${encodeURIComponent(sessionId)}/orchestration?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     { signal, headers: authHeaders() },
   );
   if (res.status === 401) {
@@ -639,7 +657,9 @@ export async function fetchSessionTrace(
   signal?: AbortSignal,
 ): Promise<WorkflowTraceEventEnvelope[]> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/trace?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/sessions/${encodeURIComponent(sessionId)}/trace?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     { signal, headers: authHeaders() },
   );
   if (res.status === 401) {
@@ -656,7 +676,9 @@ export async function fetchDeepResearchState(
   signal?: AbortSignal,
 ): Promise<DeepResearchState | null> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/deep-research?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/sessions/${encodeURIComponent(sessionId)}/deep-research?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     { signal, headers: authHeaders() },
   );
   if (res.status === 401) {

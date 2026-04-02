@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useEffect, useMemo, useState } from "react";
 import type React from "react";
-import ReactMarkdown from "react-markdown";
+import { useEffect, useMemo, useState } from "react";
 import type { Components } from "react-markdown";
+import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { fetchAuthorizedBlob, fetchWorkspaceFile, type WorkspaceFileResult } from "../api.js";
 import type { DeepResearchArtifact, DeepResearchState } from "../types/deepResearch.js";
@@ -296,7 +296,9 @@ function SourceSection({
           return (
             <div
               key={source.id}
-              className={`deep-research-source ${excluded ? "excluded" : ""} ${expanded ? "expanded" : ""}`}
+              className={`deep-research-source ${excluded ? "excluded" : ""} ${
+                expanded ? "expanded" : ""
+              }`}
             >
               <div className="deep-research-source-topline">
                 <div className="deep-research-source-main">
@@ -686,7 +688,9 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
             <div key={`flow-${step.id}`} className="deep-research-plan-flow-item">
               <button
                 type="button"
-                className={`deep-research-plan-flow-node ${step.status} ${selectedStepId === step.id ? "selected" : ""}`}
+                className={`deep-research-plan-flow-node ${step.status} ${
+                  selectedStepId === step.id ? "selected" : ""
+                }`}
                 onClick={() => setSelectedStepId(step.id)}
                 aria-pressed={selectedStepId === step.id}
               >
@@ -809,7 +813,9 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
             {state.artifacts.map((artifact) => (
               <button
                 key={artifact.id}
-                className={`deep-research-artifact-item ${selectedArtifact?.id === artifact.id ? "active" : ""}`}
+                className={`deep-research-artifact-item ${
+                  selectedArtifact?.id === artifact.id ? "active" : ""
+                }`}
                 onClick={() => setSelectedArtifactId(artifact.id)}
               >
                 <span className="deep-research-artifact-item-title">{artifact.title}</span>

@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { getIdentity, setIdentity } from "../api";
 
 export interface Identity {

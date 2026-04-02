@@ -3,11 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Hono } from "hono";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { OrchestrationStore } from "@agentrail/orchestration";
 import { mapOrchestrationEvent, type WorkflowTraceEventEnvelope } from "@agentrail/events";
+import { createFileSystemSessionTraceStore, createSessionRef } from "@agentrail/memo";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
+import { Hono } from "hono";
 import { config } from "../config.js";
 
 const trace = new Hono();
@@ -19,12 +18,16 @@ const trace = new Hono();
 trace.get("/:sessionId/trace", async (c) => {
   const { sessionId } = c.req.param();
   const tenantId = c.req.query("tenantId") ?? "default";
-
-  const sessionDir = path.join(config.dataDir, "tenants", tenantId, "sessions", sessionId);
+  const sessionRef = createSessionRef(tenantId, sessionId);
+  const persistence = createFilesystemOrchestrationPersistence(config.dataDir, sessionRef);
+  const traceStore = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(
+    config.dataDir,
+    sessionRef,
+  );
 
   const [runtimeEnvelopes, orchestrationEvents] = await Promise.all([
-    loadRuntimeEnvelopes(sessionDir),
-    OrchestrationStore.loadEvents(sessionDir).catch(() => []),
+    traceStore.loadEnvelopes(),
+    persistence.loadEvents().catch(() => []),
   ]);
 
   // Map orchestration events to envelopes, assigning sequence after runtime
@@ -51,19 +54,5 @@ trace.get("/:sessionId/trace", async (c) => {
 
   return c.json({ events: merged });
 });
-
-async function loadRuntimeEnvelopes(sessionDir: string): Promise<WorkflowTraceEventEnvelope[]> {
-  const traceFile = path.join(sessionDir, "trace", "events.jsonl");
-  try {
-    const contents = await readFile(traceFile, "utf8");
-    return contents
-      .split("\n")
-      .filter((line) => line.trim().length > 0)
-      .map((line) => JSON.parse(line) as WorkflowTraceEventEnvelope);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
-    throw err;
-  }
-}
 
 export { trace };

@@ -19,6 +19,9 @@ importers:
       prettier:
         specifier: ^3.6.2
         version: 3.8.1
+      prettier-plugin-organize-imports:
+        specifier: ^4.3.0
+        version: 4.3.0(prettier@3.8.1)(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -204,6 +207,9 @@ importers:
       "@agentrail/knowledge":
         specifier: workspace:*
         version: link:../knowledge
+      "@agentrail/memo":
+        specifier: workspace:*
+        version: link:../memo
       "@agentrail/orchestration":
         specifier: workspace:*
         version: link:../orchestration
@@ -311,6 +317,9 @@ importers:
 
   packages/orchestration:
     dependencies:
+      "@agentrail/memo":
+        specifier: workspace:*
+        version: link:../memo
       "@agentrail/runtime-core":
         specifier: workspace:*
         version: link:../runtime-core
@@ -425,6 +434,9 @@ importers:
 
   packages/tools:
     dependencies:
+      "@agentrail/memo":
+        specifier: workspace:*
+        version: link:../memo
       "@agentrail/runtime-core":
         specifier: workspace:*
         version: link:../runtime-core
@@ -4635,6 +4647,19 @@ packages:
       }
     engines: { node: ^10 || ^12 || >=14 }
 
+  prettier-plugin-organize-imports@4.3.0:
+    resolution:
+      {
+        integrity: sha512-FxFz0qFhyBsGdIsb697f/EkvHzi5SZOhWAjxcx2dLt+Q532bAlhswcXGYB1yzjZ69kW8UoadFBw7TyNwlq96Iw==,
+      }
+    peerDependencies:
+      prettier: ">=2.0"
+      typescript: ">=2.9"
+      vue-tsc: ^2.1.0 || 3
+    peerDependenciesMeta:
+      vue-tsc:
+        optional: true
+
   prettier@2.8.8:
     resolution:
       {
@@ -8307,6 +8332,11 @@ snapshots:
       nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  prettier-plugin-organize-imports@4.3.0(prettier@3.8.1)(typescript@5.9.3):
+    dependencies:
+      prettier: 3.8.1
+      typescript: 5.9.3
 
   prettier@2.8.8: {}
 

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import type { OrchestrationState, OrchestrationStreamEvent } from "../types/orchestration.js";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchOrchestrationState } from "../api.js";
+import type { OrchestrationState, OrchestrationStreamEvent } from "../types/orchestration.js";
 import { applyEventToState, createStateFromEvent } from "./orchestrationStateReducer.js";
 
 /**

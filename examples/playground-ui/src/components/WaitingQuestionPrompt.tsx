@@ -94,7 +94,9 @@ export function WaitingQuestionPrompt({
               multiple ? (
                 <button
                   key={option}
-                  className={`waiting-question-option-btn${selectedOptions.includes(option) ? " selected" : ""}`}
+                  className={`waiting-question-option-btn${
+                    selectedOptions.includes(option) ? " selected" : ""
+                  }`}
                   onClick={() => toggleOption(option)}
                 >
                   {selectedOptions.includes(option) && <span className="wq-check">✓ </span>}

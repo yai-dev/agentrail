@@ -3,11 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Hono } from "hono";
+import type { SessionRef } from "@agentrail/memo";
 import type { Message, Usage } from "@agentrail/runtime-core";
+import { Hono } from "hono";
 import { DeepResearchCoordinator } from "./coordinator.js";
-import type { DeepResearchEvent, DeepResearchState } from "./types.js";
 import type { DeepResearchRuntimeConfig } from "./runtime.js";
+import type { DeepResearchEvent, DeepResearchState } from "./types.js";
 
 export interface DeepResearchSessionStore {
   getOrCreate(
@@ -15,8 +16,7 @@ export interface DeepResearchSessionStore {
     userId: string,
     agentId: string,
     sessionId?: string,
-  ): Promise<{ sessionId: string }>;
-  getSessionDir(tenantId: string, sessionId: string): string;
+  ): Promise<{ sessionId: string; sessionRef: SessionRef }>;
   loadMessages(tenantId: string, sessionId: string): Promise<Message[]>;
   appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promise<void>;
   recordTurn(tenantId: string, sessionId: string, usage: Usage): Promise<void>;
@@ -80,14 +80,14 @@ async function runDeepResearchInternal(
     input.sessionId,
   );
   const sessionId = sessionInfo.sessionId;
-  const sessionDir = input.sessionStore.getSessionDir(input.tenantId, sessionId);
+  const sessionRef = sessionInfo.sessionRef;
   const history = await input.sessionStore.loadMessages(input.tenantId, sessionId);
 
   const coordinator = new DeepResearchCoordinator({
     tenantId: input.tenantId,
     userId: input.userId,
     sessionId,
-    sessionDir,
+    sessionRef,
     query: input.query,
     history,
     runtime: input.runtime,

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { spawn } from "node:child_process";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { spawn } from "node:child_process";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1024 * 1024; // 1 MB

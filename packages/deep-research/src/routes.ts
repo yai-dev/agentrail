@@ -3,10 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
+import { Hono } from "hono";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import { Hono } from "hono";
-import { DeepResearchStore } from "./store.js";
+import { createFileSystemDeepResearchStore } from "./store.js";
 import { slugifyTitle } from "./utils.js";
 
 const ARTIFACT_MIME_MAP: Record<string, string> = {
@@ -47,12 +48,14 @@ function resolveWorkspaceHostPath(
 }
 
 async function findPersistedArtifactPath(
-  sessionDir: string,
+  dataDir: string,
+  tenantId: string,
+  sessionId: string,
   requestedRunId: string | undefined,
   artifactId: string | undefined,
   containerPath: string | undefined,
 ): Promise<string | null> {
-  const store = new DeepResearchStore(sessionDir);
+  const store = createFileSystemDeepResearchStore(dataDir, createSessionRef(tenantId, sessionId));
   const state = requestedRunId
     ? await store.loadState(requestedRunId)
     : await store.loadLatestState();
@@ -104,8 +107,10 @@ export function createDeepResearchRoute(options: DeepResearchRouteOptions): Hono
     const { sessionId } = c.req.param();
     const tenantId = c.req.query("tenantId") ?? "default";
     const requestedRunId = c.req.query("runId");
-    const sessionDir = path.join(options.dataDir, "tenants", tenantId, "sessions", sessionId);
-    const store = new DeepResearchStore(sessionDir);
+    const store = createFileSystemDeepResearchStore(
+      options.dataDir,
+      createSessionRef(tenantId, sessionId),
+    );
 
     const state = requestedRunId
       ? await store.loadState(requestedRunId)
@@ -125,7 +130,6 @@ export function createDeepResearchRoute(options: DeepResearchRouteOptions): Hono
     const requestedRunId = c.req.query("runId") ?? undefined;
     const artifactId = c.req.query("artifactId") ?? undefined;
     const containerPath = c.req.query("path") ?? "";
-    const sessionDir = path.join(options.dataDir, "tenants", tenantId, "sessions", sessionId);
 
     let hostPath: string | null = null;
 
@@ -153,7 +157,9 @@ export function createDeepResearchRoute(options: DeepResearchRouteOptions): Hono
       });
     } catch {
       const fallbackPath = await findPersistedArtifactPath(
-        sessionDir,
+        options.dataDir,
+        tenantId,
+        sessionId,
         requestedRunId,
         artifactId,
         containerPath || undefined,

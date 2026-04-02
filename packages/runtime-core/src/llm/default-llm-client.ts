@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { LlmClient, LlmProvider, LlmRequest, LlmStream } from "../interfaces/llm-client.js";
+import type { LlmClient, LlmRequest, LlmStream } from "../interfaces/llm-client.js";
 import { LlmProviderRegistry } from "./llm-provider-registry.js";
 
 /** Default `LlmClient` implementation backed by the provider registry singleton. */

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { OrchestrationEvent } from "@agentrail/orchestration";
 import { describe, expect, it } from "vitest";
 import { mapOrchestrationEvent } from "../src/index.js";
-import type { OrchestrationEvent } from "@agentrail/orchestration";
 
 describe("mapOrchestrationEvent", () => {
   it("maps run_started into an Agentrail host event", () => {

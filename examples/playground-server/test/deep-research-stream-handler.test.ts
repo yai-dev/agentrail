@@ -3,12 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
+import type { Message, Usage } from "@agentrail/runtime-core";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after } from "node:test";
-import type { Message, Usage } from "@agentrail/runtime-core";
 
 const dataDir = await mkdtemp(join(tmpdir(), "agentrail-deep-research-stream-handler-"));
 const configPath = join(dataDir, "agentrail.yaml");
@@ -17,6 +18,7 @@ process.env.AGENTRAIL_CONFIG_PATH = configPath;
 
 const { createPlaygroundDeepResearchModeStreamHandler } =
   await import("../src/chat/deep-research.js");
+const sessionRef = createSessionRef("tenant-1", "session-1");
 
 after(async () => {
   await rm(dataDir, { recursive: true, force: true });
@@ -98,7 +100,7 @@ test("deep research stream handler delegates matching requests to the streaming 
     tenantId: "tenant-1",
     userId: "user-1",
     sessionId: "session-1",
-    sessionDir: "/tmp/session-1",
+    sessionRef,
     signal: new AbortController().signal,
     sessionStore: {} as never,
     uploadedFiles: [],
@@ -137,7 +139,7 @@ test("deep research stream handler emits an error event on failure", async () =>
     tenantId: "tenant-1",
     userId: "user-1",
     sessionId: "session-1",
-    sessionDir: "/tmp/session-1",
+    sessionRef,
     signal: new AbortController().signal,
     sessionStore: {} as never,
     uploadedFiles: [],
@@ -183,7 +185,7 @@ test("deep research stream handler ignores normal chat mode", async () => {
     tenantId: "tenant-1",
     userId: "user-1",
     sessionId: "session-1",
-    sessionDir: "/tmp/session-1",
+    sessionRef,
     signal: new AbortController().signal,
     sessionStore: {} as never,
     uploadedFiles: [],

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import "@agentrail/runtime-core/providers";
-import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
 import type { Message } from "@agentrail/runtime-core";
+import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
+import "@agentrail/runtime-core/providers";
 import { config } from "../config.js";
 
 function trunc(s: string, max: number): string {

@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "agentrail-onboarding-done";
 

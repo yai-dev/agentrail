@@ -3,19 +3,29 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { DEFAULT_HOSTED_AGENT_ID, createDefaultAgent } from "./default-agent.js";
+import type { AgentrailSessionStore } from "@agentrail/host";
+import type { SessionRef } from "@agentrail/memo";
 import type { ExtendedSseEvent } from "@agentrail/skills";
+import { DEFAULT_HOSTED_AGENT_ID, createDefaultAgent } from "./default-agent.js";
 
 export async function getAgent(
   agentId: string,
   tenantId: string,
   userId: string,
   sessionId: string,
-  sessionDir: string,
+  sessionRef: SessionRef,
+  sessionStore: AgentrailSessionStore,
   onSubAgentEvent?: (event: ExtendedSseEvent) => void,
 ) {
   if (agentId === DEFAULT_HOSTED_AGENT_ID) {
-    return createDefaultAgent(tenantId, userId, sessionId, sessionDir, onSubAgentEvent);
+    return createDefaultAgent(
+      tenantId,
+      userId,
+      sessionId,
+      sessionRef,
+      sessionStore,
+      onSubAgentEvent,
+    );
   }
   return undefined;
 }

@@ -3,12 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import "@agentrail/runtime-core/providers";
-import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
+import { SessionManager, isCompactionMessage } from "@agentrail/memo";
 import type { Message } from "@agentrail/runtime-core";
+import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
+import "@agentrail/runtime-core/providers";
 import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { SessionManager, isCompactionMessage } from "@agentrail/memo";
 
 const STATE_FILE = ".memory-state.json";
 const SESSION_SUMMARY_FILE = "user-memory.json";

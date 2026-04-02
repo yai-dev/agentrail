@@ -3,13 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { RuntimeTool } from "@agentrail/runtime-core";
+import type { AgentrailSessionStore } from "@agentrail/host";
 import { buildDefaultCapabilityTools } from "@agentrail/host/defaults";
+import type { SessionRef } from "@agentrail/memo";
+import type { RuntimeTool } from "@agentrail/runtime-core";
 import type { ExtendedSseEvent } from "@agentrail/skills";
 
-import { waitHandleRegistry } from "../wait-handle-registry.js";
 import { config } from "../config.js";
-import { knowledgeManager, skillManager, sandboxManager } from "../context/index.js";
+import { knowledgeManager, sandboxManager, skillManager } from "../context/index.js";
+import { waitHandleRegistry } from "../wait-handle-registry.js";
 
 export function getModelConfig() {
   return {
@@ -32,7 +34,8 @@ export async function buildDefaultAgentTools(
   tenantId: string,
   userId: string,
   sessionId: string,
-  sessionDir: string,
+  sessionRef: SessionRef,
+  sessionStore: AgentrailSessionStore,
   onSubAgentEvent?: (event: ExtendedSseEvent) => void,
   options: { includeSkillTool?: boolean } = {},
 ): Promise<DefaultAgentTools> {
@@ -41,7 +44,8 @@ export async function buildDefaultAgentTools(
     tenantId,
     userId,
     sessionId,
-    sessionDir,
+    sessionRef,
+    sessionStore,
     knowledgeManager,
     sandboxManager,
     waitHandleRegistry,

@@ -3,31 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { randomUUID } from "node:crypto";
-import {
-  mkdir,
-  readFile,
-  readdir,
-  stat,
-  appendFile,
-  rm,
-  rename,
-  writeFile,
-} from "node:fs/promises";
-import type { Dirent } from "node:fs";
-import * as path from "node:path";
 import type { Message, Usage } from "@agentrail/runtime-core";
-import type {
-  SessionInfo,
-  SessionMeta,
-  SessionInitEvent,
-  SessionTurnEvent,
-  SessionContextUsage,
-  MemoryIndex,
-  MemoryIndexEntry,
-  CompactionMetadata,
-} from "./types.js";
-import { estimateFileTokens, estimateMessageTokens } from "./token-estimator.js";
+import { randomUUID } from "node:crypto";
+import type { Dirent } from "node:fs";
+import { appendFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import * as path from "node:path";
 import {
   buildCompactionMetadata,
   buildMemoryEntry,
@@ -38,6 +18,21 @@ import {
   replaySessionInfo,
   statOrNull,
 } from "./session-manager-helpers.js";
+import type { SessionRef } from "./session-ref.js";
+import { createSessionRef, resolveSessionRef } from "./session-ref.js";
+import type { TodoStorage } from "./todo-storage.js";
+import { estimateMessageTokens } from "./token-estimator.js";
+import { createFileSystemSessionTraceStore, type SessionTraceStore } from "./trace-store.js";
+import type {
+  CompactionMetadata,
+  MemoryIndex,
+  SessionContextUsage,
+  SessionHandle,
+  SessionInfo,
+  SessionInitEvent,
+  SessionMeta,
+  SessionTurnEvent,
+} from "./types.js";
 
 /** Prefix used for synthetic compaction messages written to messages.jsonl. */
 export const COMPACTION_MESSAGE_PREFIX = "[Conversation compacted at ";
@@ -65,9 +60,31 @@ export function parseCompactionMetadata(content: string): CompactionMetadata {
 export class SessionManager {
   constructor(private readonly dataDir: string) {}
 
+  /** Returns the opaque session reference for a session. */
+  getSessionRef(tenantId: string, sessionId: string): SessionRef {
+    return createSessionRef(tenantId, sessionId);
+  }
+
+  /** Resolves an opaque session reference into its tenant/session identifiers. */
+  resolveSessionRef(sessionRef: SessionRef): { tenantId: string; sessionId: string } {
+    return resolveSessionRef(sessionRef);
+  }
+
   /** Returns the absolute directory path for a session. */
   getSessionDir(tenantId: string, sessionId: string): string {
     return path.join(this.dataDir, "tenants", tenantId, "sessions", sessionId);
+  }
+
+  getTraceDir(tenantId: string, sessionId: string): string {
+    return path.join(this.getSessionDir(tenantId, sessionId), "trace");
+  }
+
+  private getSubAgentLogDir(tenantId: string, sessionId: string): string {
+    return path.join(this.getSessionDir(tenantId, sessionId), "subagent-logs");
+  }
+
+  private getTodoFilePath(tenantId: string, sessionId: string): string {
+    return path.join(this.getSessionDir(tenantId, sessionId), "TODO.md");
   }
 
   /** Returns the absolute directory path for a user's shared memory files. */
@@ -185,7 +202,7 @@ export class SessionManager {
     userId: string,
     agentId: string,
     sessionId?: string,
-  ): Promise<SessionInfo> {
+  ): Promise<SessionHandle> {
     const sid = sessionId ?? randomUUID();
     const sessionDir = this.getSessionDir(tenantId, sid);
     const userDir = this.getUserDir(tenantId, userId);
@@ -210,7 +227,10 @@ export class SessionManager {
       await appendFile(sessionFile, JSON.stringify(initEvent) + "\n", "utf8");
     }
 
-    return this.readSessionInfo(tenantId, sid);
+    return {
+      ...(await this.readSessionInfo(tenantId, sid)),
+      sessionRef: this.getSessionRef(tenantId, sid),
+    };
   }
 
   /** Replays session.jsonl events to build the current SessionInfo snapshot. */
@@ -336,6 +356,72 @@ export class SessionManager {
     return { sessionDir, userDir, entries: [notes, todo, user] };
   }
 
+  async readTodoFile(sessionRef: SessionRef): Promise<string | null> {
+    const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
+    try {
+      return await readFile(this.getTodoFilePath(tenantId, sessionId), "utf8");
+    } catch {
+      return null;
+    }
+  }
+
+  async writeTodoFile(sessionRef: SessionRef, content: string): Promise<void> {
+    const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
+    const todoFilePath = this.getTodoFilePath(tenantId, sessionId);
+    await mkdir(path.dirname(todoFilePath), { recursive: true });
+    await writeFile(todoFilePath, content, "utf8");
+  }
+
+  createTodoStorage(sessionRef: SessionRef): TodoStorage {
+    return {
+      read: () => this.readTodoFile(sessionRef),
+      write: (content) => this.writeTodoFile(sessionRef, content),
+    };
+  }
+
+  createTraceStorage<TEnvelope = Record<string, unknown>>(
+    sessionRef: SessionRef,
+  ): SessionTraceStore<TEnvelope> {
+    return createFileSystemSessionTraceStore<TEnvelope>(this.dataDir, sessionRef);
+  }
+
+  async persistSkillSubAgentLog(
+    sessionRef: SessionRef,
+    entry: {
+      skillName: string;
+      task: string;
+      input: string;
+      systemPrompt: string;
+      messages: unknown[];
+      resultText: string;
+      startedAt: number;
+      finishedAt: number;
+    },
+  ): Promise<void> {
+    const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
+    const logDir = this.getSubAgentLogDir(tenantId, sessionId);
+    const filename = `skill-${entry.skillName}-${entry.startedAt}.jsonl`;
+    const filePath = path.join(logDir, filename);
+
+    await mkdir(logDir, { recursive: true });
+    const lines: string[] = [
+      JSON.stringify({
+        type: "meta",
+        skillName: entry.skillName,
+        task: entry.task,
+        input: entry.input,
+        systemPrompt: entry.systemPrompt,
+        resultText: entry.resultText,
+        startedAt: entry.startedAt,
+        finishedAt: entry.finishedAt,
+        durationMs: entry.finishedAt - entry.startedAt,
+      }),
+      ...entry.messages.map((message) => JSON.stringify(message)),
+      "",
+    ];
+    await appendFile(filePath, lines.join("\n"), "utf8");
+  }
+
   /** Permanently removes the session directory and all its contents. */
   async deleteSession(tenantId: string, sessionId: string): Promise<void> {
     const sessionDir = this.getSessionDir(tenantId, sessionId);
@@ -436,7 +522,9 @@ export class SessionManager {
     const compactionLines = [
       `[Conversation compacted at ${timestamp}. Full history preserved in messages.compactions/${archiveId}.jsonl.`,
       `Archive ID: ${archiveId}`,
-      `${toCompact.length} messages (${Math.round(totalTokens * compactFraction)} tokens estimated) were compressed.`,
+      `${toCompact.length} messages (${Math.round(
+        totalTokens * compactFraction,
+      )} tokens estimated) were compressed.`,
       ``,
       `Summary of compressed conversation:`,
       summary,

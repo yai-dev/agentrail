@@ -3,13 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, memo } from "react";
+import { memo, useState } from "react";
+import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { Components } from "react-markdown";
 import type { DisplayMessage } from "../App";
-import { MermaidChart } from "./MermaidChart";
 import { AuthenticatedMarkdownImage } from "./AuthenticatedMarkdownImage";
+import { MermaidChart } from "./MermaidChart";
 
 const MERMAID_LANG_RE = /language-mermaid/;
 

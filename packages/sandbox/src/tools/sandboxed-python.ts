@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import path from "node:path";
 import type { SandboxManager } from "../sandbox-manager.js";
 
 const DEFAULT_TIMEOUT_MS = 60_000;

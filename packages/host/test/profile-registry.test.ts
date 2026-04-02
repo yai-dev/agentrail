@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
 import { describe, expect, it } from "vitest";
 import { createProfileResolver } from "../src/profile-registry.js";
 
@@ -23,7 +24,8 @@ describe("createProfileResolver", () => {
         tenantId: "tenant-1",
         userId: "user-1",
         sessionId: "session-1",
-        sessionDir: "/tmp/session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
+        sessionStore: {} as never,
       }),
     ).resolves.toBe(profile);
   });
@@ -36,7 +38,8 @@ describe("createProfileResolver", () => {
         tenantId: "tenant-1",
         userId: "user-1",
         sessionId: "session-1",
-        sessionDir: "/tmp/session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
+        sessionStore: {} as never,
       }),
     ).resolves.toBeNull();
   });

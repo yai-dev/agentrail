@@ -5,9 +5,9 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { DeepResearchState } from "../src/types/deepResearch.js";
 import { applyDeepResearchEventToState } from "../src/hooks/deepResearchStateReducer.js";
 import { deriveDeepResearchState } from "../src/hooks/useDeepResearchState.js";
+import type { DeepResearchState } from "../src/types/deepResearch.js";
 
 test("applyDeepResearchEventToState merges plan, sources, artifacts, and report deltas", () => {
   const initial: DeepResearchState = {

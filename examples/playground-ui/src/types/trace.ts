@@ -47,8 +47,8 @@ export interface AgentRunTrace {
 }
 
 /**
- * Unified trace event envelope persisted to sessionDir/trace/events.jsonl
- * and returned by GET /api/sessions/:sessionId/trace.
+ * Unified trace event envelope persisted in the session trace store and
+ * returned by GET /api/sessions/:sessionId/trace.
  */
 export interface WorkflowTraceEventEnvelope {
   id: string;

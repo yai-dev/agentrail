@@ -3,12 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import "@agentrail/runtime-core/providers";
-import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
 import type { Message } from "@agentrail/runtime-core";
-import { readFile, appendFile, writeFile } from "node:fs/promises";
-import { sessionManager } from "../context/index.js";
+import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
+import "@agentrail/runtime-core/providers";
+import { appendFile, readFile, writeFile } from "node:fs/promises";
 import { config } from "../config.js";
+import { sessionManager } from "../context/index.js";
 
 const LAST_SUMMARY_AT_FILE = ".last_preference_summary_at";
 const COOLDOWN_MS = (config.userPreferenceSummary.cooldownHours || 24) * 60 * 60 * 1000;

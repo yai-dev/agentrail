@@ -3,9 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
 import { describe, expect, it, vi } from "vitest";
-import { createDeepResearchRunRoute, runDeepResearchBlocking } from "../src/run.js";
 import type { DeepResearchState } from "../src/index.js";
+import { createDeepResearchRunRoute, runDeepResearchBlocking } from "../src/run.js";
 
 vi.mock("../src/coordinator.js", () => {
   class MockDeepResearchCoordinator {
@@ -41,8 +42,10 @@ vi.mock("../src/coordinator.js", () => {
 
 function createSessionStore() {
   return {
-    getOrCreate: vi.fn(async () => ({ sessionId: "session-1" })),
-    getSessionDir: vi.fn(() => "/tmp/session-1"),
+    getOrCreate: vi.fn(async () => ({
+      sessionId: "session-1",
+      sessionRef: createSessionRef("tenant-1", "session-1"),
+    })),
     loadMessages: vi.fn(async () => []),
     appendMessages: vi.fn(async () => {}),
     recordTurn: vi.fn(async () => {}),

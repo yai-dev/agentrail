@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 
 const toolName = "Write";
 const toolLabel = "Write";

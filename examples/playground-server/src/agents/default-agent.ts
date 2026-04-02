@@ -3,23 +3,25 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { defineAgent } from "@agentrail/runtime-core";
+import type { AgentrailSessionStore } from "@agentrail/host";
+import { createDefaultToolset } from "@agentrail/host/defaults";
+import type { SessionRef } from "@agentrail/memo";
 import {
   createCloseAgentTool,
   createSendInputTool,
   createSpawnAgentTool,
+  createSubAgentProcess,
   createWaitAgentTool,
   type CreateManagedAgentInput,
   type ManagedAgentInstance,
-  createSubAgentProcess,
 } from "@agentrail/orchestration";
-import { createDefaultToolset } from "@agentrail/host/defaults";
-import { buildSystemPrompt } from "../prompts/index.js";
+import { defineAgent } from "@agentrail/runtime-core";
 import type { ExtendedSseEvent } from "@agentrail/skills";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "../config.js";
 import { getOrchestrationManager } from "../context/index.js";
+import { buildSystemPrompt } from "../prompts/index.js";
 import { buildDefaultAgentTools, getModelConfig } from "./default-agent-tools.js";
 
 export const DEFAULT_HOSTED_AGENT_ID = "agentrail-default-agent";
@@ -34,14 +36,15 @@ async function createManagedDefaultAgentInstance(
   tenantId: string,
   userId: string,
   sessionId: string,
-  sessionDir: string,
+  sessionRef: SessionRef,
   input: CreateManagedAgentInput,
 ): Promise<ManagedAgentInstance> {
   return createSubAgentProcess({
     tenantId,
     userId,
     sessionId,
-    sessionDir,
+    sessionRef,
+    dataDir: config.dataDir,
     input,
     workerPath: getWorkerPath(),
     runtimeConfig: { input },
@@ -53,22 +56,25 @@ export async function createDefaultAgent(
   tenantId: string,
   userId: string,
   sessionId: string,
-  sessionDir: string,
+  sessionRef: SessionRef,
+  sessionStore: AgentrailSessionStore,
   onSubAgentEvent?: (event: ExtendedSseEvent) => void,
 ) {
   const { executionTools, browserTools, skillTool } = await buildDefaultAgentTools(
     tenantId,
     userId,
     sessionId,
-    sessionDir,
+    sessionRef,
+    sessionStore,
     onSubAgentEvent,
   );
   const orchestrationManager = await getOrchestrationManager({
     tenantId,
     userId,
     sessionId,
+    sessionRef,
     createManagedAgent: (input) =>
-      createManagedDefaultAgentInstance(tenantId, userId, sessionId, sessionDir, input),
+      createManagedDefaultAgentInstance(tenantId, userId, sessionId, sessionRef, input),
   });
   const orchestrationRunId = `orchestration:${sessionId}`;
   const orchestrationTools = [

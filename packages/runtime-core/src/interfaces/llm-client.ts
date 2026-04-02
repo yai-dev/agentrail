@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AssistantMessage, Message } from "../types/message.types.js";
-import type { ToolDefinition } from "../types/tool.types.js";
 import type { ModelConfig } from "../agent/define-agent.js";
+import type { AssistantMessage, Message } from "../types/message.types.js";
 import type { LlmStreamEvent } from "../types/result.types.js";
+import type { ToolDefinition } from "../types/tool.types.js";
 
 /** Normalized request shape passed from the runtime loop to an LLM backend. */
 export interface LlmRequest {

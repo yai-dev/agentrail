@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import type { SandboxManager } from "../sandbox-manager.js";
 
 const runRg = promisify(execFile);

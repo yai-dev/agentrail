@@ -4,11 +4,11 @@
  */
 
 import type { AgentrailPlugin } from "@agentrail/host";
-export type { UserMemoryConfig } from "./user-memory-consolidation-service.js";
 export {
   UserMemoryConsolidationService,
   type UserMemoryConsolidationService as UserMemoryConsolidationServiceInstance,
 } from "./user-memory-consolidation-service.js";
+export type { UserMemoryConfig } from "./user-memory-consolidation-service.js";
 
 interface UserMemoryPluginHooks {
   start(): void;

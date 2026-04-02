@@ -5,8 +5,8 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import type { LlmProvider, LlmRequest, LlmStream } from "../../interfaces/llm-client.js";
+import type { ImageContent, TextContent } from "../../types/content.types.js";
 import type { AssistantMessage, StopReason, ToolResultMessage } from "../../types/message.types.js";
-import type { ToolCall, TextContent, ImageContent } from "../../types/content.types.js";
 import { AssistantMessageEventStream } from "../event-stream.js";
 import { parseStreamingJson } from "../utils/json-parse.js";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.js";

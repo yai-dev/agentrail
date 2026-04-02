@@ -8,8 +8,8 @@
  */
 
 import { Type } from "@sinclair/typebox";
-import type { RuntimeTool, ToolResult } from "../../src/types/tool.types.js";
 import type { TextContent } from "../../src/types/content.types.js";
+import type { RuntimeTool, ToolResult } from "../../src/types/tool.types.js";
 
 /**
  * Create a mock tool for testing

@@ -6,22 +6,22 @@
 // Register built-in LLM providers (Anthropic, OpenAI) as side effects
 import "@agentrail/runtime-core/providers";
 
+import { runPluginLifecycle } from "@agentrail/host";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { config } from "./config.js";
-import { health } from "./routes/health.js";
-import { chat } from "./routes/chat.js";
-import { stream } from "./routes/stream.js";
-import { sessions } from "./routes/sessions.js";
-import { knowledge } from "./routes/knowledge.js";
-import { orchestration } from "./routes/orchestration.js";
-import { deepResearch } from "./routes/deep-research.js";
-import { trace } from "./routes/trace.js";
-import { commands } from "./routes/commands.js";
 import { sandboxManager } from "./context/index.js";
 import { playgroundPlugins } from "./plugins/index.js";
-import { runPluginLifecycle } from "@agentrail/host";
+import { chat } from "./routes/chat.js";
+import { commands } from "./routes/commands.js";
+import { deepResearch } from "./routes/deep-research.js";
+import { health } from "./routes/health.js";
+import { knowledge } from "./routes/knowledge.js";
+import { orchestration } from "./routes/orchestration.js";
+import { sessions } from "./routes/sessions.js";
+import { stream } from "./routes/stream.js";
+import { trace } from "./routes/trace.js";
 
 const app = new Hono();
 

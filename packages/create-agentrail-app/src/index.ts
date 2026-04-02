@@ -5,9 +5,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { intro, outro, text, confirm, spinner, note, cancel } from "@clack/prompts";
-import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { cancel, confirm, intro, note, outro, spinner, text } from "@clack/prompts";
 import { existsSync } from "node:fs";
+import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 

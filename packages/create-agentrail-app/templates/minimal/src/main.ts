@@ -1,12 +1,12 @@
 // Register built-in LLM providers (Anthropic, OpenAI) as side effects
 import "@agentrail/runtime-core/providers";
 
+import { createStreamRoute } from "@agentrail/host";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
-import { createStreamRoute } from "@agentrail/host";
-import { sessionManager, sandboxManager } from "./context.js";
 import { buildSummarizeFn, resolveProfile } from "./agent.js";
+import { sandboxManager, sessionManager } from "./context.js";
 
 const app = new Hono();
 

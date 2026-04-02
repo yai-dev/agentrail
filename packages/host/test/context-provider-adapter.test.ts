@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { Message } from "@agentrail/runtime-core";
 import { describe, expect, it } from "vitest";
 import { createContextProviderFromTransform } from "../src/context-pipeline.js";
-import type { Message } from "@agentrail/runtime-core";
 
 describe("createContextProviderFromTransform", () => {
   it("extracts only injected messages from a transform result", async () => {

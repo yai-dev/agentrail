@@ -3,14 +3,27 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { copyFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
-import { randomUUID } from "node:crypto";
+import type { SessionRef } from "@agentrail/memo";
+import {
+  OrchestrationManager,
+  createFilesystemOrchestrationPersistence,
+} from "@agentrail/orchestration";
 import { defineAgent, type Message, type RuntimeEvent } from "@agentrail/runtime-core";
 import { SandboxManager } from "@agentrail/sandbox";
-import { OrchestrationManager } from "@agentrail/orchestration";
+import { randomUUID } from "node:crypto";
+import { copyFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
+import {
+  createManagedDeepResearchAgent,
+  createRun,
+  mapDeepResearchOrchestrationEvent,
+  summarizeHistory,
+  zeroUsage,
+} from "./coordinator-internals.js";
+import { getPlannerPrompt, getReporterPrompt } from "./prompts.js";
 import type { DeepResearchRuntimeConfig } from "./runtime.js";
-import { DeepResearchStore } from "./store.js";
+import type { DeepResearchStore } from "./store.js";
+import { createFileSystemDeepResearchStore } from "./store.js";
 import type {
   AnalystOutput,
   CoderOutput,
@@ -18,7 +31,6 @@ import type {
   DeepResearchEntityProfile,
   DeepResearchEvent,
   DeepResearchPlan,
-  DeepResearchRun,
   DeepResearchSource,
   DeepResearchState,
   DeepResearchStep,
@@ -26,8 +38,8 @@ import type {
   ResearcherOutput,
 } from "./types.js";
 import {
-  buildStepDigest,
   buildFetchDomainBudget,
+  buildStepDigest,
   classifySource,
   deriveEntityProfile,
   extractJsonObject,
@@ -49,20 +61,12 @@ import {
   selectSourcesForResearchContext,
   slugifyTitle,
 } from "./utils.js";
-import { getPlannerPrompt, getReporterPrompt } from "./prompts.js";
-import {
-  createManagedDeepResearchAgent,
-  createRun,
-  mapDeepResearchOrchestrationEvent,
-  summarizeHistory,
-  zeroUsage,
-} from "./coordinator-internals.js";
 
 export interface DeepResearchCoordinatorOptions {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
   query: string;
   history: Message[];
   runtime: DeepResearchRuntimeConfig;
@@ -97,7 +101,7 @@ export class DeepResearchCoordinator {
       reportMarkdown: "",
       entityProfile: null,
     };
-    this.store = new DeepResearchStore(options.sessionDir);
+    this.store = createFileSystemDeepResearchStore(options.runtime.dataDir, options.sessionRef);
     this.sandboxManager = new SandboxManager(options.runtime.dataDir, options.runtime.sandbox);
   }
 
@@ -211,7 +215,10 @@ export class DeepResearchCoordinator {
 
   private async createManager(emit: EmitFn): Promise<OrchestrationManager> {
     const manager = await OrchestrationManager.create({
-      sessionDir: this.options.sessionDir,
+      persistence: createFilesystemOrchestrationPersistence(
+        this.options.runtime.dataDir,
+        this.options.sessionRef,
+      ),
       runtime: {
         createAgent: async (input) => createManagedDeepResearchAgent(this.options, input),
       },
@@ -423,7 +430,9 @@ export class DeepResearchCoordinator {
             ? `- Excluded related entities: ${this.state.entityProfile.excludedEntities.join(", ")}`
             : "",
           this.state.entityProfile.relatedEntities.length > 0
-            ? `- Related entities to compare or track: ${this.state.entityProfile.relatedEntities.join(", ")}`
+            ? `- Related entities to compare or track: ${this.state.entityProfile.relatedEntities.join(
+                ", ",
+              )}`
             : "",
         ]
           .filter(Boolean)
@@ -440,7 +449,9 @@ export class DeepResearchCoordinator {
         excludedSources ? `Known excluded/related-but-not-target sources:\n${excludedSources}` : "",
         fetchBudgetText ? `Fetch results so far by domain:\n${fetchBudgetText}` : "",
         blockedDomains.length > 0
-          ? `Avoid FetchUrl for these blocked domains in this run unless absolutely necessary: ${blockedDomains.join(", ")}`
+          ? `Avoid FetchUrl for these blocked domains in this run unless absolutely necessary: ${blockedDomains.join(
+              ", ",
+            )}`
           : "",
         artifacts ? `Known artifacts:\n${artifacts}` : "",
         "Research requirements:",
@@ -461,7 +472,9 @@ export class DeepResearchCoordinator {
       .filter((source) => source.confidence !== "low_confidence")
       .map(
         (source) =>
-          `- [${source.id}] ${source.title} (${source.domain}) — ${source.confidence ?? "medium_confidence"} / ${source.evidenceLevel ?? "unverified"}`,
+          `- [${source.id}] ${source.title} (${source.domain}) — ${
+            source.confidence ?? "medium_confidence"
+          } / ${source.evidenceLevel ?? "unverified"}`,
       )
       .join("\n");
     const evidenceTableText = completedSteps
@@ -474,14 +487,18 @@ export class DeepResearchCoordinator {
       entityProfile,
       `Current step:\n[${step.type}] ${step.title}\n${step.description}`,
       completedSteps.length > 0
-        ? `Completed step summaries:\n${completedSteps.map((item) => `Step ${item.index + 1} (${item.type}) - ${item.title}\n${item.summary}`).join("\n\n")}`
+        ? `Completed step summaries:\n${completedSteps
+            .map((item) => `Step ${item.index + 1} (${item.type}) - ${item.title}\n${item.summary}`)
+            .join("\n\n")}`
         : "",
       recentDigests ? `Recent step digests:\n${recentDigests}` : "",
       evidenceTableText ? `Normalized evidence table so far:\n${evidenceTableText}` : "",
       acceptedForAnalysis ? `Accepted sources for synthesis:\n${acceptedForAnalysis}` : "",
       artifacts ? `Known artifacts:\n${artifacts}` : "",
       step.type === "processing"
-        ? `Save any generated files under /workspace/.deep-research/artifacts/${slugifyTitle(step.title)}-...`
+        ? `Save any generated files under /workspace/.deep-research/artifacts/${slugifyTitle(
+            step.title,
+          )}-...`
         : "",
     ]
       .filter(Boolean)
@@ -740,7 +757,9 @@ export class DeepResearchCoordinator {
     const stepText = this.state.steps
       .map((step) => {
         const digest = step.digest ? `Digest:\n${formatStepDigest(step.digest)}` : "";
-        return `Step ${step.index + 1}: [${step.type}] ${step.title}\n${digest}\n${step.summary ?? step.output ?? ""}`;
+        return `Step ${step.index + 1}: [${step.type}] ${step.title}\n${digest}\n${
+          step.summary ?? step.output ?? ""
+        }`;
       })
       .join("\n\n");
     const reportSources = selectSourcesForReport(this.state.sources, 4);
@@ -758,7 +777,13 @@ Snippet: ${source.snippet ?? ""}`,
     const evidenceText = evidenceRows
       .map(
         (row) =>
-          `- Claim: ${row.claim}\n  Confidence: ${row.confidence}\n  Supporting sources: ${(row.supportingSourceIds ?? []).join(", ")}${(row.conflicts ?? []).length > 0 ? `\n  Conflicts: ${(row.conflicts ?? []).join(" | ")}` : ""}${(row.notes ?? []).length > 0 ? `\n  Notes: ${(row.notes ?? []).join(" | ")}` : ""}`,
+          `- Claim: ${row.claim}\n  Confidence: ${row.confidence}\n  Supporting sources: ${(
+            row.supportingSourceIds ?? []
+          ).join(", ")}${
+            (row.conflicts ?? []).length > 0
+              ? `\n  Conflicts: ${(row.conflicts ?? []).join(" | ")}`
+              : ""
+          }${(row.notes ?? []).length > 0 ? `\n  Notes: ${(row.notes ?? []).join(" | ")}` : ""}`,
       )
       .join("\n");
     const artifactText = this.state.artifacts
@@ -768,7 +793,11 @@ Snippet: ${source.snippet ?? ""}`,
       .filter((artifact) => artifact.mimeType.startsWith("image/"))
       .map(
         (artifact) =>
-          `![${artifact.title}](/api/sessions/${encodeURIComponent(this.options.sessionId)}/deep-research/artifact?runId=${encodeURIComponent(this.runId)}&artifactId=${encodeURIComponent(artifact.id)})`,
+          `![${artifact.title}](/api/sessions/${encodeURIComponent(
+            this.options.sessionId,
+          )}/deep-research/artifact?runId=${encodeURIComponent(
+            this.runId,
+          )}&artifactId=${encodeURIComponent(artifact.id)})`,
       )
       .join("\n");
 

@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { SessionRef } from "@agentrail/memo";
 import type { Message, RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
 import type { CreateManagedAgentInput } from "../orchestration-manager.js";
 
@@ -18,7 +19,12 @@ export interface ModelConfig {
 export interface SubAgentRuntime {
   buildTools(input: CreateManagedAgentInput): Promise<RuntimeTool[]>;
   buildSystemPrompt(input: CreateManagedAgentInput): string;
-  buildTransformContext?(tenantId: string, userId: string, sessionId: string): TransformContextFn;
+  buildTransformContext?(
+    tenantId: string,
+    userId: string,
+    sessionId: string,
+    sessionRef: SessionRef,
+  ): TransformContextFn;
   getModelConfig(): ModelConfig;
 }
 
@@ -33,7 +39,7 @@ export interface WorkerState {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
   input: CreateManagedAgentInput;
   history: Message[];
   workerConfig: SubagentWorkerConfig;

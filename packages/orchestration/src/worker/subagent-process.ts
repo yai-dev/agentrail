@@ -3,14 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { SessionRef } from "@agentrail/memo";
 import { fork } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import type { AgentInputEnvelope, ManagedAgentDeliveryResult } from "../types.js";
 import type {
   CreateManagedAgentInput,
   ManagedAgentEventHandlers,
   ManagedAgentInstance,
 } from "../orchestration-manager.js";
+import type { AgentInputEnvelope, ManagedAgentDeliveryResult } from "../types.js";
 import type { SubagentWorkerConfig } from "./agent-runtime.js";
 
 interface WorkerReadyMessage {
@@ -70,7 +71,8 @@ export interface CreateSubAgentProcessInput {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
+  dataDir: string;
   input: CreateManagedAgentInput;
   workerPath: string;
   // biome-ignore lint/suspicious/noExplicitAny: Runtime config is serialized
@@ -255,7 +257,8 @@ export async function createManagedSubAgentInstance(
       tenantId: options.tenantId,
       userId: options.userId,
       sessionId: options.sessionId,
-      sessionDir: options.sessionDir,
+      sessionRef: options.sessionRef,
+      dataDir: options.dataDir,
       runtimeConfig: {
         ...(options.runtimeConfig ?? {}),
         input: options.runtimeConfig?.input ?? options.input,

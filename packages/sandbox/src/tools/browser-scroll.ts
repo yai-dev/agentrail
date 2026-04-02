@@ -101,7 +101,9 @@ export function createBrowserScroll(
         content: [
           {
             type: "text" as const,
-            text: `Scrolled successfully. Page scroll position: x=${data.scrollX ?? 0}, y=${data.scrollY ?? 0}`,
+            text: `Scrolled successfully. Page scroll position: x=${data.scrollX ?? 0}, y=${
+              data.scrollY ?? 0
+            }`,
           },
         ],
         details: { scrollX: data.scrollX, scrollY: data.scrollY },

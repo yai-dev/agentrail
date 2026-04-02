@@ -5,8 +5,8 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { OrchestrationState, OrchestrationStreamEvent } from "../src/types/orchestration.js";
 import { applyEventToStateForTest } from "../src/hooks/orchestrationStateReducer.js";
+import type { OrchestrationState, OrchestrationStreamEvent } from "../src/types/orchestration.js";
 
 test("applyEventToState tracks closing and job lifecycle data", () => {
   const initial: OrchestrationState = {

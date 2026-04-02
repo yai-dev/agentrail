@@ -5,8 +5,6 @@
 
 import { randomUUID } from "node:crypto";
 
-import { OrchestrationStore } from "./orchestration-store.js";
-import { applyOrchestrationEvent, cloneOrchestrationSnapshot } from "./recovery.js";
 import {
   cloneAgent,
   cloneWait,
@@ -16,6 +14,8 @@ import {
   normalizeDeliveryResult,
   normalizeWaitInput,
 } from "./orchestration-manager-helpers.js";
+import type { OrchestrationPersistence } from "./persistence.js";
+import { applyOrchestrationEvent, cloneOrchestrationSnapshot } from "./recovery.js";
 import type {
   AgentInputEnvelope,
   CloseAgentInput,
@@ -71,7 +71,7 @@ export interface StartRunInput {
 
 /** Options for constructing an `OrchestrationManager`. */
 export interface OrchestrationManagerOptions {
-  sessionDir: string;
+  persistence: OrchestrationPersistence;
   runtime: OrchestrationAgentFactory;
   now?: () => string;
 }
@@ -116,17 +116,16 @@ export class OrchestrationManager {
   private readonly closeRequestedAgents = new Set<string>();
   private readonly inFlightInputIds = new Set<string>();
   private readonly waitHandles = new Map<string, WaitHandle>();
-  private readonly sessionDir: string;
+  private readonly persistence: OrchestrationPersistence;
   private readonly runtime: OrchestrationAgentFactory;
   private readonly now: () => string;
 
   private constructor(options: OrchestrationManagerOptions) {
-    this.sessionDir = options.sessionDir;
+    this.persistence = options.persistence;
     this.runtime = options.runtime;
     this.now = options.now ?? (() => new Date().toISOString());
   }
 
-  /** Subscribes to event-log updates paired with the latest snapshot. */
   subscribe(listener: (event: OrchestrationManagerEvent) => void): () => void {
     this.listeners.add(listener);
     return () => {
@@ -134,12 +133,10 @@ export class OrchestrationManager {
     };
   }
 
-  /** Returns a deep-cloned snapshot safe for external consumers. */
   getSnapshot(): OrchestrationSnapshot {
     return cloneOrchestrationSnapshot(this.snapshot);
   }
 
-  /** Starts a run if it does not already exist. */
   async startRun(input: StartRunInput): Promise<void> {
     const existingRun = this.snapshot.runs[input.runId];
 
@@ -156,7 +153,6 @@ export class OrchestrationManager {
     });
   }
 
-  /** Spawns or re-attaches a managed agent within an active run. */
   async spawnAgent(input: SpawnAgentInput): Promise<OrchestrationAgent> {
     const run = this.getActiveRun(input.runId);
     const taskId = input.taskId ?? run.initialTaskId;
@@ -175,7 +171,9 @@ export class OrchestrationManager {
           existingAgent.displayName !== normalizedInput.displayName)
       ) {
         throw new Error(
-          `Orchestration agent ${normalizedInput.id} already exists with taskId ${existingAgent.taskId}, role ${existingAgent.role}, and displayName ${existingAgent.displayName ?? "unknown"}`,
+          `Orchestration agent ${normalizedInput.id} already exists with taskId ${
+            existingAgent.taskId
+          }, role ${existingAgent.role}, and displayName ${existingAgent.displayName ?? "unknown"}`,
         );
       }
 
@@ -209,7 +207,6 @@ export class OrchestrationManager {
     return cloneAgent(agent);
   }
 
-  /** Queues structured input for a managed agent and schedules delivery. */
   async sendInput(input: {
     id: string;
     agentId: string;
@@ -233,7 +230,7 @@ export class OrchestrationManager {
       runId: run.id,
       input,
     });
-    await OrchestrationStore.appendMailboxEvent(this.sessionDir, input.agentId, {
+    await this.persistence.appendMailboxEvent(input.agentId, {
       eventId: this.createEventId(),
       type: "input_enqueued",
       agentId: input.agentId,
@@ -316,15 +313,15 @@ export class OrchestrationManager {
     this.closeRequestedAgents.add(input.agentId);
     const instance = this.activeAgents.get(input.agentId);
     const closeRequestedAt = this.now();
-    await OrchestrationStore.appendMailboxEvent(this.sessionDir, input.agentId, {
+    await this.persistence.appendMailboxEvent(input.agentId, {
       eventId: this.createEventId(),
       type: "agent_close_requested",
       agentId: input.agentId,
       occurredAt: closeRequestedAt,
       reason: input.reason,
     });
-    const mailboxState = await OrchestrationStore.loadMailboxState(this.sessionDir, input.agentId);
-    await OrchestrationStore.writeMailboxState(this.sessionDir, input.agentId, {
+    const mailboxState = await this.persistence.loadMailboxState(input.agentId);
+    await this.persistence.writeMailboxState(input.agentId, {
       processedEventCount: mailboxState.processedEventCount,
       closeRequested: {
         occurredAt: closeRequestedAt,
@@ -402,7 +399,7 @@ export class OrchestrationManager {
   }
 
   private async initialize(): Promise<void> {
-    const recovered = await OrchestrationStore.recoverState(this.sessionDir);
+    const recovered = await this.persistence.recoverState();
     this.snapshot = recovered.snapshot;
     await this.reconcileRecoveredCloseRequests();
     await this.reconcileQueuedInputsFromMailbox();
@@ -464,7 +461,7 @@ export class OrchestrationManager {
         continue;
       }
 
-      const mailboxState = await OrchestrationStore.loadMailboxState(this.sessionDir, agent.id);
+      const mailboxState = await this.persistence.loadMailboxState(agent.id);
 
       if (!mailboxState.closeRequested) {
         continue;
@@ -787,7 +784,7 @@ export class OrchestrationManager {
   }
 
   private async recordEvent(event: OrchestrationEvent): Promise<void> {
-    await OrchestrationStore.appendEvent(this.sessionDir, event);
+    await this.persistence.appendEvent(event);
     applyOrchestrationEvent(this.snapshot, event);
     await this.persistSnapshot();
 
@@ -1015,13 +1012,13 @@ export class OrchestrationManager {
   }
 
   private async persistSnapshot(): Promise<void> {
-    await OrchestrationStore.writeCheckpoint(this.sessionDir, this.snapshot);
+    await this.persistence.writeCheckpoint(this.snapshot);
   }
 
   private async getPendingInputsForAgent(agentId: string): Promise<AgentInputEnvelope[]> {
     const [mailboxEvents, mailboxState] = await Promise.all([
-      OrchestrationStore.loadMailboxEvents(this.sessionDir, agentId),
-      OrchestrationStore.loadMailboxState(this.sessionDir, agentId),
+      this.persistence.loadMailboxEvents(agentId),
+      this.persistence.loadMailboxState(agentId),
     ]);
     const pendingMailboxInputs = mailboxEvents
       .slice(mailboxState.processedEventCount)
@@ -1054,8 +1051,8 @@ export class OrchestrationManager {
     }
 
     const [mailboxEvents, mailboxState] = await Promise.all([
-      OrchestrationStore.loadMailboxEvents(this.sessionDir, agentId),
-      OrchestrationStore.loadMailboxState(this.sessionDir, agentId),
+      this.persistence.loadMailboxEvents(agentId),
+      this.persistence.loadMailboxState(agentId),
     ]);
     const remainingInputIds = [...consumedInputIds];
     let nextProcessedEventCount = mailboxState.processedEventCount;
@@ -1088,7 +1085,7 @@ export class OrchestrationManager {
       return;
     }
 
-    await OrchestrationStore.writeMailboxState(this.sessionDir, agentId, {
+    await this.persistence.writeMailboxState(agentId, {
       processedEventCount: nextProcessedEventCount,
       closeRequested: mailboxState.closeRequested,
     });
@@ -1173,8 +1170,8 @@ export class OrchestrationManager {
     queueById = new Map(this.snapshot.queuedInputs.map((input) => [input.id, input] as const)),
   ): Promise<boolean> {
     const [mailboxEvents, mailboxState] = await Promise.all([
-      OrchestrationStore.loadMailboxEvents(this.sessionDir, agent.id),
-      OrchestrationStore.loadMailboxState(this.sessionDir, agent.id),
+      this.persistence.loadMailboxEvents(agent.id),
+      this.persistence.loadMailboxState(agent.id),
     ]);
     const pendingInputs = mailboxEvents
       .slice(mailboxState.processedEventCount)
