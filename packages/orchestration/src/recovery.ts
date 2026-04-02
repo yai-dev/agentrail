@@ -11,12 +11,14 @@ import type {
   WaitCondition,
 } from "./types.js";
 
+/** Recovered orchestration state plus resumable runtime handles. */
 export interface RecoveredOrchestrationState {
   snapshot: OrchestrationSnapshot;
   pendingWaits: WaitCondition[];
   activeAgents: OrchestrationAgent[];
 }
 
+/** Rebuilds orchestration state from a snapshot checkpoint and event log tail. */
 export function recoverOrchestrationState(
   snapshot: OrchestrationSnapshot | null,
   events: OrchestrationEvent[],
@@ -28,14 +30,10 @@ export function recoverOrchestrationState(
   return {
     snapshot: recoveredSnapshot,
     pendingWaits: resumable
-      ? Object.values(recoveredSnapshot.waits).filter(
-          (wait) => wait.status === "pending",
-        )
+      ? Object.values(recoveredSnapshot.waits).filter((wait) => wait.status === "pending")
       : [],
     activeAgents: resumable
-      ? Object.values(recoveredSnapshot.agents).filter(
-          (agent) => agent.status !== "closed",
-        )
+      ? Object.values(recoveredSnapshot.agents).filter((agent) => agent.status !== "closed")
       : [],
   };
 }
@@ -69,9 +67,7 @@ function getRecoveryReplayInputs(
     };
   }
 
-  const lastCheckpointedIndex = events.findIndex(
-    (event) => event.eventId === lastEventId,
-  );
+  const lastCheckpointedIndex = events.findIndex((event) => event.eventId === lastEventId);
 
   if (lastCheckpointedIndex === -1) {
     if (events.length === 0) {
@@ -93,6 +89,7 @@ function getRecoveryReplayInputs(
   };
 }
 
+/** Creates a deep clone of a snapshot or an empty snapshot when none exists. */
 export function cloneOrchestrationSnapshot(
   snapshot: OrchestrationSnapshot | null,
 ): OrchestrationSnapshot {
@@ -106,11 +103,10 @@ export function cloneOrchestrationSnapshot(
 function isRunResumable(snapshot: OrchestrationSnapshot): boolean {
   const runs = Object.values(snapshot.runs);
   if (runs.length === 0) return true;
-  return runs.some(
-    (run) => run.status !== "completed" && run.status !== "failed",
-  );
+  return runs.some((run) => run.status !== "completed" && run.status !== "failed");
 }
 
+/** Creates a brand-new empty orchestration snapshot. */
 export function createEmptyOrchestrationSnapshot(): OrchestrationSnapshot {
   return {
     runs: {},
@@ -121,6 +117,7 @@ export function createEmptyOrchestrationSnapshot(): OrchestrationSnapshot {
   };
 }
 
+/** Applies one orchestration event to a mutable snapshot in place. */
 export function applyOrchestrationEvent(
   snapshot: OrchestrationSnapshot,
   event: OrchestrationEvent,
@@ -146,7 +143,8 @@ export function applyOrchestrationEvent(
       break;
     }
     case "agent_spawned": {
-      const taskId = event.agent.taskId ?? snapshot.runs[event.runId]?.initialTaskId ?? event.agent.id;
+      const taskId =
+        event.agent.taskId ?? snapshot.runs[event.runId]?.initialTaskId ?? event.agent.id;
       snapshot.agents[event.agent.id] = {
         id: event.agent.id,
         runId: event.runId,
@@ -169,9 +167,7 @@ export function applyOrchestrationEvent(
       break;
     }
     case "agent_input_removed": {
-      snapshot.queuedInputs = snapshot.queuedInputs.filter(
-        (input) => input.id !== event.inputId,
-      );
+      snapshot.queuedInputs = snapshot.queuedInputs.filter((input) => input.id !== event.inputId);
       break;
     }
     case "agent_status_changed": {

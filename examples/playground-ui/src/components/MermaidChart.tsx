@@ -64,9 +64,7 @@ export function MermaidChart({ code }: Props) {
         while (containerRef.current.firstChild) {
           containerRef.current.removeChild(containerRef.current.firstChild);
         }
-        containerRef.current.appendChild(
-          document.adoptNode(svgEl)
-        );
+        containerRef.current.appendChild(document.adoptNode(svgEl));
       })
       .catch((err: unknown) => {
         if (!cancelled) {

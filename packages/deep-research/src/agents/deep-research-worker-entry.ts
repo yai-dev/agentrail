@@ -21,17 +21,20 @@ interface WorkerInitPayload {
 function isInitMessage(message: unknown): message is WorkerInitPayload {
   return Boolean(
     message &&
-      typeof message === "object" &&
-      "type" in message &&
-      (message as { type?: unknown }).type === "init" &&
-      "tenantId" in message &&
-      "userId" in message &&
-      "sessionId" in message,
+    typeof message === "object" &&
+    "type" in message &&
+    (message as { type?: unknown }).type === "init" &&
+    "tenantId" in message &&
+    "userId" in message &&
+    "sessionId" in message,
   );
 }
 
 let workerInitialized = false;
-const emitProcessMessage = process.emit.bind(process) as (event: string, ...args: unknown[]) => boolean;
+const emitProcessMessage = process.emit.bind(process) as (
+  event: string,
+  ...args: unknown[]
+) => boolean;
 
 process.on("message", (message) => {
   if (!isInitMessage(message) || workerInitialized) {

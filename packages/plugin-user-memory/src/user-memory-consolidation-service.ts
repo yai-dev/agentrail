@@ -59,7 +59,10 @@ function userKey(tenantId: string, userId: string): string {
 
 function normalizeList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.map((item) => String(item ?? "").trim()).filter(Boolean).slice(0, 12);
+  return value
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .slice(0, 12);
 }
 
 function trimLine(value: unknown, fallback: string): string {
@@ -91,9 +94,10 @@ function renderMessages(messages: Message[]): string {
   const lines: string[] = [];
   for (const message of messages) {
     if (message.role === "user") {
-      const text = typeof message.content === "string"
-        ? message.content
-        : message.content.map((block) => ("text" in block ? block.text ?? "" : "")).join("");
+      const text =
+        typeof message.content === "string"
+          ? message.content
+          : message.content.map((block) => ("text" in block ? (block.text ?? "") : "")).join("");
       const clean = text.trim();
       if (clean) lines.push(`User: ${clean.slice(0, 1200)}`);
       continue;
@@ -114,7 +118,7 @@ function renderMessages(messages: Message[]): string {
 
     if (message.role === "toolResult") {
       const resultText = message.content
-        .map((block) => (block.type === "text" ? block.text ?? "" : ""))
+        .map((block) => (block.type === "text" ? (block.text ?? "") : ""))
         .join("")
         .trim();
       if (resultText) lines.push(`ToolResult: ${resultText.slice(0, 500)}`);
@@ -128,7 +132,10 @@ function extractHistorySection(existing: string): string {
   return match?.[1]?.trim() ?? "";
 }
 
-async function streamToText(agent: ReturnType<typeof defineAgent>, prompt: string): Promise<string> {
+async function streamToText(
+  agent: ReturnType<typeof defineAgent>,
+  prompt: string,
+): Promise<string> {
   let output = "";
   for await (const event of agent.stream(prompt)) {
     if (isRuntimeError(event)) {
@@ -296,14 +303,23 @@ export class UserMemoryConsolidationService {
         continue;
       }
 
-      const messages = await this.sessionManager.loadFullSessionMessages(tenantId, session.sessionId);
+      const messages = await this.sessionManager.loadFullSessionMessages(
+        tenantId,
+        session.sessionId,
+      );
       const usableMessages = messages.filter((message: Message) => !isCompactionMessage(message));
       if (usableMessages.length < 4) continue;
 
       const transcript = renderMessages(usableMessages);
       if (!transcript.trim()) continue;
 
-      const summary = await this.buildSessionSummary(tenantId, userId, session.sessionId, session.updatedAt, transcript);
+      const summary = await this.buildSessionSummary(
+        tenantId,
+        userId,
+        session.sessionId,
+        session.updatedAt,
+        transcript,
+      );
       await this.writeSessionSummary(tenantId, session.sessionId, summary);
     }
 
@@ -316,7 +332,10 @@ export class UserMemoryConsolidationService {
     if (sessionSummaries.length === 0) {
       state.lastCompletedAt = Date.now();
       state.lastProcessedSessionCount = sessions.length;
-      state.lastProcessedSessionUpdatedAt = Math.max(...sessions.map((session) => session.updatedAt), 0);
+      state.lastProcessedSessionUpdatedAt = Math.max(
+        ...sessions.map((session) => session.updatedAt),
+        0,
+      );
       state.pendingReason = null;
       await this.writeState(tenantId, userId, state);
       return;
@@ -366,12 +385,17 @@ export class UserMemoryConsolidationService {
       ``,
       historyBody.trim(),
       ``,
-    ].join("\n").replace(/\n{3,}/g, "\n\n");
+    ]
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n");
     await atomicWrite(userMdPath, markdown);
 
     state.lastCompletedAt = Date.now();
     state.lastProcessedSessionCount = sessions.length;
-    state.lastProcessedSessionUpdatedAt = Math.max(...sessions.map((session) => session.updatedAt), 0);
+    state.lastProcessedSessionUpdatedAt = Math.max(
+      ...sessions.map((session) => session.updatedAt),
+      0,
+    );
     state.pendingReason = null;
     await this.writeState(tenantId, userId, state);
   }
@@ -423,7 +447,9 @@ export class UserMemoryConsolidationService {
     };
   }
 
-  private async buildUserProfile(sessionSummaries: SessionMemorySummary[]): Promise<UserProfileSummary> {
+  private async buildUserProfile(
+    sessionSummaries: SessionMemorySummary[],
+  ): Promise<UserProfileSummary> {
     const agent = defineAgent({
       id: "user-memory-profile-builder",
       model: {
@@ -454,7 +480,10 @@ export class UserMemoryConsolidationService {
     const parsed = parseJsonBlock(raw) ?? {};
     return {
       summary: trimLine(parsed.summary, "User preferences and recurring focus areas"),
-      currentProfile: trimLine(parsed.currentProfile, "Not enough information yet to build a stable profile."),
+      currentProfile: trimLine(
+        parsed.currentProfile,
+        "Not enough information yet to build a stable profile.",
+      ),
       preferences: normalizeList(parsed.preferences),
       focusAreas: normalizeList(parsed.focusAreas),
       roleContext: normalizeList(parsed.roleContext),
@@ -474,8 +503,14 @@ export class UserMemoryConsolidationService {
       return {
         lastActivityAt: typeof parsed.lastActivityAt === "number" ? parsed.lastActivityAt : 0,
         lastCompletedAt: typeof parsed.lastCompletedAt === "number" ? parsed.lastCompletedAt : 0,
-        lastProcessedSessionCount: typeof parsed.lastProcessedSessionCount === "number" ? parsed.lastProcessedSessionCount : 0,
-        lastProcessedSessionUpdatedAt: typeof parsed.lastProcessedSessionUpdatedAt === "number" ? parsed.lastProcessedSessionUpdatedAt : 0,
+        lastProcessedSessionCount:
+          typeof parsed.lastProcessedSessionCount === "number"
+            ? parsed.lastProcessedSessionCount
+            : 0,
+        lastProcessedSessionUpdatedAt:
+          typeof parsed.lastProcessedSessionUpdatedAt === "number"
+            ? parsed.lastProcessedSessionUpdatedAt
+            : 0,
         pendingReason: typeof parsed.pendingReason === "string" ? parsed.pendingReason : null,
       };
     } catch {
@@ -489,7 +524,11 @@ export class UserMemoryConsolidationService {
     }
   }
 
-  private async writeState(tenantId: string, userId: string, state: UserMemoryState): Promise<void> {
+  private async writeState(
+    tenantId: string,
+    userId: string,
+    state: UserMemoryState,
+  ): Promise<void> {
     await atomicWrite(this.getStatePath(tenantId, userId), JSON.stringify(state, null, 2));
   }
 

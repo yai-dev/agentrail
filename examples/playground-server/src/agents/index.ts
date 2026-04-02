@@ -12,7 +12,7 @@ export async function getAgent(
   userId: string,
   sessionId: string,
   sessionDir: string,
-  onSubAgentEvent?: (event: ExtendedSseEvent) => void
+  onSubAgentEvent?: (event: ExtendedSseEvent) => void,
 ) {
   if (agentId === DEFAULT_HOSTED_AGENT_ID) {
     return createDefaultAgent(tenantId, userId, sessionId, sessionDir, onSubAgentEvent);

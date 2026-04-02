@@ -48,7 +48,8 @@ export function applyDeepResearchEventToState(
         {
           ...state,
           plan: event.plan,
-          entityProfile: event.researchProfile ?? event.plan.researchProfile ?? state.entityProfile ?? null,
+          entityProfile:
+            event.researchProfile ?? event.plan.researchProfile ?? state.entityProfile ?? null,
           steps: event.steps,
         },
         event,
@@ -79,7 +80,9 @@ export function applyDeepResearchEventToState(
         {
           ...state,
           artifacts: state.artifacts.some((artifact) => artifact.id === event.artifact.id)
-            ? state.artifacts.map((artifact) => (artifact.id === event.artifact.id ? event.artifact : artifact))
+            ? state.artifacts.map((artifact) =>
+                artifact.id === event.artifact.id ? event.artifact : artifact,
+              )
             : [...state.artifacts, event.artifact],
         },
         event,

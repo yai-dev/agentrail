@@ -4,10 +4,7 @@
  */
 
 import { Hono } from "hono";
-import type {
-  OrchestrationAgent,
-  OrchestrationEvent,
-} from "@agentrail/orchestration";
+import type { OrchestrationAgent, OrchestrationEvent } from "@agentrail/orchestration";
 import { OrchestrationStore } from "@agentrail/orchestration";
 import { config } from "../config.js";
 import path from "node:path";
@@ -65,7 +62,7 @@ orchestration.get("/:sessionId/orchestration", async (c) => {
 
     const activeRun = snapshot
       ? (Object.values(snapshot.runs).find((r) => r.status === "running") ??
-         Object.values(snapshot.runs)[0])
+        Object.values(snapshot.runs)[0])
       : undefined;
     const response: OrchestrationHistoryResponse = {
       run: activeRun

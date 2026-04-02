@@ -54,7 +54,15 @@ export function SessionSidebar({ sessions, currentSessionId, onSelect, onNew, on
           <div className="sidebar-header">
             <span className="sidebar-title">会话</span>
             <button className="new-session-btn" onClick={onNew} title="New session">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </button>
@@ -74,9 +82,7 @@ export function SessionSidebar({ sessions, currentSessionId, onSelect, onNew, on
                     <div className="session-item-title">
                       {s.title ?? (s.lastMessage.slice(0, 32) || "新会话")}
                     </div>
-                    <div className="session-item-meta">
-                      {formatRelativeTime(s.updatedAt)}
-                    </div>
+                    <div className="session-item-meta">{formatRelativeTime(s.updatedAt)}</div>
                   </div>
                   <button
                     className="session-delete-btn"
@@ -86,7 +92,15 @@ export function SessionSidebar({ sessions, currentSessionId, onSelect, onNew, on
                     }}
                     title="删除会话"
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    >
                       <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
                   </button>

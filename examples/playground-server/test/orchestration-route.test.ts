@@ -75,9 +75,7 @@ test("orchestration route exposes mailbox progress and last job state", async ()
     const app = new Hono();
     app.route("/api/sessions", orchestration);
 
-    const response = await app.request(
-      `/api/sessions/${sessionId}/orchestration?tenantId=default`,
-    );
+    const response = await app.request(`/api/sessions/${sessionId}/orchestration?tenantId=default`);
 
     assert.equal(response.status, 200);
     const payload = (await response.json()) as {

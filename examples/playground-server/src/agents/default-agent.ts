@@ -19,9 +19,7 @@ import { createDefaultToolset } from "@agentrail/host/defaults";
 import { buildSystemPrompt } from "../prompts/index.js";
 import type { ExtendedSseEvent } from "@agentrail/skills";
 import { config } from "../config.js";
-import {
-  getOrchestrationManager,
-} from "../context/index.js";
+import { getOrchestrationManager } from "../context/index.js";
 import { buildDefaultAgentTools, getModelConfig } from "./default-agent-tools.js";
 
 export const DEFAULT_HOSTED_AGENT_ID = "agentrail-default-agent";
@@ -56,7 +54,7 @@ export async function createDefaultAgent(
   userId: string,
   sessionId: string,
   sessionDir: string,
-  onSubAgentEvent?: (event: ExtendedSseEvent) => void
+  onSubAgentEvent?: (event: ExtendedSseEvent) => void,
 ) {
   const { executionTools, browserTools, skillTool } = await buildDefaultAgentTools(
     tenantId,

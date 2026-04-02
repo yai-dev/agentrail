@@ -4,7 +4,16 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, readdir, stat, appendFile, rm, rename, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  stat,
+  appendFile,
+  rm,
+  rename,
+  writeFile,
+} from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import * as path from "node:path";
 import type { Message, Usage } from "@agentrail/runtime-core";
@@ -40,25 +49,38 @@ export function isCompactionMessage(m: Message): boolean {
   return text.startsWith(COMPACTION_MESSAGE_PREFIX);
 }
 
+/** Parses the metadata encoded into a synthetic compaction placeholder message. */
 export function parseCompactionMetadata(content: string): CompactionMetadata {
   return buildCompactionMetadata(content);
 }
 
+/**
+ * File-backed session store used by hosted Agentrail applications.
+ *
+ * Sessions are stored beneath `{dataDir}/tenants/{tenantId}/sessions/{sessionId}`.
+ *
+ * @see {@link https://agentrail.run/concepts/sessions}
+ * @see {@link https://agentrail.run/reference/session-store}
+ */
 export class SessionManager {
   constructor(private readonly dataDir: string) {}
 
+  /** Returns the absolute directory path for a session. */
   getSessionDir(tenantId: string, sessionId: string): string {
     return path.join(this.dataDir, "tenants", tenantId, "sessions", sessionId);
   }
 
+  /** Returns the absolute directory path for a user's shared memory files. */
   getUserDir(tenantId: string, userId: string): string {
     return path.join(this.dataDir, "tenants", tenantId, "users", userId);
   }
 
+  /** Returns the directory that stores archived pre-compaction message logs. */
   getCompactionsDir(tenantId: string, sessionId: string): string {
     return path.join(this.getSessionDir(tenantId, sessionId), "messages.compactions");
   }
 
+  /** Returns the archive path for one compacted message-history segment. */
   getCompactionArchivePath(tenantId: string, sessionId: string, archiveId: string): string {
     return path.join(this.getCompactionsDir(tenantId, sessionId), `${archiveId}.jsonl`);
   }
@@ -69,15 +91,11 @@ export class SessionManager {
    *
    * @param limit  Maximum number of sessions to return (default 10).
    */
-  async listSessionIdsByUser(
-    tenantId: string,
-    userId: string,
-    limit = 10
-  ): Promise<SessionMeta[]> {
+  async listSessionIdsByUser(tenantId: string, userId: string, limit = 10): Promise<SessionMeta[]> {
     const sessionsDir = path.join(this.dataDir, "tenants", tenantId, "sessions");
     let entries: Dirent[];
     try {
-      entries = await readdir(sessionsDir, { withFileTypes: true }) as Dirent[];
+      entries = (await readdir(sessionsDir, { withFileTypes: true })) as Dirent[];
     } catch {
       return [];
     }
@@ -100,10 +118,7 @@ export class SessionManager {
     return metas.slice(0, limit);
   }
 
-  private async getNextCompactionArchiveId(
-    tenantId: string,
-    sessionId: string,
-  ): Promise<string> {
+  private async getNextCompactionArchiveId(tenantId: string, sessionId: string): Promise<string> {
     return getNextCompactionArchiveId(this.getCompactionsDir(tenantId, sessionId));
   }
 
@@ -169,7 +184,7 @@ export class SessionManager {
     tenantId: string,
     userId: string,
     agentId: string,
-    sessionId?: string
+    sessionId?: string,
   ): Promise<SessionInfo> {
     const sid = sessionId ?? randomUUID();
     const sessionDir = this.getSessionDir(tenantId, sid);
@@ -209,11 +224,7 @@ export class SessionManager {
    * Reads messages.jsonl and returns the last `limit` messages.
    * Returns an empty array when the file does not exist yet.
    */
-  async loadMessages(
-    tenantId: string,
-    sessionId: string,
-    limit = 50
-  ): Promise<Message[]> {
+  async loadMessages(tenantId: string, sessionId: string, limit = 50): Promise<Message[]> {
     const messagesFile = path.join(this.getSessionDir(tenantId, sessionId), "messages.jsonl");
     try {
       const raw = await readFile(messagesFile, "utf8");
@@ -297,11 +308,7 @@ export class SessionManager {
   }
 
   /** Appends new messages to messages.jsonl (one JSON object per line). */
-  async appendMessages(
-    tenantId: string,
-    sessionId: string,
-    messages: Message[]
-  ): Promise<void> {
+  async appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promise<void> {
     if (messages.length === 0) return;
     const messagesFile = path.join(this.getSessionDir(tenantId, sessionId), "messages.jsonl");
     const lines = messages.map((m) => JSON.stringify(m)).join("\n") + "\n";
@@ -315,7 +322,7 @@ export class SessionManager {
   async buildMemoryIndex(
     tenantId: string,
     userId: string,
-    sessionId: string
+    sessionId: string,
   ): Promise<MemoryIndex> {
     const sessionDir = this.getSessionDir(tenantId, sessionId);
     const userDir = this.getUserDir(tenantId, userId);
@@ -398,7 +405,7 @@ export class SessionManager {
       force = false,
     } = options;
 
-    const all = options.preloadedMessages ?? await this.loadAllMessages(tenantId, sessionId);
+    const all = options.preloadedMessages ?? (await this.loadAllMessages(tenantId, sessionId));
     if (all.length < 6) return null; // too few messages to compact meaningfully
 
     const totalTokens = estimateMessageTokens(all);
@@ -463,9 +470,7 @@ export class SessionManager {
     await writeFile(archiveFile, archivedLines, "utf8");
 
     // Rewrite messages.jsonl with compaction message + retained history
-    const newLines = [compactionMessage, ...toKeep]
-      .map((m) => JSON.stringify(m))
-      .join("\n") + "\n";
+    const newLines = [compactionMessage, ...toKeep].map((m) => JSON.stringify(m)).join("\n") + "\n";
     await writeFile(messagesFile, newLines, "utf8");
 
     // Append summary to NOTES.md so Memory Index picks it up on next request
@@ -523,9 +528,7 @@ export class SessionManager {
       const last = findLastTurnEvent(raw);
       if (!last) return null;
       const totalInput =
-        (last.inputTokens ?? 0) +
-        (last.cacheReadTokens ?? 0) +
-        (last.cacheWriteTokens ?? 0);
+        (last.inputTokens ?? 0) + (last.cacheReadTokens ?? 0) + (last.cacheWriteTokens ?? 0);
       return {
         inputTokens: totalInput,
         outputTokens: last.outputTokens ?? 0,

@@ -20,10 +20,7 @@ interface WorkerMessage {
 function resolveWorkerPath(): string {
   const currentFile = fileURLToPath(import.meta.url);
   const extension = currentFile.endsWith(".ts") ? ".ts" : ".js";
-  return join(
-    dirname(currentFile),
-    "../src/agents/default-subagent-worker-entry" + extension,
-  );
+  return join(dirname(currentFile), "../src/agents/default-subagent-worker-entry" + extension);
 }
 
 test("worker polls mailbox and drains pending work without an explicit wake", async () => {
@@ -78,8 +75,7 @@ test("worker polls mailbox and drains pending work without an explicit wake", as
     await waitForMessage(
       messages,
       (message) =>
-        message.type === "job_started" &&
-        String(message.jobId).startsWith("job:input-worker-1"),
+        message.type === "job_started" && String(message.jobId).startsWith("job:input-worker-1"),
     );
     await waitForMessage(
       messages,

@@ -99,7 +99,12 @@ export function createWebSearchTool(runtime: DeepResearchRuntimeConfig) {
 
       const data = (await response.json()) as { results?: TavilySearchResult[] };
       const items: WebSearchItem[] = (data.results ?? [])
-        .filter((item): item is Required<Pick<TavilySearchResult, "title" | "url">> & TavilySearchResult => !!item.url && !!item.title)
+        .filter(
+          (
+            item,
+          ): item is Required<Pick<TavilySearchResult, "title" | "url">> & TavilySearchResult =>
+            !!item.url && !!item.title,
+        )
         .map((item) => ({
           title: item.title ?? item.url ?? "Untitled",
           url: normalizeResearchUrl(item.url ?? ""),
@@ -139,16 +144,15 @@ export function createFetchUrlTool() {
         throw new Error("FetchUrl only supports http/https URLs");
       }
 
-      let payload:
-        | {
-            url: string;
-            normalizedUrl: string;
-            title: string;
-            content: string;
-            evidenceLevel: "body_verified" | "unverified";
-            fetchStatus: "success" | "401" | "403" | "timeout" | "empty_content" | "error";
-            error?: string;
-          };
+      let payload: {
+        url: string;
+        normalizedUrl: string;
+        title: string;
+        content: string;
+        evidenceLevel: "body_verified" | "unverified";
+        fetchStatus: "success" | "401" | "403" | "timeout" | "empty_content" | "error";
+        error?: string;
+      };
 
       try {
         const response = await fetch(normalizedUrl, {
@@ -160,11 +164,8 @@ export function createFetchUrlTool() {
         });
 
         if (!response.ok) {
-          const fetchStatus = response.status === 401
-            ? "401"
-            : response.status === 403
-              ? "403"
-              : "error";
+          const fetchStatus =
+            response.status === 401 ? "401" : response.status === 403 ? "403" : "error";
           payload = {
             url: normalizedUrl,
             normalizedUrl,

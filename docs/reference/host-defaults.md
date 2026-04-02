@@ -94,7 +94,14 @@ interface HostedProfileDefinition extends AgentrailProfile {
     context: AgentrailProfileContext,
   ) => Promise<ContextProvider[]> | ContextProvider[];
   handleChat?: (context: {
-    request: { message: string; mode?: string; tenantId: string; userId: string; sessionId?: string; agentId?: string };
+    request: {
+      message: string;
+      mode?: string;
+      tenantId: string;
+      userId: string;
+      sessionId?: string;
+      agentId?: string;
+    };
     agentId: string;
     tenantId: string;
     userId: string;
@@ -115,10 +122,7 @@ Builds a resolver function from a list of hosted profiles. The resolver is passe
 import { createHostedProfileResolver } from "@agentrail/host/defaults";
 import { supportProfile, researchProfile } from "./profiles/index.js";
 
-export const resolveProfile = createHostedProfileResolver([
-  supportProfile,
-  researchProfile,
-]);
+export const resolveProfile = createHostedProfileResolver([supportProfile, researchProfile]);
 
 // resolveProfile("support", ctx) → supportProfile
 // resolveProfile("research", ctx) → researchProfile
@@ -164,11 +168,7 @@ const { executionTools, browserTools, skillTool } = await buildDefaultCapability
   skillManager,
 });
 
-const tools = [
-  ...executionTools,
-  ...browserTools,
-  ...(skillTool ? [skillTool] : []),
-];
+const tools = [...executionTools, ...browserTools, ...(skillTool ? [skillTool] : [])];
 ```
 
 ### `DefaultCapabilityToolOptions` interface
@@ -182,28 +182,28 @@ interface DefaultCapabilityToolOptions {
   sessionDir: string;
 
   /** Capability managers (process-level singletons) */
-  knowledgeManager: KnowledgeManager;    // from @agentrail/knowledge
-  sandboxManager: SandboxManager;        // from @agentrail/sandbox
+  knowledgeManager: KnowledgeManager; // from @agentrail/knowledge
+  sandboxManager: SandboxManager; // from @agentrail/sandbox
   waitHandleRegistry: WaitHandleRegistry; // from @agentrail/tools
 
   /** Model config for skill sub-agent delegation */
   modelConfig: ModelConfig;
 
   /** Tool inclusion options */
-  includeSkillTool?: boolean;            // default: true
-  delegateSkillsToSubAgent?: boolean;    // default: true — recommended for production
+  includeSkillTool?: boolean; // default: true
+  delegateSkillsToSubAgent?: boolean; // default: true — recommended for production
 
   /** Optional: required when includeSkillTool is true */
-  skillManager?: SkillManager;           // from @agentrail/skills
+  skillManager?: SkillManager; // from @agentrail/skills
 
   /** Optional: forward sub-agent SSE events to the parent stream */
   onSubAgentEvent?: (event: ExtendedSseEvent) => void;
 
   /** Optional: path where skills are mounted inside skill sub-agent containers */
-  containerSkillsDir?: string;           // default: "/skills"
+  containerSkillsDir?: string; // default: "/skills"
 
   /** Optional: directory for sub-agent log files */
-  subAgentLogDir?: string;               // default: "{sessionDir}/subagent-logs"
+  subAgentLogDir?: string; // default: "{sessionDir}/subagent-logs"
 }
 ```
 
@@ -211,9 +211,9 @@ interface DefaultCapabilityToolOptions {
 
 ```ts
 interface DefaultCapabilityTools {
-  executionTools: RuntimeTool[];  // bash, read, write, edit, grep, todo, ask-user, KB tools
-  browserTools: RuntimeTool[];    // navigate, scroll, action, content (sandbox browser)
-  skillTool: RuntimeTool | null;  // null when includeSkillTool is false or no skillManager
+  executionTools: RuntimeTool[]; // bash, read, write, edit, grep, todo, ask-user, KB tools
+  browserTools: RuntimeTool[]; // navigate, scroll, action, content (sandbox browser)
+  skillTool: RuntimeTool | null; // null when includeSkillTool is false or no skillManager
 }
 ```
 
@@ -232,8 +232,10 @@ const contextProviders = await createDefaultCapabilityContextProviders({
   sessionId,
   delegateSkillsToSubAgent: true,
   buildMemoryIndex: () => memoManager.buildIndex(tenantId, userId),
-  listKnowledgeMetadatas: () => knowledgeManager.listKbs(tenantId)
-    .then((ids) => Promise.all(ids.map((id) => knowledgeManager.getMetadata(tenantId, id)))),
+  listKnowledgeMetadatas: () =>
+    knowledgeManager
+      .listKbs(tenantId)
+      .then((ids) => Promise.all(ids.map((id) => knowledgeManager.getMetadata(tenantId, id)))),
   listSkills: () => skillManager.listSkills(),
   listWorkspaceSnapshot: () => sandboxManager.getWorkspaceSnapshot(sessionId),
 });
@@ -246,9 +248,9 @@ interface DefaultCapabilityContextOptions {
   tenantId: string;
   userId: string;
   sessionId: string;
-  includeSkillsContext?: boolean;      // default: true
+  includeSkillsContext?: boolean; // default: true
   delegateSkillsToSubAgent: boolean;
-  cacheTtlMs?: number;                  // cache TTL for context provider results
+  cacheTtlMs?: number; // cache TTL for context provider results
   buildMemoryIndex(): Promise<MemoryIndex>;
   listKnowledgeMetadatas(): Promise<(KBMetadata | null)[]>;
   listSkills(): Promise<SkillMeta[]>;
@@ -308,23 +310,31 @@ const skillManager = new SkillManager(dataDir);
 const myProfile = defineHostedProfile({
   id: "default",
   name: "Default Agent",
-  createAgent: async (ctx) => defineAgent({ /* ... */ }),
+  createAgent: async (ctx) =>
+    defineAgent({
+      /* ... */
+    }),
 });
 
 // 3. Build resolver
 const resolveProfile = createHostedProfileResolver([myProfile]);
 
 // 4. Mount routes (capability tools built per-request inside createAgent)
-app.route("/api/stream", createStreamRoute({
-  defaultAgentId: "default",
-  sessionStore,
-  sandboxManager,
-  resolveProfile,
-  summarize: async (msgs) => { /* LLM summarize call */ },
-  compaction: { triggerTokens: 80_000, minMessages: 20 },
-  getContextProviders: async ({ tenantId, userId, sessionId }) =>
-    createDefaultCapabilityContextProviders({ tenantId, userId, sessionId, /* ... */ }),
-}));
+app.route(
+  "/api/stream",
+  createStreamRoute({
+    defaultAgentId: "default",
+    sessionStore,
+    sandboxManager,
+    resolveProfile,
+    summarize: async (msgs) => {
+      /* LLM summarize call */
+    },
+    compaction: { triggerTokens: 80_000, minMessages: 20 },
+    getContextProviders: async ({ tenantId, userId, sessionId }) =>
+      createDefaultCapabilityContextProviders({ tenantId, userId, sessionId /* ... */ }),
+  }),
+);
 ```
 
 ---

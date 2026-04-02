@@ -13,6 +13,7 @@ import type {
   WaitMatch,
 } from "./types.js";
 
+/** Normalizes a wait input so omitted fields are filled with stable defaults. */
 export function normalizeWaitInput(input: WaitAgentInput): WaitAgentInput {
   const agentIds = [...new Set(input.agentIds ?? [input.agentId])];
 
@@ -24,24 +25,29 @@ export function normalizeWaitInput(input: WaitAgentInput): WaitAgentInput {
   };
 }
 
+/** Normalizes an optional wait-match mode to a concrete value. */
 export function normalizeWaitMatch(match?: WaitMatch): WaitMatch {
   return match ?? "all";
 }
 
+/** Returns the agent IDs that a wait condition should observe. */
 export function getWaitTargetAgentIds(
   wait: Pick<WaitAgentInput, "agentId" | "agentIds">,
 ): string[] {
   return [...new Set(wait.agentIds ?? [wait.agentId])];
 }
 
+/** Creates a deep clone of a persisted orchestration agent record. */
 export function cloneAgent(agent: OrchestrationAgent): OrchestrationAgent {
   return JSON.parse(JSON.stringify(agent)) as OrchestrationAgent;
 }
 
+/** Creates a deep clone of a persisted wait condition. */
 export function cloneWait(wait: WaitCondition): WaitCondition {
   return JSON.parse(JSON.stringify(wait)) as WaitCondition;
 }
 
+/** Word list used to generate human-friendly default sub-agent display names. */
 export const DISPLAY_NAME_WORDS = [
   "Atlas",
   "Echo",
@@ -61,6 +67,7 @@ export const DISPLAY_NAME_WORDS = [
   "Vector",
 ];
 
+/** Generates a deterministic-looking display name for a managed agent. */
 export function createDisplayName(
   runId: string,
   agentId: string,
@@ -71,6 +78,7 @@ export function createDisplayName(
   return DISPLAY_NAME_WORDS[hashString(seed) % DISPLAY_NAME_WORDS.length]!;
 }
 
+/** Normalizes partial delivery results into the persisted managed-agent job shape. */
 export function normalizeDeliveryResult(
   envelope: AgentInputEnvelope,
   result: ManagedAgentDeliveryResult | void,

@@ -39,17 +39,13 @@ describe("host plugin helpers", () => {
 
     await runPluginLifecycle([plugin], "start");
     await runPluginLifecycle([plugin], "stop");
-    await runPluginRequestHook(
-      [plugin],
-      "onRequestStart",
-      {
-        kind: "chat",
-        tenantId: "tenant-1",
-        userId: "user-1",
-        sessionId: "session-1",
-        agentId: "agent-1",
-      },
-    );
+    await runPluginRequestHook([plugin], "onRequestStart", {
+      kind: "chat",
+      tenantId: "tenant-1",
+      userId: "user-1",
+      sessionId: "session-1",
+      agentId: "agent-1",
+    });
 
     expect(plugin.start).toHaveBeenCalledOnce();
     expect(plugin.stop).toHaveBeenCalledOnce();

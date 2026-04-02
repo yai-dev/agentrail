@@ -71,9 +71,7 @@ test("deep research route returns latest run state and events", async () => {
   const app = new Hono();
   app.route("/api/sessions", createDeepResearchRoute({ dataDir }));
 
-  const response = await app.request(
-    `/api/sessions/${sessionId}/deep-research?tenantId=default`,
-  );
+  const response = await app.request(`/api/sessions/${sessionId}/deep-research?tenantId=default`);
 
   assert.equal(response.status, 200);
   const payload = (await response.json()) as {
@@ -100,7 +98,7 @@ test("deep research artifact route streams raw artifact bytes", async () => {
   await mkdir(join(dataDir, "sandboxes", sessionId, ".deep-research", "artifacts"), {
     recursive: true,
   });
-  await writeFile(hostArtifactPath, "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>", "utf-8");
+  await writeFile(hostArtifactPath, '<svg xmlns="http://www.w3.org/2000/svg"></svg>', "utf-8");
 
   const app = new Hono();
   app.route("/api/sessions", createDeepResearchRoute({ dataDir }));

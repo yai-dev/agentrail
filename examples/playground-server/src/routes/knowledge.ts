@@ -116,21 +116,25 @@ knowledge.post("/:kbId/documents/stream", async (c) => {
             liveSteps = liveSteps.map((s) =>
               s.step === event.step
                 ? ({ ...s, status: "pending" as const } as (typeof liveSteps)[number])
-                : s
+                : s,
             );
             await km.updateJob(tenantId, kbId, job.jobId, { steps: liveSteps });
           } else if (event.type === "step_complete") {
             liveSteps = liveSteps.map((s) =>
               s.step === event.step
                 ? ({ ...s, status: "done" as const } as (typeof liveSteps)[number])
-                : s
+                : s,
             );
             await km.updateJob(tenantId, kbId, job.jobId, { steps: liveSteps });
           } else if (event.type === "step_error") {
             liveSteps = liveSteps.map((s) =>
               s.step === event.step
-                ? ({ ...s, status: "error" as const, error: event.error } as (typeof liveSteps)[number])
-                : s
+                ? ({
+                    ...s,
+                    status: "error" as const,
+                    error: event.error,
+                  } as (typeof liveSteps)[number])
+                : s,
             );
             await km.updateJob(tenantId, kbId, job.jobId, { steps: liveSteps });
           }
@@ -142,7 +146,7 @@ knowledge.post("/:kbId/documents/stream", async (c) => {
       liveSteps = liveSteps.map((s) =>
         s.step === "register"
           ? ({ ...s, status: "done" as const } as (typeof liveSteps)[number])
-          : s
+          : s,
       );
       await km.updateJob(tenantId, kbId, job.jobId, { status: "ready", steps: liveSteps });
 

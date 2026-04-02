@@ -14,10 +14,7 @@ export type DeepResearchSourceConfidence =
   | "medium_confidence"
   | "low_confidence";
 export type DeepResearchSourceTier = "primary" | "supporting";
-export type DeepResearchEvidenceLevel =
-  | "body_verified"
-  | "snippet_only"
-  | "unverified";
+export type DeepResearchEvidenceLevel = "body_verified" | "snippet_only" | "unverified";
 export type DeepResearchFetchStatus =
   | "success"
   | "401"

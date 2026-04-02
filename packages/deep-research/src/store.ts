@@ -47,7 +47,11 @@ export class DeepResearchStore {
     await mkdir(path.join(runDir, "artifacts"), { recursive: true });
     await Promise.all([
       writeFile(path.join(runDir, STATE_FILE), JSON.stringify(state, null, 2), "utf-8"),
-      writeFile(path.join(this.getRootDir(), LATEST_FILE), JSON.stringify({ runId: state.run.id }, null, 2), "utf-8"),
+      writeFile(
+        path.join(this.getRootDir(), LATEST_FILE),
+        JSON.stringify({ runId: state.run.id }, null, 2),
+        "utf-8",
+      ),
     ]);
   }
 
@@ -61,7 +65,11 @@ export class DeepResearchStore {
     const runDir = this.getRunDir(state.run.id);
     await mkdir(runDir, { recursive: true });
     await writeFile(path.join(runDir, STATE_FILE), JSON.stringify(state, null, 2), "utf-8");
-    await writeFile(path.join(this.getRootDir(), LATEST_FILE), JSON.stringify({ runId: state.run.id }, null, 2), "utf-8");
+    await writeFile(
+      path.join(this.getRootDir(), LATEST_FILE),
+      JSON.stringify({ runId: state.run.id }, null, 2),
+      "utf-8",
+    );
   }
 
   async loadState(runId: string): Promise<DeepResearchState | null> {
@@ -82,7 +90,9 @@ export class DeepResearchStore {
   }
 
   async loadLatestState(): Promise<DeepResearchState | null> {
-    const latest = await readJsonFile<{ runId?: string }>(path.join(this.getRootDir(), LATEST_FILE));
+    const latest = await readJsonFile<{ runId?: string }>(
+      path.join(this.getRootDir(), LATEST_FILE),
+    );
     if (latest?.runId) {
       return this.loadState(latest.runId);
     }

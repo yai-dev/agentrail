@@ -45,9 +45,7 @@ function MessageBubbleInner({ message }: Props) {
 
   return (
     <div className={`message ${isUser ? "user" : isSystem ? "system" : "assistant"}`}>
-      <div className="message-role">
-        {isUser ? "你" : isSystem ? "Control" : "Agentrail"}
-      </div>
+      <div className="message-role">{isUser ? "你" : isSystem ? "Control" : "Agentrail"}</div>
 
       <div className="bubble">
         {/* Thinking block — only for assistant messages with thinking content */}
@@ -62,14 +60,15 @@ function MessageBubbleInner({ message }: Props) {
                 {isThinkingActive ? "◈" : thinkingOpen ? "▾" : "▸"}
               </span>
               {isThinkingActive ? (
-                <>思考中<span className="streaming-cursor" /></>
+                <>
+                  思考中
+                  <span className="streaming-cursor" />
+                </>
               ) : (
                 `思考过程 · ${message.thinking.length.toLocaleString()} 字符`
               )}
             </button>
-            {showThinkingContent && (
-              <div className="thinking-content">{message.thinking}</div>
-            )}
+            {showThinkingContent && <div className="thinking-content">{message.thinking}</div>}
           </div>
         )}
 

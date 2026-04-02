@@ -20,8 +20,8 @@ The SDK exists so every part of the framework — profiles, sub-agent runtimes, 
 // A named prompt unit
 interface PromptFragment {
   key: string;
-  content?: string;      // inline content, OR
-  filePath?: string;     // file path (mutually exclusive with content)
+  content?: string; // inline content, OR
+  filePath?: string; // file path (mutually exclusive with content)
   stripMetadata?: boolean; // strip <!-- --> frontmatter (default: true for loadFile)
 }
 
@@ -34,7 +34,7 @@ interface PromptLayer {
 
 // A full prompt composed of up to four layers
 interface PromptBundle {
-  vars?: PromptVars;       // bundle-level default variables
+  vars?: PromptVars; // bundle-level default variables
   base?: PromptLayer;
   capability?: PromptLayer;
   profile?: PromptLayer;
@@ -168,10 +168,10 @@ const systemFromOtherBundle = builder.render({
 interface PromptBuilder {
   render(options?: {
     vars?: PromptVars;
-    overlay?: PromptBundle;  // merge on top of the base bundle
-    bundle?: PromptBundle;   // replace the base bundle entirely
+    overlay?: PromptBundle; // merge on top of the base bundle
+    bundle?: PromptBundle; // replace the base bundle entirely
   }): string;
-  clearCache(): void;        // clear the internal mtime cache
+  clearCache(): void; // clear the internal mtime cache
 }
 ```
 

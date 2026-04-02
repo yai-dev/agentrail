@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-
 import Docker from "dockerode";
 import tar from "tar-stream";
 import * as net from "node:net";
@@ -17,13 +16,16 @@ const runDockerCommand = promisify(execFile);
 // ============================================================================
 // ============================================================================
 
-export const SANDBOX_IMAGE = process.env.SANDBOX_IMAGE ?? "ghcr.io/yai-dev/agentrail-sandbox:latest";
+/** Default Docker image used for per-session sandboxes. */
+export const SANDBOX_IMAGE =
+  process.env.SANDBOX_IMAGE ?? "ghcr.io/yai-dev/agentrail-sandbox:latest";
 const DEFAULT_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 const MAX_OUTPUT_BYTES = 1024 * 1024; // 1 MB
 
 // ============================================================================
 // ============================================================================
 
+/** Active sandbox record for one session. */
 export interface SandboxEntry {
   containerId: string;
   browserPort: number;
@@ -32,12 +34,14 @@ export interface SandboxEntry {
   memoUserDir: string;
 }
 
+/** Execution options for one `docker exec` call. */
 export interface RunOptions {
   timeout?: number;
   workingDir?: string;
   signal?: AbortSignal;
 }
 
+/** Result of a command executed inside the sandbox. */
 export interface ExecResult {
   stdout: string;
   stderr: string;
@@ -45,6 +49,7 @@ export interface ExecResult {
   timedOut: boolean;
 }
 
+/** Optional overrides for sandbox lifecycle behavior. */
 export interface SandboxManagerOptions {
   image?: string;
   idleTimeoutMs?: number;
@@ -87,6 +92,11 @@ async function waitForHealth(url: string, timeoutMs: number): Promise<void> {
 // SandboxManager
 // ============================================================================
 
+/**
+ * Manages one Docker-backed isolated sandbox per session.
+ *
+ * @see {@link https://agentrail.run/guides/use-capability-packages}
+ */
 export class SandboxManager {
   private readonly docker = new Docker();
   private readonly sandboxes = new Map<string, SandboxEntry>();
@@ -103,11 +113,8 @@ export class SandboxManager {
     this.idleTimeoutMs = options.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
   }
 
-  async ensureSandbox(
-    sessionId: string,
-    tenantId: string,
-    userId: string,
-  ): Promise<SandboxEntry> {
+  /** Ensures a running sandbox exists for the given session and returns its metadata. */
+  async ensureSandbox(sessionId: string, tenantId: string, userId: string): Promise<SandboxEntry> {
     const existing = this.sandboxes.get(sessionId);
     if (existing) {
       this.resetIdleTimer(sessionId);
@@ -181,22 +188,24 @@ export class SandboxManager {
     await container.start();
 
     await runDockerCommand("docker", [
-      "exec", "-d", containerName,
-      "node", "/opt/browser-server/index.js",
+      "exec",
+      "-d",
+      containerName,
+      "node",
+      "/opt/browser-server/index.js",
     ]);
 
     await waitForHealth(`http://127.0.0.1:${browserPort}/health`, 20_000);
 
-    console.log(`[sandbox] Container ready for session ${sessionId} (browser port: ${browserPort})`);
+    console.log(
+      `[sandbox] Container ready for session ${sessionId} (browser port: ${browserPort})`,
+    );
 
     return { containerId: container.id, browserPort, workspaceDir, memoSessionDir, memoUserDir };
   }
 
-  async runInSandbox(
-    sessionId: string,
-    cmd: string[],
-    opts: RunOptions = {},
-  ): Promise<ExecResult> {
+  /** Executes a command inside an existing session sandbox. */
+  async runInSandbox(sessionId: string, cmd: string[], opts: RunOptions = {}): Promise<ExecResult> {
     const entry = this.sandboxes.get(sessionId);
     if (!entry) throw new Error(`No sandbox found for session '${sessionId}'`);
     this.resetIdleTimer(sessionId);
@@ -301,12 +310,18 @@ export class SandboxManager {
   async readFileInContainer(sessionId: string, containerPath: string): Promise<string> {
     const result = await this.runInSandbox(sessionId, ["cat", containerPath]);
     if (result.exitCode !== 0) {
-      throw new Error(result.stderr || `Failed to read '${containerPath}' (exit ${result.exitCode})`);
+      throw new Error(
+        result.stderr || `Failed to read '${containerPath}' (exit ${result.exitCode})`,
+      );
     }
     return result.stdout;
   }
 
-  async writeFileInContainer(sessionId: string, containerPath: string, content: string): Promise<void> {
+  async writeFileInContainer(
+    sessionId: string,
+    containerPath: string,
+    content: string,
+  ): Promise<void> {
     const dirPath = path.posix.dirname(containerPath);
     const fileName = path.posix.basename(containerPath);
 
@@ -316,19 +331,26 @@ export class SandboxManager {
 
     const mkdirResult = await this.runInSandbox(sessionId, ["mkdir", "-p", dirPath]);
     if (mkdirResult.exitCode !== 0) {
-      throw new Error(mkdirResult.stderr || `Failed to create directory '${dirPath}' (exit ${mkdirResult.exitCode})`);
+      throw new Error(
+        mkdirResult.stderr ||
+          `Failed to create directory '${dirPath}' (exit ${mkdirResult.exitCode})`,
+      );
     }
 
     const pack = tar.pack();
     const contentBuffer = Buffer.from(content, "utf-8");
     await new Promise<void>((resolve, reject) => {
-      pack.entry({ name: fileName, size: contentBuffer.length }, contentBuffer, (err?: Error | null) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve();
-      });
+      pack.entry(
+        { name: fileName, size: contentBuffer.length },
+        contentBuffer,
+        (err?: Error | null) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve();
+        },
+      );
     });
     pack.finalize();
 
@@ -348,12 +370,21 @@ export class SandboxManager {
       const result = await this.runInSandbox(
         sessionId,
         [
-          "find", "/workspace",
-          "-maxdepth", "4",
-          "-not", "-path", "*/memo/*",
-          "-not", "-path", "*/.git/*",
-          "-not", "-name", ".*",
-          "-type", "f",
+          "find",
+          "/workspace",
+          "-maxdepth",
+          "4",
+          "-not",
+          "-path",
+          "*/memo/*",
+          "-not",
+          "-path",
+          "*/.git/*",
+          "-not",
+          "-name",
+          ".*",
+          "-type",
+          "f",
         ],
         { timeout: 5_000 },
       );
@@ -393,19 +424,13 @@ export class SandboxManager {
     } catch {
       console.log(`[sandbox] Pulling image '${imageName}'...`);
       await new Promise<void>((resolve, reject) => {
-        this.docker.pull(
-          imageName,
-          (err: Error | null, stream: NodeJS.ReadableStream) => {
-            if (err) return reject(err);
-            this.docker.modem.followProgress(
-              stream,
-              (followErr: Error | null) => {
-                if (followErr) reject(followErr);
-                else resolve();
-              },
-            );
-          },
-        );
+        this.docker.pull(imageName, (err: Error | null, stream: NodeJS.ReadableStream) => {
+          if (err) return reject(err);
+          this.docker.modem.followProgress(stream, (followErr: Error | null) => {
+            if (followErr) reject(followErr);
+            else resolve();
+          });
+        });
       });
       console.log(`[sandbox] Image '${imageName}' ready`);
     }

@@ -140,16 +140,16 @@ const parametersSchema = Type.Object({
       }),
       status: Type.Union(
         [Type.Literal("pending"), Type.Literal("in_progress"), Type.Literal("completed")],
-        { description: "Current task status." }
+        { description: "Current task status." },
       ),
       activeForm: Type.Optional(
         Type.String({
           description:
             'Present-continuous form shown while in_progress (e.g. "Fixing authentication bug").',
-        })
+        }),
       ),
     }),
-    { description: "Array of task items to write or merge." }
+    { description: "Array of task items to write or merge." },
   ),
   merge: Type.Boolean({
     description:

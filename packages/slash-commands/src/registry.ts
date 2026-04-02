@@ -14,10 +14,7 @@ import type {
 export interface SlashCommandRegistry {
   definitions(): SlashCommandDefinition[];
   parseRegistered(input: string): ParsedSlashCommand | null;
-  execute(
-    input: string,
-    context: SlashCommandContext,
-  ): Promise<SlashCommandResult>;
+  execute(input: string, context: SlashCommandContext): Promise<SlashCommandResult>;
 }
 
 function resolveDefinition(
@@ -25,10 +22,11 @@ function resolveDefinition(
   parsed: ParsedSlashCommand,
 ): SlashCommandDefinition | null {
   const rawName = parsed.tokens.join(" ").toLowerCase();
-  return [...definitions]
-    .sort((left, right) => right.name.length - left.name.length)
-    .find((definition) => rawName === definition.name)
-    ?? null;
+  return (
+    [...definitions]
+      .sort((left, right) => right.name.length - left.name.length)
+      .find((definition) => rawName === definition.name) ?? null
+  );
 }
 
 export function createSlashCommandRegistry(
@@ -41,10 +39,7 @@ export function createSlashCommandRegistry(
       if (!parsed) return null;
       return resolveDefinition(definitions, parsed) ? parsed : null;
     },
-    async execute(
-      input: string,
-      context: SlashCommandContext,
-    ): Promise<SlashCommandResult> {
+    async execute(input: string, context: SlashCommandContext): Promise<SlashCommandResult> {
       const parsed = parseCommand(input);
       if (!parsed) {
         return {

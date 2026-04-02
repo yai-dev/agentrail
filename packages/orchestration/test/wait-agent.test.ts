@@ -23,9 +23,9 @@ const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    temporaryDirectories.splice(0).map((directory) =>
-      rm(directory, { recursive: true, force: true }),
-    ),
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
   );
 });
 
@@ -178,12 +178,8 @@ describe("wait_agent orchestration", () => {
         resolvedAgentIds: ["agent-tools"],
       },
     });
-    await expect
-      .poll(() => manager.getSnapshot().queuedInputs)
-      .toEqual([]);
-    await expect
-      .poll(() => manager.getSnapshot().agents["agent-tools"]?.status)
-      .toBe("closed");
+    await expect.poll(() => manager.getSnapshot().queuedInputs).toEqual([]);
+    await expect.poll(() => manager.getSnapshot().agents["agent-tools"]?.status).toBe("closed");
   });
 
   it("defaults spawn_agent tool calls to the run root task when taskId is omitted", async () => {
@@ -192,10 +188,7 @@ describe("wait_agent orchestration", () => {
     const manager = await OrchestrationManager.create({
       sessionDir,
       runtime: runtimeHarness.runtime,
-      now: createClock(
-        "2026-03-23T10:02:00.000Z",
-        "2026-03-23T10:02:01.000Z",
-      ),
+      now: createClock("2026-03-23T10:02:00.000Z", "2026-03-23T10:02:01.000Z"),
     });
 
     await manager.startRun({
@@ -362,18 +355,13 @@ describe("wait_agent orchestration", () => {
       match: "all",
       timeoutAt: "2026-03-23T11:00:05.000Z",
     });
-    await expect
-      .poll(() => manager.getSnapshot().waits["wait-timeout"]?.status)
-      .toBe("pending");
+    await expect.poll(() => manager.getSnapshot().waits["wait-timeout"]?.status).toBe("pending");
 
     const secondRuntimeHarness = createRuntimeHarness();
     const recoveredManager = await OrchestrationManager.create({
       sessionDir,
       runtime: secondRuntimeHarness.runtime,
-      now: createClock(
-        "2026-03-23T11:00:10.000Z",
-        "2026-03-23T11:00:11.000Z",
-      ),
+      now: createClock("2026-03-23T11:00:10.000Z", "2026-03-23T11:00:11.000Z"),
     });
 
     expect(secondRuntimeHarness.createCalls).toEqual([

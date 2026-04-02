@@ -17,11 +17,8 @@ export type {
   CompactionMetadata,
 } from "./types.js";
 
-export {
-  SessionManager,
-  isCompactionMessage,
-  parseCompactionMetadata,
-} from "./session-manager.js";
+export { SessionManager, isCompactionMessage, parseCompactionMetadata } from "./session-manager.js";
 export { estimateTokens, estimateFileTokens, estimateMessageTokens } from "./token-estimator.js";
 export { compactToolResults } from "./compaction.js";
+/** View-only tool-result compaction thresholds exported by the memo package. */
 export type { ToolResultCompactionOptions } from "./compaction.js";

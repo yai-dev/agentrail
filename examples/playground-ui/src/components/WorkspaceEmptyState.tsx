@@ -11,11 +11,7 @@ interface WorkspaceEmptyStateProps {
   description: string;
 }
 
-export function WorkspaceEmptyState({
-  icon,
-  title,
-  description,
-}: WorkspaceEmptyStateProps) {
+export function WorkspaceEmptyState({ icon, title, description }: WorkspaceEmptyStateProps) {
   return (
     <div className="workspace-empty-shell">
       <section className="workspace-empty-card">

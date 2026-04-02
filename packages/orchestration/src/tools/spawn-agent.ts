@@ -17,6 +17,7 @@ function formatSpawnResult(agent: OrchestrationAgent): string {
   });
 }
 
+/** Creates the runtime tool that spawns a managed sub-agent inside a run. */
 export function createSpawnAgentTool(manager: OrchestrationManager, runId: string) {
   return tool()
     .name("spawn_agent")

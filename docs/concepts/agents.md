@@ -105,7 +105,7 @@ Each tool execution and each LLM delta are emitted as `RuntimeEvent` values that
 These are two different layers:
 
 - **Agent** is a runtime concept. It defines the execution loop, model, tools, and system prompt.
-- **Profile** is a host concept. It defines *how* an agent is constructed for a specific request context (tenant, user, session).
+- **Profile** is a host concept. It defines _how_ an agent is constructed for a specific request context (tenant, user, session).
 
 In most hosted apps, you define a profile that calls `defineAgent` inside its `createAgent` function. The host creates a new agent instance per request. You almost never expose a raw agent directly to a route.
 

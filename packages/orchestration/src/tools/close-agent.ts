@@ -15,6 +15,7 @@ function formatCloseResult(agent: OrchestrationAgent, reason?: string): string {
   });
 }
 
+/** Creates the runtime tool that requests closure of a managed sub-agent. */
 export function createCloseAgentTool(manager: OrchestrationManager) {
   return tool()
     .name("close_agent")

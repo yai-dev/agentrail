@@ -4,10 +4,7 @@
  */
 
 import type { AgentrailPlugin } from "@agentrail/host";
-import {
-  executeSlashCommand,
-  parseRegisteredSlashCommand,
-} from "../commands/registry.js";
+import { executeSlashCommand, parseRegisteredSlashCommand } from "../commands/registry.js";
 
 export function createSlashCommandsPlugin(): AgentrailPlugin {
   return {

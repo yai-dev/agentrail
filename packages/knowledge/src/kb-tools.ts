@@ -22,7 +22,7 @@ const MAX_LINE_LENGTH = 1000;
 function validateKbDir(
   knowledgeManager: KnowledgeManager,
   tenantId: string,
-  kbDir: string
+  kbDir: string,
 ): string {
   // Derive the parent directory shared by all KBs for this tenant
   const parentDir = path.dirname(knowledgeManager.getKbDir(tenantId, "_"));
@@ -35,7 +35,7 @@ function validateKbDir(
     relative.includes(path.sep)
   ) {
     throw new Error(
-      `Invalid kbDir: "${kbDir}" is not a valid knowledge base directory for this tenant`
+      `Invalid kbDir: "${kbDir}" is not a valid knowledge base directory for this tenant`,
     );
   }
   return resolved;
@@ -50,7 +50,7 @@ function resolveSafe(kbDir: string, relativePath: string): string {
   const base = path.resolve(kbDir);
   if (!resolved.startsWith(base + path.sep) && resolved !== base) {
     throw new Error(
-      `Path traversal detected: "${relativePath}" is outside the knowledge base directory`
+      `Path traversal detected: "${relativePath}" is outside the knowledge base directory`,
     );
   }
   return resolved;
@@ -68,7 +68,7 @@ export function createKbListTool(knowledgeManager: KnowledgeManager, tenantId: s
     .description(
       "List all knowledge bases available for the current tenant. " +
         "Returns each KB's kbDir (absolute path), name, document count, topics, and recent documents. " +
-        "Always call this first to discover available knowledge bases before using KbRead or KbSearch."
+        "Always call this first to discover available knowledge bases before using KbRead or KbSearch.",
     )
     .parameters(Type.Object({}))
     .execute(async () => {
@@ -81,7 +81,7 @@ export function createKbListTool(knowledgeManager: KnowledgeManager, tenantId: s
       }
 
       const metas = await Promise.all(
-        kbIds.map((id) => knowledgeManager.getMetadata(tenantId, id))
+        kbIds.map((id) => knowledgeManager.getMetadata(tenantId, id)),
       );
 
       const lines: string[] = [];
@@ -95,7 +95,10 @@ export function createKbListTool(knowledgeManager: KnowledgeManager, tenantId: s
         if (meta.description) lines.push(`  Description: ${meta.description}`);
         if (meta.topics.length > 0) {
           const topicStr = meta.topics
-            .map((t) => `${t.topic}(${t.docCount} doc${t.docCount !== 1 ? "s" : ""}${t.hasIndex ? ", indexed" : ""})`)
+            .map(
+              (t) =>
+                `${t.topic}(${t.docCount} doc${t.docCount !== 1 ? "s" : ""}${t.hasIndex ? ", indexed" : ""})`,
+            )
             .join(", ");
           lines.push(`  Topics: ${topicStr}`);
         }
@@ -135,13 +138,12 @@ Usage:
 - path: file path relative to kbDir, e.g. "indexes/rag_index.md" or "docs/AI/RAG/{docId}.md"
 - offset: starting line number (1-indexed); negative values count from the end
 - limit: maximum number of lines to read (default ${DEFAULT_READ_LINES})
-- Cannot access files outside the knowledge base directory`
+- Cannot access files outside the knowledge base directory`,
     )
     .parameters(
       Type.Object({
         kbDir: Type.String({
-          description:
-            "Absolute path to the knowledge base directory. Obtain via KbList.",
+          description: "Absolute path to the knowledge base directory. Obtain via KbList.",
         }),
         path: Type.String({
           description:
@@ -151,15 +153,15 @@ Usage:
           Type.Integer({
             description:
               "Starting line number (1-indexed). Negative values count from the end of the file.",
-          })
+          }),
         ),
         limit: Type.Optional(
           Type.Integer({
             description: `Maximum number of lines to read. Defaults to ${DEFAULT_READ_LINES}.`,
             minimum: 1,
-          })
+          }),
         ),
-      })
+      }),
     )
     .execute(async ({ kbDir: rawKbDir, path: relPath, offset, limit }) => {
       let kbDirResolved: string;
@@ -224,9 +226,7 @@ Usage:
       const formattedLines = selectedLines.map((line, i) => {
         const lineNum = startIndex + i + 1;
         const truncated =
-          line.length > MAX_LINE_LENGTH
-            ? line.slice(0, MAX_LINE_LENGTH) + " [truncated]"
-            : line;
+          line.length > MAX_LINE_LENGTH ? line.slice(0, MAX_LINE_LENGTH) + " [truncated]" : line;
         return `${String(lineNum).padStart(6)}|${truncated}`;
       });
 
@@ -260,40 +260,35 @@ export function createKbSearchTool(knowledgeManager: KnowledgeManager, tenantId:
         "- kbDir: absolute path to the knowledge base root (from KbList)\n" +
         "- pattern: regex or plain keyword\n" +
         '- subdir: subdirectory relative to kbDir (default: "docs")\n' +
-        '- output_mode: "content" shows matching lines; "files" shows only file paths (default: "content")'
+        '- output_mode: "content" shows matching lines; "files" shows only file paths (default: "content")',
     )
     .parameters(
       Type.Object({
         kbDir: Type.String({
-          description:
-            "Absolute path to the knowledge base directory. Obtain via KbList.",
+          description: "Absolute path to the knowledge base directory. Obtain via KbList.",
         }),
         pattern: Type.String({
           description: "Regular expression or keyword to search for.",
         }),
         subdir: Type.Optional(
           Type.String({
-            description:
-              'Subdirectory to search within, relative to kbDir. Defaults to "docs".',
-          })
+            description: 'Subdirectory to search within, relative to kbDir. Defaults to "docs".',
+          }),
         ),
         output_mode: Type.Optional(
-          Type.Union(
-            [Type.Literal("content"), Type.Literal("files")],
-            {
-              description:
-                '"content" shows matching lines, "files" shows only file paths. Defaults to "content".',
-              default: "content",
-            }
-          )
+          Type.Union([Type.Literal("content"), Type.Literal("files")], {
+            description:
+              '"content" shows matching lines, "files" shows only file paths. Defaults to "content".',
+            default: "content",
+          }),
         ),
         case_insensitive: Type.Optional(
           Type.Boolean({
             description: "Case-insensitive search. Defaults to false.",
             default: false,
-          })
+          }),
         ),
-      })
+      }),
     )
     .execute(async ({ kbDir: rawKbDir, pattern, subdir, output_mode, case_insensitive }) => {
       let kbDirResolved: string;

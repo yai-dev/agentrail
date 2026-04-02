@@ -109,21 +109,25 @@ app.route(
       {
         name: "request-logger",
         onRequestStart(ctx) {
-          console.log(JSON.stringify({
-            level: "info",
-            event: "request_start",
-            kind: ctx.kind,
-            agentId: ctx.agentId,
-            sessionId: ctx.sessionId,
-            tenantId: ctx.tenantId,
-          }));
+          console.log(
+            JSON.stringify({
+              level: "info",
+              event: "request_start",
+              kind: ctx.kind,
+              agentId: ctx.agentId,
+              sessionId: ctx.sessionId,
+              tenantId: ctx.tenantId,
+            }),
+          );
         },
         onRequestEnd(ctx) {
-          console.log(JSON.stringify({
-            level: "info",
-            event: "request_end",
-            sessionId: ctx.sessionId,
-          }));
+          console.log(
+            JSON.stringify({
+              level: "info",
+              event: "request_end",
+              sessionId: ctx.sessionId,
+            }),
+          );
         },
       },
     ],

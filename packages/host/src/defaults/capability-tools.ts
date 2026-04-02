@@ -4,11 +4,7 @@
  */
 
 import path from "node:path";
-import {
-  createKbListTool,
-  createKbReadTool,
-  createKbSearchTool,
-} from "@agentrail/knowledge";
+import { createKbListTool, createKbReadTool, createKbSearchTool } from "@agentrail/knowledge";
 import { buildSkillTool } from "@agentrail/skills";
 import {
   createBrowserAction,
@@ -21,14 +17,8 @@ import {
   createSandboxedRead,
   createSandboxedWrite,
 } from "@agentrail/sandbox";
-import {
-  createAskUserQuestionTool,
-  createTodoWriteTool,
-} from "@agentrail/tools";
-import type {
-  DefaultCapabilityToolOptions,
-  DefaultCapabilityTools,
-} from "./shared-types.js";
+import { createAskUserQuestionTool, createTodoWriteTool } from "@agentrail/tools";
+import type { DefaultCapabilityToolOptions, DefaultCapabilityTools } from "./shared-types.js";
 
 /**
  * Builds the default capability toolset used by the reference host and examples.

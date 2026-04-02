@@ -35,7 +35,9 @@ export async function handleCompactCommand(
   }
 
   const summarizeFn = buildSummarizeFn();
-  const workspaceSnapshot = await sandboxManager.listWorkspace(context.sessionId).catch(() => undefined);
+  const workspaceSnapshot = await sandboxManager
+    .listWorkspace(context.sessionId)
+    .catch(() => undefined);
   const result = await sessionManager.compactSession(
     context.tenantId,
     context.sessionId,

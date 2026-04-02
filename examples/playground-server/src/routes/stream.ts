@@ -46,11 +46,7 @@ const stream = createStreamRoute({
   onTraceEvent: (ctx, envelope) => {
     const traceDir = path.join(ctx.sessionDir, "trace");
     void mkdir(traceDir, { recursive: true }).then(() =>
-      appendFile(
-        path.join(traceDir, "events.jsonl"),
-        `${JSON.stringify(envelope)}\n`,
-        "utf8",
-      ),
+      appendFile(path.join(traceDir, "events.jsonl"), `${JSON.stringify(envelope)}\n`, "utf8"),
     );
   },
 });

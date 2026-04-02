@@ -39,11 +39,6 @@ app.route("/api/stream", stream);
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 
-serve(
-  { fetch: app.fetch, port: Number(process.env.PORT ?? 3000) },
-  (info) => {
-    console.log(
-      `{{PROJECT_NAME}} server running on http://localhost:${info.port}`,
-    );
-  },
-);
+serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) }, (info) => {
+  console.log(`{{PROJECT_NAME}} server running on http://localhost:${info.port}`);
+});

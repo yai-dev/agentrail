@@ -80,9 +80,7 @@ export function WaitingQuestionPrompt({
         <span className="waiting-question-icon">?</span>
         <div className="waiting-question-text">
           <p className="waiting-question-label">{question}</p>
-          {hint && !hasOptions && (
-            <p className="waiting-question-hint">{hint}</p>
-          )}
+          {hint && !hasOptions && <p className="waiting-question-hint">{hint}</p>}
           {multiple && hasOptions && (
             <p className="waiting-question-hint">可多选，选完后点击确认</p>
           )}

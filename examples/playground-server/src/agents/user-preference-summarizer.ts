@@ -30,7 +30,7 @@ function renderMessage(m: Message): string | null {
       typeof m.content === "string"
         ? m.content
         : (m.content as { type: string; text?: string }[])
-            .map((b) => (b.type === "text" ? b.text ?? "" : ""))
+            .map((b) => (b.type === "text" ? (b.text ?? "") : ""))
             .join("");
     const clean = text.trim();
     return clean ? `**User:** ${trunc(clean, 800)}` : null;
@@ -49,7 +49,7 @@ function renderMessage(m: Message): string | null {
   }
   if (m.role === "toolResult") {
     const resultText = (m.content as { type: string; text?: string }[])
-      .map((b) => (b.type === "text" ? b.text ?? "" : ""))
+      .map((b) => (b.type === "text" ? (b.text ?? "") : ""))
       .join("");
     const clean = resultText.trim();
     return clean ? `  ↳ result: ${trunc(clean, 300)}` : null;
@@ -93,7 +93,7 @@ Rules:
  */
 export async function maybeSummarizeUserPreferences(
   tenantId: string,
-  userId: string
+  userId: string,
 ): Promise<void> {
   const cfg = config.userPreferenceSummary;
   if (!cfg.enabled) return;
@@ -128,7 +128,7 @@ async function runSummarizeUserPreferences(tenantId: string, userId: string): Pr
   const sessions = await sessionManager.listSessionIdsByUser(
     tenantId,
     userId,
-    cfg.maxSessionsToRead
+    cfg.maxSessionsToRead,
   );
   if (sessions.length < cfg.minSessions) return;
 
@@ -158,13 +158,10 @@ async function runSummarizeUserPreferences(tenantId: string, userId: string): Pr
 
   let summary = "";
   for await (const event of summarizer.stream(
-    `From the following conversation excerpt(s), extract user preferences and focus areas for USER.md:\n\n${formatted}`
+    `From the following conversation excerpt(s), extract user preferences and focus areas for USER.md:\n\n${formatted}`,
   )) {
     if (isRuntimeError(event)) return;
-    if (
-      event.type === "message_update" &&
-      event.event.type === "text_delta"
-    ) {
+    if (event.type === "message_update" && event.event.type === "text_delta") {
       summary += event.event.delta;
     }
     if (event.type === "agent_end") break;
@@ -173,13 +170,7 @@ async function runSummarizeUserPreferences(tenantId: string, userId: string): Pr
   if (!summary) return;
 
   const dateLabel = new Date().toISOString().slice(0, 10);
-  const section = [
-    "",
-    `## 近期偏好与重点 (${dateLabel})`,
-    "",
-    summary,
-    "",
-  ].join("\n");
+  const section = ["", `## 近期偏好与重点 (${dateLabel})`, "", summary, ""].join("\n");
 
   const { mkdir } = await import("node:fs/promises");
   try {

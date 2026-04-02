@@ -62,7 +62,7 @@ const server = serve(
   },
   (info) => {
     console.log(`Agentrail Playground Server running on http://localhost:${info.port}`);
-  }
+  },
 );
 
 // Destroy all sandbox containers on graceful shutdown

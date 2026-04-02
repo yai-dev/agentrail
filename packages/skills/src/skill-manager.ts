@@ -7,6 +7,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { SkillMeta, SkillConfig } from "./types.js";
 
+/**
+ * Discovers and reads reusable skills stored beneath `{dataDir}/skills`.
+ *
+ * @see {@link https://agentrail.run/guides/use-capability-packages}
+ */
 export class SkillManager {
   private readonly skillsDir: string;
   private readonly dataDir: string;
@@ -16,18 +21,24 @@ export class SkillManager {
     this.skillsDir = path.join(dataDir, "skills");
   }
 
+  /** Returns the root directory that contains all installed skills. */
   getSkillsDir(): string {
     return this.skillsDir;
   }
 
+  /** Returns the absolute directory path for a named skill. */
   getSkillDir(skillName: string): string {
     return path.join(this.skillsDir, skillName);
   }
 
+  /** Lists enabled skills that contain a valid `skill.json` manifest. */
   async listSkills(): Promise<SkillMeta[]> {
     try {
       const entries = await fs.readdir(this.skillsDir, { withFileTypes: true });
-      const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name).sort();
+      const dirs = entries
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name)
+        .sort();
 
       const results: SkillMeta[] = [];
       for (const name of dirs) {
@@ -56,6 +67,7 @@ export class SkillManager {
     }
   }
 
+  /** Reads the `SKILL.md` body for a named skill. */
   async readSkill(skillName: string): Promise<string> {
     const safe = this.resolveSkillNameSafe(skillName);
     const skillMdPath = path.join(safe, "SKILL.md");

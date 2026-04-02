@@ -45,13 +45,16 @@ function stripMarkdownPreview(text: string): string {
 
 function extractDisplaySummary(text?: string): string {
   if (!text) return "";
-  if (/^Based on my research/i.test(text) || /```json/i.test(text) || /"entityProfile"\s*:/i.test(text)) {
-    const fencedSummary = text.match(/"summary"\s*:\s*"([\s\S]+?)"\s*(?:,\s*"(?:entityProfile|sources|excludedSources)"|\})/);
+  if (
+    /^Based on my research/i.test(text) ||
+    /```json/i.test(text) ||
+    /"entityProfile"\s*:/i.test(text)
+  ) {
+    const fencedSummary = text.match(
+      /"summary"\s*:\s*"([\s\S]+?)"\s*(?:,\s*"(?:entityProfile|sources|excludedSources)"|\})/,
+    );
     if (fencedSummary?.[1]) {
-      return fencedSummary[1]
-        .replace(/\\"/g, "\"")
-        .replace(/\\n/g, "\n")
-        .trim();
+      return fencedSummary[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
     }
   }
   return text.trim();
@@ -64,11 +67,13 @@ function truncatePreview(text: string, limit = 220): string {
 }
 
 function slugifyFileName(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fa5]+/gi, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "deep-research-report";
+  return (
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9\u4e00-\u9fa5]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "deep-research-report"
+  );
 }
 
 function blobToUint8Array(blob: Blob): Promise<Uint8Array> {
@@ -99,11 +104,19 @@ function createStoredZip(entries: Array<{ name: string; data: Uint8Array }>): Bl
   let offset = 0;
 
   const now = new Date();
-  const dosTime = ((now.getHours() & 0x1f) << 11) | ((now.getMinutes() & 0x3f) << 5) | ((Math.floor(now.getSeconds() / 2)) & 0x1f);
-  const dosDate = ((((now.getFullYear() - 1980) & 0x7f) << 9) | (((now.getMonth() + 1) & 0xf) << 5) | (now.getDate() & 0x1f));
+  const dosTime =
+    ((now.getHours() & 0x1f) << 11) |
+    ((now.getMinutes() & 0x3f) << 5) |
+    (Math.floor(now.getSeconds() / 2) & 0x1f);
+  const dosDate =
+    (((now.getFullYear() - 1980) & 0x7f) << 9) |
+    (((now.getMonth() + 1) & 0xf) << 5) |
+    (now.getDate() & 0x1f);
 
-  const writeU16 = (view: DataView, position: number, value: number) => view.setUint16(position, value, true);
-  const writeU32 = (view: DataView, position: number, value: number) => view.setUint32(position, value, true);
+  const writeU16 = (view: DataView, position: number, value: number) =>
+    view.setUint16(position, value, true);
+  const writeU32 = (view: DataView, position: number, value: number) =>
+    view.setUint32(position, value, true);
 
   for (const entry of entries) {
     const nameBytes = encoder.encode(entry.name);
@@ -161,10 +174,9 @@ function createStoredZip(entries: Array<{ name: string; data: Uint8Array }>): Bl
   writeU32(endView, 16, offset);
   writeU16(endView, 20, 0);
 
-  return new Blob(
-    [...localParts, ...centralParts, endRecord].map(toBlobPart),
-    { type: "application/zip" },
-  );
+  return new Blob([...localParts, ...centralParts, endRecord].map(toBlobPart), {
+    type: "application/zip",
+  });
 }
 
 function inferExtensionFromBlob(blob: Blob, fallback = "bin"): string {
@@ -185,9 +197,7 @@ function buildLocalAssetName(
   try {
     const parsed = new URL(reportUrl, window.location.origin);
     const artifactId = parsed.searchParams.get("artifactId");
-    const artifact = artifactId
-      ? artifacts.find((item) => item.id === artifactId)
-      : undefined;
+    const artifact = artifactId ? artifacts.find((item) => item.id === artifactId) : undefined;
     if (artifact) {
       return `assets/${artifactFileName(artifact.path)}`;
     }
@@ -236,9 +246,7 @@ function TagGroup({
             {item}
           </span>
         ))}
-        {hiddenCount > 0 && (
-          <span className="deep-research-tag more">+{hiddenCount}</span>
-        )}
+        {hiddenCount > 0 && <span className="deep-research-tag more">+{hiddenCount}</span>}
       </div>
     </div>
   );
@@ -281,7 +289,7 @@ function SourceSection({
         {visibleSources.map((source) => {
           const expanded = expandedSourceIds.includes(source.id);
           const detailText = excluded
-            ? source.excludeReason ?? source.note ?? ""
+            ? (source.excludeReason ?? source.note ?? "")
             : truncatePreview(source.snippet ?? source.note ?? "", 180);
           const canExpand = Boolean(detailText);
 
@@ -303,7 +311,15 @@ function SourceSection({
                   <div className="deep-research-source-meta-line">
                     <span className="deep-research-source-domain-chip">{source.domain}</span>
                     {source.confidence && (
-                      <SourceBadge tone={source.confidence === "high_confidence" ? "success" : source.confidence === "medium_confidence" ? "info" : "warn"}>
+                      <SourceBadge
+                        tone={
+                          source.confidence === "high_confidence"
+                            ? "success"
+                            : source.confidence === "medium_confidence"
+                              ? "info"
+                              : "warn"
+                        }
+                      >
                         {source.confidence}
                       </SourceBadge>
                     )}
@@ -311,7 +327,15 @@ function SourceSection({
                       <SourceBadge>{source.evidenceLevel}</SourceBadge>
                     )}
                     {source.fetchStatus && (
-                      <SourceBadge tone={source.fetchStatus === "success" ? "success" : source.fetchStatus === "401" || source.fetchStatus === "403" ? "warn" : "default"}>
+                      <SourceBadge
+                        tone={
+                          source.fetchStatus === "success"
+                            ? "success"
+                            : source.fetchStatus === "401" || source.fetchStatus === "403"
+                              ? "warn"
+                              : "default"
+                        }
+                      >
                         {source.fetchStatus}
                       </SourceBadge>
                     )}
@@ -332,11 +356,13 @@ function SourceSection({
                     <button
                       type="button"
                       className="deep-research-source-toggle"
-                      onClick={() => setExpandedSourceIds((prev) => (
-                        prev.includes(source.id)
-                          ? prev.filter((id) => id !== source.id)
-                          : [...prev, source.id]
-                      ))}
+                      onClick={() =>
+                        setExpandedSourceIds((prev) =>
+                          prev.includes(source.id)
+                            ? prev.filter((id) => id !== source.id)
+                            : [...prev, source.id],
+                        )
+                      }
                     >
                       {expanded ? "收起详情" : "展开详情"}
                     </button>
@@ -351,7 +377,9 @@ function SourceSection({
         })}
         {sources.length === 0 && <p className="deep-research-empty-inline">{emptyText}</p>}
         {remainingCount > 0 && !listExpanded && (
-          <p className="deep-research-empty-inline">还有 {remainingCount} 条来源，点击上方“展开完整列表”查看。</p>
+          <p className="deep-research-empty-inline">
+            还有 {remainingCount} 条来源，点击上方“展开完整列表”查看。
+          </p>
         )}
       </div>
     </div>
@@ -407,16 +435,14 @@ function ArtifactPreview({
     );
   }
 
-  return (
-    <pre className="deep-research-artifact-preview">
-      {result.content}
-    </pre>
-  );
+  return <pre className="deep-research-artifact-preview">{result.content}</pre>;
 }
 
 const reportMarkdownComponents: Components = {
   img({ src, alt }) {
-    return <AuthenticatedMarkdownImage className="deep-research-report-image" src={src} alt={alt} />;
+    return (
+      <AuthenticatedMarkdownImage className="deep-research-report-image" src={src} alt={alt} />
+    );
   },
 };
 
@@ -445,7 +471,10 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
     [acceptedSources],
   );
   const selectedArtifact = useMemo(
-    () => state?.artifacts.find((artifact) => artifact.id === selectedArtifactId) ?? state?.artifacts[0] ?? null,
+    () =>
+      state?.artifacts.find((artifact) => artifact.id === selectedArtifactId) ??
+      state?.artifacts[0] ??
+      null,
     [state, selectedArtifactId],
   );
   const entityProfile = state?.entityProfile
@@ -468,7 +497,7 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
     setSelectedArtifactId((prev) =>
       prev && state.artifacts.some((artifact) => artifact.id === prev)
         ? prev
-        : state.artifacts[0]?.id ?? null,
+        : (state.artifacts[0]?.id ?? null),
     );
   }, [state?.artifacts]);
 
@@ -494,11 +523,9 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
       setSelectedStepId(null);
       return;
     }
-    setSelectedStepId((prev) => (
-      prev && state.steps.some((step) => step.id === prev)
-        ? prev
-        : null
-    ));
+    setSelectedStepId((prev) =>
+      prev && state.steps.some((step) => step.id === prev) ? prev : null,
+    );
   }, [state?.steps]);
 
   useEffect(() => {
@@ -529,11 +556,9 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
     );
   }
 
-  const reportPreview = state.reportMarkdown
-    ? truncatePreview(state.reportMarkdown, 320)
-    : "";
+  const reportPreview = state.reportMarkdown ? truncatePreview(state.reportMarkdown, 320) : "";
   const selectedStep = selectedStepId
-    ? state.steps.find((step) => step.id === selectedStepId) ?? null
+    ? (state.steps.find((step) => step.id === selectedStepId) ?? null)
     : null;
 
   const handleDownloadReport = async () => {
@@ -577,7 +602,9 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
 
       for (const imageEntry of imageEntries) {
         if (!imageEntry) continue;
-        markdownForDownload = markdownForDownload.split(imageEntry.originalUrl).join(imageEntry.localName);
+        markdownForDownload = markdownForDownload
+          .split(imageEntry.originalUrl)
+          .join(imageEntry.localName);
         zipEntries.push({ name: imageEntry.localName, data: imageEntry.bytes });
       }
 
@@ -610,7 +637,11 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
             <p>{state.run.query}</p>
           </div>
           <span className={`deep-research-status ${state.run.status}`}>
-            {state.run.status === "running" ? "运行中" : state.run.status === "completed" ? "已完成" : "失败"}
+            {state.run.status === "running"
+              ? "运行中"
+              : state.run.status === "completed"
+                ? "已完成"
+                : "失败"}
           </span>
         </div>
         <div className="deep-research-meta">
@@ -632,7 +663,9 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
                 模式：{entityProfile.mode === "entity_disambiguation" ? "实体核验" : "主题范围"}
               </span>
               {state.entityProfile?.confidence && (
-                <span className="deep-research-stat-pill">置信度：{state.entityProfile?.confidence}</span>
+                <span className="deep-research-stat-pill">
+                  置信度：{state.entityProfile?.confidence}
+                </span>
               )}
               {state.entityProfile?.source && (
                 <span className="deep-research-stat-pill">来源：{state.entityProfile?.source}</span>
@@ -669,7 +702,9 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
                 </span>
               </button>
               {index < state.steps.length - 1 && (
-                <div className="deep-research-plan-flow-arrow" aria-hidden="true">→</div>
+                <div className="deep-research-plan-flow-arrow" aria-hidden="true">
+                  →
+                </div>
               )}
             </div>
           ))}
@@ -681,55 +716,67 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
               点击上方流程节点，查看对应步骤的详情卡片。
             </div>
           )}
-          {selectedStep && (() => {
-            const summary = extractDisplaySummary(selectedStep.summary);
-            const preview = summary ? truncatePreview(summary) : "";
-            const expanded = expandedStepIds.includes(selectedStep.id);
+          {selectedStep &&
+            (() => {
+              const summary = extractDisplaySummary(selectedStep.summary);
+              const preview = summary ? truncatePreview(summary) : "";
+              const expanded = expandedStepIds.includes(selectedStep.id);
 
-            return (
-              <div key={selectedStep.id} className={`deep-research-step ${selectedStep.status} selected`}>
-                <div className="deep-research-step-top">
-                  <span className="deep-research-step-index">#{selectedStep.index + 1}</span>
-                  <span className="deep-research-step-type">{selectedStep.type}</span>
-                  <span className="deep-research-step-status">{selectedStep.status}</span>
-                </div>
-                <div className="deep-research-step-title">{selectedStep.title}</div>
-                <div className="deep-research-step-desc">{selectedStep.description}</div>
-                <div className="deep-research-step-meta-row">
-                  {selectedStep.digest && (
-                    <span className="deep-research-stat-pill">
-                      {selectedStep.digest.findings.length} findings / {selectedStep.digest.openQuestions.length} questions / {selectedStep.digest.confidence}
-                    </span>
-                  )}
-                  {selectedStep.profileUpdateReason && (
-                    <span className="deep-research-stat-pill">Profile updated</span>
-                  )}
-                </div>
-                {preview && <div className="deep-research-step-preview">{preview}</div>}
-                {(summary || selectedStep.error) && (
-                  <button
-                    className="deep-research-step-toggle"
-                    onClick={() => setExpandedStepIds((prev) => (
-                      prev.includes(selectedStep.id)
-                        ? prev.filter((id) => id !== selectedStep.id)
-                        : [...prev, selectedStep.id]
-                    ))}
-                  >
-                    {expanded ? "收起详情" : "查看详情"}
-                  </button>
-                )}
-                {expanded && summary && (
-                  <div className="deep-research-step-summary">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{summary}</ReactMarkdown>
+              return (
+                <div
+                  key={selectedStep.id}
+                  className={`deep-research-step ${selectedStep.status} selected`}
+                >
+                  <div className="deep-research-step-top">
+                    <span className="deep-research-step-index">#{selectedStep.index + 1}</span>
+                    <span className="deep-research-step-type">{selectedStep.type}</span>
+                    <span className="deep-research-step-status">{selectedStep.status}</span>
                   </div>
-                )}
-                {expanded && selectedStep.profileUpdateReason && (
-                  <div className="deep-research-step-error deep-research-step-note">{selectedStep.profileUpdateReason}</div>
-                )}
-                {selectedStep.error && <div className="deep-research-step-error">{selectedStep.error}</div>}
-              </div>
-            );
-          })()}
+                  <div className="deep-research-step-title">{selectedStep.title}</div>
+                  <div className="deep-research-step-desc">{selectedStep.description}</div>
+                  <div className="deep-research-step-meta-row">
+                    {selectedStep.digest && (
+                      <span className="deep-research-stat-pill">
+                        {selectedStep.digest.findings.length} findings /{" "}
+                        {selectedStep.digest.openQuestions.length} questions /{" "}
+                        {selectedStep.digest.confidence}
+                      </span>
+                    )}
+                    {selectedStep.profileUpdateReason && (
+                      <span className="deep-research-stat-pill">Profile updated</span>
+                    )}
+                  </div>
+                  {preview && <div className="deep-research-step-preview">{preview}</div>}
+                  {(summary || selectedStep.error) && (
+                    <button
+                      className="deep-research-step-toggle"
+                      onClick={() =>
+                        setExpandedStepIds((prev) =>
+                          prev.includes(selectedStep.id)
+                            ? prev.filter((id) => id !== selectedStep.id)
+                            : [...prev, selectedStep.id],
+                        )
+                      }
+                    >
+                      {expanded ? "收起详情" : "查看详情"}
+                    </button>
+                  )}
+                  {expanded && summary && (
+                    <div className="deep-research-step-summary">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{summary}</ReactMarkdown>
+                    </div>
+                  )}
+                  {expanded && selectedStep.profileUpdateReason && (
+                    <div className="deep-research-step-error deep-research-step-note">
+                      {selectedStep.profileUpdateReason}
+                    </div>
+                  )}
+                  {selectedStep.error && (
+                    <div className="deep-research-step-error">{selectedStep.error}</div>
+                  )}
+                </div>
+              );
+            })()}
         </div>
       </section>
 
@@ -769,10 +816,14 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
                 <span className="deep-research-artifact-item-meta">
                   {artifact.kind} · Step {artifact.stepId.split(":").pop()}
                 </span>
-                <span className="deep-research-artifact-item-meta">{artifactFileName(artifact.path)}</span>
+                <span className="deep-research-artifact-item-meta">
+                  {artifactFileName(artifact.path)}
+                </span>
               </button>
             ))}
-            {state.artifacts.length === 0 && <p className="deep-research-empty-inline">暂无产物。</p>}
+            {state.artifacts.length === 0 && (
+              <p className="deep-research-empty-inline">暂无产物。</p>
+            )}
           </div>
           <ArtifactPreview sessionId={sessionId} artifact={selectedArtifact} />
         </div>
