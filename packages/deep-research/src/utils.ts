@@ -228,9 +228,27 @@ export function guessMimeType(filePath: string): string {
 }
 
 export function slugifyTitle(input: string): string {
-  const dashed = input.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  // Avoid potentially expensive regex backtracking on long hyphen runs.
-  const trimmed = dashed.replace(/^-+/, "").replace(/-+$/, "");
+  let out = "";
+  let lastWasDash = false;
+  for (const ch of input.toLowerCase()) {
+    const isAlphaNum = (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9");
+    if (isAlphaNum) {
+      out += ch;
+      lastWasDash = false;
+      continue;
+    }
+    if (!lastWasDash) {
+      out += "-";
+      lastWasDash = true;
+    }
+  }
+
+  // Trim leading/trailing separators without regex to avoid ReDoS-style alerts.
+  let start = 0;
+  while (start < out.length && out[start] === "-") start++;
+  let end = out.length;
+  while (end > start && out[end - 1] === "-") end--;
+  const trimmed = out.slice(start, end);
   return trimmed.slice(0, 60) || "artifact";
 }
 
