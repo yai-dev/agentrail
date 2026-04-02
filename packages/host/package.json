@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/host",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Generic host runtime and streaming utilities for Agentrail.",
   "type": "module",
   "files": [

@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/plugin-user-memory",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Optional user-memory background consolidation plugin for Agentrail.",
   "type": "module",
   "files": [

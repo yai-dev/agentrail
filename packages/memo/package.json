@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/memo",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Filesystem-backed session persistence and memory management for Agentrail.",
   "type": "module",
   "files": [

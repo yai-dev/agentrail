@@ -158,7 +158,7 @@ export class DeepResearchCoordinator {
       }
 
       this.state.reportMarkdown = await this.generateReport(emit);
-      await this.manager.completeRun({ status: "completed" });
+      await this.manager.completeRun({ runId: this.runId, status: "completed" });
       this.state.run.status = "completed";
       this.state.run.updatedAt = nowIso();
       this.state.run.completedAt = this.state.run.updatedAt;
@@ -183,6 +183,7 @@ export class DeepResearchCoordinator {
       const message = error instanceof Error ? error.message : String(error);
       if (this.manager) {
         await this.manager.completeRun({
+          runId: this.runId,
           status: "failed",
           error: message,
         }).catch(() => undefined);
@@ -495,6 +496,7 @@ export class DeepResearchCoordinator {
     try {
       await this.manager.spawnAgent({
         id: agentId,
+        runId: this.runId,
         role,
       });
       await this.manager.sendInput({

@@ -99,18 +99,136 @@ The example app is mainly responsible for:
 - mounting routes
 - choosing a session store
 
+## Integration Code
+
+### Route Wiring
+
+The deep-research example mounts two routes: one to start a run, one to query run state:
+
+```ts
+// examples/deep-research/src/routes/run.ts (simplified)
+import { Hono } from "hono";
+import { createDeepResearchRun } from "@agentrail/deep-research";
+import { sessionStore, modelConfig, dataDir } from "../config.js";
+
+const app = new Hono();
+
+// Start a new research run
+app.post("/run", async (c) => {
+  const { query, tenantId, userId } = await c.req.json();
+  const run = await createDeepResearchRun({
+    query, tenantId, userId, sessionStore, modelConfig, dataDir,
+  });
+  return c.json({ runId: run.id, status: run.status });
+});
+
+// Stream progress events for a run
+app.get("/run/:runId/stream", async (c) => {
+  const { runId } = c.req.param();
+  return streamRunEvents(c, runId);
+});
+
+// Query final artifacts and report
+app.get("/run/:runId/result", async (c) => {
+  const { runId } = c.req.param();
+  const result = await getRunResult(runId);
+  return c.json(result);
+});
+```
+
+### Run Lifecycle
+
+A deep research run moves through these phases:
+
+```
+query received
+  -> normalize plan (LLM)
+  -> spawn researcher sub-agents (one per topic)
+  -> each researcher: search -> collect sources -> summarize
+  -> source scoring and deduplication
+  -> artifact generation
+  -> report assembly
+  -> run_complete
+```
+
+The coordinator drives this via the `OrchestrationManager`. Each phase produces orchestration events visible in the SSE stream.
+
+### Consuming Progress Events
+
+The client subscribes to the run's SSE stream and updates a research dashboard:
+
+```ts
+import type { AgentrailEvent } from "@agentrail/events";
+
+async function subscribeToRun(runId: string, onUpdate: (patch: object) => void) {
+  const response = await fetch(`/run/${runId}/stream`);
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    for (const line of chunk.split("\n")) {
+      if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6).trim();
+      if (!raw || raw === "[DONE]") continue;
+
+      const event = JSON.parse(raw) as AgentrailEvent;
+      onUpdate(applyRunEvent(event));
+    }
+  }
+}
+
+function applyRunEvent(event: AgentrailEvent): object {
+  switch (event.type) {
+    case "orchestration_run_start":
+      return { phase: "planning", runId: event.runId };
+    case "subagent_spawned":
+      return { phase: "researching", newAgent: event.agent };
+    case "subagent_job_started":
+      return { activeJob: { agentId: event.agentId, jobId: event.jobId } };
+    case "subagent_job_completed":
+      return { completedAgent: event.agentId };
+    case "subagent_job_failed":
+      return { failedAgent: event.agentId };
+    case "orchestration_run_complete":
+      return { phase: event.status === "completed" ? "done" : "failed" };
+    default:
+      return {};
+  }
+}
+```
+
+### Querying Run Results
+
+Once `orchestration_run_complete` arrives, fetch the final artifacts:
+
+```ts
+const result = await fetch(`/run/${runId}/result`).then((r) => r.json());
+console.log(result.report);    // final Markdown report
+console.log(result.sources);   // scored and deduplicated sources
+console.log(result.artifacts); // generated artifacts (tables, summaries)
+```
+
+---
+
 ## How To Use This Example
 
 Use this example when you want to study:
 
 - how to build a workflow package on top of Agentrail
-- how orchestration-backed execution can remain separate from hosted route glue
-- how prompts, state, and reporting can belong to a workflow package instead of the host
+- how orchestration-backed execution remains separate from hosted route glue
+- how prompts, state, and reporting belong to a workflow package rather than the host app
+- how to surface multi-agent progress to a client via orchestration events
 
-If your app is “agent plus workflow” rather than “agent plus chat”, this example is often more relevant than the playground server.
+If your app is "agent plus structured workflow" rather than "agent plus chat", this example is more relevant than the playground server.
 
 ## Related Docs
 
 - [Architecture Overview](../architecture/README.md)
-- [Concepts: Events and Orchestration](../concepts/events-and-orchestration.md)
+- [Concepts: Orchestration](../concepts/orchestration.md)
+- [Concepts: Events](../concepts/events.md)
+- [Reference: Events](../reference/events.md)
 - [Examples: Playground Server](playground-server.md)

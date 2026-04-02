@@ -1,5 +1,26 @@
 # @agentrail/deep-research
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`aac05e2`](https://github.com/yai-dev/agentrail/commit/aac05e2c4f1ce7150729010d73a4429af3f987f8)]:
+  - @agentrail/runtime-core@0.1.0
+  - @agentrail/knowledge@0.0.3
+  - @agentrail/orchestration@0.0.4
+  - @agentrail/sandbox@0.0.3
+
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`58bd795`](https://github.com/yai-dev/agentrail/commit/58bd79566ceb12565dca2e5b6e287f426444070d), [`7feaa9b`](https://github.com/yai-dev/agentrail/commit/7feaa9baca6a3e8ed2b69bf6930fd069db1a9ab7), [`f2716be`](https://github.com/yai-dev/agentrail/commit/f2716be16589f1a5d0097a258e8529cbf51fd8ba)]:
+  - @agentrail/sandbox@0.0.2
+  - @agentrail/prompts@0.0.2
+  - @agentrail/runtime-core@0.0.2
+  - @agentrail/knowledge@0.0.2
+  - @agentrail/orchestration@0.0.3
+
 ## 0.0.3
 
 ### Patch Changes

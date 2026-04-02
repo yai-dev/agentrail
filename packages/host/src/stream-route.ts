@@ -5,7 +5,7 @@
 
 import { Hono } from "hono";
 import { streamText } from "hono/streaming";
-import { estimateMessageTokens } from "@agentrail/memo";
+import { runCompactionIfNeeded } from "./compaction.js";
 import type { Message, TransformContextFn, Usage } from "@agentrail/runtime-core";
 import { isRuntimeError } from "@agentrail/runtime-core";
 import type { SandboxManager } from "@agentrail/sandbox";
@@ -172,7 +172,7 @@ export function createStreamRoute(
 
     await options.onRequestStart?.(requestContext);
     await runPluginRequestHook(plugins, "onRequestStart", requestContext);
-    void options.sandboxManager.ensureSandbox(sid, tenantId, userId);
+    const sandboxReady = options.sandboxManager.ensureSandbox(sid, tenantId, userId);
 
     let forwardSubAgentEvent: (event: object) => void = () => {};
     let preloadedProfile: AgentrailProfile | null | undefined;
@@ -218,6 +218,18 @@ export function createStreamRoute(
         await runPluginRequestHook(plugins, "onTurnPersisted", requestContext);
       };
       try {
+        try {
+          await sandboxReady;
+        } catch (err) {
+          const errorEvent: AgentrailErrorEvent = {
+            type: "error",
+            error: { message: `Sandbox initialization failed: ${String(err)}` },
+          };
+          await writeEvent(errorEvent);
+          maybeTraceEvent(errorEvent);
+          return;
+        }
+
         if (options.handleResolvedRequest) {
           const handled = await options.handleResolvedRequest({
             request: {
@@ -278,27 +290,27 @@ export function createStreamRoute(
         }
 
         const allMessages = await options.sessionStore.loadAllMessages(tenantId, sid);
-        if (
-          allMessages.length >= options.compaction.minMessages &&
-          estimateMessageTokens(allMessages) > options.compaction.triggerTokens
-        ) {
-          await writeEvent({ type: "context_compaction_start" });
-          maybeTraceEvent({ type: "context_compaction_start" });
-          await options.sessionStore.compactIfNeeded(
-            tenantId,
-            sid,
-            options.summarize,
-            {
-              preloadedMessages: allMessages,
-              triggerTokens: options.compaction.triggerTokens,
-              workspaceSnapshot: await options.sandboxManager
-                .listWorkspace(sid)
-                .catch(() => undefined),
+        await runCompactionIfNeeded(
+          options.sessionStore,
+          tenantId,
+          sid,
+          allMessages,
+          options.summarize,
+          options.compaction,
+          {
+            workspaceSnapshot: await options.sandboxManager
+              .listWorkspace(sid)
+              .catch(() => undefined),
+            onBeforeCompact: async () => {
+              await writeEvent({ type: "context_compaction_start" });
+              maybeTraceEvent({ type: "context_compaction_start" });
             },
-          );
-          await writeEvent({ type: "context_compaction_end" });
-          maybeTraceEvent({ type: "context_compaction_end" });
-        }
+            onAfterCompact: async () => {
+              await writeEvent({ type: "context_compaction_end" });
+              maybeTraceEvent({ type: "context_compaction_end" });
+            },
+          },
+        );
 
         const history = await options.sessionStore.loadMessagesWithBudget(tenantId, sid);
         const transformContext = await resolveStreamTransformContext(
@@ -346,7 +358,7 @@ export function createStreamRoute(
               type: "context_usage",
               inputTokens: totalInputTokens,
               outputTokens: event.usage.outputTokens ?? 0,
-              budgetUsedPct: Math.round((totalInputTokens / 200_000) * 100),
+              budgetUsedPct: Math.round((totalInputTokens / (profile?.contextWindow ?? 200_000)) * 100),
             };
             await writeEvent(usageEvent);
             break;

@@ -25,6 +25,7 @@ import type {
   ManagedAgentDeliveryResult,
   OrchestrationAgent,
   OrchestrationEvent,
+  OrchestrationRun,
   OrchestrationSnapshot,
   RemoveInputInput,
   RunStatus,
@@ -99,7 +100,7 @@ export class OrchestrationManager {
   }
 
   private snapshot: OrchestrationSnapshot = {
-    run: null,
+    runs: {},
     tasks: {},
     agents: {},
     waits: {},
@@ -140,14 +141,10 @@ export class OrchestrationManager {
   }
 
   async startRun(input: StartRunInput): Promise<void> {
-    const existingRun = this.snapshot.run;
+    const existingRun = this.snapshot.runs[input.runId];
 
     if (existingRun) {
-      if (existingRun.id === input.runId) {
-        return;
-      }
-
-      throw new Error(`Orchestration run ${existingRun.id} is already active`);
+      return;
     }
 
     await this.recordEvent({
@@ -160,7 +157,7 @@ export class OrchestrationManager {
   }
 
   async spawnAgent(input: SpawnAgentInput): Promise<OrchestrationAgent> {
-    const run = this.requireActiveRun();
+    const run = this.getActiveRun(input.runId);
     const taskId = input.taskId ?? run.initialTaskId;
     const normalizedInput: SpawnAgentInput = {
       ...input,
@@ -219,8 +216,8 @@ export class OrchestrationManager {
     agentId: string;
     payload: Record<string, unknown>;
   }): Promise<void> {
-    const run = this.requireActiveRun();
     const agent = this.requireAgent(input.agentId);
+    const run = this.getActiveRun(agent.runId);
 
     if (agent.status === "closed") {
       throw new Error(`Agent ${input.agentId} is already closed`);
@@ -263,7 +260,8 @@ export class OrchestrationManager {
   }
 
   async waitForAgents(input: WaitAgentInput): Promise<WaitCondition> {
-    const run = this.requireActiveRun();
+    const primaryAgent = this.requireAgent(input.agentId);
+    const run = this.getActiveRun(primaryAgent.runId);
     const normalizedWait = normalizeWaitInput(input);
 
     for (const agentId of getWaitTargetAgentIds(normalizedWait)) {
@@ -306,8 +304,8 @@ export class OrchestrationManager {
   }
 
   async closeAgent(input: CloseAgentInput): Promise<OrchestrationAgent> {
-    const run = this.requireActiveRun();
     const agent = this.requireAgent(input.agentId);
+    const run = this.getActiveRun(agent.runId);
 
     if (agent.status === "closed") {
       return cloneAgent(agent);
@@ -364,7 +362,10 @@ export class OrchestrationManager {
   }
 
   async checkTimeouts(): Promise<void> {
-    if (this.snapshot.run?.status !== "running") {
+    const hasRunningRun = Object.values(this.snapshot.runs).some(
+      (r) => r.status === "running",
+    );
+    if (!hasRunningRun) {
       return;
     }
 
@@ -378,20 +379,18 @@ export class OrchestrationManager {
   }
 
   async completeRun(input: {
+    runId: string;
     status: Extract<RunStatus, "completed" | "failed">;
     error?: string;
   }): Promise<void> {
-    const run = this.snapshot.run;
+    const run = this.snapshot.runs[input.runId];
 
     if (!run) {
-      throw new Error("No orchestration run has been started");
+      throw new Error(`No orchestration run with ID ${input.runId} has been started`);
     }
 
     if (run.status !== "running") {
-      if (
-        run.status === input.status &&
-        run.completedAt
-      ) {
+      if (run.status === input.status && run.completedAt) {
         return;
       }
 
@@ -431,7 +430,10 @@ export class OrchestrationManager {
   }
 
   private async reconcileQueuedInputsFromMailbox(): Promise<void> {
-    if (this.snapshot.run?.status !== "running") {
+    const hasRunningRun = Object.values(this.snapshot.runs).some(
+      (r) => r.status === "running",
+    );
+    if (!hasRunningRun) {
       return;
     }
 
@@ -461,7 +463,10 @@ export class OrchestrationManager {
   }
 
   private async reconcileRecoveredCloseRequests(): Promise<void> {
-    if (this.snapshot.run?.status !== "running") {
+    const hasRunningRun = Object.values(this.snapshot.runs).some(
+      (r) => r.status === "running",
+    );
+    if (!hasRunningRun) {
       return;
     }
 
@@ -483,7 +488,7 @@ export class OrchestrationManager {
         eventId: this.createEventId(),
         type: "agent_closed",
         occurredAt: mailboxState.closeRequested.occurredAt,
-        runId: this.requireActiveRun().id,
+        runId: agent.runId,
         close: {
           id: `recover-close:${agent.id}`,
           agentId: agent.id,
@@ -527,7 +532,6 @@ export class OrchestrationManager {
     agentId: string,
     status: OrchestrationAgent["status"],
   ): Promise<void> {
-    const run = this.requireActiveRun();
     const agent = this.requireAgent(agentId);
 
     if (agent.status === status) {
@@ -538,7 +542,7 @@ export class OrchestrationManager {
       eventId: this.createEventId(),
       type: "agent_status_changed",
       occurredAt: this.now(),
-      runId: run.id,
+      runId: agent.runId,
       agentId,
       status,
     });
@@ -601,7 +605,10 @@ export class OrchestrationManager {
   }
 
   private async discardQueuedInputsForClosedAgents(): Promise<void> {
-    if (this.snapshot.run?.status !== "running") {
+    const hasRunningRun = Object.values(this.snapshot.runs).some(
+      (r) => r.status === "running",
+    );
+    if (!hasRunningRun) {
       return;
     }
 
@@ -711,14 +718,13 @@ export class OrchestrationManager {
     status: "agent_closed" | "agent_idle" | "timed_out",
     extraResolution?: Record<string, unknown>,
   ): Promise<void> {
-    const run = this.requireActiveRun();
     const primaryAgent = this.snapshot.agents[wait.agentId];
 
     await this.recordEvent({
       eventId: this.createEventId(),
       type: "wait_resolved",
       occurredAt: this.now(),
-      runId: run.id,
+      runId: wait.runId,
       waitId: wait.id,
       resolution: {
         status,
@@ -755,18 +761,18 @@ export class OrchestrationManager {
     }
   }
 
-  private requireActiveRun(): NonNullable<OrchestrationSnapshot["run"]> {
-    if (!this.snapshot.run) {
-      throw new Error("No orchestration run has been started");
+  private getActiveRun(runId: string): OrchestrationRun {
+    const run = this.snapshot.runs[runId];
+
+    if (!run) {
+      throw new Error(`No orchestration run with ID ${runId} has been started`);
     }
 
-    if (this.snapshot.run.status !== "running") {
-      throw new Error(
-        `Orchestration run ${this.snapshot.run.id} is not running`,
-      );
+    if (run.status !== "running") {
+      throw new Error(`Orchestration run ${runId} is not running`);
     }
 
-    return this.snapshot.run;
+    return run;
   }
 
   private requireAgent(agentId: string): OrchestrationAgent {
@@ -781,15 +787,11 @@ export class OrchestrationManager {
 
   private requireTask(taskId: string): void {
     if (!this.snapshot.tasks[taskId]) {
-      const rootTaskId = this.snapshot.run?.initialTaskId;
       const knownTaskIds = Object.keys(this.snapshot.tasks);
-      const guidance = rootTaskId
-        ? ` Omit taskId to use the current root task (${rootTaskId}).`
-        : "";
       const knownTasks = knownTaskIds.length > 0
         ? ` Known task IDs: ${knownTaskIds.join(", ")}.`
         : "";
-      throw new Error(`Unknown orchestration task ${taskId}.${guidance}${knownTasks}`);
+      throw new Error(`Unknown orchestration task ${taskId}.${knownTasks}`);
     }
   }
 
@@ -933,11 +935,12 @@ export class OrchestrationManager {
       await this.setAgentStatus(agentId, "running");
       const startedAt = this.now();
       const defaultJobId = `job:${envelope.id}:${startedAt}`;
+      const agentRunId = this.requireAgent(agentId).runId;
       await this.recordEvent({
         eventId: this.createEventId(),
         type: "agent_job_started",
         occurredAt: startedAt,
-        runId: this.requireActiveRun().id,
+        runId: agentRunId,
         agentId,
         jobId: defaultJobId,
         inputIds: jobInputs.map((input) => input.id),
@@ -964,7 +967,7 @@ export class OrchestrationManager {
       const completionEvent = {
         eventId: this.createEventId(),
         occurredAt: this.now(),
-        runId: this.requireActiveRun().id,
+        runId: agentRunId,
         agentId,
         job: {
           jobId: deliveryResult.jobId,
@@ -1023,11 +1026,12 @@ export class OrchestrationManager {
       return;
     }
 
+    const agent = this.requireAgent(input.agentId);
     await this.recordEvent({
       eventId: this.createEventId(),
       type: "agent_input_removed",
       occurredAt: this.now(),
-      runId: this.requireActiveRun().id,
+      runId: agent.runId,
       inputId: input.inputId,
       agentId: input.agentId,
       reason: input.reason,
@@ -1150,7 +1154,7 @@ export class OrchestrationManager {
       eventId: this.createEventId(),
       type: "agent_job_started",
       occurredAt: this.now(),
-      runId: this.requireActiveRun().id,
+      runId: agent.runId,
       agentId,
       jobId: job.jobId,
       inputIds: job.inputIds,
@@ -1169,7 +1173,7 @@ export class OrchestrationManager {
     await this.recordEvent({
       eventId: this.createEventId(),
       occurredAt: this.now(),
-      runId: this.requireActiveRun().id,
+      runId: agent.runId,
       agentId,
       type: result.outcome === "failed" ? "agent_job_failed" : "agent_job_completed",
       job: {

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" width="900" height="580" role="img" aria-label="Agentrail Request Lifecycle Diagram">
+  <rect width="900" height="580" fill="#0d0d0b" rx="4"/>
+  <rect x="20" y="16" width="860" height="52" fill="rgba(196,255,46,0.07)" stroke="rgba(196,255,46,0.35)" stroke-width="1" rx="2"/>
+  <text x="40" y="38" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="13" fill="#c4ff2e" font-weight="bold" letter-spacing="0.04em">POST /api/stream</text>
+  <text x="222" y="38" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="12" fill="rgba(196,255,46,0.45)">{ message, tenantId, userId, sessionId? }</text>
+  <text x="40" y="57" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10.5" fill="rgba(196,255,46,0.28)" letter-spacing="0.04em">createStreamRoute</text>
+  <line x1="52" y1="68" x2="52" y2="512" stroke="#242422" stroke-width="2"/>
+  <rect x="34" y="88" width="842" height="44" rx="1" fill="#101010"/>
+  <rect x="34" y="144" width="842" height="44" rx="1" fill="#101010"/>
+  <rect x="34" y="200" width="842" height="44" rx="1" fill="#101010"/>
+  <rect x="34" y="256" width="842" height="44" rx="1" fill="#101010"/>
+  <rect x="34" y="312" width="842" height="44" rx="1" fill="#101010"/>
+  <rect x="34" y="368" width="842" height="44" rx="1" fill="rgba(196,255,46,0.04)" stroke="rgba(196,255,46,0.12)" stroke-width="1"/>
+  <rect x="34" y="424" width="842" height="44" rx="1" fill="#101010"/>
+  <rect x="34" y="468" width="842" height="44" rx="1" fill="#101010"/>
+  <circle cx="52" cy="110" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
+  <text x="52" y="110" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">1</text>
+  <text x="82" y="105" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">getOrCreate session</text>
+  <text x="82" y="123" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">creates or resumes session, returns sessionId &#8212; @agentrail/memo</text>
+  <circle cx="52" cy="166" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
+  <text x="52" y="166" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">2</text>
+  <text x="82" y="161" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">resolveProfile &#8594; profile.createAgent()</text>
+  <text x="82" y="179" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">injects model config, system prompt, tools</text>
+  <circle cx="52" cy="222" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
+  <text x="52" y="222" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">3</text>
+  <text x="82" y="217" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">loadMessagesWithBudget</text>
+  <text x="82" y="235" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">trims session history to fit the model context window</text>
+  <circle cx="52" cy="278" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
+  <text x="52" y="278" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">4</text>
+  <text x="82" y="273" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">runCompactionIfNeeded</text>
+  <text x="82" y="291" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">summarizes old turns via LLM if history exceeds triggerTokens</text>
+  <circle cx="52" cy="334" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
+  <text x="52" y="334" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">5</text>
+  <text x="82" y="329" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">assemble context messages</text>
+  <text x="82" y="347" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">capability messages, workspace snapshot, knowledge results</text>
+  <circle cx="52" cy="390" r="14" fill="rgba(196,255,46,0.12)" stroke="rgba(196,255,46,0.5)" stroke-width="1.5"/>
+  <text x="52" y="390" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#c4ff2e">6</text>
+  <text x="82" y="385" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c4ff2e">agent.stream(message, context)</text>
+  <text x="82" y="403" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="rgba(196,255,46,0.45)">LLM call &#8594; tool dispatch &#8594; tool results &#8594; LLM ... each event streamed as SSE</text>
+  <circle cx="52" cy="446" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
+  <text x="52" y="446" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">7</text>
+  <text x="82" y="441" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">appendMessages + recordTurn</text>
+  <text x="82" y="459" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">persists new messages and token usage to session store</text>
+  <circle cx="52" cy="490" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
+  <text x="52" y="490" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">8</text>
+  <text x="82" y="485" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">SSE done event</text>
+  <text x="82" y="503" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">connection closes, client has received the full response</text>
+  <rect x="20" y="516" width="860" height="48" fill="rgba(196,255,46,0.07)" stroke="rgba(196,255,46,0.35)" stroke-width="1" rx="2"/>
+  <text x="40" y="535" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="12" fill="#c4ff2e" font-weight="bold" letter-spacing="0.04em">SSE stream</text>
+  <text x="40" y="553" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="rgba(196,255,46,0.4)">text_delta &#183; tool_call &#183; tool_result &#183; compaction &#183; budget_used_pct &#183; done</text>
+</svg>

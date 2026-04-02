@@ -57,6 +57,79 @@ It handles:
 
 Use it when your app needs request/response semantics without SSE.
 
+#### `AgentrailChatRouteOptions`
+
+```ts
+interface AgentrailChatRouteOptions {
+  /** Profile ID used when the request omits agentId */
+  defaultAgentId: string;
+  /** Session persistence implementation */
+  sessionStore: AgentrailSessionStore;
+  /** LLM call used to summarize old messages during compaction */
+  summarize: (messages: Message[]) => Promise<string>;
+  /** Compaction trigger configuration */
+  compaction: { triggerTokens: number; minMessages: number };
+  /** Resolve a profile by agentId for the current request */
+  resolveProfile(
+    agentId: string,
+    context: { tenantId: string; userId: string; sessionId: string; sessionDir: string },
+    onSubAgentEvent?: (event: object) => void,
+  ): Promise<AgentrailProfile | null>;
+  /** Registered plugins */
+  plugins?: AgentrailPlugin[];
+  /** Static context providers applied to every request */
+  contextProviders?: ContextProvider[];
+  /** Dynamic context providers built per request */
+  getContextProviders?: (
+    context: { tenantId: string; userId: string; sessionId: string },
+  ) => Promise<ContextProvider[]> | ContextProvider[];
+  /** Alternative to getContextProviders: supply a full transformContext function */
+  getTransformContext?: (
+    context: { tenantId: string; userId: string; sessionId: string },
+  ) => Promise<TransformContextFn> | TransformContextFn;
+  /** Intercept a resolved request before agent execution */
+  handleResolvedRequest?: (
+    context: AgentrailResolvedChatContext,
+  ) => Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
+  onRequestStart?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  onRequestEnd?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  onTurnPersisted?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
+}
+```
+
+**Minimal example:**
+
+```ts
+import { createChatRoute } from "@agentrail/host";
+import { SessionManager } from "@agentrail/memo";
+import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+app.route(
+  "/api/chat",
+  createChatRoute({
+    defaultAgentId: "default",
+    sessionStore: new SessionManager(dataDir),
+    summarize: async (messages) => {
+      const response = await anthropic.messages.create({
+        model: "claude-haiku-4-5",
+        max_tokens: 512,
+        messages: [
+          {
+            role: "user",
+            content: `Summarize the following conversation in 3-5 sentences:\n\n${messages.map((m) => `${m.role}: ${m.content}`).join("\n")}`,
+          },
+        ],
+      });
+      return response.content[0].type === "text" ? response.content[0].text : "";
+    },
+    compaction: { triggerTokens: 80_000, minMessages: 20 },
+    resolveProfile,
+  }),
+);
+```
+
 ### `createStreamRoute`
 
 Defined in:
@@ -79,6 +152,75 @@ Use it when you need:
 - compaction visibility
 - orchestration visibility
 - long-running tool feedback
+
+#### `AgentrailStreamRouteOptions`
+
+```ts
+interface AgentrailStreamRouteOptions {
+  /** Root data directory — used for attachment persistence */
+  dataDir: string;
+  defaultAgentId: string;
+  sessionStore: AgentrailSessionStore;
+  /** Required for sandbox-backed file attachment persistence */
+  sandboxManager: SandboxManager;
+  resolveProfile(
+    agentId: string,
+    context: { tenantId: string; userId: string; sessionId: string; sessionDir: string },
+    onSubAgentEvent?: (event: object) => void,
+  ): Promise<AgentrailProfile | null>;
+  summarize(messages: Message[]): Promise<string>;
+  compaction: { triggerTokens: number; minMessages: number };
+  plugins?: AgentrailPlugin[];
+  contextProviders?: ContextProvider[];
+  getContextProviders?: (
+    context: { tenantId: string; userId: string; sessionId: string },
+  ) => Promise<ContextProvider[]> | ContextProvider[];
+  getTransformContext?: (
+    context: { tenantId: string; userId: string; sessionId: string },
+  ) => Promise<TransformContextFn> | TransformContextFn;
+  /** Handles uploaded file context injection */
+  attachmentHandler?: AttachmentHandler;
+  onRequestStart?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  onRequestEnd?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  onTurnPersisted?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  /** Returns an OrchestrationManager for the session — enables orchestration events */
+  getOrchestrationManager?: (
+    context: { tenantId: string; userId: string; sessionId: string },
+  ) => Promise<OrchestrationManager>;
+  /** Intercept a resolved request before streaming begins */
+  handleResolvedRequest?: (
+    context: AgentrailResolvedStreamContext,
+  ) => Promise<boolean> | boolean;
+  /** Called for each trace-eligible SSE event — use for trace persistence */
+  onTraceEvent?: (
+    context: { tenantId: string; sessionId: string; sessionDir: string },
+    envelope: WorkflowTraceEventEnvelope,
+  ) => void;
+}
+```
+
+**Minimal example:**
+
+```ts
+import { createStreamRoute } from "@agentrail/host";
+import { SandboxManager } from "@agentrail/sandbox";
+
+app.route(
+  "/api/stream",
+  createStreamRoute({
+    dataDir,
+    defaultAgentId: "default",
+    sessionStore,
+    sandboxManager: new SandboxManager(dataDir),
+    resolveProfile,
+    summarize,
+    compaction: { triggerTokens: 80_000, minMessages: 20 },
+    plugins,
+    getContextProviders: async ({ tenantId, userId, sessionId }) =>
+      buildContextProviders({ tenantId, userId, sessionId }),
+  }),
+);
+```
 
 ## Profile Resolution
 

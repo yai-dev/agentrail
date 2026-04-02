@@ -73,6 +73,7 @@ export interface WaitCondition {
 
 export interface SpawnAgentInput {
   id: string;
+  runId: string;
   taskId?: string;
   displayName?: string;
   role: string;
@@ -216,7 +217,7 @@ export type OrchestrationEvent =
     });
 
 export interface OrchestrationSnapshot {
-  run: OrchestrationRun | null;
+  runs: Record<string, OrchestrationRun>;
   tasks: Record<string, OrchestrationTask>;
   agents: Record<string, OrchestrationAgent>;
   waits: Record<string, WaitCondition>;

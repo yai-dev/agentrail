@@ -5,6 +5,7 @@
 
 
 import type { Agent } from "../interfaces/agent.js";
+import type { LlmClient } from "../interfaces/llm-client.js";
 import type { RuntimeTool } from "../types/tool.types.js";
 
 // ============================================================================
@@ -40,6 +41,8 @@ export interface AgentConfig {
 	readonly maxTurns?: number;
 
 	readonly maxTurnsMessage?: string;
+
+	readonly llmClient?: LlmClient;
 }
 
 // ============================================================================

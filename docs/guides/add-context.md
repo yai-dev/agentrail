@@ -8,7 +8,7 @@ Read this guide after:
 
 - [Quickstart](quickstart.md)
 - [Build a Profile](build-a-profile.md)
-- [Concepts: Memory and Context](../concepts/memory-and-context.md)
+- [Concepts: Memory and Context](../concepts/context-and-compaction.md)
 
 They are the main way to answer questions like:
 

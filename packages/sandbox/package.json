@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/sandbox",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Docker-based sandbox execution and browser automation for Agentrail.",
   "type": "module",
   "files": [

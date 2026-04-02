@@ -129,6 +129,8 @@ describe("createChatRoute", () => {
     const route = createChatRoute({
       defaultAgentId: "agent-1",
       sessionStore: sessionManager as never,
+      summarize: async () => "summary",
+      compaction: { triggerTokens: 10_000, minMessages: 10 },
       resolveProfile: async () => ({
         id: "agent-1",
         name: "Test Agent",

@@ -1,4 +1,24 @@
-# Agentrail
+<p align="center">
+  <img src="assets/logo.svg#gh-light-mode-only" alt="Agentrail" height="52" />
+  <img src="assets/logo-dark.svg#gh-dark-mode-only" alt="Agentrail" height="52" />
+</p>
+
+<p align="center">
+  Build, host, and orchestrate tool-using AI agents.
+</p>
+
+<p align="center">
+  <a href="https://github.com/yai-dev/agentrail"><img src="https://img.shields.io/badge/status-pre--GA-orange" alt="Pre-GA" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License" /></a>
+  <a href="https://github.com/yai-dev/agentrail"><img src="https://img.shields.io/github/stars/yai-dev/agentrail?style=flat" alt="Stars" /></a>
+  <a href="https://github.com/yai-dev/agentrail/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" /></a>
+</p>
+
+<p align="center">
+  <strong>Website & Docs → <a href="https://agentrail.run">agentrail.run</a></strong>
+</p>
+
+---
 
 Agentrail is an open-source agent harness framework for building, hosting, and orchestrating tool-using AI agents.
 
@@ -9,157 +29,43 @@ It provides a composable runtime core, a hosted server layer, a prompt SDK, mult
 
 ## Why Agentrail
 
-Agentrail is designed for developers who want more structure than ad hoc agent scripts, but less product lock-in than a hosted platform.
+Agentrail grew out of patterns developed in a production AI agent system, distilled into a composable open-source framework.
 
-It gives you:
+It is designed for developers who want more structure than ad hoc agent scripts, but less product lock-in than a hosted platform.
 
-- A stable runtime core for defining and invoking agents
-- A host layer for chat and stream request handling
-- A recommended SDK for hosted profiles, default capability builders, and prompt composition
-- Multi-agent orchestration for delegated work
-- A clear extension model for plugins, prompts, context providers, and workflows
-
-## Recommended Path
-
-Start with the opinionated SDK, then drop down to lower-level primitives only when you need tighter control.
-
-1. Read the core concepts:
-   - [Agents](docs/concepts/agents.md)
-   - [Host](docs/concepts/host.md)
-   - [Profiles](docs/concepts/profiles.md)
-   - [Prompts](docs/concepts/prompts.md)
-2. Follow the first-use guide:
-   - [Quickstart](docs/guides/quickstart.md)
-3. Explore the reference docs when you need more control:
-   - [Host Defaults](docs/reference/host-defaults.md)
-   - [Host Primitives](docs/reference/host-primitives.md)
-   - [Prompt SDK](docs/reference/prompt-sdk.md)
-
-## Reading Paths
-
-### New To Agentrail
-
-Use this path if you want to get from zero to a working hosted app as quickly as possible:
-
-1. [What is Agentrail?](#agentrail)
-2. [Quickstart](docs/guides/quickstart.md)
-3. [Build a Profile](docs/guides/build-a-profile.md)
-4. [Manage Prompts](docs/guides/manage-prompts.md)
-5. [Add Tools](docs/guides/add-tools.md)
-6. [Add Context](docs/guides/add-context.md)
-7. [Playground Server Example](docs/examples/playground-server.md)
-
-### Going Deeper
-
-Use this path if you want to understand the framework internals and extension boundaries:
-
-1. [Architecture Overview](docs/architecture/README.md)
-2. [Host Defaults Reference](docs/reference/host-defaults.md)
-3. [Host Primitives Reference](docs/reference/host-primitives.md)
-4. [Profile Contract Reference](docs/reference/profile-contract.md)
-5. [Plugin Contract Reference](docs/reference/plugin-contract.md)
-6. [Events Reference](docs/reference/events.md)
-7. [Deep Research Example](docs/examples/deep-research.md)
-
-## Quick Start For This Repository
-
-If you want to run the included examples first instead of building a host from scratch:
-
-1. Install dependencies:
-
-```bash
-pnpm install
-```
-
-1. Review and update the local YAML config:
-
-```bash
-sed -n '1,240p' config/agentrail.yaml
-```
-
-1. Set these non-sensitive fields in `config/agentrail.yaml`:
-
-- `llm.provider`
-- `llm.modelId`
-- `search.provider`
-- `auth.uiSecretToken` if you want the UI to require an access token
-
-1. Set secrets via environment variables (do not store secrets in YAML):
-
-- `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
-- `TAVILY_API_KEY` if you want deep-research search support
-
-1. Start the example apps:
-
-```bash
-pnpm dev:playground-server
-pnpm dev:playground-ui
-```
-
-1. Open the UI and start with the default playground flow.  
-   If you only want the workflow example, use:
-
-```bash
-pnpm dev:deep-research
-```
-
-## Local Configuration
-
-Agentrail examples load local development configuration from:
-
-```text
-config/agentrail.yaml
-```
-
-The YAML file is the shared template for this repository and future Agentrail app scaffolds. It includes comments for every supported field, along with each field's purpose and default value.
-
-If you need a different local sandbox image, update:
-
-```yaml
-sandbox:
-  image: agentrail-sandbox:latest
-```
+- **Production-proven** — built from real-world agent infrastructure, not a proof-of-concept
+- **Code-first, no platform lock-in** — define everything in code, no hosted platform or GUI required
+- **Complete host layer** — goes beyond an agent loop with a full chat and streaming request lifecycle
+- **Pluggable LLM providers** — unified abstraction over Anthropic, OpenAI, and others; swap without rewriting agent logic
+- **Multi-agent orchestration** — delegate work to sub-agents with mailboxing, structured waits, and failure recovery
+- **Profile and plugin extension model** — package agent behavior in profiles, extend the runtime through plugins with clear boundaries
+- **Session memory and knowledge** — built-in message history compaction, knowledge-base indexing, and retrieval
+- **Docker sandbox isolation** — run LLM-generated code safely, fully isolated from the host environment
 
 ## Package Map
 
-- `@agentrail/config`: typed YAML config loading, defaults, and validation for Agentrail apps
-- `@agentrail/runtime-core`: agent definition, execution loop, tool contracts, provider abstractions
-- `@agentrail/host`: hosted request primitives for chat and stream lifecycles
-- `@agentrail/host/defaults`: recommended hosted SDK and default capability builders
-- `@agentrail/prompts`: prompt fragments, bundles, rendering, and file loading
-- `@agentrail/orchestration`: managed sub-agents, mailboxing, waits, and recovery
-- `@agentrail/memo`: session storage, message history, and compaction
-- `@agentrail/knowledge`: knowledge-base indexing and reading tools
-- `@agentrail/skills`: skill discovery and skill tool execution
-- `@agentrail/sandbox`: sandbox lifecycle and execution/browser tools
-- `@agentrail/tools`: general-purpose tools such as ask-user and todo writing
-- `@agentrail/events`: shared event contracts
-
-## Docs
-
-- [Architecture Overview](docs/architecture/README.md)
-- [Concepts](docs/concepts/agents.md)
-- [Guides](docs/guides/quickstart.md)
-- [Reference](docs/reference/host-defaults.md)
-- [Examples](docs/examples/playground-server.md)
-- [Troubleshooting](docs/guides/troubleshooting.md)
-- [Deployment](docs/guides/deployment.md)
-- [Roadmap](ROADMAP.md)
-
-Recommended concept-first order:
-
-1. [Agents](docs/concepts/agents.md)
-2. [Host](docs/concepts/host.md)
-3. [Profiles](docs/concepts/profiles.md)
-4. [Plugins](docs/concepts/plugins.md)
-5. [Prompts](docs/concepts/prompts.md)
-6. [Events and Orchestration](docs/concepts/events-and-orchestration.md)
+- [![npm](https://img.shields.io/npm/v/@agentrail/runtime-core)](https://www.npmjs.com/package/@agentrail/runtime-core) `@agentrail/runtime-core`: agent definition, execution loop, tool contracts, provider abstractions
+- [![npm](https://img.shields.io/npm/v/@agentrail/host)](https://www.npmjs.com/package/@agentrail/host) `@agentrail/host`: hosted request primitives for chat and stream lifecycles
+- [![npm](https://img.shields.io/npm/v/@agentrail/host)](https://www.npmjs.com/package/@agentrail/host) `@agentrail/host/defaults`: recommended hosted SDK and default capability builders
+- [![npm](https://img.shields.io/npm/v/@agentrail/prompts)](https://www.npmjs.com/package/@agentrail/prompts) `@agentrail/prompts`: prompt fragments, bundles, rendering, and file loading
+- [![npm](https://img.shields.io/npm/v/@agentrail/orchestration)](https://www.npmjs.com/package/@agentrail/orchestration) `@agentrail/orchestration`: managed sub-agents, mailboxing, waits, and recovery
+- [![npm](https://img.shields.io/npm/v/@agentrail/memo)](https://www.npmjs.com/package/@agentrail/memo) `@agentrail/memo`: session storage, message history, and compaction
+- [![npm](https://img.shields.io/npm/v/@agentrail/knowledge)](https://www.npmjs.com/package/@agentrail/knowledge) `@agentrail/knowledge`: knowledge-base indexing and reading tools
+- [![npm](https://img.shields.io/npm/v/@agentrail/skills)](https://www.npmjs.com/package/@agentrail/skills) `@agentrail/skills`: skill discovery and skill tool execution
+- [![npm](https://img.shields.io/npm/v/@agentrail/sandbox)](https://www.npmjs.com/package/@agentrail/sandbox) `@agentrail/sandbox`: sandbox lifecycle and execution/browser tools
+- [![npm](https://img.shields.io/npm/v/@agentrail/tools)](https://www.npmjs.com/package/@agentrail/tools) `@agentrail/tools`: general-purpose tools such as ask-user and todo writing
+- [![npm](https://img.shields.io/npm/v/@agentrail/events)](https://www.npmjs.com/package/@agentrail/events) `@agentrail/events`: shared event contracts
+- [![npm](https://img.shields.io/npm/v/@agentrail/config)](https://www.npmjs.com/package/@agentrail/config) `@agentrail/config`: typed YAML config loading, defaults, and validation for Agentrail apps
+- [![npm](https://img.shields.io/npm/v/@agentrail/plugin-user-memory)](https://www.npmjs.com/package/@agentrail/plugin-user-memory) `@agentrail/plugin-user-memory`: plugin for persistent user memory across sessions
+- [![npm](https://img.shields.io/npm/v/@agentrail/slash-commands)](https://www.npmjs.com/package/@agentrail/slash-commands) `@agentrail/slash-commands`: slash command parsing and dispatch
+- [![npm](https://img.shields.io/npm/v/@agentrail/deep-research)](https://www.npmjs.com/package/@agentrail/deep-research) `@agentrail/deep-research`: deep research workflow built on top of Agentrail
+- [![npm](https://img.shields.io/npm/v/@agentrail/create-agentrail-app)](https://www.npmjs.com/package/@agentrail/create-agentrail-app) `@agentrail/create-agentrail-app`: scaffolding CLI for new Agentrail projects
 
 ## Examples
 
-- [`examples/playground-server`](docs/examples/playground-server.md): full hosted reference server
-- [`examples/playground-ui`](docs/examples/playground-ui.md): companion UI for the playground server
-- [`examples/deep-research`](docs/examples/deep-research.md): dedicated workflow example built on top of Agentrail
+- `examples/playground-server`: full hosted reference server
+- `examples/playground-ui`: companion UI for the playground server
+- `examples/deep-research`: dedicated workflow example built on top of Agentrail
 
 ## Development
 
@@ -173,7 +79,7 @@ pnpm dev:playground-ui
 pnpm dev:deep-research
 ```
 
-For contributor workflow details, see [CONTRIBUTE.md](CONTRIBUTE.md).
+For contributor workflow details, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Useful verification commands while working on the framework:
 
@@ -182,6 +88,19 @@ pnpm --filter @agentrail/host test
 pnpm --filter @agentrail/prompts test
 pnpm --filter @agentrail/playground-server typecheck
 ```
+
+## Quick Start
+
+The fastest way to get started is the [Quickstart guide](https://agentrail.run/guides/quickstart) on the documentation site.
+
+For a full local reference setup, see the `examples/playground-server` and `examples/playground-ui` packages.
+
+## Community
+
+- [GitHub Discussions](https://github.com/yai-dev/agentrail/discussions) — questions, ideas, and show and tell
+- [Bug reports](https://github.com/yai-dev/agentrail/issues/new?template=bug_report.md) — use the issue tracker for confirmed bugs
+- [Feature requests](https://github.com/yai-dev/agentrail/issues/new?template=feature_request.md)
+- [Security vulnerabilities](SECURITY.md) — please do not open public issues
 
 ## License
 

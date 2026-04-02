@@ -72,8 +72,9 @@ export async function createDefaultAgent(
     createManagedAgent: (input) =>
       createManagedDefaultAgentInstance(tenantId, userId, sessionId, sessionDir, input),
   });
+  const orchestrationRunId = `orchestration:${sessionId}`;
   const orchestrationTools = [
-    createSpawnAgentTool(orchestrationManager),
+    createSpawnAgentTool(orchestrationManager, orchestrationRunId),
     createSendInputTool(orchestrationManager),
     createWaitAgentTool(orchestrationManager),
     createCloseAgentTool(orchestrationManager),

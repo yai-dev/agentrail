@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/tools",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Generic built-in tools for Agentrail hosts and profiles.",
   "type": "module",
   "files": [

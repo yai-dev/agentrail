@@ -16,7 +16,7 @@
           locking you into any platform.
         </p>
         <div class="at-hero-actions">
-          <a href="/agentrail/guides/quickstart" class="at-btn at-btn-primary">
+          <a href="/guides/quickstart" class="at-btn at-btn-primary">
             Quickstart →
           </a>
           <a
@@ -190,7 +190,7 @@
             {{ installCopied ? 'copied!' : 'copy' }}
           </button>
         </div>
-        <a href="/agentrail/guides/quickstart" class="at-btn at-btn-primary">
+        <a href="/guides/quickstart" class="at-btn at-btn-primary">
           Read the quickstart →
         </a>
       </div>
@@ -281,8 +281,8 @@
           Agentrail
         </div>
         <ul class="at-footer-links">
-          <li><a href="/agentrail/guides/quickstart">Docs</a></li>
-          <li><a href="/agentrail/roadmap">Roadmap</a></li>
+          <li><a href="/guides/quickstart">Docs</a></li>
+          <li><a href="/roadmap">Roadmap</a></li>
           <li
           ><a
               href="https://github.com/yai-dev/agentrail"
@@ -299,7 +299,7 @@
           ></li>
         </ul>
         <p class="at-footer-meta">
-          Pre-GA · APIs may change · © 2025 Agentrail contributors
+          Pre-GA · APIs may change before GA · © 2026 Agentrail contributors
         </p>
       </div>
     </footer>
