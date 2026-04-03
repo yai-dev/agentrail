@@ -3,10 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, appendFile } from "node:fs/promises";
-import * as path from "node:path";
-import { defineAgent, tool, Type, isAgentEnd, extractText } from "@agentrail/runtime-core";
-import type { ModelConfig, RuntimeTool, AssistantMessage } from "@agentrail/runtime-core";
+import type { AssistantMessage, ModelConfig, RuntimeTool } from "@agentrail/runtime-core";
+import { defineAgent, extractText, isAgentEnd, tool, Type } from "@agentrail/runtime-core";
 import type { SkillManager } from "./skill-manager.js";
 import type { ExtendedSseEvent } from "./types.js";
 
@@ -39,11 +37,10 @@ export async function buildSkillTool(
    */
   containerSkillsDir?: string,
   /**
-   * When set, the full sub-agent message history (system prompt + all turns)
-   * is appended to `{subAgentLogDir}/skill-{skillName}-{timestamp}.jsonl`
-   * after each skill execution. Useful for debugging silent failures.
+   * When set, receives the full sub-agent message history (system prompt + all
+   * turns) after each skill execution. Useful for debugging silent failures.
    */
-  subAgentLogDir?: string,
+  persistSubAgentLog?: (entry: SubAgentLogEntry) => Promise<void> | void,
   /**
    * When set, these identifiers are automatically prepended to every skill's
    * context so sub-agents always have tenant/user info even if the main agent
@@ -88,17 +85,19 @@ export async function buildSkillTool(
     .parameters(
       Type.Object({
         skillName: Type.String({
-          description: "Name of the skill to invoke. Must be one of the available skills listed above.",
+          description:
+            "Name of the skill to invoke. Must be one of the available skills listed above.",
         }),
         task: Type.String({
           description: "Clear description of the task for the skill to accomplish.",
         }),
         context: Type.Optional(
           Type.String({
-            description: "Relevant context from the current conversation (e.g. customer names, filters, field values).",
-          })
+            description:
+              "Relevant context from the current conversation (e.g. customer names, filters, field values).",
+          }),
         ),
-      })
+      }),
     )
     .execute(async ({ skillName, task, context }) => {
       let skillContent: string;
@@ -115,9 +114,7 @@ export async function buildSkillTool(
       const hostSkillDir = skillManager.getSkillDir(skillName);
       // Use container-internal path when running inside a sandbox, otherwise
       // fall back to the host-absolute path.
-      const skillDir = containerSkillsDir
-        ? `${containerSkillsDir}/${skillName}`
-        : hostSkillDir;
+      const skillDir = containerSkillsDir ? `${containerSkillsDir}/${skillName}` : hostSkillDir;
 
       // ── Direct execution mode (progressive disclosure) ──────────────
       // Return SKILL.md instructions to the main agent so it can execute
@@ -133,7 +130,9 @@ export async function buildSkillTool(
           `Skill: ${skillName}\n` +
           `Working Directory: ${skillDir}\n` +
           `All scripts are in: ${skillDir}/scripts/\n` +
-          (mergedContextDirect ? `\nTask: ${task}\n\nContext:\n${mergedContextDirect}` : `\nTask: ${task}`) +
+          (mergedContextDirect
+            ? `\nTask: ${task}\n\nContext:\n${mergedContextDirect}`
+            : `\nTask: ${task}`) +
           `\n\n--- Instructions ---\n\n` +
           skillContent;
 
@@ -164,9 +163,7 @@ export async function buildSkillTool(
         ? `tenant_id: ${autoContext.tenantId}, user_id: ${autoContext.userId}`
         : null;
       const mergedContext = [autoCtxPrefix, context].filter(Boolean).join(", ");
-      const input = mergedContext
-        ? `Task: ${task}\n\nContext:\n${mergedContext}`
-        : `Task: ${task}`;
+      const input = mergedContext ? `Task: ${task}\n\nContext:\n${mergedContext}` : `Task: ${task}`;
 
       const subAgent = defineAgent({
         id: `skill-executor-${skillName}`,
@@ -227,9 +224,9 @@ export async function buildSkillTool(
               }
             }
             // Persist sub-agent message history for debugging
-            if (subAgentLogDir) {
+            if (persistSubAgentLog) {
               const finishedAt = Date.now();
-              void persistSubAgentLog(subAgentLogDir, {
+              void persistSubAgentLog({
                 skillName,
                 task,
                 input,
@@ -275,34 +272,4 @@ interface SubAgentLogEntry {
   resultText: string;
   startedAt: number;
   finishedAt: number;
-}
-
-async function persistSubAgentLog(logDir: string, entry: SubAgentLogEntry): Promise<void> {
-  try {
-    await mkdir(logDir, { recursive: true });
-    const filename = `skill-${entry.skillName}-${entry.startedAt}.jsonl`;
-    const filePath = path.join(logDir, filename);
-
-    const lines: string[] = [
-      // Metadata header line
-      JSON.stringify({
-        type: "meta",
-        skillName: entry.skillName,
-        task: entry.task,
-        input: entry.input,
-        systemPrompt: entry.systemPrompt,
-        resultText: entry.resultText,
-        startedAt: entry.startedAt,
-        finishedAt: entry.finishedAt,
-        durationMs: entry.finishedAt - entry.startedAt,
-      }),
-      // One line per message
-      ...entry.messages.map((m) => JSON.stringify(m)),
-      "",
-    ];
-
-    await appendFile(filePath, lines.join("\n"), "utf-8");
-  } catch {
-    // Non-critical: log failure should not surface to the caller
-  }
 }

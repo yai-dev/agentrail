@@ -65,7 +65,11 @@ The default profile lives in `profiles/default-profile.ts`. It shows the recomme
 ```ts
 // examples/playground-server/src/profiles/default-profile.ts (simplified)
 import { defineAgent } from "@agentrail/runtime-core";
-import { defineHostedProfile, createHostedProfileResolver, buildDefaultCapabilityTools } from "@agentrail/host/defaults";
+import {
+  defineHostedProfile,
+  createHostedProfileResolver,
+  buildDefaultCapabilityTools,
+} from "@agentrail/host/defaults";
 import { createPromptBuilder } from "@agentrail/prompts";
 import { bundle } from "../prompts/index.js";
 import { knowledgeManager, sandboxManager, skillManager, waitHandleRegistry } from "../managers.js";
@@ -156,9 +160,9 @@ import { attachmentHintsPlugin } from "./attachment-hints.js";
 import { userMemoryPlugin } from "./user-memory.js";
 
 export const plugins: AgentrailPlugin[] = [
-  slashCommandsPlugin,     // intercepts /commands before the agent runs
-  attachmentHintsPlugin,   // injects file context for uploaded attachments
-  userMemoryPlugin,        // adds user memory notes to context
+  slashCommandsPlugin, // intercepts /commands before the agent runs
+  attachmentHintsPlugin, // injects file context for uploaded attachments
+  userMemoryPlugin, // adds user memory notes to context
 ];
 ```
 

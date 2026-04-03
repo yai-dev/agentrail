@@ -3,14 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
+import type { OrchestrationAgent, OrchestrationEvent } from "@agentrail/orchestration";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
 import { Hono } from "hono";
-import type {
-  OrchestrationAgent,
-  OrchestrationEvent,
-} from "@agentrail/orchestration";
-import { OrchestrationStore } from "@agentrail/orchestration";
 import { config } from "../config.js";
-import path from "node:path";
 
 const orchestration = new Hono();
 
@@ -49,23 +46,26 @@ orchestration.get("/:sessionId/orchestration", async (c) => {
   const tenantId = c.req.query("tenantId") ?? "default";
 
   try {
-    const sessionDir = path.join(config.dataDir, "tenants", tenantId, "sessions", sessionId);
+    const persistence = createFilesystemOrchestrationPersistence(
+      config.dataDir,
+      createSessionRef(tenantId, sessionId),
+    );
     const [{ snapshot }, events] = await Promise.all([
-      OrchestrationStore.recoverState(sessionDir),
-      OrchestrationStore.loadEvents(sessionDir),
+      persistence.recoverState(),
+      persistence.loadEvents(),
     ]);
 
     const agents = Object.values(snapshot?.agents ?? {}) as OrchestrationAgent[];
     const agentStates = await Promise.all(
       agents.map(async (agent) => ({
         agent,
-        mailboxState: await OrchestrationStore.loadMailboxState(sessionDir, agent.id),
+        mailboxState: await persistence.loadMailboxState(agent.id),
       })),
     );
 
     const activeRun = snapshot
       ? (Object.values(snapshot.runs).find((r) => r.status === "running") ??
-         Object.values(snapshot.runs)[0])
+        Object.values(snapshot.runs)[0])
       : undefined;
     const response: OrchestrationHistoryResponse = {
       run: activeRun

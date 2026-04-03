@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message, TransformContextFn, UserMessage } from "@agentrail/runtime-core";
+import type { TransformContextFn, UserMessage } from "@agentrail/runtime-core";
 import { createContextProviderFromTransform } from "../context-pipeline.js";
 import type { ContextProvider } from "../types.js";
 import {
@@ -14,8 +14,8 @@ import {
   makeUserIdentityMessage,
   translateMemoryPaths,
 } from "./capability-messages.js";
-import { createDefaultContextProviders } from "./toolset.js";
 import type { DefaultCapabilityContextOptions } from "./shared-types.js";
+import { createDefaultContextProviders } from "./toolset.js";
 
 /**
  * Creates the default transformContext implementation used by the recommended host SDK.
@@ -99,9 +99,7 @@ export function createDefaultCapabilityContextProviders(
 ): ContextProvider[] {
   return createDefaultContextProviders({
     baseProviders: [
-      createContextProviderFromTransform(
-        createDefaultCapabilityTransformContext(options),
-      ),
+      createContextProviderFromTransform(createDefaultCapabilityTransformContext(options)),
     ],
   });
 }

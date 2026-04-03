@@ -3,10 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, expect, it, vi } from "vitest";
+import { createSessionRef } from "@agentrail/memo";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { describe, expect, it, vi } from "vitest";
 import { createOrchestrationRegistry } from "../src/orchestration-registry.js";
 
 describe("createOrchestrationRegistry", () => {
@@ -24,17 +25,21 @@ describe("createOrchestrationRegistry", () => {
         tenantId: "tenant-1",
         userId: "user-1",
         sessionId: "session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
         createManagedAgent,
       });
       const second = await registry.getManager({
         tenantId: "tenant-1",
         userId: "user-1",
         sessionId: "session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
         createManagedAgent,
       });
 
       expect(second).toBe(first);
-      expect(first.getSnapshot().runs["orchestration:session-1"]?.id).toBe("orchestration:session-1");
+      expect(first.getSnapshot().runs["orchestration:session-1"]?.id).toBe(
+        "orchestration:session-1",
+      );
 
       registry.invalidate("tenant-1", "session-1");
 
@@ -42,11 +47,14 @@ describe("createOrchestrationRegistry", () => {
         tenantId: "tenant-1",
         userId: "user-1",
         sessionId: "session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
         createManagedAgent,
       });
 
       expect(third).not.toBe(first);
-      expect(third.getSnapshot().runs["orchestration:session-1"]?.id).toBe("orchestration:session-1");
+      expect(third.getSnapshot().runs["orchestration:session-1"]?.id).toBe(
+        "orchestration:session-1",
+      );
     } finally {
       await rm(dataDir, { recursive: true, force: true });
     }

@@ -3,15 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-export type {
-  Taxonomy,
-  KBDocMeta,
-  KnowledgeIndex,
-  KBMetadata,
-  IngestionStep,
-  IngestionJob,
-  IngestionEvent,
-  SearchResult,
-} from "./types.js";
-export { KnowledgeManager } from "./knowledge-manager.js";
 export { createKbListTool, createKbReadTool, createKbSearchTool } from "./kb-tools.js";
+export { KnowledgeManager } from "./knowledge-manager.js";
+export type {
+  IngestionEvent,
+  IngestionJob,
+  IngestionStep,
+  KBDocMeta,
+  KBMetadata,
+  KnowledgeIndex,
+  SearchResult,
+  Taxonomy,
+} from "./types.js";

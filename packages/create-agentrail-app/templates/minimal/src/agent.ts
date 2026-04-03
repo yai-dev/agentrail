@@ -1,16 +1,7 @@
-import {
-  defineAgent,
-  isRuntimeError,
-  type Message,
-} from "@agentrail/runtime-core";
-import {
-  createHostedProfileResolver,
-  defineHostedProfile,
-} from "@agentrail/host/defaults";
+import { createHostedProfileResolver, defineHostedProfile } from "@agentrail/host/defaults";
+import { defineAgent, isRuntimeError, type Message } from "@agentrail/runtime-core";
 
-const MODEL_PROVIDER = (process.env.MODEL_PROVIDER ?? "anthropic") as
-  | "anthropic"
-  | "openai";
+const MODEL_PROVIDER = (process.env.MODEL_PROVIDER ?? "anthropic") as "anthropic" | "openai";
 const MODEL_ID = process.env.MODEL_ID ?? "claude-3-5-sonnet-20241022";
 
 export const AGENT_ID = "{{PROJECT_NAME}}-agent";
@@ -37,15 +28,11 @@ export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
           const content =
             typeof m.content === "string"
               ? m.content
-              : m.content
-                  .map((b) => (b.type === "text" ? b.text : ""))
-                  .join("");
+              : m.content.map((b) => (b.type === "text" ? b.text : "")).join("");
           return `User: ${content}`;
         }
         if (m.role === "assistant") {
-          return `Assistant: ${m.content
-            .map((b) => (b.type === "text" ? b.text : ""))
-            .join("")}`;
+          return `Assistant: ${m.content.map((b) => (b.type === "text" ? b.text : "")).join("")}`;
         }
         return null;
       })
@@ -55,14 +42,9 @@ export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
     if (!transcript.trim()) return "(nothing to summarize)";
 
     let summary = "";
-    for await (const event of summarizer.stream(
-      `Summarize this conversation:\n\n${transcript}`,
-    )) {
+    for await (const event of summarizer.stream(`Summarize this conversation:\n\n${transcript}`)) {
       if (isRuntimeError(event)) return "(summarization failed)";
-      if (
-        event.type === "message_update" &&
-        event.event.type === "text_delta"
-      ) {
+      if (event.type === "message_update" && event.event.type === "text_delta") {
         summary += event.event.delta;
       }
       if (event.type === "agent_end") break;

@@ -3,7 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, readFile, readdir, stat, writeFile, appendFile } from "node:fs/promises";
+import type { SessionRef } from "@agentrail/memo";
+import { resolveSessionRef } from "@agentrail/memo";
+import { appendFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { DeepResearchEvent, DeepResearchState } from "./types.js";
 
@@ -20,14 +22,29 @@ async function readJsonFile<T>(filePath: string): Promise<T | null> {
   }
 }
 
+function getSessionRootDir(dataDir: string, sessionRef: SessionRef): string {
+  const { tenantId, sessionId } = resolveSessionRef(sessionRef);
+  return path.join(dataDir, "tenants", tenantId, "sessions", sessionId);
+}
+
 // Deep Research persistence is intentionally simple: every run has a snapshot
 // state file plus an append-only event log so the UI can recover the latest run
 // and developers can inspect the raw execution history on disk.
-export class DeepResearchStore {
-  constructor(private readonly sessionDir: string) {}
+export interface DeepResearchStore {
+  getArtifactsDir(runId: string): string;
+  initializeRun(state: DeepResearchState): Promise<void>;
+  appendEvent(runId: string, event: DeepResearchEvent): Promise<void>;
+  writeState(state: DeepResearchState): Promise<void>;
+  loadState(runId: string): Promise<DeepResearchState | null>;
+  loadEvents(runId: string): Promise<DeepResearchEvent[]>;
+  loadLatestState(): Promise<DeepResearchState | null>;
+}
+
+class FileSystemDeepResearchStore implements DeepResearchStore {
+  constructor(private readonly sessionRootDir: string) {}
 
   private getRootDir(): string {
-    return path.join(this.sessionDir, "deep-research");
+    return path.join(this.sessionRootDir, "deep-research");
   }
 
   private getRunsDir(): string {
@@ -47,7 +64,11 @@ export class DeepResearchStore {
     await mkdir(path.join(runDir, "artifacts"), { recursive: true });
     await Promise.all([
       writeFile(path.join(runDir, STATE_FILE), JSON.stringify(state, null, 2), "utf-8"),
-      writeFile(path.join(this.getRootDir(), LATEST_FILE), JSON.stringify({ runId: state.run.id }, null, 2), "utf-8"),
+      writeFile(
+        path.join(this.getRootDir(), LATEST_FILE),
+        JSON.stringify({ runId: state.run.id }, null, 2),
+        "utf-8",
+      ),
     ]);
   }
 
@@ -61,7 +82,11 @@ export class DeepResearchStore {
     const runDir = this.getRunDir(state.run.id);
     await mkdir(runDir, { recursive: true });
     await writeFile(path.join(runDir, STATE_FILE), JSON.stringify(state, null, 2), "utf-8");
-    await writeFile(path.join(this.getRootDir(), LATEST_FILE), JSON.stringify({ runId: state.run.id }, null, 2), "utf-8");
+    await writeFile(
+      path.join(this.getRootDir(), LATEST_FILE),
+      JSON.stringify({ runId: state.run.id }, null, 2),
+      "utf-8",
+    );
   }
 
   async loadState(runId: string): Promise<DeepResearchState | null> {
@@ -82,7 +107,9 @@ export class DeepResearchStore {
   }
 
   async loadLatestState(): Promise<DeepResearchState | null> {
-    const latest = await readJsonFile<{ runId?: string }>(path.join(this.getRootDir(), LATEST_FILE));
+    const latest = await readJsonFile<{ runId?: string }>(
+      path.join(this.getRootDir(), LATEST_FILE),
+    );
     if (latest?.runId) {
       return this.loadState(latest.runId);
     }
@@ -104,4 +131,12 @@ export class DeepResearchStore {
       return null;
     }
   }
+}
+
+/** Creates the default filesystem-backed Deep Research store for a session. */
+export function createFileSystemDeepResearchStore(
+  dataDir: string,
+  sessionRef: SessionRef,
+): DeepResearchStore {
+  return new FileSystemDeepResearchStore(getSessionRootDir(dataDir, sessionRef));
 }

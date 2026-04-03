@@ -4,6 +4,6 @@
  */
 
 export { config } from "./config.js";
-export { sessionManager, knowledgeManager, sandboxManager } from "./context/index.js";
+export { knowledgeManager, sandboxManager, sessionManager } from "./context/index.js";
 export { deepResearch } from "./routes/deep-research.js";
 export { run } from "./routes/run.js";

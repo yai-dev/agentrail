@@ -5,12 +5,9 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { KBMetadata, KBDocMeta, Taxonomy } from "./types.js";
+import type { KBDocMeta, KBMetadata, Taxonomy } from "./types.js";
 
-export async function ensureJsonFile<T>(
-  filePath: string,
-  defaultValue: T,
-): Promise<void> {
+export async function ensureJsonFile<T>(filePath: string, defaultValue: T): Promise<void> {
   try {
     await fs.access(filePath);
   } catch {
@@ -18,10 +15,7 @@ export async function ensureJsonFile<T>(
   }
 }
 
-export async function readJsonFileOrDefault<T>(
-  filePath: string,
-  defaultValue: T,
-): Promise<T> {
+export async function readJsonFileOrDefault<T>(filePath: string, defaultValue: T): Promise<T> {
   try {
     const raw = await fs.readFile(filePath, "utf-8");
     return JSON.parse(raw) as T;
@@ -30,10 +24,7 @@ export async function readJsonFileOrDefault<T>(
   }
 }
 
-export async function writeJsonFile(
-  filePath: string,
-  value: unknown,
-): Promise<void> {
+export async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(value, null, 2), "utf-8");
 }
 
@@ -52,9 +43,8 @@ export async function listIndexTopics(kbDir: string): Promise<Set<string>> {
   );
 }
 
-export function countReadyDocsByTopic(
-  docs: KBDocMeta[],
-): Map<string, number> {
+/** Counts ready documents by topic for metadata summaries. */
+export function countReadyDocsByTopic(docs: KBDocMeta[]): Map<string, number> {
   const topicDocMap = new Map<string, number>();
   for (const doc of docs) {
     if (doc.status !== "ready") {
@@ -69,23 +59,21 @@ export function countReadyDocsByTopic(
   return topicDocMap;
 }
 
+/** Builds the topic summary list exposed in knowledge-base metadata. */
 export function buildTopicSummaries(
   docs: KBDocMeta[],
   indexTopics: Set<string>,
 ): KBMetadata["topics"] {
   const topicDocMap = countReadyDocsByTopic(docs);
-  return Array.from(new Set([...topicDocMap.keys(), ...indexTopics])).map(
-    (topic) => ({
-      topic,
-      hasIndex: indexTopics.has(topic),
-      docCount: topicDocMap.get(topic) ?? 0,
-    }),
-  );
+  return Array.from(new Set([...topicDocMap.keys(), ...indexTopics])).map((topic) => ({
+    topic,
+    hasIndex: indexTopics.has(topic),
+    docCount: topicDocMap.get(topic) ?? 0,
+  }));
 }
 
-export function buildRecentDocs(
-  docs: KBDocMeta[],
-): KBMetadata["recentDocs"] {
+/** Builds the recent-documents summary exposed in knowledge-base metadata. */
+export function buildRecentDocs(docs: KBDocMeta[]): KBMetadata["recentDocs"] {
   return docs
     .filter((doc) => doc.status === "ready")
     .sort((left, right) => right.updatedAt - left.updatedAt)

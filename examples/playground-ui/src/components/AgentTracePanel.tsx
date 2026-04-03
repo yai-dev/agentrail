@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import type { OrchestrationState, OrchestrationEvent } from "../types/orchestration.js";
+import type { OrchestrationEvent, OrchestrationState } from "../types/orchestration.js";
 
 interface AgentTracePanelProps {
   state: OrchestrationState | null;
@@ -62,7 +62,13 @@ function EventRow({ event, isExpanded, onToggle }: EventRowProps) {
 
   return (
     <div className={`agent-trace-row ${isExpanded ? "expanded" : ""}`}>
-      <div className="agent-trace-row-header" onClick={onToggle} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onToggle()}>
+      <div
+        className="agent-trace-row-header"
+        onClick={onToggle}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && onToggle()}
+      >
         <span className={`agent-trace-timestamp`}>{formatTimestamp(event.timestamp)}</span>
         <span className={`agent-trace-type ${typeClass}`}>{typeLabel}</span>
         <span className="agent-trace-id" title={event.id}>
@@ -98,9 +104,11 @@ export function AgentTracePanel({ state }: AgentTracePanelProps) {
 
   const filteredEvents = state.events.filter((event) => {
     if (filter === "all") return true;
-    if (filter === "agent") return event.type.startsWith("agent_") || event.type.startsWith("subagent_");
+    if (filter === "agent")
+      return event.type.startsWith("agent_") || event.type.startsWith("subagent_");
     if (filter === "wait") return event.type.startsWith("wait_");
-    if (filter === "run") return event.type.startsWith("run_") || event.type.startsWith("orchestration_");
+    if (filter === "run")
+      return event.type.startsWith("run_") || event.type.startsWith("orchestration_");
     return true;
   });
 

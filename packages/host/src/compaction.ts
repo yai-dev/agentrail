@@ -7,6 +7,7 @@ import { estimateMessageTokens } from "@agentrail/memo";
 import type { Message } from "@agentrail/runtime-core";
 import type { AgentrailSessionStore } from "./types.js";
 
+/** Token thresholds that control when host-side history compaction runs. */
 export interface CompactionConfig {
   triggerTokens: number;
   minMessages: number;
@@ -41,16 +42,11 @@ export async function runCompactionIfNeeded(
   }
 
   await opts?.onBeforeCompact?.();
-  const result = await sessionStore.compactIfNeeded(
-    tenantId,
-    sessionId,
-    summarize,
-    {
-      preloadedMessages: allMessages,
-      triggerTokens: compaction.triggerTokens,
-      workspaceSnapshot: opts?.workspaceSnapshot,
-    },
-  );
+  const result = await sessionStore.compactIfNeeded(tenantId, sessionId, summarize, {
+    preloadedMessages: allMessages,
+    triggerTokens: compaction.triggerTokens,
+    workspaceSnapshot: opts?.workspaceSnapshot,
+  });
   await opts?.onAfterCompact?.();
 
   return result;

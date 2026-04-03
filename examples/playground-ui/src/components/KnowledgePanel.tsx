@@ -3,16 +3,16 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  fetchKBList,
   createKB,
   deleteKB,
-  fetchKBDocuments,
   deleteKBDocument,
+  fetchKBDocuments,
+  fetchKBList,
   ingestDocument,
-  type KBDocMeta,
   type IngestionEvent,
+  type KBDocMeta,
 } from "../api";
 
 // ── Ingestion step metadata ────────────────────────────────────────────────
@@ -39,10 +39,24 @@ interface StepState {
 // ── Status icon helpers ────────────────────────────────────────────────────
 
 function DocStatusBadge({ status }: { status: KBDocMeta["status"] }) {
-  if (status === "ready") return <span className="kb-doc-badge ready" title="Ready">✓</span>;
+  if (status === "ready")
+    return (
+      <span className="kb-doc-badge ready" title="Ready">
+        ✓
+      </span>
+    );
   if (status === "processing" || status === "pending")
-    return <span className="kb-doc-badge pending" title="Processing">⟳</span>;
-  if (status === "failed") return <span className="kb-doc-badge failed" title="Failed">✕</span>;
+    return (
+      <span className="kb-doc-badge pending" title="Processing">
+        ⟳
+      </span>
+    );
+  if (status === "failed")
+    return (
+      <span className="kb-doc-badge failed" title="Failed">
+        ✕
+      </span>
+    );
   return null;
 }
 
@@ -65,7 +79,9 @@ function KBSelector({ onSelect }: KBSelectorProps) {
     setKbs(list);
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -106,10 +122,21 @@ function KBSelector({ onSelect }: KBSelectorProps) {
         <span className="kb-selector-title">选择知识库</span>
         <button
           className="kb-selector-create-btn"
-          onClick={() => { setShowCreate((v) => !v); setError(null); }}
+          onClick={() => {
+            setShowCreate((v) => !v);
+            setError(null);
+          }}
           title="新建知识库"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <path d="M12 5v14M5 12h14" />
           </svg>
         </button>
@@ -121,7 +148,10 @@ function KBSelector({ onSelect }: KBSelectorProps) {
             className="kb-create-input"
             placeholder="知识库名称（如 product-docs）"
             value={newName}
-            onChange={(e) => { setNewName(e.target.value); setError(null); }}
+            onChange={(e) => {
+              setNewName(e.target.value);
+              setError(null);
+            }}
             onKeyDown={(e) => e.key === "Enter" && void handleCreate()}
             disabled={creating}
             autoFocus
@@ -135,7 +165,14 @@ function KBSelector({ onSelect }: KBSelectorProps) {
             >
               {creating ? "创建中..." : "创建"}
             </button>
-            <button className="kb-add-cancel" onClick={() => { setShowCreate(false); setError(null); setNewName(""); }}>
+            <button
+              className="kb-add-cancel"
+              onClick={() => {
+                setShowCreate(false);
+                setError(null);
+                setNewName("");
+              }}
+            >
               取消
             </button>
           </div>
@@ -149,11 +186,31 @@ function KBSelector({ onSelect }: KBSelectorProps) {
           kbs.map((id) => (
             <div key={id} className="kb-list-item-row">
               <button className="kb-list-item" onClick={() => onSelect(id)}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.5 }}>
-                  <path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ flexShrink: 0, opacity: 0.5 }}
+                >
+                  <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
                 </svg>
                 <span className="kb-list-item-name">{id}</span>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.35 }}>
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  style={{ flexShrink: 0, opacity: 0.35 }}
+                >
                   <path d="M9 18l6-6-6-6" />
                 </svg>
               </button>
@@ -166,7 +223,15 @@ function KBSelector({ onSelect }: KBSelectorProps) {
                 {deletingKb === id ? (
                   <span style={{ fontSize: 10 }}>…</span>
                 ) : (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
                     <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
                   </svg>
                 )}
@@ -195,9 +260,7 @@ function DocList({ kbId, onBack }: DocListProps) {
   const [addFileName, setAddFileName] = useState<string | null>(null);
   const [isIngesting, setIsIngesting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [steps, setSteps] = useState<StepState[]>(
-    STEPS.map((s) => ({ name: s, status: "idle" }))
-  );
+  const [steps, setSteps] = useState<StepState[]>(STEPS.map((s) => ({ name: s, status: "idle" })));
   const [ingestingTitle, setIngestingTitle] = useState("");
   const [ingestError, setIngestError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -207,7 +270,9 @@ function DocList({ kbId, onBack }: DocListProps) {
     setDocs(fetched);
   }, [kbId]);
 
-  useEffect(() => { void loadDocs(); }, [loadDocs]);
+  useEffect(() => {
+    void loadDocs();
+  }, [loadDocs]);
 
   const handleDelete = async (docId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -243,7 +308,12 @@ function DocList({ kbId, onBack }: DocListProps) {
     abortRef.current = abort;
 
     try {
-      for await (const event of ingestDocument(kbId, addTitle.trim(), addContent.trim(), abort.signal)) {
+      for await (const event of ingestDocument(
+        kbId,
+        addTitle.trim(),
+        addContent.trim(),
+        abort.signal,
+      )) {
         handleIngestionEvent(event);
         if (event.type === "job_complete") {
           setDocs((prev) => {
@@ -280,21 +350,17 @@ function DocList({ kbId, onBack }: DocListProps) {
           s.name === step
             ? { ...s, status: "running", message: event.message }
             : s.status === "running"
-            ? { ...s, status: "done" }
-            : s
-        )
+              ? { ...s, status: "done" }
+              : s,
+        ),
       );
     } else if (event.type === "step_complete") {
       const step = event.step as StepName;
-      setSteps((prev) =>
-        prev.map((s) => (s.name === step ? { ...s, status: "done" } : s))
-      );
+      setSteps((prev) => prev.map((s) => (s.name === step ? { ...s, status: "done" } : s)));
     } else if (event.type === "step_error") {
       const step = event.step as StepName;
       setSteps((prev) =>
-        prev.map((s) =>
-          s.name === step ? { ...s, status: "error", message: event.error } : s
-        )
+        prev.map((s) => (s.name === step ? { ...s, status: "error", message: event.error } : s)),
       );
     }
   };
@@ -310,8 +376,8 @@ function DocList({ kbId, onBack }: DocListProps) {
     resetSteps();
   };
 
-  const filtered = docs.filter((d) =>
-    !searchQ || d.title.toLowerCase().includes(searchQ.toLowerCase())
+  const filtered = docs.filter(
+    (d) => !searchQ || d.title.toLowerCase().includes(searchQ.toLowerCase()),
   );
 
   return (
@@ -319,7 +385,15 @@ function DocList({ kbId, onBack }: DocListProps) {
       {/* KB header with back button */}
       <div className="kb-doc-header">
         <button className="kb-back-btn" onClick={onBack} title="返回知识库列表">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
@@ -365,16 +439,37 @@ function DocList({ kbId, onBack }: DocListProps) {
           >
             {addFileName ? (
               <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
                 </svg>
                 <span className="kb-file-name">{addFileName}</span>
                 <span className="kb-file-change">更换</span>
               </>
             ) : (
               <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
                 <span>选择 .md 文件</span>
               </>
@@ -412,11 +507,17 @@ function DocList({ kbId, onBack }: DocListProps) {
           {steps.map((s) => (
             <div key={s.name} className={`kb-step kb-step-${s.status}`}>
               <span className="kb-step-icon">
-                {s.status === "done" ? "✓" : s.status === "running" ? "⟳" : s.status === "error" ? "✕" : "·"}
+                {s.status === "done"
+                  ? "✓"
+                  : s.status === "running"
+                    ? "⟳"
+                    : s.status === "error"
+                      ? "✕"
+                      : "·"}
               </span>
               <span className="kb-step-name">{s.name}</span>
               <span className="kb-step-label">
-                {s.status === "running" ? s.message ?? STEP_LABELS[s.name] : STEP_LABELS[s.name]}
+                {s.status === "running" ? (s.message ?? STEP_LABELS[s.name]) : STEP_LABELS[s.name]}
               </span>
             </div>
           ))}
@@ -429,25 +530,29 @@ function DocList({ kbId, onBack }: DocListProps) {
       {/* Document list */}
       <div className="kb-doc-list">
         {filtered.length === 0 ? (
-          <div className="kb-empty">
-            {docs.length === 0 ? "暂无文档" : "无匹配结果"}
-          </div>
+          <div className="kb-empty">{docs.length === 0 ? "暂无文档" : "无匹配结果"}</div>
         ) : (
           filtered.map((doc) => (
             <div key={doc.docId} className="kb-doc-item">
               <DocStatusBadge status={doc.status} />
               <div className="kb-doc-info">
                 <div className="kb-doc-title">{doc.title}</div>
-                {doc.summary && (
-                  <div className="kb-doc-summary">{doc.summary}</div>
-                )}
+                {doc.summary && <div className="kb-doc-summary">{doc.summary}</div>}
               </div>
               <button
                 className="kb-doc-delete"
                 title="删除"
                 onClick={(e) => void handleDelete(doc.docId, e)}
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </button>

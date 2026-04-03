@@ -22,6 +22,7 @@ const parametersSchema = Type.Object({
   url: Type.String({ description: "The URL to navigate to (e.g. https://example.com)." }),
 });
 
+/** Creates the browser navigation tool for visiting new URLs. */
 export function createBrowserNavigate(
   manager: SandboxManager,
   sessionId: string,
@@ -57,7 +58,12 @@ export function createBrowserNavigate(
         };
       }
 
-      const data = await res.json() as { title?: string; url?: string; textContent?: string; error?: string };
+      const data = (await res.json()) as {
+        title?: string;
+        url?: string;
+        textContent?: string;
+        error?: string;
+      };
 
       if (!res.ok || data.error) {
         const errMsg = data.error ?? res.statusText;

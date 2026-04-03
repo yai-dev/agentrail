@@ -77,7 +77,7 @@ interface AgentrailContextUsageEvent {
   type: "context_usage";
   inputTokens: number;
   outputTokens: number;
-  budgetUsedPct?: number;   // 0–100; requires contextWindow on the profile
+  budgetUsedPct?: number; // 0–100; requires contextWindow on the profile
 }
 ```
 
@@ -332,7 +332,7 @@ The stream route can optionally call `onTraceEvent` to persist a structured enve
 
 ```ts
 interface WorkflowTraceEventEnvelope {
-  id: string;       // "{source}-{timestamp}-{seq}"
+  id: string; // "{source}-{timestamp}-{seq}"
   timestamp: string; // ISO 8601
   sequence: number;
   source: "runtime" | "orchestration";

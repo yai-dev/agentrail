@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface TokenGateProps {
   onSuccess: (token: string) => void;
@@ -25,7 +25,10 @@ export function TokenGate({ onSuccess }: TokenGateProps) {
 
   const submit = async () => {
     const token = value.trim();
-    if (!token) { setError("请输入 Token"); return; }
+    if (!token) {
+      setError("请输入 Token");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -51,7 +54,16 @@ export function TokenGate({ onSuccess }: TokenGateProps) {
       <div className="settings-card" style={{ maxWidth: 400 }}>
         <div className="settings-header">
           <div className="settings-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
@@ -71,8 +83,13 @@ export function TokenGate({ onSuccess }: TokenGateProps) {
               type="password"
               placeholder="输入访问 Token…"
               value={value}
-              onChange={(e) => { setValue(e.target.value); setError(""); }}
-              onKeyDown={(e) => { if (e.key === "Enter") void submit(); }}
+              onChange={(e) => {
+                setValue(e.target.value);
+                setError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void submit();
+              }}
               disabled={loading}
               autoComplete="current-password"
             />

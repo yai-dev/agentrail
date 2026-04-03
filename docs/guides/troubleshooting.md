@@ -91,8 +91,8 @@ Check these settings in `agentrail.yaml`:
 ```yaml
 orchestration:
   subagent:
-    pollIntervalMs: 500    # lower = faster polling, higher CPU
-    fakeExecution: ""      # must be empty for real execution
+    pollIntervalMs: 500 # lower = faster polling, higher CPU
+    fakeExecution: "" # must be empty for real execution
 ```
 
 If `fakeExecution` is set to `"echo"`, the sub-agent will echo inputs without calling the LLM.

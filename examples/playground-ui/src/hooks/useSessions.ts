@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 
 export interface SessionMeta {
   sessionId: string;
@@ -55,9 +55,7 @@ export function useSessions() {
 
   const updateTitle = useCallback((sessionId: string, title: string) => {
     setSessions((prev) => {
-      const updated = prev.map((s) =>
-        s.sessionId === sessionId ? { ...s, title } : s
-      );
+      const updated = prev.map((s) => (s.sessionId === sessionId ? { ...s, title } : s));
       saveToStorage(updated);
       return updated;
     });

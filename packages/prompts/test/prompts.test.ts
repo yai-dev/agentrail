@@ -4,8 +4,8 @@
  */
 
 import { mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   clearPromptFileCache,
@@ -20,11 +20,7 @@ describe("@agentrail/prompts", () => {
   it("loads prompt files, strips metadata, and interpolates variables", () => {
     const tempDir = mkdtempSync(path.join(os.tmpdir(), "agentrail-prompts-"));
     const promptPath = path.join(tempDir, "system.md");
-    writeFileSync(
-      promptPath,
-      "<!-- meta -->\nHello ${NAME}",
-      "utf8",
-    );
+    writeFileSync(promptPath, "<!-- meta -->\nHello ${NAME}", "utf8");
 
     expect(
       loadPromptFile(promptPath, {
@@ -52,9 +48,7 @@ describe("@agentrail/prompts", () => {
   });
 
   it("supports direct prompt rendering", () => {
-    expect(renderPrompt("Today is ${DAY}", { DAY: "Monday" })).toBe(
-      "Today is Monday",
-    );
+    expect(renderPrompt("Today is ${DAY}", { DAY: "Monday" })).toBe("Today is Monday");
   });
 
   it("renders layered bundles with replacement and overlay support", () => {

@@ -8,7 +8,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { OrchestrationStore } from "../src/orchestration-store.js";
 import {
   OrchestrationManager,
   type ManagedAgentEventHandlers,
@@ -16,24 +15,79 @@ import {
   type OrchestrationAgentFactory,
   type OrchestrationManagerEvent,
 } from "../src/orchestration-manager.js";
+import { createFilesystemOrchestrationStore } from "../src/orchestration-store.js";
 import type { AgentInputEnvelope, ManagedAgentDeliveryResult } from "../src/types.js";
 
 const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    temporaryDirectories.splice(0).map((directory) =>
-      rm(directory, { recursive: true, force: true }),
-    ),
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
   );
 });
 
 async function createSessionDir(): Promise<string> {
-  const directory = await mkdtemp(
-    join(tmpdir(), "agent-orchestration-manager-"),
-  );
+  const directory = await mkdtemp(join(tmpdir(), "agent-orchestration-manager-"));
   temporaryDirectories.push(directory);
   return directory;
+}
+
+function createPersistence(sessionDir: string) {
+  const store = createFilesystemOrchestrationStore(sessionDir);
+  return {
+    appendEvent: (event: Parameters<typeof store.appendEvent>[0]) => store.appendEvent(event),
+    loadEvents: () => store.loadEvents(),
+    loadSnapshot: () => store.loadSnapshot(),
+    writeCheckpoint: (snapshot: Parameters<typeof store.writeCheckpoint>[0]) =>
+      store.writeCheckpoint(snapshot),
+    recoverState: () => store.recoverState(),
+    appendMailboxEvent: (agentId: string, event: Parameters<typeof store.appendMailboxEvent>[1]) =>
+      store.appendMailboxEvent(agentId, event),
+    loadMailboxEvents: (agentId: string) => store.loadMailboxEvents(agentId),
+    loadMailboxState: (agentId: string) => store.loadMailboxState(agentId),
+    writeMailboxState: (agentId: string, state: Parameters<typeof store.writeMailboxState>[1]) =>
+      store.writeMailboxState(agentId, state),
+  };
+}
+
+const OrchestrationStore = {
+  appendEvent: (
+    sessionDir: string,
+    event: Parameters<ReturnType<typeof createFilesystemOrchestrationStore>["appendEvent"]>[0],
+  ) => createFilesystemOrchestrationStore(sessionDir).appendEvent(event),
+  appendMailboxEvent: (
+    sessionDir: string,
+    agentId: string,
+    event: Parameters<
+      ReturnType<typeof createFilesystemOrchestrationStore>["appendMailboxEvent"]
+    >[1],
+  ) => createFilesystemOrchestrationStore(sessionDir).appendMailboxEvent(agentId, event),
+  loadEvents: (sessionDir: string) => createFilesystemOrchestrationStore(sessionDir).loadEvents(),
+  loadMailboxState: (sessionDir: string, agentId: string) =>
+    createFilesystemOrchestrationStore(sessionDir).loadMailboxState(agentId),
+  writeMailboxState: (
+    sessionDir: string,
+    agentId: string,
+    state: Parameters<
+      ReturnType<typeof createFilesystemOrchestrationStore>["writeMailboxState"]
+    >[1],
+  ) => createFilesystemOrchestrationStore(sessionDir).writeMailboxState(agentId, state),
+  writeCheckpoint: (
+    sessionDir: string,
+    snapshot: Parameters<
+      ReturnType<typeof createFilesystemOrchestrationStore>["writeCheckpoint"]
+    >[0],
+  ) => createFilesystemOrchestrationStore(sessionDir).writeCheckpoint(snapshot),
+};
+
+function createManager(sessionDir: string, runtime: OrchestrationAgentFactory, now?: () => string) {
+  return OrchestrationManager.create({
+    persistence: createPersistence(sessionDir),
+    runtime,
+    now,
+  });
 }
 
 function createClock(...timestamps: string[]): () => string {
@@ -69,9 +123,7 @@ class FakeManagedAgent implements ManagedAgentInstance {
     | ((input: AgentInputEnvelope) => Promise<ManagedAgentDeliveryResult | void>)
     | ((input: AgentInputEnvelope) => ManagedAgentDeliveryResult | void);
 
-  async deliverInput(
-    input: AgentInputEnvelope,
-  ): Promise<ManagedAgentDeliveryResult | void> {
+  async deliverInput(input: AgentInputEnvelope): Promise<ManagedAgentDeliveryResult | void> {
     this.deliveries.push(input);
     return this.onDeliver?.(input);
   }
@@ -193,14 +245,11 @@ describe("OrchestrationManager", () => {
   it("spawns an agent instance and emits orchestration events", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
-        "2026-03-23T09:00:00.000Z",
-        "2026-03-23T09:00:01.000Z",
-      ),
-    });
+      runtimeHarness.runtime,
+      createClock("2026-03-23T09:00:00.000Z", "2026-03-23T09:00:01.000Z"),
+    );
 
     await manager.startRun({
       runId: "run-1",
@@ -263,14 +312,11 @@ describe("OrchestrationManager", () => {
   it("defaults a spawned agent to the run root task and rejects conflicting respawns", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
-        "2026-03-23T09:01:00.000Z",
-        "2026-03-23T09:01:01.000Z",
-      ),
-    });
+      runtimeHarness.runtime,
+      createClock("2026-03-23T09:01:00.000Z", "2026-03-23T09:01:01.000Z"),
+    );
 
     await manager.startRun({
       runId: "run-root-default",
@@ -302,23 +348,21 @@ describe("OrchestrationManager", () => {
         taskId: "task-root",
         role: "reviewer",
       }),
-    ).rejects.toThrow(
-      "already exists with taskId task-root, role researcher, and displayName",
-    );
+    ).rejects.toThrow("already exists with taskId task-root, role researcher, and displayName");
   });
 
   it("preserves an explicit display name and keeps auto-generated names unique within a run", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:01:10.000Z",
         "2026-03-23T09:01:11.000Z",
         "2026-03-23T09:01:12.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-display-name",
@@ -353,11 +397,11 @@ describe("OrchestrationManager", () => {
   it("rejects spawning an agent against an unknown task", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock("2026-03-23T09:01:30.000Z"),
-    });
+      runtimeHarness.runtime,
+      createClock("2026-03-23T09:01:30.000Z"),
+    );
 
     await manager.startRun({
       runId: "run-invalid-task",
@@ -377,22 +421,17 @@ describe("OrchestrationManager", () => {
         taskId: "task-missing",
         role: "researcher",
       }),
-    ).rejects.toThrow(
-      "Unknown orchestration task task-missing. Known task IDs: task-known.",
-    );
+    ).rejects.toThrow("Unknown orchestration task task-missing. Known task IDs: task-known.");
   });
 
   it("marks the orchestration run as failed when completed with an error", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
-        "2026-03-23T09:04:00.000Z",
-        "2026-03-23T09:04:01.000Z",
-      ),
-    });
+      runtimeHarness.runtime,
+      createClock("2026-03-23T09:04:00.000Z", "2026-03-23T09:04:01.000Z"),
+    );
 
     await manager.startRun({
       runId: "run-failed",
@@ -431,17 +470,17 @@ describe("OrchestrationManager", () => {
   it("retries attaching a spawned agent after an initial runtime creation failure", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createFlakyRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:05:00.000Z",
         "2026-03-23T09:05:01.000Z",
         "2026-03-23T09:05:02.000Z",
         "2026-03-23T09:05:03.000Z",
         "2026-03-23T09:05:04.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-1b",
@@ -487,27 +526,23 @@ describe("OrchestrationManager", () => {
 
     expect(runtimeHarness.createCalls).toEqual(["agent-1b", "agent-1b"]);
     await expect
-      .poll(() =>
-        runtimeHarness.instances
-          .get("agent-1b")
-          ?.deliveries.map((input) => input.id),
-      )
+      .poll(() => runtimeHarness.instances.get("agent-1b")?.deliveries.map((input) => input.id))
       .toEqual(["input-1b"]);
   });
 
   it("accepts autonomous runtime callbacks for job lifecycle updates", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createAutonomousRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:06:00.000Z",
         "2026-03-23T09:06:01.000Z",
         "2026-03-23T09:06:02.000Z",
         "2026-03-23T09:06:03.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-autonomous",
@@ -542,9 +577,7 @@ describe("OrchestrationManager", () => {
         outcome: "completed",
         outputText: "completed input-autonomous",
       });
-    await expect
-      .poll(() => manager.getSnapshot().agents["agent-autonomous"]?.status)
-      .toBe("idle");
+    await expect.poll(() => manager.getSnapshot().agents["agent-autonomous"]?.status).toBe("idle");
     expect(runtimeHarness.instances.get("agent-autonomous")?.deliveries).toHaveLength(1);
     expect(manager.getSnapshot().queuedInputs).toEqual([]);
   });
@@ -552,10 +585,10 @@ describe("OrchestrationManager", () => {
   it("re-attaches and drains persisted queued inputs after a spawn retry without restart", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createFlakyRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:07:00.000Z",
         "2026-03-23T09:07:01.000Z",
         "2026-03-23T09:07:02.000Z",
@@ -563,7 +596,7 @@ describe("OrchestrationManager", () => {
         "2026-03-23T09:07:04.000Z",
         "2026-03-23T09:07:05.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-1c",
@@ -595,9 +628,7 @@ describe("OrchestrationManager", () => {
       }),
     ).rejects.toThrow("does not have an active runtime");
 
-    expect(manager.getSnapshot().queuedInputs.map((input) => input.id)).toEqual([
-      "input-1c",
-    ]);
+    expect(manager.getSnapshot().queuedInputs.map((input) => input.id)).toEqual(["input-1c"]);
 
     await expect(
       manager.spawnAgent({
@@ -612,11 +643,7 @@ describe("OrchestrationManager", () => {
     });
 
     await expect
-      .poll(() =>
-        runtimeHarness.instances
-          .get("agent-1c")
-          ?.deliveries.map((input) => input.id),
-      )
+      .poll(() => runtimeHarness.instances.get("agent-1c")?.deliveries.map((input) => input.id))
       .toEqual(["input-1c"]);
     expect(manager.getSnapshot().queuedInputs).toEqual([]);
   });
@@ -663,23 +690,21 @@ describe("OrchestrationManager", () => {
       },
     });
 
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:08:03.000Z",
         "2026-03-23T09:08:04.000Z",
         "2026-03-23T09:08:05.000Z",
       ),
-    });
+    );
 
     expect(manager.getSnapshot().agents["agent-1d"]).toMatchObject({
       id: "agent-1d",
       status: "idle",
     });
-    expect(manager.getSnapshot().queuedInputs.map((input) => input.id)).toEqual([
-      "input-1d",
-    ]);
+    expect(manager.getSnapshot().queuedInputs.map((input) => input.id)).toEqual(["input-1d"]);
 
     await expect(
       manager.spawnAgent({
@@ -694,11 +719,7 @@ describe("OrchestrationManager", () => {
     });
 
     await expect
-      .poll(() =>
-        runtimeHarness.instances
-          .get("agent-1d")
-          ?.deliveries.map((input) => input.id),
-      )
+      .poll(() => runtimeHarness.instances.get("agent-1d")?.deliveries.map((input) => input.id))
       .toEqual(["input-1d"]);
     expect(manager.getSnapshot().queuedInputs).toEqual([]);
   });
@@ -706,10 +727,10 @@ describe("OrchestrationManager", () => {
   it("delivers queued input to an active agent in FIFO order", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:10:00.000Z",
         "2026-03-23T09:10:01.000Z",
         "2026-03-23T09:10:02.000Z",
@@ -721,7 +742,7 @@ describe("OrchestrationManager", () => {
         "2026-03-23T09:10:08.000Z",
         "2026-03-23T09:10:09.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-2",
@@ -778,29 +799,24 @@ describe("OrchestrationManager", () => {
 
     releaseFirst.resolve(undefined);
     await Promise.all([firstDelivery, secondDelivery]);
-    await expect
-      .poll(() => observedDeliveries)
-      .toEqual(["input-1", "input-2"]);
+    await expect.poll(() => observedDeliveries).toEqual(["input-1", "input-2"]);
 
-    expect(instance!.deliveries.map((input) => input.id)).toEqual([
-      "input-1",
-      "input-2",
-    ]);
+    expect(instance!.deliveries.map((input) => input.id)).toEqual(["input-1", "input-2"]);
   });
 
   it("returns from sendInput once the input is queued without waiting for delivery to finish", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:15:00.000Z",
         "2026-03-23T09:15:01.000Z",
         "2026-03-23T09:15:02.000Z",
         "2026-03-23T09:15:03.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-queued-return",
@@ -852,25 +868,23 @@ describe("OrchestrationManager", () => {
 
     releaseDelivery.resolve(undefined);
     await sendPromise;
-    await expect
-      .poll(() => manager.getSnapshot().queuedInputs)
-      .toEqual([]);
+    await expect.poll(() => manager.getSnapshot().queuedInputs).toEqual([]);
   });
 
   it("marks closed agents as terminal and resolves dependent waits", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:20:00.000Z",
         "2026-03-23T09:20:01.000Z",
         "2026-03-23T09:20:02.000Z",
         "2026-03-23T09:20:03.000Z",
         "2026-03-23T09:20:04.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-3",
@@ -912,9 +926,7 @@ describe("OrchestrationManager", () => {
         pendingAgentIds: [],
       },
     });
-    expect(runtimeHarness.instances.get("agent-3")?.closeReasons).toEqual([
-      "work-complete",
-    ]);
+    expect(runtimeHarness.instances.get("agent-3")?.closeReasons).toEqual(["work-complete"]);
     expect(manager.getSnapshot().agents["agent-3"]).toMatchObject({
       status: "closed",
       closedAt: "2026-03-23T09:20:04.000Z",
@@ -924,10 +936,10 @@ describe("OrchestrationManager", () => {
   it("returns closing immediately when closeAgent is requested during an active turn", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:21:00.000Z",
         "2026-03-23T09:21:01.000Z",
         "2026-03-23T09:21:02.000Z",
@@ -935,7 +947,7 @@ describe("OrchestrationManager", () => {
         "2026-03-23T09:21:04.000Z",
         "2026-03-23T09:21:05.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-closing",
@@ -989,24 +1001,22 @@ describe("OrchestrationManager", () => {
 
     releaseDelivery.resolve(undefined);
 
-    await expect
-      .poll(() => manager.getSnapshot().agents["agent-closing"]?.status)
-      .toBe("closed");
+    await expect.poll(() => manager.getSnapshot().agents["agent-closing"]?.status).toBe("closed");
   });
 
   it("persists mailbox closeRequested state as soon as close is requested", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:21:30.000Z",
         "2026-03-23T09:21:31.000Z",
         "2026-03-23T09:21:32.000Z",
         "2026-03-23T09:21:33.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-close-mailbox-state",
@@ -1044,10 +1054,7 @@ describe("OrchestrationManager", () => {
     });
 
     await expect(
-      OrchestrationStore.loadMailboxState(
-        sessionDir,
-        "agent-close-mailbox-state",
-      ),
+      OrchestrationStore.loadMailboxState(sessionDir, "agent-close-mailbox-state"),
     ).resolves.toMatchObject({
       closeRequested: {
         occurredAt: "2026-03-23T09:21:32.000Z",
@@ -1064,10 +1071,10 @@ describe("OrchestrationManager", () => {
   it("resolves agent-idle waits with the most recent job result after queued work completes", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:22:00.000Z",
         "2026-03-23T09:22:01.000Z",
         "2026-03-23T09:22:02.000Z",
@@ -1075,7 +1082,7 @@ describe("OrchestrationManager", () => {
         "2026-03-23T09:22:04.000Z",
         "2026-03-23T09:22:05.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-idle-result",
@@ -1149,17 +1156,17 @@ describe("OrchestrationManager", () => {
   it("emits job lifecycle events for started and failed deliveries", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:23:00.000Z",
         "2026-03-23T09:23:01.000Z",
         "2026-03-23T09:23:02.000Z",
         "2026-03-23T09:23:03.000Z",
         "2026-03-23T09:23:04.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-job-events",
@@ -1197,9 +1204,7 @@ describe("OrchestrationManager", () => {
       },
     });
 
-    await expect
-      .poll(() => events.map((entry) => entry.event.type))
-      .toContain("agent_job_failed");
+    await expect.poll(() => events.map((entry) => entry.event.type)).toContain("agent_job_failed");
     expect(events.map((entry) => entry.event.type)).toContain("agent_job_started");
     expect(manager.getSnapshot().agents["agent-job-events"]?.lastJob).toMatchObject({
       outcome: "failed",
@@ -1282,16 +1287,16 @@ describe("OrchestrationManager", () => {
       },
     });
 
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:24:04.000Z",
         "2026-03-23T09:24:05.000Z",
         "2026-03-23T09:24:06.000Z",
         "2026-03-23T09:24:07.000Z",
       ),
-    });
+    );
 
     const instance = runtimeHarness.instances.get("agent-batch-started");
     expect(instance).toBeDefined();
@@ -1324,10 +1329,10 @@ describe("OrchestrationManager", () => {
   it("drops queued inputs for a closed agent so recovery does not keep orphaned work", async () => {
     const sessionDir = await createSessionDir();
     const firstRuntimeHarness = createRuntimeHarness();
-    const firstManager = await OrchestrationManager.create({
+    const firstManager = await createManager(
       sessionDir,
-      runtime: firstRuntimeHarness.runtime,
-      now: createClock(
+      firstRuntimeHarness.runtime,
+      createClock(
         "2026-03-23T09:25:00.000Z",
         "2026-03-23T09:25:01.000Z",
         "2026-03-23T09:25:02.000Z",
@@ -1339,7 +1344,7 @@ describe("OrchestrationManager", () => {
         "2026-03-23T09:25:08.000Z",
         "2026-03-23T09:25:09.000Z",
       ),
-    });
+    );
 
     await firstManager.startRun({
       runId: "run-3b",
@@ -1403,22 +1408,18 @@ describe("OrchestrationManager", () => {
       .toEqual(["input-3b-1"]);
 
     const secondRuntimeHarness = createRuntimeHarness();
-    const recoveredManager = await OrchestrationManager.create({
+    const recoveredManager = await createManager(
       sessionDir,
-      runtime: secondRuntimeHarness.runtime,
-      now: createClock("2026-03-23T09:26:00.000Z"),
-    });
+      secondRuntimeHarness.runtime,
+      createClock("2026-03-23T09:26:00.000Z"),
+    );
 
     releaseFirst.resolve(undefined);
 
     expect(secondRuntimeHarness.createCalls).toEqual([]);
     expect(recoveredManager.getSnapshot().queuedInputs).toEqual([]);
-    await expect
-      .poll(() => firstManager.getSnapshot().queuedInputs)
-      .toEqual([]);
-    await expect
-      .poll(() => firstManager.getSnapshot().agents["agent-3b"]?.status)
-      .toBe("closed");
+    await expect.poll(() => firstManager.getSnapshot().queuedInputs).toEqual([]);
+    await expect.poll(() => firstManager.getSnapshot().agents["agent-3b"]?.status).toBe("closed");
     await expect(OrchestrationStore.loadEvents(sessionDir)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1434,10 +1435,10 @@ describe("OrchestrationManager", () => {
   it("resumes persisted queued inputs in FIFO order after restart", async () => {
     const sessionDir = await createSessionDir();
     const firstRuntimeHarness = createRuntimeHarness();
-    const firstManager = await OrchestrationManager.create({
+    const firstManager = await createManager(
       sessionDir,
-      runtime: firstRuntimeHarness.runtime,
-      now: createClock(
+      firstRuntimeHarness.runtime,
+      createClock(
         "2026-03-23T09:30:00.000Z",
         "2026-03-23T09:30:01.000Z",
         "2026-03-23T09:30:02.000Z",
@@ -1446,7 +1447,7 @@ describe("OrchestrationManager", () => {
         "2026-03-23T09:30:05.000Z",
         "2026-03-23T09:30:06.000Z",
       ),
-    });
+    );
 
     await firstManager.startRun({
       runId: "run-4",
@@ -1500,16 +1501,16 @@ describe("OrchestrationManager", () => {
       .toEqual(["input-1", "input-2"]);
 
     const secondRuntimeHarness = createRuntimeHarness();
-    await OrchestrationManager.create({
+    await createManager(
       sessionDir,
-      runtime: secondRuntimeHarness.runtime,
-      now: createClock(
+      secondRuntimeHarness.runtime,
+      createClock(
         "2026-03-23T09:31:00.000Z",
         "2026-03-23T09:31:01.000Z",
         "2026-03-23T09:31:02.000Z",
         "2026-03-23T09:31:03.000Z",
       ),
-    });
+    );
 
     const resumedInstance = secondRuntimeHarness.instances.get("agent-4");
     expect(resumedInstance).toBeDefined();
@@ -1571,11 +1572,11 @@ describe("OrchestrationManager", () => {
       },
     });
 
-    const recoveredManager = await OrchestrationManager.create({
+    const recoveredManager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock("2026-03-23T09:41:00.000Z"),
-    });
+      runtimeHarness.runtime,
+      createClock("2026-03-23T09:41:00.000Z"),
+    );
 
     expect(runtimeHarness.createCalls).toEqual([]);
     expect(recoveredManager.getSnapshot().waits["wait-5"]).toMatchObject({
@@ -1649,15 +1650,15 @@ describe("OrchestrationManager", () => {
       },
     });
 
-    const recoveredManager = await OrchestrationManager.create({
+    const recoveredManager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:45:04.000Z",
         "2026-03-23T09:45:05.000Z",
         "2026-03-23T09:45:06.000Z",
       ),
-    });
+    );
 
     expect(runtimeHarness.createCalls).toEqual([]);
     expect(recoveredManager.getSnapshot().agents["agent-close-recovery"]).toMatchObject({
@@ -1734,11 +1735,11 @@ describe("OrchestrationManager", () => {
       reason: "delivered",
     });
 
-    const recoveredManager = await OrchestrationManager.create({
+    const recoveredManager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock("2026-03-23T09:51:00.000Z"),
-    });
+      runtimeHarness.runtime,
+      createClock("2026-03-23T09:51:00.000Z"),
+    );
 
     expect(runtimeHarness.createCalls).toEqual([
       {
@@ -1793,20 +1794,16 @@ describe("OrchestrationManager", () => {
         },
       },
     });
-    await OrchestrationStore.appendMailboxEvent(
-      sessionDir,
-      "agent-mailbox-recovery",
-      {
-        eventId: "mailbox-evt-1",
-        type: "input_enqueued",
-        agentId: "agent-mailbox-recovery",
-        occurredAt: "2026-03-23T09:55:02.000Z",
-        inputId: "input-mailbox-recovery",
-        payload: {
-          prompt: "recover me from mailbox",
-        },
+    await OrchestrationStore.appendMailboxEvent(sessionDir, "agent-mailbox-recovery", {
+      eventId: "mailbox-evt-1",
+      type: "input_enqueued",
+      agentId: "agent-mailbox-recovery",
+      occurredAt: "2026-03-23T09:55:02.000Z",
+      inputId: "input-mailbox-recovery",
+      payload: {
+        prompt: "recover me from mailbox",
       },
-    );
+    });
     await OrchestrationStore.writeCheckpoint(sessionDir, {
       runs: {
         "run-mailbox-recovery": {
@@ -1844,15 +1841,15 @@ describe("OrchestrationManager", () => {
       lastEventId: "evt-mailbox-r3",
     });
 
-    const recoveredManager = await OrchestrationManager.create({
+    const recoveredManager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T09:56:00.000Z",
         "2026-03-23T09:56:01.000Z",
         "2026-03-23T09:56:02.000Z",
       ),
-    });
+    );
 
     expect(runtimeHarness.createCalls).toEqual([
       {
@@ -1864,23 +1861,19 @@ describe("OrchestrationManager", () => {
     ]);
     await expect
       .poll(() =>
-        runtimeHarness.instances
-          .get("agent-mailbox-recovery")
-          ?.deliveries.map((input) => input.id),
+        runtimeHarness.instances.get("agent-mailbox-recovery")?.deliveries.map((input) => input.id),
       )
       .toEqual(["input-mailbox-recovery"]);
-    await expect
-      .poll(() => recoveredManager.getSnapshot().queuedInputs)
-      .toEqual([]);
+    await expect.poll(() => recoveredManager.getSnapshot().queuedInputs).toEqual([]);
   });
 
   it("supports two concurrent runs on the same manager without interference", async () => {
     const sessionDir = await createSessionDir();
     const runtimeHarness = createRuntimeHarness();
-    const manager = await OrchestrationManager.create({
+    const manager = await createManager(
       sessionDir,
-      runtime: runtimeHarness.runtime,
-      now: createClock(
+      runtimeHarness.runtime,
+      createClock(
         "2026-03-23T12:00:00.000Z",
         "2026-03-23T12:00:01.000Z",
         "2026-03-23T12:00:02.000Z",
@@ -1888,7 +1881,7 @@ describe("OrchestrationManager", () => {
         "2026-03-23T12:00:04.000Z",
         "2026-03-23T12:00:05.000Z",
       ),
-    });
+    );
 
     await manager.startRun({
       runId: "run-concurrent-a",

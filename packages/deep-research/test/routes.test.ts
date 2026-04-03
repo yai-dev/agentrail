@@ -3,14 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
+import { Hono } from "hono";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after } from "node:test";
-import { Hono } from "hono";
+import { createFileSystemDeepResearchStore, type DeepResearchState } from "../src/index.js";
 import { createDeepResearchRoute } from "../src/routes.js";
-import { DeepResearchStore, type DeepResearchState } from "../src/index.js";
 
 const dataDir = await mkdtemp(join(tmpdir(), "agentrail-deep-research-route-"));
 
@@ -20,8 +21,7 @@ after(async () => {
 
 test("deep research route returns latest run state and events", async () => {
   const sessionId = "session-deep-research-route";
-  const sessionDir = join(dataDir, "tenants", "default", "sessions", sessionId);
-  const store = new DeepResearchStore(sessionDir);
+  const store = createFileSystemDeepResearchStore(dataDir, createSessionRef("default", sessionId));
 
   const state: DeepResearchState = {
     run: {
@@ -71,9 +71,7 @@ test("deep research route returns latest run state and events", async () => {
   const app = new Hono();
   app.route("/api/sessions", createDeepResearchRoute({ dataDir }));
 
-  const response = await app.request(
-    `/api/sessions/${sessionId}/deep-research?tenantId=default`,
-  );
+  const response = await app.request(`/api/sessions/${sessionId}/deep-research?tenantId=default`);
 
   assert.equal(response.status, 200);
   const payload = (await response.json()) as {
@@ -100,13 +98,15 @@ test("deep research artifact route streams raw artifact bytes", async () => {
   await mkdir(join(dataDir, "sandboxes", sessionId, ".deep-research", "artifacts"), {
     recursive: true,
   });
-  await writeFile(hostArtifactPath, "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>", "utf-8");
+  await writeFile(hostArtifactPath, '<svg xmlns="http://www.w3.org/2000/svg"></svg>', "utf-8");
 
   const app = new Hono();
   app.route("/api/sessions", createDeepResearchRoute({ dataDir }));
 
   const response = await app.request(
-    `/api/sessions/${sessionId}/deep-research/artifact?path=${encodeURIComponent("/workspace/.deep-research/artifacts/chart.svg")}`,
+    `/api/sessions/${sessionId}/deep-research/artifact?path=${encodeURIComponent(
+      "/workspace/.deep-research/artifacts/chart.svg",
+    )}`,
   );
 
   assert.equal(response.status, 200);

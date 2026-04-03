@@ -3,9 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { SessionRef } from "@agentrail/memo";
 import type { Message, RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
 import type { CreateManagedAgentInput } from "../orchestration-manager.js";
 
+/** Provider/model selection used by a sub-agent worker runtime. */
 export interface ModelConfig {
   provider: string;
   modelId: string;
@@ -13,6 +15,7 @@ export interface ModelConfig {
   baseUrl?: string;
 }
 
+/** Runtime adapter injected into the managed sub-agent worker process. */
 export interface SubAgentRuntime {
   buildTools(input: CreateManagedAgentInput): Promise<RuntimeTool[]>;
   buildSystemPrompt(input: CreateManagedAgentInput): string;
@@ -20,20 +23,23 @@ export interface SubAgentRuntime {
     tenantId: string,
     userId: string,
     sessionId: string,
+    sessionRef: SessionRef,
   ): TransformContextFn;
   getModelConfig(): ModelConfig;
 }
 
+/** Worker-loop tuning knobs for managed sub-agent execution. */
 export interface SubagentWorkerConfig {
   pollIntervalMs: number;
   fakeExecution: "" | "echo";
 }
 
+/** Serializable state held by the sub-agent worker between turns. */
 export interface WorkerState {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
   input: CreateManagedAgentInput;
   history: Message[];
   workerConfig: SubagentWorkerConfig;

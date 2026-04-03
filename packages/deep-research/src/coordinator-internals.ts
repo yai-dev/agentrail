@@ -3,15 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { createSubAgentProcess } from "@agentrail/orchestration";
 import type {
   CreateManagedAgentInput,
   ManagedAgentInstance,
   OrchestrationEvent,
 } from "@agentrail/orchestration";
+import { createSubAgentProcess } from "@agentrail/orchestration";
 import type { Message, Usage } from "@agentrail/runtime-core";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { DeepResearchCoordinatorOptions } from "./coordinator.js";
 import type { DeepResearchRun } from "./types.js";
 import { nowIso } from "./utils.js";
@@ -54,8 +54,7 @@ export function summarizeHistory(history: Message[]): string {
       if (message.role === "assistant") {
         const text = message.content
           .filter(
-            (block): block is Extract<typeof block, { type: "text" }> =>
-              block.type === "text",
+            (block): block is Extract<typeof block, { type: "text" }> => block.type === "text",
           )
           .map((block) => block.text)
           .join("\n");
@@ -68,10 +67,7 @@ export function summarizeHistory(history: Message[]): string {
     .join("\n\n");
 }
 
-export function createRun(
-  options: DeepResearchCoordinatorOptions,
-  runId: string,
-): DeepResearchRun {
+export function createRun(options: DeepResearchCoordinatorOptions, runId: string): DeepResearchRun {
   const timestamp = nowIso();
   return {
     id: runId,
@@ -174,7 +170,8 @@ export async function createManagedDeepResearchAgent(
     tenantId: options.tenantId,
     userId: options.userId,
     sessionId: options.sessionId,
-    sessionDir: options.sessionDir,
+    sessionRef: options.sessionRef,
+    dataDir: options.runtime.dataDir,
     input,
     workerPath: getDeepResearchWorkerPath(),
     runtimeConfig: {

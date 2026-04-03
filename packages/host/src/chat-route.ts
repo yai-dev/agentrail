@@ -3,12 +3,19 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Hono } from "hono";
+import type { SessionRef } from "@agentrail/memo";
 import type { Message, TransformContextFn } from "@agentrail/runtime-core";
+import { Hono } from "hono";
+import {
+  resolveChatTransformContext,
+  respondHandledJson,
+  validateChatRequest,
+} from "./chat-route-internals.js";
 import { runCompactionIfNeeded } from "./compaction.js";
+import { runPluginChatRequestInterceptors, runPluginRequestHook } from "./plugins.js";
 import type {
-  AgentrailChatRequest,
   AgentrailChatHandledResponse,
+  AgentrailChatRequest,
   AgentrailChatSuccessBody,
   AgentrailPlugin,
   AgentrailProfile,
@@ -16,66 +23,76 @@ import type {
   AgentrailSessionStore,
   ContextProvider,
 } from "./types.js";
-import {
-  runPluginChatRequestInterceptors,
-  runPluginRequestHook,
-} from "./plugins.js";
-import {
-  respondHandledJson,
-  resolveChatTransformContext,
-  validateChatRequest,
-} from "./chat-route-internals.js";
 
+/**
+ * Configuration for the JSON chat route factory.
+ *
+ * @see {@link https://agentrail.run/reference/host-primitives}
+ */
 export interface AgentrailChatRouteOptions {
+  /** Default profile ID used when the request omits `agentId`. */
   defaultAgentId: string;
+  /** Session store implementation used for history persistence and compaction. */
   sessionStore: AgentrailSessionStore;
+  /** Summarizer used when chat history needs compaction. */
   summarize: (messages: Message[]) => Promise<string>;
+  /** Token thresholds that decide when to compact history. */
   compaction: { triggerTokens: number; minMessages: number };
+  /** Resolves a hosted profile for the given request context. */
   resolveProfile(
     agentId: string,
     context: {
       tenantId: string;
       userId: string;
       sessionId: string;
-      sessionDir: string;
+      sessionRef: SessionRef;
+      sessionStore: AgentrailSessionStore;
     },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
+  /** Optional plugins that can intercept requests and observe lifecycle events. */
   plugins?: AgentrailPlugin[];
+  /** Static context providers prepended before conversation history. */
   contextProviders?: ContextProvider[];
+  /** Dynamic context-provider resolver invoked per request. */
   getContextProviders?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
   }) => Promise<ContextProvider[]> | ContextProvider[];
+  /** Dynamic transform-context resolver invoked per request. */
   getTransformContext?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
   }) => Promise<TransformContextFn> | TransformContextFn;
-  handleResolvedRequest?: (
-    context: {
-      request: AgentrailChatRequest;
-      agentId: string;
-      tenantId: string;
-      userId: string;
-      sessionId: string;
-      sessionDir: string;
-      signal: AbortSignal;
-      sessionStore: AgentrailSessionStore;
-    },
-  ) => Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
-  onRequestStart?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
-  onRequestEnd?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
-  onTurnPersisted?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
+  /** Optional short-circuit hook that handles a fully resolved request directly. */
+  handleResolvedRequest?: (context: {
+    request: AgentrailChatRequest;
+    agentId: string;
+    tenantId: string;
+    userId: string;
+    sessionId: string;
+    sessionRef: SessionRef;
+    signal: AbortSignal;
+    sessionStore: AgentrailSessionStore;
+  }) => Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
+  /** Optional callback invoked once request processing begins. */
+  onRequestStart?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  /** Optional callback invoked when request processing ends. */
+  onRequestEnd?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  /** Optional callback invoked after the turn has been persisted. */
+  onTurnPersisted?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
 }
 
+/**
+ * Creates the hosted JSON chat route.
+ *
+ * The route validates input, resolves or creates a session, applies request
+ * context, optionally compacts history, runs the agent, and persists the turn.
+ *
+ * @see {@link https://agentrail.run/reference/host-primitives}
+ */
 export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
   const plugins = options.plugins ?? [];
   const route = new Hono();
@@ -116,7 +133,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         request.sessionId,
       );
       const sessionId = sessionInfo.sessionId;
-      const sessionDir = options.sessionStore.getSessionDir(request.tenantId, sessionId);
+      const sessionRef = sessionInfo.sessionRef;
 
       requestContext = {
         kind: "chat",
@@ -137,7 +154,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
             tenantId: request.tenantId,
             userId: request.userId,
             sessionId,
-            sessionDir,
+            sessionRef,
             signal,
             sessionStore: options.sessionStore,
           })
@@ -153,7 +170,8 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         tenantId: request.tenantId,
         userId: request.userId,
         sessionId,
-        sessionDir,
+        sessionRef,
+        sessionStore: options.sessionStore,
       });
       if (!profile) {
         return c.json({ error: `Agent profile '${agentId}' not found` }, 404);
@@ -163,7 +181,8 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         tenantId: request.tenantId,
         userId: request.userId,
         sessionId,
-        sessionDir,
+        sessionRef,
+        sessionStore: options.sessionStore,
       });
       const allMessages = await options.sessionStore.loadAllMessages(request.tenantId, sessionId);
       await runCompactionIfNeeded(
@@ -174,16 +193,15 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         options.summarize,
         options.compaction,
       );
-      const history = await options.sessionStore.loadMessagesWithBudget(request.tenantId, sessionId);
-      const transformContext = await resolveChatTransformContext(
-        options,
-        plugins,
-        {
-          tenantId: request.tenantId,
-          userId: request.userId,
-          sessionId,
-        },
+      const history = await options.sessionStore.loadMessagesWithBudget(
+        request.tenantId,
+        sessionId,
       );
+      const transformContext = await resolveChatTransformContext(options, plugins, {
+        tenantId: request.tenantId,
+        userId: request.userId,
+        sessionId,
+      });
 
       const result = await agent.invoke(request.message, {
         messages: history,

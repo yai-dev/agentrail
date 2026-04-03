@@ -5,10 +5,14 @@
 
 import { readFileSync, statSync } from "node:fs";
 
+/** Primitive value allowed inside prompt template variables. */
 export type PromptValue = string | number | boolean | null | undefined;
+/** Variable map used for `${name}` prompt interpolation. */
 export type PromptVars = Record<string, PromptValue>;
+/** Supported prompt layers merged in fixed render order. */
 export type PromptLayerName = "base" | "capability" | "profile" | "mode";
 
+/** One prompt fragment sourced either from inline content or a file. */
 export interface PromptFragment {
   key: string;
   content?: string;
@@ -16,12 +20,14 @@ export interface PromptFragment {
   stripMetadata?: boolean;
 }
 
+/** One named prompt layer made of ordered fragments and keyed replacements. */
 export interface PromptLayer {
   fragments?: PromptFragment[];
   replace?: Record<string, PromptFragment>;
   vars?: PromptVars;
 }
 
+/** Full prompt bundle composed from layered fragments and shared variables. */
 export interface PromptBundle {
   vars?: PromptVars;
   base?: PromptLayer;
@@ -30,17 +36,20 @@ export interface PromptBundle {
   mode?: PromptLayer;
 }
 
+/** Options for loading a prompt file from disk. */
 export interface LoadPromptFileOptions {
   stripMetadata?: boolean;
   vars?: PromptVars;
 }
 
+/** Options for rendering a prompt bundle. */
 export interface PromptRenderOptions {
   vars?: PromptVars;
   overlay?: PromptBundle;
   bundle?: PromptBundle;
 }
 
+/** Minimal prompt-builder interface returned by `createPromptBuilder`. */
 export interface PromptBuilder {
   render(options?: PromptRenderOptions): string;
   clearCache(): void;
@@ -51,12 +60,7 @@ interface CachedPromptFile {
   raw: string;
 }
 
-const LAYER_ORDER: PromptLayerName[] = [
-  "base",
-  "capability",
-  "profile",
-  "mode",
-];
+const LAYER_ORDER: PromptLayerName[] = ["base", "capability", "profile", "mode"];
 
 /**
  * A per-instance prompt file loader with its own mtime-based cache.
@@ -92,10 +96,12 @@ export class PromptLoader {
 // Module-level loader kept for backward compatibility with loadPromptFile().
 const moduleLoader = new PromptLoader();
 
+/** Identity helper that preserves the type of a prompt fragment definition. */
 export function definePromptFragment<T extends PromptFragment>(fragment: T): T {
   return fragment;
 }
 
+/** Identity helper that preserves the type of a prompt bundle definition. */
 export function definePromptBundle<T extends PromptBundle>(bundle: T): T {
   return bundle;
 }
@@ -105,14 +111,13 @@ export function clearPromptFileCache(): void {
   moduleLoader.clearCache();
 }
 
+/** Removes leading HTML metadata comments from a prompt file. */
 export function stripPromptMetadata(content: string): string {
   return content.replace(/^<!--[\s\S]*?-->\s*/, "").trim();
 }
 
-export function renderPrompt(
-  content: string,
-  vars: PromptVars = {},
-): string {
+/** Renders `${var}` placeholders using the provided variable map. */
+export function renderPrompt(content: string, vars: PromptVars = {}): string {
   return content.replace(/\$\{([A-Za-z0-9_]+)\}/g, (match, key: string) => {
     if (!Object.prototype.hasOwnProperty.call(vars, key)) {
       return match;
@@ -124,20 +129,21 @@ export function renderPrompt(
 }
 
 /** @deprecated Use a PromptLoader instance for isolated caching. */
-export function loadPromptFile(
-  filePath: string,
-  options: LoadPromptFileOptions = {},
-): string {
+export function loadPromptFile(filePath: string, options: LoadPromptFileOptions = {}): string {
   return moduleLoader.loadFile(filePath, options);
 }
 
+/**
+ * Creates an isolated prompt builder with its own file cache.
+ *
+ * @see {@link https://agentrail.run/reference/prompt-sdk}
+ */
 export function createPromptBuilder(bundle: PromptBundle): PromptBuilder {
   const loader = new PromptLoader();
   return {
     render(options: PromptRenderOptions = {}): string {
       const source =
-        options.bundle ??
-        (options.overlay ? mergePromptBundles(bundle, options.overlay) : bundle);
+        options.bundle ?? (options.overlay ? mergePromptBundles(bundle, options.overlay) : bundle);
       return renderPromptBundle(source, options.vars, loader);
     },
     clearCache() {
@@ -178,7 +184,11 @@ function renderPromptBundle(
     .join("\n\n");
 }
 
-function renderPromptFragment(fragment: PromptFragment, vars: PromptVars, loader: PromptLoader = moduleLoader): string {
+function renderPromptFragment(
+  fragment: PromptFragment,
+  vars: PromptVars,
+  loader: PromptLoader = moduleLoader,
+): string {
   if (fragment.filePath) {
     return loader.loadFile(fragment.filePath, {
       stripMetadata: fragment.stripMetadata,
@@ -211,10 +221,7 @@ function materializeLayer(layer: PromptLayer): PromptFragment[] {
   return resolved;
 }
 
-function mergePromptBundles(
-  base: PromptBundle,
-  overlay: PromptBundle,
-): PromptBundle {
+function mergePromptBundles(base: PromptBundle, overlay: PromptBundle): PromptBundle {
   const merged: PromptBundle = {
     vars: {
       ...(base.vars ?? {}),
@@ -231,10 +238,7 @@ function mergePromptBundles(
     }
 
     merged[layerName] = {
-      fragments: [
-        ...(baseLayer?.fragments ?? []),
-        ...(overlayLayer?.fragments ?? []),
-      ],
+      fragments: [...(baseLayer?.fragments ?? []), ...(overlayLayer?.fragments ?? [])],
       replace: {
         ...(baseLayer?.replace ?? {}),
         ...(overlayLayer?.replace ?? {}),

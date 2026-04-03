@@ -3,20 +3,17 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { TransformContextFn } from "@agentrail/runtime-core";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createTransformContext } from "./context-pipeline.js";
-import {
-  collectPluginContextProviders,
-  runAttachmentHandlers,
-} from "./plugins.js";
+import { collectPluginContextProviders, runAttachmentHandlers } from "./plugins.js";
 import type {
   AgentrailPlugin,
   AttachmentFile,
   AttachmentHandler,
   ContextProvider,
 } from "./types.js";
-import type { TransformContextFn } from "@agentrail/runtime-core";
 
 interface AttachmentInput {
   name: string;
@@ -24,6 +21,7 @@ interface AttachmentInput {
   mimeType: string;
 }
 
+/** Parsed request body accepted by the streaming route. */
 export interface StreamRequest {
   message: string;
   agentId?: string;
@@ -38,11 +36,11 @@ interface SseTextStream {
   write(chunk: string): Promise<unknown>;
 }
 
+/** Validates a streaming request body and returns a normalized result. */
 export function validateStreamRequest(
   body: StreamRequest,
 ): { valid: true } | { valid: false; error: string } {
-  const hasAttachments =
-    Array.isArray(body.attachments) && body.attachments.length > 0;
+  const hasAttachments = Array.isArray(body.attachments) && body.attachments.length > 0;
 
   if ((!body.message || typeof body.message !== "string") && !hasAttachments) {
     return {
@@ -99,11 +97,7 @@ export async function buildEffectiveMessage(
     return effectiveMessage;
   }
 
-  const result = await runAttachmentHandlers(
-    uploadedFiles,
-    plugins,
-    fallbackHandler,
-  );
+  const result = await runAttachmentHandlers(uploadedFiles, plugins, fallbackHandler);
 
   if (result?.contextText) {
     effectiveMessage = effectiveMessage
@@ -150,6 +144,7 @@ export async function resolveStreamTransformContext(
   );
 }
 
+/** Creates helpers that serialize Agentrail stream events into the response body. */
 export function createSseEventWriter(textStream: SseTextStream) {
   const writeEvent = async (event: object) => {
     await textStream.write(`data: ${JSON.stringify(event)}\n\n`);

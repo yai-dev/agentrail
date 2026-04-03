@@ -3,40 +3,42 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
 import { buildDefaultCapabilityTools } from "@agentrail/host/defaults";
+import type { SessionRef } from "@agentrail/memo";
+import { SessionManager } from "@agentrail/memo";
 import type {
   CreateManagedAgentInput,
-  SubAgentRuntime,
   ModelConfig,
+  SubAgentRuntime,
 } from "@agentrail/orchestration";
+import type { RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
 
-import { waitHandleRegistry } from "../wait-handle-registry.js";
 import { config } from "../config.js";
+import { knowledgeManager, sandboxManager } from "../context/index.js";
 import { buildSystemPrompt } from "../prompts/index.js";
-import {
-  knowledgeManager,
-  sandboxManager,
-} from "../context/index.js";
+import { waitHandleRegistry } from "../wait-handle-registry.js";
 
 export interface DefaultSubAgentRuntimeConfig {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
+  dataDir: string;
 }
 
 export class DefaultSubAgentRuntime implements SubAgentRuntime {
   private readonly tenantId: string;
   private readonly userId: string;
   private readonly sessionId: string;
-  private readonly sessionDir: string;
+  private readonly sessionRef: SessionRef;
+  private readonly dataDir: string;
 
-  constructor(config: DefaultSubAgentRuntimeConfig) {
-    this.tenantId = config.tenantId;
-    this.userId = config.userId;
-    this.sessionId = config.sessionId;
-    this.sessionDir = config.sessionDir;
+  constructor(runtimeConfig: DefaultSubAgentRuntimeConfig) {
+    this.tenantId = runtimeConfig.tenantId;
+    this.userId = runtimeConfig.userId;
+    this.sessionId = runtimeConfig.sessionId;
+    this.sessionRef = runtimeConfig.sessionRef;
+    this.dataDir = runtimeConfig.dataDir;
   }
 
   getModelConfig(): ModelConfig {
@@ -62,11 +64,13 @@ export class DefaultSubAgentRuntime implements SubAgentRuntime {
   }
 
   async buildTools(_input: CreateManagedAgentInput): Promise<RuntimeTool[]> {
+    const sessionStore = new SessionManager(this.dataDir);
     const { executionTools, browserTools } = await buildDefaultCapabilityTools({
       tenantId: this.tenantId,
       userId: this.userId,
       sessionId: this.sessionId,
-      sessionDir: this.sessionDir,
+      sessionRef: this.sessionRef,
+      sessionStore,
       knowledgeManager,
       sandboxManager,
       waitHandleRegistry,

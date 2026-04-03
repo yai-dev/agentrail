@@ -3,9 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
+import type { Agent, Message, Usage } from "@agentrail/runtime-core";
 import { describe, expect, it, vi } from "vitest";
 import { createStreamRoute } from "../src/stream-route.js";
-import type { Agent, Message, Usage } from "@agentrail/runtime-core";
 
 function makeUsage(): Usage {
   return {
@@ -58,9 +59,9 @@ function makeAgent(messages: Message[]): Agent {
 describe("createStreamRoute", () => {
   it("streams agent events, compaction markers, and usage events", async () => {
     const appended: Message[][] = [];
+    const sessionRef = createSessionRef("tenant-1", "session-1");
     const sessionManager = {
-      getOrCreate: vi.fn(async () => ({ sessionId: "session-1" })),
-      getSessionDir: vi.fn(() => "/tmp/session-1"),
+      getOrCreate: vi.fn(async () => ({ sessionId: "session-1", sessionRef })),
       loadAllMessages: vi.fn(async () => [
         { role: "user" as const, content: "hello world", timestamp: 1 },
       ]),
@@ -70,6 +71,10 @@ describe("createStreamRoute", () => {
         appended.push(messages);
       }),
       recordTurn: vi.fn(async () => {}),
+      createTodoStorage: vi.fn(() => ({
+        read: async () => null,
+        write: async () => {},
+      })),
     };
 
     const sandboxManager = {
@@ -125,11 +130,11 @@ describe("createStreamRoute", () => {
     const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toContain("\"type\":\"context_compaction_start\"");
-    expect(body).toContain("\"type\":\"context_compaction_end\"");
-    expect(body).toContain("\"type\":\"agent_start\"");
-    expect(body).toContain("\"type\":\"agent_end\"");
-    expect(body).toContain("\"type\":\"context_usage\"");
+    expect(body).toContain('"type":"context_compaction_start"');
+    expect(body).toContain('"type":"context_compaction_end"');
+    expect(body).toContain('"type":"agent_start"');
+    expect(body).toContain('"type":"agent_end"');
+    expect(body).toContain('"type":"context_usage"');
     expect(sessionManager.compactIfNeeded).toHaveBeenCalledOnce();
     expect(sessionManager.appendMessages).toHaveBeenCalledOnce();
     expect(appended[0]).toHaveLength(2);
@@ -137,13 +142,19 @@ describe("createStreamRoute", () => {
 
   it("runs plugin attachment, context, and activity hooks", async () => {
     const sessionManager = {
-      getOrCreate: vi.fn(async () => ({ sessionId: "session-1" })),
-      getSessionDir: vi.fn(() => "/tmp/session-1"),
+      getOrCreate: vi.fn(async () => ({
+        sessionId: "session-1",
+        sessionRef: createSessionRef("tenant-1", "session-1"),
+      })),
       loadAllMessages: vi.fn(async () => []),
       compactIfNeeded: vi.fn(async () => {}),
       loadMessagesWithBudget: vi.fn(async () => []),
       appendMessages: vi.fn(async () => {}),
       recordTurn: vi.fn(async () => {}),
+      createTodoStorage: vi.fn(() => ({
+        read: async () => null,
+        write: async () => {},
+      })),
     };
 
     const sandboxManager = {
@@ -270,9 +281,7 @@ describe("createStreamRoute", () => {
     ];
     expect(message).toContain("[Plugin Attachment]");
     await expect(
-      streamOptions.transformContext([
-        { role: "user", content: "original", timestamp: 2 },
-      ]),
+      streamOptions.transformContext([{ role: "user", content: "original", timestamp: 2 }]),
     ).resolves.toEqual([
       { role: "user", content: "plugin-context", timestamp: 1 },
       { role: "user", content: "original", timestamp: 2 },
@@ -282,9 +291,9 @@ describe("createStreamRoute", () => {
 
   it("lets a resolved stream handler take over SSE and persistence", async () => {
     const appended: Message[][] = [];
+    const sessionRef = createSessionRef("tenant-1", "session-1");
     const sessionManager = {
-      getOrCreate: vi.fn(async () => ({ sessionId: "session-1" })),
-      getSessionDir: vi.fn(() => "/tmp/session-1"),
+      getOrCreate: vi.fn(async () => ({ sessionId: "session-1", sessionRef })),
       loadAllMessages: vi.fn(async () => []),
       compactIfNeeded: vi.fn(async () => {}),
       loadMessagesWithBudget: vi.fn(async () => []),
@@ -292,6 +301,10 @@ describe("createStreamRoute", () => {
         appended.push(messages);
       }),
       recordTurn: vi.fn(async () => {}),
+      createTodoStorage: vi.fn(() => ({
+        read: async () => null,
+        write: async () => {},
+      })),
     };
     const sandboxManager = {
       ensureSandbox: vi.fn(async () => {}),
@@ -354,7 +367,7 @@ describe("createStreamRoute", () => {
     const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toContain("\"type\":\"deep_research_start\"");
+    expect(body).toContain('"type":"deep_research_start"');
     expect(handleResolvedRequest).toHaveBeenCalledOnce();
     expect(resolveProfile).not.toHaveBeenCalled();
     expect(sessionManager.appendMessages).toHaveBeenCalledOnce();

@@ -3,20 +3,16 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { Hono } from "hono";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after } from "node:test";
-import { Hono } from "hono";
 
 const dataDir = await mkdtemp(join(tmpdir(), "agentrail-commands-route-"));
 const configPath = join(dataDir, "agentrail.yaml");
-await writeFile(
-  configPath,
-  `version: 1\npaths:\n  dataDir: ${JSON.stringify(dataDir)}\n`,
-  "utf8",
-);
+await writeFile(configPath, `version: 1\npaths:\n  dataDir: ${JSON.stringify(dataDir)}\n`, "utf8");
 process.env.AGENTRAIL_CONFIG_PATH = configPath;
 
 const { commands } = await import("../src/routes/commands.js");
@@ -41,7 +37,7 @@ test("commands route queues memory consolidation without creating a chat turn", 
   });
 
   assert.equal(response.status, 200);
-  const payload = await response.json() as { status?: string; message?: string };
+  const payload = (await response.json()) as { status?: string; message?: string };
   assert.equal(payload.status, "queued");
   assert.match(payload.message ?? "", /USER\.md/i);
 
@@ -65,7 +61,7 @@ test("commands route rejects /compact without a session", async () => {
   });
 
   assert.equal(response.status, 400);
-  const payload = await response.json() as { status?: string; message?: string };
+  const payload = (await response.json()) as { status?: string; message?: string };
   assert.equal(payload.status, "error");
   assert.match(payload.message ?? "", /已有会话/);
 });
@@ -76,7 +72,7 @@ test("commands route lists slash commands with availability metadata", async () 
 
   const withoutSession = await app.request("/api/commands");
   assert.equal(withoutSession.status, 200);
-  const withoutSessionPayload = await withoutSession.json() as {
+  const withoutSessionPayload = (await withoutSession.json()) as {
     commands?: Array<{ name: string; available: boolean; unavailableReason: string | null }>;
   };
   assert.deepEqual(
@@ -93,7 +89,7 @@ test("commands route lists slash commands with availability metadata", async () 
 
   const withSession = await app.request("/api/commands?sessionId=session-1");
   assert.equal(withSession.status, 200);
-  const withSessionPayload = await withSession.json() as {
+  const withSessionPayload = (await withSession.json()) as {
     commands?: Array<{ name: string; available: boolean; unavailableReason: string | null }>;
   };
   assert.deepEqual(

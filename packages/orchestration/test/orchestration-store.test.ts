@@ -7,8 +7,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-
-import { OrchestrationStore } from "../src/orchestration-store.js";
+import { createFilesystemOrchestrationStore } from "../src/orchestration-store.js";
 import type {
   AgentInputEnvelope,
   OrchestrationEvent,
@@ -19,18 +18,20 @@ const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    temporaryDirectories.splice(0).map((directory) =>
-      rm(directory, { recursive: true, force: true }),
-    ),
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
   );
 });
 
 async function createSessionDir(): Promise<string> {
-  const directory = await mkdtemp(
-    join(tmpdir(), "agent-orchestration-session-"),
-  );
+  const directory = await mkdtemp(join(tmpdir(), "agent-orchestration-session-"));
   temporaryDirectories.push(directory);
   return directory;
+}
+
+function createStore(sessionDir: string) {
+  return createFilesystemOrchestrationStore(sessionDir);
 }
 
 function createEvents(): OrchestrationEvent[] {
@@ -149,9 +150,7 @@ function createCheckpointSnapshot(): OrchestrationSnapshot {
   };
 }
 
-function createRestartSnapshot(
-  queuedInput?: AgentInputEnvelope,
-): OrchestrationSnapshot {
+function createRestartSnapshot(queuedInput?: AgentInputEnvelope): OrchestrationSnapshot {
   return {
     runs: {
       "run-2": {
@@ -319,58 +318,47 @@ function createTerminalRunEvents(): OrchestrationEvent[] {
 describe("OrchestrationStore", () => {
   it("writes orchestration events to the session-scoped jsonl log", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
     const [eventOne, eventTwo] = createEvents();
 
-    expect(OrchestrationStore).toBeDefined();
+    expect(store).toBeDefined();
 
-    await OrchestrationStore.appendEvent(sessionDir, eventOne!);
-    await OrchestrationStore.appendEvent(sessionDir, eventTwo!);
+    await store.appendEvent(eventOne!);
+    await store.appendEvent(eventTwo!);
 
     const eventLogPath = join(sessionDir, "orchestration", "events.jsonl");
     const logContents = await readFile(eventLogPath, "utf8");
 
-    expect(logContents).toBe(
-      `${JSON.stringify(eventOne)}\n${JSON.stringify(eventTwo)}\n`,
-    );
-    await expect(OrchestrationStore.loadEvents(sessionDir)).resolves.toEqual([
-      eventOne,
-      eventTwo,
-    ]);
+    expect(logContents).toBe(`${JSON.stringify(eventOne)}\n${JSON.stringify(eventTwo)}\n`);
+    await expect(store.loadEvents()).resolves.toEqual([eventOne, eventTwo]);
   });
 
   it("writes orchestration checkpoint snapshots to disk", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
     const snapshot = createCheckpointSnapshot();
 
-    await OrchestrationStore.writeCheckpoint(sessionDir, snapshot);
+    await store.writeCheckpoint(snapshot);
 
-    const checkpointPath = join(
-      sessionDir,
-      "orchestration",
-      "checkpoint.json",
-    );
+    const checkpointPath = join(sessionDir, "orchestration", "checkpoint.json");
     const checkpointContents = await readFile(checkpointPath, "utf8");
 
     expect(JSON.parse(checkpointContents)).toEqual(snapshot);
-    await expect(OrchestrationStore.loadSnapshot(sessionDir)).resolves.toEqual(
-      snapshot,
-    );
+    await expect(store.loadSnapshot()).resolves.toEqual(snapshot);
   });
 
   it("replays checkpoint state plus tail events during recovery", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
     const events = createEvents();
 
     for (const event of events) {
-      await OrchestrationStore.appendEvent(sessionDir, event);
+      await store.appendEvent(event);
     }
 
-    await OrchestrationStore.writeCheckpoint(
-      sessionDir,
-      createCheckpointSnapshot(),
-    );
+    await store.writeCheckpoint(createCheckpointSnapshot());
 
-    const recovered = await OrchestrationStore.recoverState(sessionDir);
+    const recovered = await store.recoverState();
 
     expect(recovered.snapshot.runs["run-1"]?.id).toBe("run-1");
     expect(recovered.snapshot.agents["agent-1"]?.status).toBe("waiting");
@@ -382,34 +370,32 @@ describe("OrchestrationStore", () => {
       "input-2",
     ]);
     expect(recovered.pendingWaits.map((wait) => wait.id)).toEqual(["wait-1"]);
-    expect(recovered.activeAgents.map((agent) => agent.id)).toEqual([
-      "agent-1",
-    ]);
+    expect(recovered.activeAgents.map((agent) => agent.id)).toEqual(["agent-1"]);
   });
 
   it("recovers pending waits after restart from the persisted checkpoint", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
     const restartSnapshot = createRestartSnapshot();
 
-    await OrchestrationStore.writeCheckpoint(sessionDir, restartSnapshot);
+    await store.writeCheckpoint(restartSnapshot);
 
-    const recovered = await OrchestrationStore.recoverState(sessionDir);
+    const recovered = await store.recoverState();
 
     expect(recovered.snapshot).toEqual(restartSnapshot);
     expect(recovered.pendingWaits.map((wait) => wait.id)).toEqual(["wait-2"]);
-    expect(recovered.activeAgents.map((agent) => agent.id)).toEqual([
-      "agent-2",
-    ]);
+    expect(recovered.activeAgents.map((agent) => agent.id)).toEqual(["agent-2"]);
   });
 
   it("does not surface resumable waits or agents for terminal runs", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
 
     for (const event of createTerminalRunEvents()) {
-      await OrchestrationStore.appendEvent(sessionDir, event);
+      await store.appendEvent(event);
     }
 
-    const recovered = await OrchestrationStore.recoverState(sessionDir);
+    const recovered = await store.recoverState();
 
     expect(recovered.snapshot.runs["run-3"]?.status).toBe("completed");
     expect(recovered.snapshot.waits["wait-3"]?.status).toBe("pending");
@@ -420,17 +406,15 @@ describe("OrchestrationStore", () => {
 
   it("discards an incompatible checkpoint when its anchor is missing from the event log", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
 
     for (const event of createEvents()) {
-      await OrchestrationStore.appendEvent(sessionDir, event);
+      await store.appendEvent(event);
     }
 
-    await OrchestrationStore.writeCheckpoint(
-      sessionDir,
-      createIncompatibleCheckpointSnapshot(),
-    );
+    await store.writeCheckpoint(createIncompatibleCheckpointSnapshot());
 
-    const recovered = await OrchestrationStore.recoverState(sessionDir);
+    const recovered = await store.recoverState();
 
     expect(recovered.snapshot.runs["run-1"]?.id).toBe("run-1");
     expect(recovered.snapshot.tasks["stale-task"]).toBeUndefined();
@@ -444,9 +428,10 @@ describe("OrchestrationStore", () => {
 
   it("falls back to event replay when checkpoint json is invalid", async () => {
     const sessionDir = await createSessionDir();
+    const store = createStore(sessionDir);
 
     for (const event of createEvents()) {
-      await OrchestrationStore.appendEvent(sessionDir, event);
+      await store.appendEvent(event);
     }
 
     await writeFile(
@@ -455,7 +440,7 @@ describe("OrchestrationStore", () => {
       "utf8",
     );
 
-    const recovered = await OrchestrationStore.recoverState(sessionDir);
+    const recovered = await store.recoverState();
 
     expect(recovered.snapshot.runs["run-1"]?.id).toBe("run-1");
     expect(recovered.snapshot.lastEventId).toBe("evt-6");

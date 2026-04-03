@@ -3,20 +3,22 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+/** Lifecycle status for an orchestration run. */
 export type RunStatus = "running" | "completed" | "failed";
 
+/** Lifecycle status for a managed sub-agent. */
 export type AgentStatus = "idle" | "running" | "waiting" | "closing" | "closed";
 
+/** Resolution status for a wait condition. */
 export type WaitStatus = "pending" | "resolved";
 
+/** How multi-agent wait targets should be matched. */
 export type WaitMatch = "any" | "all";
 
-export type AgentJobOutcome =
-  | "completed"
-  | "failed"
-  | "cancelled"
-  | "timed_out";
+/** Final outcome recorded for one managed-agent job. */
+export type AgentJobOutcome = "completed" | "failed" | "cancelled" | "timed_out";
 
+/** Recorded output for one completed managed-agent job. */
 export interface OrchestrationAgentJob {
   jobId: string;
   inputIds: string[];
@@ -26,6 +28,7 @@ export interface OrchestrationAgentJob {
   completedAt: string;
 }
 
+/** Task metadata tracked within an orchestration run. */
 export interface OrchestrationTask {
   id: string;
   runId: string;
@@ -34,6 +37,7 @@ export interface OrchestrationTask {
   createdAt: string;
 }
 
+/** Top-level orchestration run record. */
 export interface OrchestrationRun {
   id: string;
   status: RunStatus;
@@ -43,6 +47,7 @@ export interface OrchestrationRun {
   completedAt?: string;
 }
 
+/** Managed sub-agent record persisted in the orchestration snapshot. */
 export interface OrchestrationAgent {
   id: string;
   runId: string;
@@ -56,6 +61,7 @@ export interface OrchestrationAgent {
   lastJob?: OrchestrationAgentJob;
 }
 
+/** Wait condition registered by a managed agent. */
 export interface WaitCondition {
   id: string;
   runId: string;
@@ -71,6 +77,7 @@ export interface WaitCondition {
   resolution?: Record<string, unknown>;
 }
 
+/** Input required to spawn a managed agent. */
 export interface SpawnAgentInput {
   id: string;
   runId: string;
@@ -79,18 +86,21 @@ export interface SpawnAgentInput {
   role: string;
 }
 
+/** Input queued for delivery to a managed agent. */
 export interface SendInputInput {
   id: string;
   agentId: string;
   payload: Record<string, unknown>;
 }
 
+/** Event payload used when removing queued input from an agent mailbox. */
 export interface RemoveInputInput {
   inputId: string;
   agentId: string;
   reason: "delivered" | "agent_closed";
 }
 
+/** Input required to register a wait condition. */
 export interface WaitAgentInput {
   id: string;
   agentId: string;
@@ -101,12 +111,14 @@ export interface WaitAgentInput {
   timeoutAt?: string;
 }
 
+/** Input used when closing a managed agent. */
 export interface CloseAgentInput {
   id: string;
   agentId: string;
   reason?: string;
 }
 
+/** Persisted queued-input envelope for a managed agent. */
 export interface AgentInputEnvelope {
   id: string;
   agentId: string;
@@ -114,6 +126,7 @@ export interface AgentInputEnvelope {
   queuedAt: string;
 }
 
+/** Normalized result returned when a managed agent finishes processing input. */
 export interface ManagedAgentDeliveryResult {
   jobId: string;
   consumedInputIds: string[];
@@ -122,6 +135,7 @@ export interface ManagedAgentDeliveryResult {
   error?: string;
 }
 
+/** Mailbox events persisted separately for durable agent input delivery. */
 export type OrchestrationMailboxEvent =
   | {
       eventId: string;
@@ -139,6 +153,7 @@ export type OrchestrationMailboxEvent =
       reason?: string;
     };
 
+/** Derived mailbox state for one managed agent. */
 export interface OrchestrationMailboxState {
   processedEventCount: number;
   closeRequested: {
@@ -153,6 +168,7 @@ interface OrchestrationEventBase {
   runId: string;
 }
 
+/** Event log union used to rebuild orchestration state. */
 export type OrchestrationEvent =
   | (OrchestrationEventBase & {
       type: "run_started";
@@ -216,6 +232,7 @@ export type OrchestrationEvent =
       error?: string;
     });
 
+/** Serializable snapshot of all active orchestration state for a session. */
 export interface OrchestrationSnapshot {
   runs: Record<string, OrchestrationRun>;
   tasks: Record<string, OrchestrationTask>;

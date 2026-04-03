@@ -123,9 +123,7 @@ export function SubAgentCard({ agent, isActive, compact = false }: SubAgentCardP
         </div>
       )}
 
-      <div className="sub-agent-card-meta">
-        {timeParts.join(" · ")}
-      </div>
+      <div className="sub-agent-card-meta">{timeParts.join(" · ")}</div>
     </div>
   );
 }

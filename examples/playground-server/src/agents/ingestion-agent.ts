@@ -3,13 +3,18 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import path from "node:path";
-import fs from "node:fs/promises";
+import type {
+  IngestionEvent,
+  IngestionStep,
+  KnowledgeManager,
+  Taxonomy,
+} from "@agentrail/knowledge";
+import { createKbReadTool } from "@agentrail/knowledge";
+import type { ModelConfig } from "@agentrail/runtime-core";
 import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
 import { writeTool } from "@agentrail/tools";
-import { createKbReadTool } from "@agentrail/knowledge";
-import type { IngestionEvent, IngestionStep, Taxonomy, KnowledgeManager } from "@agentrail/knowledge";
-import type { ModelConfig } from "@agentrail/runtime-core";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 // ---- types ------------------------------------------------------------------
 
@@ -34,9 +39,7 @@ export interface RunIngestionAgentOptions {
 
 function detectStep(toolName: string, filePath: string, kbDir: string): IngestionStep | null {
   // KbRead uses relative paths; Write uses absolute paths
-  const rel = path.isAbsolute(filePath)
-    ? path.relative(kbDir, filePath)
-    : filePath;
+  const rel = path.isAbsolute(filePath) ? path.relative(kbDir, filePath) : filePath;
   if (toolName === "KbRead" && rel.startsWith("pending")) return "analyze";
   if (toolName === "Write" && rel === "taxonomy.json") return "classify";
   if (toolName === "Write" && rel.startsWith("pending")) return "summarize";
@@ -46,7 +49,12 @@ function detectStep(toolName: string, filePath: string, kbDir: string): Ingestio
 
 // ---- system prompt ----------------------------------------------------------
 
-function buildIngestionPrompt(kbDir: string, docId: string, title: string, taxonomy: Taxonomy): string {
+function buildIngestionPrompt(
+  kbDir: string,
+  docId: string,
+  title: string,
+  taxonomy: Taxonomy,
+): string {
   const pendingPath = path.join(kbDir, "pending", `${docId}.md`);
   const taxonomyPath = path.join(kbDir, "taxonomy.json");
   const indexesDir = path.join(kbDir, "indexes");
@@ -99,8 +107,11 @@ This JSON will be read by the server to finalize the document. Work through each
 
 // ---- main export ------------------------------------------------------------
 
-export async function runIngestionAgent(options: RunIngestionAgentOptions): Promise<IngestionResult> {
-  const { knowledgeManager, tenantId, kbDir, docId, title, taxonomy, modelConfig, onEvent } = options;
+export async function runIngestionAgent(
+  options: RunIngestionAgentOptions,
+): Promise<IngestionResult> {
+  const { knowledgeManager, tenantId, kbDir, docId, title, taxonomy, modelConfig, onEvent } =
+    options;
 
   const agent = defineAgent({
     id: "ingestion-agent",
@@ -151,9 +162,7 @@ export async function runIngestionAgent(options: RunIngestionAgentOptions): Prom
         pendingToolArgs.delete(toolCallId);
         // KbRead uses "path" (relative), Write uses "file_path" (absolute)
         const filePath =
-          (args as { path?: string }).path ??
-          (args as { file_path?: string }).file_path ??
-          "";
+          (args as { path?: string }).path ?? (args as { file_path?: string }).file_path ?? "";
         const step = detectStep(toolName, filePath, kbDir);
 
         if (step && !completedSteps.has(step)) {

@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useRef, useEffect, useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SlashCommandMeta } from "../api";
 
 export interface PendingAttachment {
@@ -33,7 +33,19 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function InputBar({ value, onChange, onSend, slashCommands = [], mode, onModeChange, disabled, notConfigured = false, attachments = [], onFilesSelected, onRemoveAttachment }: Props) {
+export function InputBar({
+  value,
+  onChange,
+  onSend,
+  slashCommands = [],
+  mode,
+  onModeChange,
+  disabled,
+  notConfigured = false,
+  attachments = [],
+  onFilesSelected,
+  onRemoveAttachment,
+}: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -58,10 +70,12 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
 
   const exactSlashCommand = useMemo(() => {
     const normalized = trimmedValue.toLowerCase();
-    return slashCommands.find((command) => {
-      const name = command.name.toLowerCase();
-      return normalized === name || normalized.startsWith(`${name} `);
-    }) ?? null;
+    return (
+      slashCommands.find((command) => {
+        const name = command.name.toLowerCase();
+        return normalized === name || normalized.startsWith(`${name} `);
+      }) ?? null
+    );
   }, [slashCommands, trimmedValue]);
 
   useEffect(() => {
@@ -73,11 +87,14 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
     setHighlightedIndex(0);
   }, [highlightedIndex, slashSuggestions.length]);
 
-  const applySuggestion = useCallback((command: SlashCommandMeta) => {
-    if (!command.available) return;
-    onChange(`${command.name} `);
-    ref.current?.focus();
-  }, [onChange]);
+  const applySuggestion = useCallback(
+    (command: SlashCommandMeta) => {
+      if (!command.available) return;
+      onChange(`${command.name} `);
+      ref.current?.focus();
+    },
+    [onChange],
+  );
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (slashSuggestions.length > 0) {
@@ -88,7 +105,9 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setHighlightedIndex((prev) => (prev - 1 + slashSuggestions.length) % slashSuggestions.length);
+        setHighlightedIndex(
+          (prev) => (prev - 1 + slashSuggestions.length) % slashSuggestions.length,
+        );
         return;
       }
       if (e.key === "Tab") {
@@ -115,18 +134,24 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
     e.currentTarget.classList.remove("drag-over");
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove("drag-over");
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) onFilesSelected?.(files);
-  }, [onFilesSelected]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.currentTarget.classList.remove("drag-over");
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) onFilesSelected?.(files);
+    },
+    [onFilesSelected],
+  );
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length > 0) onFilesSelected?.(files);
-    e.target.value = "";
-  }, [onFilesSelected]);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? []);
+      if (files.length > 0) onFilesSelected?.(files);
+      e.target.value = "";
+    },
+    [onFilesSelected],
+  );
 
   return (
     <div
@@ -165,7 +190,16 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
         <div className="attachment-chips-bar">
           {attachments.map((att, i) => (
             <div key={i} className="attachment-chip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
@@ -175,7 +209,9 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
                 className="chip-remove"
                 onClick={() => onRemoveAttachment?.(i)}
                 aria-label={`Remove ${att.name}`}
-              >×</button>
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>
@@ -183,11 +219,13 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
 
       {exactSlashCommand && (
         <div className="slash-command-badge-row">
-          <span className={`slash-command-badge ${exactSlashCommand.available ? "" : "disabled"}`}>{exactSlashCommand.name}</span>
+          <span className={`slash-command-badge ${exactSlashCommand.available ? "" : "disabled"}`}>
+            {exactSlashCommand.name}
+          </span>
           <span className="slash-command-badge-meta">
             {exactSlashCommand.available
               ? exactSlashCommand.description
-              : exactSlashCommand.unavailableReason ?? exactSlashCommand.description}
+              : (exactSlashCommand.unavailableReason ?? exactSlashCommand.description)}
           </span>
         </div>
       )}
@@ -200,18 +238,29 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
           aria-label="Attach file"
           title="Attach file (.xlsx, .docx, .txt, .md)"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
           </svg>
         </button>
         <textarea
           ref={ref}
           className={`input-textarea ${mode === "deep_research" ? "deep-research-textarea" : ""}`}
-          placeholder={notConfigured
-            ? "请先点击右上角⚙️设置 Tenant ID 和 User ID…"
-            : mode === "deep_research"
-              ? "输入研究主题、问题或分析任务... (Shift+Enter 进行换行)"
-              : "输入问题向智能体提问... (Shift+Enter 进行换行)"}
+          placeholder={
+            notConfigured
+              ? "请先点击右上角⚙️设置 Tenant ID 和 User ID…"
+              : mode === "deep_research"
+                ? "输入研究主题、问题或分析任务... (Shift+Enter 进行换行)"
+                : "输入问题向智能体提问... (Shift+Enter 进行换行)"
+          }
           value={value}
           rows={1}
           disabled={disabled}
@@ -219,19 +268,46 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
           onKeyDown={handleKey}
         />
         <button
-          className={`send-btn ${disabled ? "loading" : ""} ${mode === "deep_research" ? "deep-research-action" : ""}`}
+          className={`send-btn ${disabled ? "loading" : ""} ${
+            mode === "deep_research" ? "deep-research-action" : ""
+          }`}
           disabled={disabled || !canSend}
           onClick={() => onSend(value)}
           aria-label="Send"
         >
           {disabled ? (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="28" strokeDashoffset="0">
-                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite" />
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="28"
+                strokeDashoffset="0"
+              >
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  from="0 12 12"
+                  to="360 12 12"
+                  dur="0.8s"
+                  repeatCount="indefinite"
+                />
               </circle>
             </svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M12 19V5M5 12l7-7 7 7" />
             </svg>
           )}
@@ -244,7 +320,9 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
             <button
               key={command.name}
               type="button"
-              className={`slash-command-item ${index === highlightedIndex ? "active" : ""} ${command.available ? "" : "disabled"}`}
+              className={`slash-command-item ${index === highlightedIndex ? "active" : ""} ${
+                command.available ? "" : "disabled"
+              }`}
               onMouseDown={(e) => {
                 e.preventDefault();
                 applySuggestion(command);
@@ -253,7 +331,9 @@ export function InputBar({ value, onChange, onSend, slashCommands = [], mode, on
             >
               <span className="slash-command-name">{command.name}</span>
               <span className="slash-command-desc">
-                {command.available ? command.description : command.unavailableReason ?? command.description}
+                {command.available
+                  ? command.description
+                  : (command.unavailableReason ?? command.description)}
               </span>
             </button>
           ))}

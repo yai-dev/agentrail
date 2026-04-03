@@ -3,33 +3,31 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import assert from "node:assert/strict";
-import { EventEmitter } from "node:events";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import test from "node:test";
+import { createSessionRef } from "@agentrail/memo";
 import type {
   AgentInputEnvelope,
   CreateManagedAgentInput,
   ManagedAgentDeliveryResult,
 } from "@agentrail/orchestration";
-import { OrchestrationStore } from "@agentrail/orchestration";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
 import {
-  createSubAgentProcess,
   createManagedSubAgentInstance,
+  createSubAgentProcess,
   resolveWorkerCwd,
   resolveWorkerExecArgv,
 } from "@agentrail/orchestration/worker";
+import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 function getWorkerPath(): string {
   const currentFile = fileURLToPath(import.meta.url);
   const extension = currentFile.endsWith(".ts") ? ".ts" : ".js";
-  return join(
-    dirname(currentFile),
-    "../src/agents/default-subagent-worker-entry" + extension,
-  );
+  return join(dirname(currentFile), "../src/agents/default-subagent-worker-entry" + extension);
 }
 
 class FakeChildProcess extends EventEmitter {
@@ -66,13 +64,34 @@ function createEnvelope(): AgentInputEnvelope {
   };
 }
 
+function createSessionFixture(dataDir: string): {
+  tenantId: string;
+  userId: string;
+  sessionId: string;
+  sessionRef: ReturnType<typeof createSessionRef>;
+  sessionDir: string;
+} {
+  const tenantId = "tenant-test";
+  const userId = "user-test";
+  const sessionId = "session-test";
+  return {
+    tenantId,
+    userId,
+    sessionId,
+    sessionRef: createSessionRef(tenantId, sessionId),
+    sessionDir: join(dataDir, "tenants", tenantId, "sessions", sessionId),
+  };
+}
+
 test("close waits for the worker exit before resolving", async () => {
   const child = new FakeChildProcess();
+  const session = createSessionFixture("/tmp/agentrail-subagent-process-test");
   const instancePromise = createManagedSubAgentInstance(child as never, {
-    tenantId: "tenant-test",
-    userId: "user-test",
-    sessionId: "session-test",
-    sessionDir: "/tmp/session-test",
+    tenantId: session.tenantId,
+    userId: session.userId,
+    sessionId: session.sessionId,
+    sessionRef: session.sessionRef,
+    dataDir: "/tmp/agentrail-subagent-process-test",
     input: createInput(),
     workerPath: getWorkerPath(),
     runtimeConfig: {},
@@ -96,11 +115,13 @@ test("close waits for the worker exit before resolving", async () => {
 
 test("deliverInput resolves the worker run_turn result", async () => {
   const child = new FakeChildProcess();
+  const session = createSessionFixture("/tmp/agentrail-subagent-process-test");
   const instancePromise = createManagedSubAgentInstance(child as never, {
-    tenantId: "tenant-test",
-    userId: "user-test",
-    sessionId: "session-test",
-    sessionDir: "/tmp/session-test",
+    tenantId: session.tenantId,
+    userId: session.userId,
+    sessionId: session.sessionId,
+    sessionRef: session.sessionRef,
+    dataDir: "/tmp/agentrail-subagent-process-test",
     input: createInput(),
     workerPath: getWorkerPath(),
     runtimeConfig: {},
@@ -141,11 +162,13 @@ test("deliverInput resolves the worker run_turn result", async () => {
 
 test("subscribes to autonomous worker lifecycle events", async () => {
   const child = new FakeChildProcess();
+  const session = createSessionFixture("/tmp/agentrail-subagent-process-test");
   const instancePromise = createManagedSubAgentInstance(child as never, {
-    tenantId: "tenant-test",
-    userId: "user-test",
-    sessionId: "session-test",
-    sessionDir: "/tmp/session-test",
+    tenantId: session.tenantId,
+    userId: session.userId,
+    sessionId: session.sessionId,
+    sessionRef: session.sessionRef,
+    dataDir: "/tmp/agentrail-subagent-process-test",
     input: createInput(),
     workerPath: getWorkerPath(),
     runtimeConfig: {},
@@ -175,13 +198,15 @@ test("subscribes to autonomous worker lifecycle events", async () => {
   });
   child.emit("message", {
     type: "run_turn_result",
-    requestId: (child.sent.find(
-      (message): message is { type: "run_turn"; requestId: string } =>
-        typeof message === "object" &&
-        message !== null &&
-        "type" in message &&
-        (message as { type?: string }).type === "run_turn",
-    ) as { requestId: string }).requestId,
+    requestId: (
+      child.sent.find(
+        (message): message is { type: "run_turn"; requestId: string } =>
+          typeof message === "object" &&
+          message !== null &&
+          "type" in message &&
+          (message as { type?: string }).type === "run_turn",
+      ) as { requestId: string }
+    ).requestId,
     result: {
       jobId: "job:input-process-test",
       consumedInputIds: ["input-process-test"],
@@ -211,31 +236,32 @@ test("subscribes to autonomous worker lifecycle events", async () => {
 
 test("fails fast when the worker never reports ready", async () => {
   const child = new FakeChildProcess();
+  const session = createSessionFixture("/tmp/agentrail-subagent-process-test");
 
   const instancePromise = createManagedSubAgentInstance(child as never, {
-    tenantId: "tenant-test",
-    userId: "user-test",
-    sessionId: "session-test",
-    sessionDir: "/tmp/session-test",
+    tenantId: session.tenantId,
+    userId: session.userId,
+    sessionId: session.sessionId,
+    sessionRef: session.sessionRef,
+    dataDir: "/tmp/agentrail-subagent-process-test",
     input: createInput(),
     workerPath: getWorkerPath(),
     runtimeConfig: {},
     readyTimeoutMs: 20,
   });
 
-  await assert.rejects(
-    instancePromise,
-    /did not become ready within 20ms/,
-  );
+  await assert.rejects(instancePromise, /did not become ready within 20ms/);
   assert.equal(child.sent[0] && typeof child.sent[0] === "object", true);
   assert.deepEqual(child.killSignals, ["SIGTERM"]);
 });
 
 test("real default sub-agent worker completes a wake-driven turn", async () => {
-  const sessionDir = await mkdtemp(join(tmpdir(), "default-subagent-process-real-"));
+  const dataDir = await mkdtemp(join(tmpdir(), "default-subagent-process-real-"));
+  const session = createSessionFixture(dataDir);
+  const persistence = createFilesystemOrchestrationPersistence(dataDir, session.sessionRef);
 
   try {
-    await OrchestrationStore.appendMailboxEvent(sessionDir, "agent-process-test", {
+    await persistence.appendMailboxEvent("agent-process-test", {
       eventId: "mailbox-process-1",
       type: "input_enqueued",
       agentId: "agent-process-test",
@@ -247,10 +273,11 @@ test("real default sub-agent worker completes a wake-driven turn", async () => {
     });
 
     const instance = await createSubAgentProcess({
-      tenantId: "tenant-test",
-      userId: "user-test",
-      sessionId: "session-test",
-      sessionDir,
+      tenantId: session.tenantId,
+      userId: session.userId,
+      sessionId: session.sessionId,
+      sessionRef: session.sessionRef,
+      dataDir,
       input: createInput(),
       workerPath: getWorkerPath(),
       runtimeConfig: {},
@@ -276,15 +303,11 @@ test("real default sub-agent worker completes a wake-driven turn", async () => {
     const result = await instance.deliverInput(createEnvelope());
     assert.equal(result.outputText, "process me");
     await waitFor(() => seen.includes("idle"));
-    assert.deepEqual(seen, [
-      "started:input-process-test",
-      "completed:process me",
-      "idle",
-    ]);
+    assert.deepEqual(seen, ["started:input-process-test", "completed:process me", "idle"]);
 
     await instance.close("done");
   } finally {
-    await rm(sessionDir, { recursive: true, force: true });
+    await rm(dataDir, { recursive: true, force: true });
   }
 });
 
@@ -316,38 +339,30 @@ test("filters parent execArgv down to runtime-safe loader flags", () => {
 });
 
 test("uses the parent working directory for worker process resolution", () => {
-  assert.equal(
-    resolveWorkerCwd("/tmp/worker-entry.ts", "/tmp/example-app"),
-    "/tmp/example-app",
-  );
-  assert.equal(
-    resolveWorkerCwd("/tmp/worker-entry.js", "/tmp/example-app"),
-    "/tmp/example-app",
-  );
+  assert.equal(resolveWorkerCwd("/tmp/worker-entry.ts", "/tmp/example-app"), "/tmp/example-app");
+  assert.equal(resolveWorkerCwd("/tmp/worker-entry.js", "/tmp/example-app"), "/tmp/example-app");
 });
 
 test("real default sub-agent worker reports malformed mailbox data as a failed turn", async () => {
-  const sessionDir = await mkdtemp(join(tmpdir(), "default-subagent-process-bad-mailbox-"));
+  const dataDir = await mkdtemp(join(tmpdir(), "default-subagent-process-bad-mailbox-"));
+  const session = createSessionFixture(dataDir);
 
   try {
     const agentDirectory = join(
-      sessionDir,
+      session.sessionDir,
       "orchestration",
       "subagents",
       "agent-process-test",
     );
     await mkdir(agentDirectory, { recursive: true });
-    await writeFile(
-      join(agentDirectory, "mailbox.jsonl"),
-      "{this-is-not-json}\n",
-      "utf8",
-    );
+    await writeFile(join(agentDirectory, "mailbox.jsonl"), "{this-is-not-json}\n", "utf8");
 
     const instance = await createSubAgentProcess({
-      tenantId: "tenant-test",
-      userId: "user-test",
-      sessionId: "session-test",
-      sessionDir,
+      tenantId: session.tenantId,
+      userId: session.userId,
+      sessionId: session.sessionId,
+      sessionRef: session.sessionRef,
+      dataDir,
       input: createInput(),
       workerPath: getWorkerPath(),
       runtimeConfig: {},
@@ -363,7 +378,7 @@ test("real default sub-agent worker reports malformed mailbox data as a failed t
 
     await instance.close("done");
   } finally {
-    await rm(sessionDir, { recursive: true, force: true });
+    await rm(dataDir, { recursive: true, force: true });
   }
 });
 

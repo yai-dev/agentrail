@@ -13,14 +13,20 @@ export interface SessionInfo {
   updatedAt: number;
 }
 
+export interface SessionHandle extends SessionInfo {
+  sessionRef: import("./session-ref.js").SessionRef;
+}
+
 /** Lightweight session descriptor for listing sessions by user. */
 export interface SessionMeta {
   sessionId: string;
   updatedAt: number;
 }
 
+/** Event types persisted in `session.jsonl`. */
 export type SessionEventType = "init" | "turn" | "update";
 
+/** Initial session event written when a session is first created. */
 export interface SessionInitEvent {
   type: "init";
   sessionId: string;
@@ -31,6 +37,7 @@ export interface SessionInitEvent {
   createdAt: number;
 }
 
+/** Event written after a completed assistant turn. */
 export interface SessionTurnEvent {
   type: "turn";
   turnIndex: number;
@@ -53,14 +60,17 @@ export interface SessionContextUsage {
   budgetUsedPct: number;
 }
 
+/** Event used for lightweight session metadata updates such as title changes. */
 export interface SessionUpdateEvent {
   type: "update";
   title?: string;
   updatedAt: number;
 }
 
+/** Union of all session events persisted by the memo package. */
 export type SessionEvent = SessionInitEvent | SessionTurnEvent | SessionUpdateEvent;
 
+/** One file entry exposed in the memory index summary. */
 export interface MemoryIndexEntry {
   /** Memory file name (e.g. NOTES.md) */
   name: string;
@@ -75,6 +85,7 @@ export interface MemoryIndexEntry {
   summary: string | null;
 }
 
+/** Session and user memory files exposed to hosted profiles and tools. */
 export interface MemoryIndex {
   /** Absolute path to the session directory */
   sessionDir: string;
@@ -83,6 +94,7 @@ export interface MemoryIndex {
   entries: MemoryIndexEntry[];
 }
 
+/** Metadata encoded into synthetic compaction placeholder messages. */
 export interface CompactionMetadata {
   archiveId: string | null;
   compressedCount: number;

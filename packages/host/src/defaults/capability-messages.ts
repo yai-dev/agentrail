@@ -3,11 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { MemoryIndex, MemoryIndexEntry } from "@agentrail/memo";
 import type { KBMetadata } from "@agentrail/knowledge";
-import type { SkillMeta } from "@agentrail/skills";
+import type { MemoryIndex, MemoryIndexEntry } from "@agentrail/memo";
 import type { UserMessage } from "@agentrail/runtime-core";
+import type { SkillMeta } from "@agentrail/skills";
 
+/** Creates a user-scoped identity hint message for default hosted profiles. */
 export function makeUserIdentityMessage(
   tenantId: string,
   userId: string,
@@ -20,6 +21,7 @@ export function makeUserIdentityMessage(
   };
 }
 
+/** Creates a synthetic message that tells the agent the current wall-clock date. */
 export function makeDateContextMessage(timestamp = Date.now()): UserMessage {
   const date = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -35,6 +37,7 @@ export function makeDateContextMessage(timestamp = Date.now()): UserMessage {
   };
 }
 
+/** Rewrites local memory paths into sandbox-visible paths for model context. */
 export function translateMemoryPaths(index: MemoryIndex): MemoryIndex {
   const translatePath = (filePath: string): string => {
     if (filePath.startsWith(index.sessionDir)) {
@@ -56,10 +59,8 @@ export function translateMemoryPaths(index: MemoryIndex): MemoryIndex {
   };
 }
 
-export function makeMemoryIndexMessage(
-  index: MemoryIndex,
-  timestamp = Date.now(),
-): UserMessage {
+/** Creates a synthetic message that summarizes session and user memory files. */
+export function makeMemoryIndexMessage(index: MemoryIndex, timestamp = Date.now()): UserMessage {
   const lines: string[] = [
     "[Memory Index]",
     `Session dir : ${index.sessionDir}`,
@@ -90,6 +91,7 @@ export function makeMemoryIndexMessage(
   };
 }
 
+/** Creates a synthetic message that summarizes available knowledge bases. */
 export function makeKnowledgeContextMessage(
   metas: (KBMetadata | null)[],
   timestamp = Date.now(),
@@ -111,7 +113,9 @@ export function makeKnowledgeContextMessage(
       const topicStr = meta.topics
         .map(
           (topic) =>
-            `${topic.topic} (${topic.docCount} doc${topic.docCount !== 1 ? "s" : ""}${topic.hasIndex ? ", has index" : ""})`,
+            `${topic.topic} (${topic.docCount} doc${topic.docCount !== 1 ? "s" : ""}${
+              topic.hasIndex ? ", has index" : ""
+            })`,
         )
         .join(", ");
       lines.push(`Topics: ${topicStr}`);
@@ -131,8 +135,8 @@ export function makeKnowledgeContextMessage(
   lines.push(
     "To access knowledge base content, always follow this sequence:",
     "  1. KbList()                                    — confirm available KBs and obtain kbDir",
-    "  2. KbRead(kbDir, \"indexes/{topic}_index.md\")   — topic-level document lists",
-    "     KbRead(kbDir, \"docs/{category}/{docId}.md\") — full document content",
+    '  2. KbRead(kbDir, "indexes/{topic}_index.md")   — topic-level document lists',
+    '     KbRead(kbDir, "docs/{category}/{docId}.md") — full document content',
     "     KbSearch(kbDir, pattern)                    — full-text search within docs/",
     "Never call KbRead or KbSearch without first calling KbList to obtain a confirmed kbDir.",
   );
@@ -144,6 +148,7 @@ export function makeKnowledgeContextMessage(
   };
 }
 
+/** Creates a synthetic message that lists available reusable skills. */
 export function makeSkillsContextMessage(
   skills: SkillMeta[],
   delegateToSubAgent: boolean,

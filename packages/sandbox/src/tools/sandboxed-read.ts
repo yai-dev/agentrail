@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { readFile } from "node:fs/promises";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { readFile } from "node:fs/promises";
 import type { SandboxManager } from "../sandbox-manager.js";
 
 const DEFAULT_READ_LINES = 100;
@@ -23,11 +23,13 @@ Usage:
 
 const parametersSchema = Type.Object({
   file_path: Type.String({
-    description: "Absolute path inside the sandbox (e.g. /workspace/report.py, /workspace/memo/session/NOTES.md).",
+    description:
+      "Absolute path inside the sandbox (e.g. /workspace/report.py, /workspace/memo/session/NOTES.md).",
   }),
   offset: Type.Optional(
     Type.Integer({
-      description: "Line number to start from (1-indexed). Negative counts from end (e.g. -1 is last line).",
+      description:
+        "Line number to start from (1-indexed). Negative counts from end (e.g. -1 is last line).",
     }),
   ),
   limit: Type.Optional(
@@ -38,6 +40,7 @@ const parametersSchema = Type.Object({
   ),
 });
 
+/** Creates the in-sandbox file read tool. */
 export function createSandboxedRead(
   manager: SandboxManager,
   sessionId: string,
@@ -99,9 +102,7 @@ export function createSandboxedRead(
       const formattedLines = selectedLines.map((line, i) => {
         const lineNum = startIndex + i + 1;
         const truncated =
-          line.length > MAX_LINE_LENGTH
-            ? line.slice(0, MAX_LINE_LENGTH) + " [truncated]"
-            : line;
+          line.length > MAX_LINE_LENGTH ? line.slice(0, MAX_LINE_LENGTH) + " [truncated]" : line;
         return `${String(lineNum).padStart(6)}|${truncated}`;
       });
 

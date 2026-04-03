@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { readFile, writeFile } from "node:fs/promises";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { readFile, writeFile } from "node:fs/promises";
 import type { SandboxManager } from "../sandbox-manager.js";
 
 const toolDescription = `Performs exact string replacements in files inside the sandbox workspace.
@@ -21,7 +21,8 @@ const parametersSchema = Type.Object({
     description: "Absolute path inside the sandbox to the file to modify.",
   }),
   old_string: Type.String({
-    description: "The text to replace. Must match exactly, including all whitespace and indentation.",
+    description:
+      "The text to replace. Must match exactly, including all whitespace and indentation.",
   }),
   new_string: Type.String({
     description: "The text to replace it with.",
@@ -34,6 +35,7 @@ const parametersSchema = Type.Object({
   ),
 });
 
+/** Creates the in-sandbox text editing tool. */
 export function createSandboxedEdit(
   manager: SandboxManager,
   sessionId: string,

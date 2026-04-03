@@ -3,13 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { buildSummarizeFn } from "../../agents/summarizer.js";
-import { sessionManager, sandboxManager } from "../../context/index.js";
 import type {
   ParsedSlashCommand,
   SlashCommandContext,
   SlashCommandResult,
 } from "@agentrail/slash-commands";
+import { buildSummarizeFn } from "../../agents/summarizer.js";
+import { sandboxManager, sessionManager } from "../../context/index.js";
 
 export async function handleCompactCommand(
   parsed: ParsedSlashCommand,
@@ -35,7 +35,9 @@ export async function handleCompactCommand(
   }
 
   const summarizeFn = buildSummarizeFn();
-  const workspaceSnapshot = await sandboxManager.listWorkspace(context.sessionId).catch(() => undefined);
+  const workspaceSnapshot = await sandboxManager
+    .listWorkspace(context.sessionId)
+    .catch(() => undefined);
   const result = await sessionManager.compactSession(
     context.tenantId,
     context.sessionId,

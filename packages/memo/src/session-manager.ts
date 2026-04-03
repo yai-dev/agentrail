@@ -3,22 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { randomUUID } from "node:crypto";
-import { mkdir, readFile, readdir, stat, appendFile, rm, rename, writeFile } from "node:fs/promises";
-import type { Dirent } from "node:fs";
-import * as path from "node:path";
 import type { Message, Usage } from "@agentrail/runtime-core";
-import type {
-  SessionInfo,
-  SessionMeta,
-  SessionInitEvent,
-  SessionTurnEvent,
-  SessionContextUsage,
-  MemoryIndex,
-  MemoryIndexEntry,
-  CompactionMetadata,
-} from "./types.js";
-import { estimateFileTokens, estimateMessageTokens } from "./token-estimator.js";
+import { randomUUID } from "node:crypto";
+import type { Dirent } from "node:fs";
+import { appendFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import * as path from "node:path";
 import {
   buildCompactionMetadata,
   buildMemoryEntry,
@@ -29,6 +18,21 @@ import {
   replaySessionInfo,
   statOrNull,
 } from "./session-manager-helpers.js";
+import type { SessionRef } from "./session-ref.js";
+import { createSessionRef, resolveSessionRef } from "./session-ref.js";
+import type { TodoStorage } from "./todo-storage.js";
+import { estimateMessageTokens } from "./token-estimator.js";
+import { createFileSystemSessionTraceStore, type SessionTraceStore } from "./trace-store.js";
+import type {
+  CompactionMetadata,
+  MemoryIndex,
+  SessionContextUsage,
+  SessionHandle,
+  SessionInfo,
+  SessionInitEvent,
+  SessionMeta,
+  SessionTurnEvent,
+} from "./types.js";
 
 /** Prefix used for synthetic compaction messages written to messages.jsonl. */
 export const COMPACTION_MESSAGE_PREFIX = "[Conversation compacted at ";
@@ -40,25 +44,60 @@ export function isCompactionMessage(m: Message): boolean {
   return text.startsWith(COMPACTION_MESSAGE_PREFIX);
 }
 
+/** Parses the metadata encoded into a synthetic compaction placeholder message. */
 export function parseCompactionMetadata(content: string): CompactionMetadata {
   return buildCompactionMetadata(content);
 }
 
+/**
+ * File-backed session store used by hosted Agentrail applications.
+ *
+ * Sessions are stored beneath `{dataDir}/tenants/{tenantId}/sessions/{sessionId}`.
+ *
+ * @see {@link https://agentrail.run/concepts/sessions}
+ * @see {@link https://agentrail.run/reference/session-store}
+ */
 export class SessionManager {
   constructor(private readonly dataDir: string) {}
 
+  /** Returns the opaque session reference for a session. */
+  getSessionRef(tenantId: string, sessionId: string): SessionRef {
+    return createSessionRef(tenantId, sessionId);
+  }
+
+  /** Resolves an opaque session reference into its tenant/session identifiers. */
+  resolveSessionRef(sessionRef: SessionRef): { tenantId: string; sessionId: string } {
+    return resolveSessionRef(sessionRef);
+  }
+
+  /** Returns the absolute directory path for a session. */
   getSessionDir(tenantId: string, sessionId: string): string {
     return path.join(this.dataDir, "tenants", tenantId, "sessions", sessionId);
   }
 
+  getTraceDir(tenantId: string, sessionId: string): string {
+    return path.join(this.getSessionDir(tenantId, sessionId), "trace");
+  }
+
+  private getSubAgentLogDir(tenantId: string, sessionId: string): string {
+    return path.join(this.getSessionDir(tenantId, sessionId), "subagent-logs");
+  }
+
+  private getTodoFilePath(tenantId: string, sessionId: string): string {
+    return path.join(this.getSessionDir(tenantId, sessionId), "TODO.md");
+  }
+
+  /** Returns the absolute directory path for a user's shared memory files. */
   getUserDir(tenantId: string, userId: string): string {
     return path.join(this.dataDir, "tenants", tenantId, "users", userId);
   }
 
+  /** Returns the directory that stores archived pre-compaction message logs. */
   getCompactionsDir(tenantId: string, sessionId: string): string {
     return path.join(this.getSessionDir(tenantId, sessionId), "messages.compactions");
   }
 
+  /** Returns the archive path for one compacted message-history segment. */
   getCompactionArchivePath(tenantId: string, sessionId: string, archiveId: string): string {
     return path.join(this.getCompactionsDir(tenantId, sessionId), `${archiveId}.jsonl`);
   }
@@ -69,15 +108,11 @@ export class SessionManager {
    *
    * @param limit  Maximum number of sessions to return (default 10).
    */
-  async listSessionIdsByUser(
-    tenantId: string,
-    userId: string,
-    limit = 10
-  ): Promise<SessionMeta[]> {
+  async listSessionIdsByUser(tenantId: string, userId: string, limit = 10): Promise<SessionMeta[]> {
     const sessionsDir = path.join(this.dataDir, "tenants", tenantId, "sessions");
     let entries: Dirent[];
     try {
-      entries = await readdir(sessionsDir, { withFileTypes: true }) as Dirent[];
+      entries = (await readdir(sessionsDir, { withFileTypes: true })) as Dirent[];
     } catch {
       return [];
     }
@@ -100,10 +135,7 @@ export class SessionManager {
     return metas.slice(0, limit);
   }
 
-  private async getNextCompactionArchiveId(
-    tenantId: string,
-    sessionId: string,
-  ): Promise<string> {
+  private async getNextCompactionArchiveId(tenantId: string, sessionId: string): Promise<string> {
     return getNextCompactionArchiveId(this.getCompactionsDir(tenantId, sessionId));
   }
 
@@ -169,8 +201,8 @@ export class SessionManager {
     tenantId: string,
     userId: string,
     agentId: string,
-    sessionId?: string
-  ): Promise<SessionInfo> {
+    sessionId?: string,
+  ): Promise<SessionHandle> {
     const sid = sessionId ?? randomUUID();
     const sessionDir = this.getSessionDir(tenantId, sid);
     const userDir = this.getUserDir(tenantId, userId);
@@ -195,7 +227,10 @@ export class SessionManager {
       await appendFile(sessionFile, JSON.stringify(initEvent) + "\n", "utf8");
     }
 
-    return this.readSessionInfo(tenantId, sid);
+    return {
+      ...(await this.readSessionInfo(tenantId, sid)),
+      sessionRef: this.getSessionRef(tenantId, sid),
+    };
   }
 
   /** Replays session.jsonl events to build the current SessionInfo snapshot. */
@@ -209,11 +244,7 @@ export class SessionManager {
    * Reads messages.jsonl and returns the last `limit` messages.
    * Returns an empty array when the file does not exist yet.
    */
-  async loadMessages(
-    tenantId: string,
-    sessionId: string,
-    limit = 50
-  ): Promise<Message[]> {
+  async loadMessages(tenantId: string, sessionId: string, limit = 50): Promise<Message[]> {
     const messagesFile = path.join(this.getSessionDir(tenantId, sessionId), "messages.jsonl");
     try {
       const raw = await readFile(messagesFile, "utf8");
@@ -297,11 +328,7 @@ export class SessionManager {
   }
 
   /** Appends new messages to messages.jsonl (one JSON object per line). */
-  async appendMessages(
-    tenantId: string,
-    sessionId: string,
-    messages: Message[]
-  ): Promise<void> {
+  async appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promise<void> {
     if (messages.length === 0) return;
     const messagesFile = path.join(this.getSessionDir(tenantId, sessionId), "messages.jsonl");
     const lines = messages.map((m) => JSON.stringify(m)).join("\n") + "\n";
@@ -315,7 +342,7 @@ export class SessionManager {
   async buildMemoryIndex(
     tenantId: string,
     userId: string,
-    sessionId: string
+    sessionId: string,
   ): Promise<MemoryIndex> {
     const sessionDir = this.getSessionDir(tenantId, sessionId);
     const userDir = this.getUserDir(tenantId, userId);
@@ -327,6 +354,72 @@ export class SessionManager {
     ]);
 
     return { sessionDir, userDir, entries: [notes, todo, user] };
+  }
+
+  async readTodoFile(sessionRef: SessionRef): Promise<string | null> {
+    const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
+    try {
+      return await readFile(this.getTodoFilePath(tenantId, sessionId), "utf8");
+    } catch {
+      return null;
+    }
+  }
+
+  async writeTodoFile(sessionRef: SessionRef, content: string): Promise<void> {
+    const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
+    const todoFilePath = this.getTodoFilePath(tenantId, sessionId);
+    await mkdir(path.dirname(todoFilePath), { recursive: true });
+    await writeFile(todoFilePath, content, "utf8");
+  }
+
+  createTodoStorage(sessionRef: SessionRef): TodoStorage {
+    return {
+      read: () => this.readTodoFile(sessionRef),
+      write: (content) => this.writeTodoFile(sessionRef, content),
+    };
+  }
+
+  createTraceStorage<TEnvelope = Record<string, unknown>>(
+    sessionRef: SessionRef,
+  ): SessionTraceStore<TEnvelope> {
+    return createFileSystemSessionTraceStore<TEnvelope>(this.dataDir, sessionRef);
+  }
+
+  async persistSkillSubAgentLog(
+    sessionRef: SessionRef,
+    entry: {
+      skillName: string;
+      task: string;
+      input: string;
+      systemPrompt: string;
+      messages: unknown[];
+      resultText: string;
+      startedAt: number;
+      finishedAt: number;
+    },
+  ): Promise<void> {
+    const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
+    const logDir = this.getSubAgentLogDir(tenantId, sessionId);
+    const filename = `skill-${entry.skillName}-${entry.startedAt}.jsonl`;
+    const filePath = path.join(logDir, filename);
+
+    await mkdir(logDir, { recursive: true });
+    const lines: string[] = [
+      JSON.stringify({
+        type: "meta",
+        skillName: entry.skillName,
+        task: entry.task,
+        input: entry.input,
+        systemPrompt: entry.systemPrompt,
+        resultText: entry.resultText,
+        startedAt: entry.startedAt,
+        finishedAt: entry.finishedAt,
+        durationMs: entry.finishedAt - entry.startedAt,
+      }),
+      ...entry.messages.map((message) => JSON.stringify(message)),
+      "",
+    ];
+    await appendFile(filePath, lines.join("\n"), "utf8");
   }
 
   /** Permanently removes the session directory and all its contents. */
@@ -398,7 +491,7 @@ export class SessionManager {
       force = false,
     } = options;
 
-    const all = options.preloadedMessages ?? await this.loadAllMessages(tenantId, sessionId);
+    const all = options.preloadedMessages ?? (await this.loadAllMessages(tenantId, sessionId));
     if (all.length < 6) return null; // too few messages to compact meaningfully
 
     const totalTokens = estimateMessageTokens(all);
@@ -429,7 +522,9 @@ export class SessionManager {
     const compactionLines = [
       `[Conversation compacted at ${timestamp}. Full history preserved in messages.compactions/${archiveId}.jsonl.`,
       `Archive ID: ${archiveId}`,
-      `${toCompact.length} messages (${Math.round(totalTokens * compactFraction)} tokens estimated) were compressed.`,
+      `${toCompact.length} messages (${Math.round(
+        totalTokens * compactFraction,
+      )} tokens estimated) were compressed.`,
       ``,
       `Summary of compressed conversation:`,
       summary,
@@ -463,9 +558,7 @@ export class SessionManager {
     await writeFile(archiveFile, archivedLines, "utf8");
 
     // Rewrite messages.jsonl with compaction message + retained history
-    const newLines = [compactionMessage, ...toKeep]
-      .map((m) => JSON.stringify(m))
-      .join("\n") + "\n";
+    const newLines = [compactionMessage, ...toKeep].map((m) => JSON.stringify(m)).join("\n") + "\n";
     await writeFile(messagesFile, newLines, "utf8");
 
     // Append summary to NOTES.md so Memory Index picks it up on next request
@@ -523,9 +616,7 @@ export class SessionManager {
       const last = findLastTurnEvent(raw);
       if (!last) return null;
       const totalInput =
-        (last.inputTokens ?? 0) +
-        (last.cacheReadTokens ?? 0) +
-        (last.cacheWriteTokens ?? 0);
+        (last.inputTokens ?? 0) + (last.cacheReadTokens ?? 0) + (last.cacheWriteTokens ?? 0);
       return {
         inputTokens: totalInput,
         outputTokens: last.outputTokens ?? 0,

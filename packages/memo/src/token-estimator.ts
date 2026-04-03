@@ -3,7 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message } from "@agentrail/runtime-core";
+import type {
+  AssistantContent,
+  ImageContent,
+  Message,
+  ToolResultContent,
+  UserContent,
+} from "@agentrail/runtime-core";
 
 /**
  * Estimates token count for a string, using character-weight heuristics:
@@ -36,11 +42,11 @@ const IMAGE_TOKEN_ESTIMATE = 1500;
 function extractMessageText(message: Message): string {
   if (message.role === "user") {
     if (typeof message.content === "string") return message.content;
-    return message.content.map((b) => ("text" in b ? b.text : "")).join("");
+    return message.content.map((b: UserContent) => ("text" in b ? b.text : "")).join("");
   }
   if (message.role === "assistant") {
     return message.content
-      .map((b) => {
+      .map((b: AssistantContent) => {
         if (b.type === "text") return b.text;
         if (b.type === "thinking") return b.thinking;
         return "";
@@ -48,16 +54,16 @@ function extractMessageText(message: Message): string {
       .join("");
   }
   // toolResult: extract text blocks only (image blocks counted separately below)
-  return message.content.map((b) => ("text" in b ? b.text : "")).join("");
+  return message.content.map((b: ToolResultContent) => ("text" in b ? b.text : "")).join("");
 }
 
 function countImageBlocks(message: Message): number {
   if (message.role === "user") {
     if (typeof message.content === "string") return 0;
-    return message.content.filter((b) => (b as { type: string }).type === "image").length;
+    return message.content.filter((b): b is ImageContent => b.type === "image").length;
   }
   if (message.role === "toolResult") {
-    return message.content.filter((b) => (b as { type: string }).type === "image").length;
+    return message.content.filter((b): b is ImageContent => b.type === "image").length;
   }
   return 0;
 }

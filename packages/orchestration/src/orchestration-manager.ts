@@ -5,11 +5,6 @@
 
 import { randomUUID } from "node:crypto";
 
-import { OrchestrationStore } from "./orchestration-store.js";
-import {
-  applyOrchestrationEvent,
-  cloneOrchestrationSnapshot,
-} from "./recovery.js";
 import {
   cloneAgent,
   cloneWait,
@@ -19,6 +14,8 @@ import {
   normalizeDeliveryResult,
   normalizeWaitInput,
 } from "./orchestration-manager-helpers.js";
+import type { OrchestrationPersistence } from "./persistence.js";
+import { applyOrchestrationEvent, cloneOrchestrationSnapshot } from "./recovery.js";
 import type {
   AgentInputEnvelope,
   CloseAgentInput,
@@ -34,26 +31,22 @@ import type {
   WaitCondition,
 } from "./types.js";
 
+/** Live managed-agent instance controlled by `OrchestrationManager`. */
 export interface ManagedAgentInstance {
-  deliverInput(
-    input: AgentInputEnvelope,
-  ): Promise<ManagedAgentDeliveryResult | void>;
+  deliverInput(input: AgentInputEnvelope): Promise<ManagedAgentDeliveryResult | void>;
   close(reason?: string): Promise<void>;
   autonomousDelivery?: boolean;
   subscribe?(handlers: ManagedAgentEventHandlers): void;
 }
 
+/** Optional callbacks emitted by a managed-agent instance during delivery. */
 export interface ManagedAgentEventHandlers {
-  onJobStarted?: (job: {
-    jobId: string;
-    inputIds: string[];
-  }) => void | Promise<void>;
-  onJobCompleted?: (
-    result: ManagedAgentDeliveryResult,
-  ) => void | Promise<void>;
+  onJobStarted?: (job: { jobId: string; inputIds: string[] }) => void | Promise<void>;
+  onJobCompleted?: (result: ManagedAgentDeliveryResult) => void | Promise<void>;
   onIdle?: () => void | Promise<void>;
 }
 
+/** Minimal metadata used when asking the runtime to create a managed agent. */
 export interface CreateManagedAgentInput {
   agentId: string;
   runId: string;
@@ -61,10 +54,12 @@ export interface CreateManagedAgentInput {
   taskId: string;
 }
 
+/** Runtime adapter that creates managed-agent instances on demand. */
 export interface OrchestrationAgentFactory {
   createAgent(input: CreateManagedAgentInput): Promise<ManagedAgentInstance>;
 }
 
+/** Input required to initialize a new orchestration run. */
 export interface StartRunInput {
   runId: string;
   initialTask: {
@@ -74,12 +69,14 @@ export interface StartRunInput {
   };
 }
 
+/** Options for constructing an `OrchestrationManager`. */
 export interface OrchestrationManagerOptions {
-  sessionDir: string;
+  persistence: OrchestrationPersistence;
   runtime: OrchestrationAgentFactory;
   now?: () => string;
 }
 
+/** Event callback payload emitted to orchestration listeners. */
 export interface OrchestrationManagerEvent {
   event: OrchestrationEvent;
   snapshot: OrchestrationSnapshot;
@@ -90,10 +87,14 @@ interface WaitHandle {
   resolve: (wait: WaitCondition) => void;
 }
 
+/**
+ * Coordinates managed sub-agents, queued input delivery, waits, and recovery.
+ *
+ * @see {@link https://agentrail.run/concepts/orchestration}
+ * @see {@link https://agentrail.run/guides/multi-agent}
+ */
 export class OrchestrationManager {
-  static async create(
-    options: OrchestrationManagerOptions,
-  ): Promise<OrchestrationManager> {
+  static async create(options: OrchestrationManagerOptions): Promise<OrchestrationManager> {
     const manager = new OrchestrationManager(options);
     await manager.initialize();
     return manager;
@@ -107,9 +108,7 @@ export class OrchestrationManager {
     queuedInputs: [],
   };
 
-  private readonly listeners = new Set<
-    (event: OrchestrationManagerEvent) => void
-  >();
+  private readonly listeners = new Set<(event: OrchestrationManagerEvent) => void>();
   private readonly activeAgents = new Map<string, ManagedAgentInstance>();
   private readonly deliveryChains = new Map<string, Promise<void>>();
   private readonly eventChains = new Map<string, Promise<void>>();
@@ -117,19 +116,17 @@ export class OrchestrationManager {
   private readonly closeRequestedAgents = new Set<string>();
   private readonly inFlightInputIds = new Set<string>();
   private readonly waitHandles = new Map<string, WaitHandle>();
-  private readonly sessionDir: string;
+  private readonly persistence: OrchestrationPersistence;
   private readonly runtime: OrchestrationAgentFactory;
   private readonly now: () => string;
 
   private constructor(options: OrchestrationManagerOptions) {
-    this.sessionDir = options.sessionDir;
+    this.persistence = options.persistence;
     this.runtime = options.runtime;
     this.now = options.now ?? (() => new Date().toISOString());
   }
 
-  subscribe(
-    listener: (event: OrchestrationManagerEvent) => void,
-  ): () => void {
+  subscribe(listener: (event: OrchestrationManagerEvent) => void): () => void {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
@@ -174,14 +171,13 @@ export class OrchestrationManager {
           existingAgent.displayName !== normalizedInput.displayName)
       ) {
         throw new Error(
-          `Orchestration agent ${normalizedInput.id} already exists with taskId ${existingAgent.taskId}, role ${existingAgent.role}, and displayName ${existingAgent.displayName ?? "unknown"}`,
+          `Orchestration agent ${normalizedInput.id} already exists with taskId ${
+            existingAgent.taskId
+          }, role ${existingAgent.role}, and displayName ${existingAgent.displayName ?? "unknown"}`,
         );
       }
 
-      if (
-        existingAgent.status !== "closed" &&
-        !this.activeAgents.has(existingAgent.id)
-      ) {
+      if (existingAgent.status !== "closed" && !this.activeAgents.has(existingAgent.id)) {
         await this.attachAgent(existingAgent);
         this.resumeQueuedInputsForAgent(existingAgent.id);
       }
@@ -234,7 +230,7 @@ export class OrchestrationManager {
       runId: run.id,
       input,
     });
-    await OrchestrationStore.appendMailboxEvent(this.sessionDir, input.agentId, {
+    await this.persistence.appendMailboxEvent(input.agentId, {
       eventId: this.createEventId(),
       type: "input_enqueued",
       agentId: input.agentId,
@@ -317,18 +313,15 @@ export class OrchestrationManager {
     this.closeRequestedAgents.add(input.agentId);
     const instance = this.activeAgents.get(input.agentId);
     const closeRequestedAt = this.now();
-    await OrchestrationStore.appendMailboxEvent(this.sessionDir, input.agentId, {
+    await this.persistence.appendMailboxEvent(input.agentId, {
       eventId: this.createEventId(),
       type: "agent_close_requested",
       agentId: input.agentId,
       occurredAt: closeRequestedAt,
       reason: input.reason,
     });
-    const mailboxState = await OrchestrationStore.loadMailboxState(
-      this.sessionDir,
-      input.agentId,
-    );
-    await OrchestrationStore.writeMailboxState(this.sessionDir, input.agentId, {
+    const mailboxState = await this.persistence.loadMailboxState(input.agentId);
+    await this.persistence.writeMailboxState(input.agentId, {
       processedEventCount: mailboxState.processedEventCount,
       closeRequested: {
         occurredAt: closeRequestedAt,
@@ -362,9 +355,7 @@ export class OrchestrationManager {
   }
 
   async checkTimeouts(): Promise<void> {
-    const hasRunningRun = Object.values(this.snapshot.runs).some(
-      (r) => r.status === "running",
-    );
+    const hasRunningRun = Object.values(this.snapshot.runs).some((r) => r.status === "running");
     if (!hasRunningRun) {
       return;
     }
@@ -408,7 +399,7 @@ export class OrchestrationManager {
   }
 
   private async initialize(): Promise<void> {
-    const recovered = await OrchestrationStore.recoverState(this.sessionDir);
+    const recovered = await this.persistence.recoverState();
     this.snapshot = recovered.snapshot;
     await this.reconcileRecoveredCloseRequests();
     await this.reconcileQueuedInputsFromMailbox();
@@ -430,9 +421,7 @@ export class OrchestrationManager {
   }
 
   private async reconcileQueuedInputsFromMailbox(): Promise<void> {
-    const hasRunningRun = Object.values(this.snapshot.runs).some(
-      (r) => r.status === "running",
-    );
+    const hasRunningRun = Object.values(this.snapshot.runs).some((r) => r.status === "running");
     if (!hasRunningRun) {
       return;
     }
@@ -448,8 +437,7 @@ export class OrchestrationManager {
       }
 
       didChange =
-        (await this.reconcileQueuedInputsFromMailboxForAgent(agent, queueById)) ||
-        didChange;
+        (await this.reconcileQueuedInputsFromMailboxForAgent(agent, queueById)) || didChange;
     }
 
     if (!didChange) {
@@ -463,9 +451,7 @@ export class OrchestrationManager {
   }
 
   private async reconcileRecoveredCloseRequests(): Promise<void> {
-    const hasRunningRun = Object.values(this.snapshot.runs).some(
-      (r) => r.status === "running",
-    );
+    const hasRunningRun = Object.values(this.snapshot.runs).some((r) => r.status === "running");
     if (!hasRunningRun) {
       return;
     }
@@ -475,10 +461,7 @@ export class OrchestrationManager {
         continue;
       }
 
-      const mailboxState = await OrchestrationStore.loadMailboxState(
-        this.sessionDir,
-        agent.id,
-      );
+      const mailboxState = await this.persistence.loadMailboxState(agent.id);
 
       if (!mailboxState.closeRequested) {
         continue;
@@ -548,10 +531,7 @@ export class OrchestrationManager {
     });
   }
 
-  private async finalizeAgentClose(
-    runId: string,
-    input: CloseAgentInput,
-  ): Promise<void> {
+  private async finalizeAgentClose(runId: string, input: CloseAgentInput): Promise<void> {
     const currentAgent = this.snapshot.agents[input.agentId];
     if (!currentAgent || currentAgent.status === "closed") {
       return;
@@ -605,9 +585,7 @@ export class OrchestrationManager {
   }
 
   private async discardQueuedInputsForClosedAgents(): Promise<void> {
-    const hasRunningRun = Object.values(this.snapshot.runs).some(
-      (r) => r.status === "running",
-    );
+    const hasRunningRun = Object.values(this.snapshot.runs).some((r) => r.status === "running");
     if (!hasRunningRun) {
       return;
     }
@@ -633,10 +611,7 @@ export class OrchestrationManager {
 
   private async reconcileWaitsForAgent(agentId: string): Promise<void> {
     const pendingWaitIds = Object.values(this.snapshot.waits)
-      .filter(
-        (wait) =>
-          wait.status === "pending" && getWaitTargetAgentIds(wait).includes(agentId),
-      )
+      .filter((wait) => wait.status === "pending" && getWaitTargetAgentIds(wait).includes(agentId))
       .map((wait) => wait.id);
 
     for (const waitId of pendingWaitIds) {
@@ -669,10 +644,7 @@ export class OrchestrationManager {
     }
 
     if (this.isWaitSatisfied(wait)) {
-      await this.resolveWait(
-        wait,
-        wait.kind === "agent-idle" ? "agent_idle" : "agent_closed",
-      );
+      await this.resolveWait(wait, wait.kind === "agent-idle" ? "agent_idle" : "agent_closed");
     }
   }
 
@@ -702,10 +674,7 @@ export class OrchestrationManager {
 
       switch (kind) {
         case "agent-idle":
-          return (
-            (agent.status === "idle" || agent.status === "closed") &&
-            Boolean(agent.lastJob)
-          );
+          return (agent.status === "idle" || agent.status === "closed") && Boolean(agent.lastJob);
         case "agent-closed":
         default:
           return agent.status === "closed";
@@ -788,9 +757,8 @@ export class OrchestrationManager {
   private requireTask(taskId: string): void {
     if (!this.snapshot.tasks[taskId]) {
       const knownTaskIds = Object.keys(this.snapshot.tasks);
-      const knownTasks = knownTaskIds.length > 0
-        ? ` Known task IDs: ${knownTaskIds.join(", ")}.`
-        : "";
+      const knownTasks =
+        knownTaskIds.length > 0 ? ` Known task IDs: ${knownTaskIds.join(", ")}.` : "";
       throw new Error(`Unknown orchestration task ${taskId}.${knownTasks}`);
     }
   }
@@ -816,7 +784,7 @@ export class OrchestrationManager {
   }
 
   private async recordEvent(event: OrchestrationEvent): Promise<void> {
-    await OrchestrationStore.appendEvent(this.sessionDir, event);
+    await this.persistence.appendEvent(event);
     applyOrchestrationEvent(this.snapshot, event);
     await this.persistSnapshot();
 
@@ -838,11 +806,7 @@ export class OrchestrationManager {
    * Generate a short, human-readable codename once at spawn time so every
    * sub-agent gets a stable label that survives event replay and page refreshes.
    */
-  private generateAgentDisplayName(
-    runId: string,
-    agentId: string,
-    role: string,
-  ): string {
+  private generateAgentDisplayName(runId: string, agentId: string, role: string): string {
     const existingNames = new Set(
       Object.values(this.snapshot.agents)
         .map((agent) => agent.displayName?.toLowerCase())
@@ -859,10 +823,7 @@ export class OrchestrationManager {
     return `${createDisplayName(runId, agentId, role, 0)}-${agentId.slice(-4)}`;
   }
 
-  private enqueueManagedEvent(
-    agentId: string,
-    task: () => Promise<void>,
-  ): void {
+  private enqueueManagedEvent(agentId: string, task: () => Promise<void>): void {
     const previous = this.eventChains.get(agentId) ?? Promise.resolve();
     const next = previous
       .then(task)
@@ -877,9 +838,7 @@ export class OrchestrationManager {
 
   private scheduleQueuedDelivery(agentId: string): Promise<void> {
     if (!this.activeAgents.has(agentId)) {
-      throw new Error(
-        `Agent ${agentId} does not have an active runtime`,
-      );
+      throw new Error(`Agent ${agentId} does not have an active runtime`);
     }
 
     if (this.deliveryChains.has(agentId)) {
@@ -890,7 +849,10 @@ export class OrchestrationManager {
       this.deliveryChains.delete(agentId);
     });
 
-    this.deliveryChains.set(agentId, nextDelivery.catch(() => undefined));
+    this.deliveryChains.set(
+      agentId,
+      nextDelivery.catch(() => undefined),
+    );
 
     return Promise.resolve();
   }
@@ -997,10 +959,7 @@ export class OrchestrationManager {
           reason: "delivered",
         });
       }
-      await this.advanceMailboxStateForDeliveredInputs(
-        agentId,
-        deliveryResult.consumedInputIds,
-      );
+      await this.advanceMailboxStateForDeliveredInputs(agentId, deliveryResult.consumedInputIds);
 
       const latestAgent = this.snapshot.agents[agentId];
       if (latestAgent && latestAgent.status === "running") {
@@ -1040,8 +999,7 @@ export class OrchestrationManager {
 
   private async discardQueuedInputsForAgent(agentId: string): Promise<void> {
     const queuedInputs = this.snapshot.queuedInputs.filter(
-      (input) =>
-        input.agentId === agentId && !this.inFlightInputIds.has(input.id),
+      (input) => input.agentId === agentId && !this.inFlightInputIds.has(input.id),
     );
 
     for (const queuedInput of queuedInputs) {
@@ -1054,22 +1012,18 @@ export class OrchestrationManager {
   }
 
   private async persistSnapshot(): Promise<void> {
-    await OrchestrationStore.writeCheckpoint(this.sessionDir, this.snapshot);
+    await this.persistence.writeCheckpoint(this.snapshot);
   }
 
-  private async getPendingInputsForAgent(
-    agentId: string,
-  ): Promise<AgentInputEnvelope[]> {
+  private async getPendingInputsForAgent(agentId: string): Promise<AgentInputEnvelope[]> {
     const [mailboxEvents, mailboxState] = await Promise.all([
-      OrchestrationStore.loadMailboxEvents(this.sessionDir, agentId),
-      OrchestrationStore.loadMailboxState(this.sessionDir, agentId),
+      this.persistence.loadMailboxEvents(agentId),
+      this.persistence.loadMailboxState(agentId),
     ]);
     const pendingMailboxInputs = mailboxEvents
       .slice(mailboxState.processedEventCount)
       .filter(
-        (
-          event,
-        ): event is Extract<typeof event, { type: "input_enqueued" }> =>
+        (event): event is Extract<typeof event, { type: "input_enqueued" }> =>
           event.type === "input_enqueued",
       )
       .map((event) => ({
@@ -1097,8 +1051,8 @@ export class OrchestrationManager {
     }
 
     const [mailboxEvents, mailboxState] = await Promise.all([
-      OrchestrationStore.loadMailboxEvents(this.sessionDir, agentId),
-      OrchestrationStore.loadMailboxState(this.sessionDir, agentId),
+      this.persistence.loadMailboxEvents(agentId),
+      this.persistence.loadMailboxState(agentId),
     ]);
     const remainingInputIds = [...consumedInputIds];
     let nextProcessedEventCount = mailboxState.processedEventCount;
@@ -1131,7 +1085,7 @@ export class OrchestrationManager {
       return;
     }
 
-    await OrchestrationStore.writeMailboxState(this.sessionDir, agentId, {
+    await this.persistence.writeMailboxState(agentId, {
       processedEventCount: nextProcessedEventCount,
       closeRequested: mailboxState.closeRequested,
     });
@@ -1193,10 +1147,7 @@ export class OrchestrationManager {
       });
     }
 
-    await this.advanceMailboxStateForDeliveredInputs(
-      agentId,
-      result.consumedInputIds,
-    );
+    await this.advanceMailboxStateForDeliveredInputs(agentId, result.consumedInputIds);
     await this.reconcileQueuedInputsFromMailboxForAgent(this.requireAgent(agentId));
     await this.reconcileWaitsForAgent(agentId);
   }
@@ -1216,20 +1167,16 @@ export class OrchestrationManager {
 
   private async reconcileQueuedInputsFromMailboxForAgent(
     agent: OrchestrationAgent,
-    queueById = new Map(
-      this.snapshot.queuedInputs.map((input) => [input.id, input] as const),
-    ),
+    queueById = new Map(this.snapshot.queuedInputs.map((input) => [input.id, input] as const)),
   ): Promise<boolean> {
     const [mailboxEvents, mailboxState] = await Promise.all([
-      OrchestrationStore.loadMailboxEvents(this.sessionDir, agent.id),
-      OrchestrationStore.loadMailboxState(this.sessionDir, agent.id),
+      this.persistence.loadMailboxEvents(agent.id),
+      this.persistence.loadMailboxState(agent.id),
     ]);
     const pendingInputs = mailboxEvents
       .slice(mailboxState.processedEventCount)
       .filter(
-        (
-          event,
-        ): event is Extract<typeof event, { type: "input_enqueued" }> =>
+        (event): event is Extract<typeof event, { type: "input_enqueued" }> =>
           event.type === "input_enqueued",
       )
       .map((event) => ({
@@ -1247,10 +1194,7 @@ export class OrchestrationManager {
 
     if (hasAuthoritativeMailboxState) {
       for (const queuedInput of this.snapshot.queuedInputs) {
-        if (
-          queuedInput.agentId === agent.id &&
-          !pendingInputIds.has(queuedInput.id)
-        ) {
+        if (queuedInput.agentId === agent.id && !pendingInputIds.has(queuedInput.id)) {
           queueById.delete(queuedInput.id);
           didChange = true;
         }

@@ -3,20 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
-import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type {
-  Taxonomy,
-  KBDocMeta,
-  KnowledgeIndex,
-  KBMetadata,
-  IngestionJob,
-  IngestionStep,
-  SearchResult,
-} from "./types.js";
 import {
   buildKnowledgeMetadata,
   buildTopicSummaries,
@@ -27,6 +18,15 @@ import {
   replaceIndexDocumentPaths,
   writeJsonFile,
 } from "./knowledge-manager-helpers.js";
+import type {
+  IngestionJob,
+  IngestionStep,
+  KBDocMeta,
+  KBMetadata,
+  KnowledgeIndex,
+  SearchResult,
+  Taxonomy,
+} from "./types.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -38,23 +38,27 @@ const INGESTION_STEPS: IngestionStep[] = [
   "register",
 ];
 
+/**
+ * Filesystem-backed knowledge-base manager.
+ *
+ * Each knowledge base lives under
+ * `{dataDir}/tenants/{tenantId}/knowledge_bases/{kbId}`.
+ *
+ * @see {@link https://agentrail.run/guides/use-capability-packages}
+ */
 export class KnowledgeManager {
   constructor(private readonly dataDir: string) {}
 
+  /** Returns the absolute directory path for a knowledge base. */
   getKbDir(tenantId: string, kbId: string): string {
-    return path.join(
-      this.dataDir,
-      "tenants",
-      tenantId,
-      "knowledge_bases",
-      kbId
-    );
+    return path.join(this.dataDir, "tenants", tenantId, "knowledge_bases", kbId);
   }
 
   private getKbsDir(tenantId: string): string {
     return path.join(this.dataDir, "tenants", tenantId, "knowledge_bases");
   }
 
+  /** Lists all knowledge-base IDs for a tenant. */
   async listKbs(tenantId: string): Promise<string[]> {
     const kbsDir = this.getKbsDir(tenantId);
     try {
@@ -68,11 +72,13 @@ export class KnowledgeManager {
     }
   }
 
+  /** Permanently removes a knowledge base and all of its documents and jobs. */
   async deleteKb(tenantId: string, kbId: string): Promise<void> {
     const kbDir = this.getKbDir(tenantId, kbId);
     await fs.rm(kbDir, { recursive: true, force: true });
   }
 
+  /** Creates the directory structure and metadata files for a new knowledge base. */
   async initKb(tenantId: string, kbId: string): Promise<void> {
     const kbDir = this.getKbDir(tenantId, kbId);
     await fs.mkdir(path.join(kbDir, "docs"), { recursive: true });
@@ -86,10 +92,11 @@ export class KnowledgeManager {
     await this.rebuildMetadata(tenantId, kbId);
   }
 
+  /** Stores a newly uploaded raw document in the knowledge base's pending area. */
   async storeRawDocument(
     tenantId: string,
     kbId: string,
-    input: { title: string; content: string }
+    input: { title: string; content: string },
   ): Promise<{ docId: string }> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docId = randomUUID();
@@ -116,11 +123,12 @@ export class KnowledgeManager {
     return { docId };
   }
 
+  /** Promotes a pending document into the indexed docs tree with final metadata. */
   async finalizeDocument(
     tenantId: string,
     kbId: string,
     docId: string,
-    meta: Pick<KBDocMeta, "category" | "topics" | "summary">
+    meta: Pick<KBDocMeta, "category" | "topics" | "summary">,
   ): Promise<KBDocMeta> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docs = await this.readDocsJson(kbDir);
@@ -144,11 +152,7 @@ export class KnowledgeManager {
     await fs.rename(pendingPath, finalPath);
 
     // Fix any index references that still point to the pending path
-    await this.fixIndexPaths(
-      kbDir,
-      `pending/${docId}.md`,
-      finalRelPath.replace(/\\/g, "/")
-    );
+    await this.fixIndexPaths(kbDir, `pending/${docId}.md`, finalRelPath.replace(/\\/g, "/"));
 
     const now = Date.now();
     Object.assign(existing, {
@@ -162,11 +166,8 @@ export class KnowledgeManager {
     return existing;
   }
 
-  async createJob(
-    tenantId: string,
-    kbId: string,
-    docId: string
-  ): Promise<IngestionJob> {
+  /** Creates an ingestion job that tracks document-processing progress. */
+  async createJob(tenantId: string, kbId: string, docId: string): Promise<IngestionJob> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const jobId = randomUUID();
     const now = Date.now();
@@ -181,7 +182,7 @@ export class KnowledgeManager {
     await fs.writeFile(
       path.join(kbDir, "jobs", `${jobId}.json`),
       JSON.stringify(job, null, 2),
-      "utf-8"
+      "utf-8",
     );
     return job;
   }
@@ -190,9 +191,7 @@ export class KnowledgeManager {
     tenantId: string,
     kbId: string,
     jobId: string,
-    patch: Partial<
-      Omit<IngestionJob, "jobId" | "docId" | "createdAt" | "updatedAt">
-    >
+    patch: Partial<Omit<IngestionJob, "jobId" | "docId" | "createdAt" | "updatedAt">>,
   ): Promise<void> {
     const job = await this.getJob(tenantId, kbId, jobId);
     Object.assign(job, { ...patch, updatedAt: Date.now() });
@@ -200,28 +199,17 @@ export class KnowledgeManager {
     await fs.writeFile(
       path.join(kbDir, "jobs", `${jobId}.json`),
       JSON.stringify(job, null, 2),
-      "utf-8"
+      "utf-8",
     );
   }
 
-  async getJob(
-    tenantId: string,
-    kbId: string,
-    jobId: string
-  ): Promise<IngestionJob> {
+  async getJob(tenantId: string, kbId: string, jobId: string): Promise<IngestionJob> {
     const kbDir = this.getKbDir(tenantId, kbId);
-    const raw = await fs.readFile(
-      path.join(kbDir, "jobs", `${jobId}.json`),
-      "utf-8"
-    );
+    const raw = await fs.readFile(path.join(kbDir, "jobs", `${jobId}.json`), "utf-8");
     return JSON.parse(raw) as IngestionJob;
   }
 
-  async removeDocument(
-    tenantId: string,
-    kbId: string,
-    docId: string
-  ): Promise<void> {
+  async removeDocument(tenantId: string, kbId: string, docId: string): Promise<void> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docs = await this.readDocsJson(kbDir);
     const idx = docs.findIndex((d) => d.docId === docId);
@@ -239,7 +227,7 @@ export class KnowledgeManager {
   async getDocument(
     tenantId: string,
     kbId: string,
-    docId: string
+    docId: string,
   ): Promise<{ meta: KBDocMeta; content: string }> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docs = await this.readDocsJson(kbDir);
@@ -249,11 +237,7 @@ export class KnowledgeManager {
     return { meta, content };
   }
 
-  async listDocuments(
-    tenantId: string,
-    kbId: string,
-    category?: string
-  ): Promise<KBDocMeta[]> {
+  async listDocuments(tenantId: string, kbId: string, category?: string): Promise<KBDocMeta[]> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docs = await this.readDocsJson(kbDir);
     if (!category) return docs;
@@ -264,7 +248,7 @@ export class KnowledgeManager {
     tenantId: string,
     kbId: string,
     pattern: string,
-    opts?: { maxResults?: number; contextLines?: number }
+    opts?: { maxResults?: number; contextLines?: number },
   ): Promise<SearchResult[]> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docsDir = path.join(kbDir, "docs");
@@ -306,11 +290,7 @@ export class KnowledgeManager {
       } catch {
         continue;
       }
-      if (
-        !parsed ||
-        typeof parsed !== "object" ||
-        (parsed as { type?: string }).type !== "match"
-      )
+      if (!parsed || typeof parsed !== "object" || (parsed as { type?: string }).type !== "match")
         continue;
       const match = parsed as {
         type: string;
@@ -325,12 +305,9 @@ export class KnowledgeManager {
       };
       const filePath = match.data.path.text;
       const relPath = path.relative(kbDir, filePath);
-      const docId =
-        docs.find((d) => d.path === relPath)?.docId ??
-        path.basename(filePath, ".md");
+      const docId = docs.find((d) => d.path === relPath)?.docId ?? path.basename(filePath, ".md");
       const context: string[] = [
-        ...(match.data.context_before?.map((c) => c.lines.text.trimEnd()) ??
-          []),
+        ...(match.data.context_before?.map((c) => c.lines.text.trimEnd()) ?? []),
         ...(match.data.context_after?.map((c) => c.lines.text.trimEnd()) ?? []),
       ];
       results.push({
@@ -345,11 +322,7 @@ export class KnowledgeManager {
     return results;
   }
 
-  async getIndex(
-    tenantId: string,
-    kbId: string,
-    topic: string
-  ): Promise<string | null> {
+  async getIndex(tenantId: string, kbId: string, topic: string): Promise<string | null> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const indexPath = path.join(kbDir, "indexes", `${topic}_index.md`);
     try {
@@ -359,18 +332,9 @@ export class KnowledgeManager {
     }
   }
 
-  async upsertIndex(
-    tenantId: string,
-    kbId: string,
-    topic: string,
-    content: string
-  ): Promise<void> {
+  async upsertIndex(tenantId: string, kbId: string, topic: string, content: string): Promise<void> {
     const kbDir = this.getKbDir(tenantId, kbId);
-    await fs.writeFile(
-      path.join(kbDir, "indexes", `${topic}_index.md`),
-      content,
-      "utf-8"
-    );
+    await fs.writeFile(path.join(kbDir, "indexes", `${topic}_index.md`), content, "utf-8");
   }
 
   async getTaxonomy(tenantId: string, kbId: string): Promise<Taxonomy> {
@@ -378,19 +342,12 @@ export class KnowledgeManager {
     return readJsonFileOrDefault(path.join(kbDir, "taxonomy.json"), {});
   }
 
-  async upsertTaxonomy(
-    tenantId: string,
-    kbId: string,
-    taxonomy: Taxonomy
-  ): Promise<void> {
+  async upsertTaxonomy(tenantId: string, kbId: string, taxonomy: Taxonomy): Promise<void> {
     const kbDir = this.getKbDir(tenantId, kbId);
     await writeJsonFile(path.join(kbDir, "taxonomy.json"), taxonomy);
   }
 
-  async buildKnowledgeIndex(
-    tenantId: string,
-    kbId: string
-  ): Promise<KnowledgeIndex> {
+  async buildKnowledgeIndex(tenantId: string, kbId: string): Promise<KnowledgeIndex> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docs = await this.readDocsJson(kbDir);
     const taxonomy = await this.getTaxonomy(tenantId, kbId);
@@ -405,10 +362,7 @@ export class KnowledgeManager {
     };
   }
 
-  async getMetadata(
-    tenantId: string,
-    kbId: string
-  ): Promise<KBMetadata | null> {
+  async getMetadata(tenantId: string, kbId: string): Promise<KBMetadata | null> {
     const kbDir = this.getKbDir(tenantId, kbId);
     try {
       return await readJsonFileOrDefault<KBMetadata | null>(
@@ -420,10 +374,7 @@ export class KnowledgeManager {
     }
   }
 
-  async rebuildMetadata(
-    tenantId: string,
-    kbId: string
-  ): Promise<KBMetadata> {
+  async rebuildMetadata(tenantId: string, kbId: string): Promise<KBMetadata> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docs = await this.readDocsJson(kbDir);
     const taxonomy = await this.getTaxonomy(tenantId, kbId);
@@ -442,7 +393,7 @@ export class KnowledgeManager {
     tenantId: string,
     kbId: string,
     docId: string,
-    status: KBDocMeta["status"]
+    status: KBDocMeta["status"],
   ): Promise<void> {
     const kbDir = this.getKbDir(tenantId, kbId);
     const docs = await this.readDocsJson(kbDir);
@@ -462,25 +413,17 @@ export class KnowledgeManager {
    */
   private async fixIndexPaths(
     kbDir: string,
-    oldRelPath: string,   // e.g. "pending/{docId}.md"
-    newRelPath: string    // e.g. "docs/AI/RAG/{docId}.md"
+    oldRelPath: string, // e.g. "pending/{docId}.md"
+    newRelPath: string, // e.g. "docs/AI/RAG/{docId}.md"
   ): Promise<void> {
-    await replaceIndexDocumentPaths(
-      path.join(kbDir, "indexes"),
-      kbDir,
-      oldRelPath,
-      newRelPath,
-    );
+    await replaceIndexDocumentPaths(path.join(kbDir, "indexes"), kbDir, oldRelPath, newRelPath);
   }
 
   private async readDocsJson(kbDir: string): Promise<KBDocMeta[]> {
     return readJsonFileOrDefault(path.join(kbDir, "docs.json"), []);
   }
 
-  private async writeDocsJson(
-    kbDir: string,
-    docs: KBDocMeta[]
-  ): Promise<void> {
+  private async writeDocsJson(kbDir: string, docs: KBDocMeta[]): Promise<void> {
     await writeJsonFile(path.join(kbDir, "docs.json"), docs);
   }
 }

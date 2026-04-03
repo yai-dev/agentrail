@@ -3,13 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
+import { Hono } from "hono";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { Hono } from "hono";
-import { OrchestrationStore } from "@agentrail/orchestration";
 
 test("orchestration route exposes mailbox progress and last job state", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "agentrail-orchestration-route-"));
@@ -22,10 +23,13 @@ test("orchestration route exposes mailbox progress and last job state", async ()
   process.env.AGENTRAIL_CONFIG_PATH = configPath;
 
   const sessionId = "session-route-test";
-  const sessionDir = join(dataDir, "tenants", "default", "sessions", sessionId);
+  const persistence = createFilesystemOrchestrationPersistence(
+    dataDir,
+    createSessionRef("default", sessionId),
+  );
 
   try {
-    await OrchestrationStore.appendEvent(sessionDir, {
+    await persistence.appendEvent({
       eventId: "evt-route-1",
       type: "run_started",
       occurredAt: "2026-03-23T13:00:00.000Z",
@@ -38,7 +42,7 @@ test("orchestration route exposes mailbox progress and last job state", async ()
         },
       },
     });
-    await OrchestrationStore.appendEvent(sessionDir, {
+    await persistence.appendEvent({
       eventId: "evt-route-2",
       type: "agent_spawned",
       occurredAt: "2026-03-23T13:00:01.000Z",
@@ -50,7 +54,7 @@ test("orchestration route exposes mailbox progress and last job state", async ()
         role: "worker",
       },
     });
-    await OrchestrationStore.appendEvent(sessionDir, {
+    await persistence.appendEvent({
       eventId: "evt-route-3",
       type: "agent_job_completed",
       occurredAt: "2026-03-23T13:00:02.000Z",
@@ -63,7 +67,7 @@ test("orchestration route exposes mailbox progress and last job state", async ()
         outputText: "done",
       },
     });
-    await OrchestrationStore.writeMailboxState(sessionDir, "agent-route-test", {
+    await persistence.writeMailboxState("agent-route-test", {
       processedEventCount: 2,
       closeRequested: {
         occurredAt: "2026-03-23T13:00:03.000Z",
@@ -75,9 +79,7 @@ test("orchestration route exposes mailbox progress and last job state", async ()
     const app = new Hono();
     app.route("/api/sessions", orchestration);
 
-    const response = await app.request(
-      `/api/sessions/${sessionId}/orchestration?tenantId=default`,
-    );
+    const response = await app.request(`/api/sessions/${sessionId}/orchestration?tenantId=default`);
 
     assert.equal(response.status, 200);
     const payload = (await response.json()) as {

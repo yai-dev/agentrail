@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import type { SandboxManager } from "../sandbox-manager.js";
 
 const runRg = promisify(execFile);
@@ -24,7 +24,8 @@ const parametersSchema = Type.Object({
   pattern: Type.String({ description: "The regular expression pattern to search for." }),
   path: Type.Optional(
     Type.String({
-      description: "Absolute sandbox path to search in (e.g. /workspace/src). Defaults to /workspace.",
+      description:
+        "Absolute sandbox path to search in (e.g. /workspace/src). Defaults to /workspace.",
     }),
   ),
   glob: Type.Optional(
@@ -35,13 +36,10 @@ const parametersSchema = Type.Object({
   ),
   output_mode: Type.Optional(
     Type.Union(
-      [
-        Type.Literal("content"),
-        Type.Literal("files_with_matches"),
-        Type.Literal("count"),
-      ],
+      [Type.Literal("content"), Type.Literal("files_with_matches"), Type.Literal("count")],
       {
-        description: '"content" shows lines, "files_with_matches" shows paths, "count" shows counts. Defaults to "files_with_matches".',
+        description:
+          '"content" shows lines, "files_with_matches" shows paths, "count" shows counts. Defaults to "files_with_matches".',
         default: "files_with_matches",
       },
     ),
@@ -54,6 +52,7 @@ const parametersSchema = Type.Object({
   ),
 });
 
+/** Creates the in-sandbox grep tool for content search. */
 export function createSandboxedGrep(
   manager: SandboxManager,
   sessionId: string,
@@ -77,7 +76,12 @@ export function createSandboxedGrep(
           searchPath = manager.translateToHostPath(sessionId, path);
         } catch {
           return {
-            content: [{ type: "text" as const, text: `Error: path '${path}' is outside the sandbox workspace.` }],
+            content: [
+              {
+                type: "text" as const,
+                text: `Error: path '${path}' is outside the sandbox workspace.`,
+              },
+            ],
             details: { error: "path outside sandbox" },
           };
         }
@@ -92,8 +96,14 @@ export function createSandboxedGrep(
 
       if (multiline) args.push("-U", "--multiline-dotall");
       if (case_insensitive) args.push("-i");
-      if (glob) { args.push("--glob"); args.push(glob); }
-      if (type) { args.push("--type"); args.push(type); }
+      if (glob) {
+        args.push("--glob");
+        args.push(glob);
+      }
+      if (type) {
+        args.push("--type");
+        args.push(type);
+      }
 
       args.push("--", pattern, searchPath);
 
@@ -105,7 +115,12 @@ export function createSandboxedGrep(
           details: { matches: stdout.trim().split("\n").filter(Boolean) },
         };
       } catch (err: unknown) {
-        if (err && typeof err === "object" && "code" in err && (err as { code: unknown }).code === 1) {
+        if (
+          err &&
+          typeof err === "object" &&
+          "code" in err &&
+          (err as { code: unknown }).code === 1
+        ) {
           return {
             content: [{ type: "text" as const, text: "(no matches)" }],
             details: { matches: [] },

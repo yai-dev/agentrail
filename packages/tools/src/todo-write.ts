@@ -3,11 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
-import { tool } from "@agentrail/runtime-core";
+import type { TodoStorage } from "@agentrail/memo";
 import type { RuntimeTool } from "@agentrail/runtime-core";
+import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 
 // --------------------------------------------------------------------------
 // Types
@@ -140,16 +141,16 @@ const parametersSchema = Type.Object({
       }),
       status: Type.Union(
         [Type.Literal("pending"), Type.Literal("in_progress"), Type.Literal("completed")],
-        { description: "Current task status." }
+        { description: "Current task status." },
       ),
       activeForm: Type.Optional(
         Type.String({
           description:
             'Present-continuous form shown while in_progress (e.g. "Fixing authentication bug").',
-        })
+        }),
       ),
     }),
-    { description: "Array of task items to write or merge." }
+    { description: "Array of task items to write or merge." },
   ),
   merge: Type.Boolean({
     description:
@@ -161,11 +162,30 @@ const parametersSchema = Type.Object({
 // Factory
 // --------------------------------------------------------------------------
 
+function createFileTodoStorage(todoFilePath: string): TodoStorage {
+  return {
+    async read() {
+      try {
+        return await readFile(todoFilePath, "utf-8");
+      } catch {
+        return null;
+      }
+    },
+    async write(content: string) {
+      await mkdir(dirname(todoFilePath), { recursive: true });
+      await writeFile(todoFilePath, content, "utf-8");
+    },
+  };
+}
+
 /**
- * Creates a TodoWrite tool backed by a specific TODO.md file path.
+ * Creates a TodoWrite tool backed by either a TODO.md file path or a storage adapter.
  * Designed to be registered on the main agent only (not skill sub-agents).
  */
-export function createTodoWriteTool(todoFilePath: string): RuntimeTool {
+export function createTodoWriteTool(todoStorage: string | TodoStorage): RuntimeTool {
+  const storage =
+    typeof todoStorage === "string" ? createFileTodoStorage(todoStorage) : todoStorage;
+
   return tool()
     .name("TodoWrite")
     .label("TodoWrite")
@@ -177,19 +197,16 @@ export function createTodoWriteTool(todoFilePath: string): RuntimeTool {
 
         if (doMerge) {
           let existing: TodoItem[] = [];
-          try {
-            const raw = await readFile(todoFilePath, "utf-8");
+          const raw = await storage.read();
+          if (raw) {
             existing = parseData(raw);
-          } catch {
-            // File does not exist yet — start fresh
           }
           finalTodos = mergeTodos(existing, todos as TodoItem[]);
         } else {
           finalTodos = todos as TodoItem[];
         }
 
-        await mkdir(dirname(todoFilePath), { recursive: true });
-        await writeFile(todoFilePath, serialise(finalTodos), "utf-8");
+        await storage.write(serialise(finalTodos));
 
         return {
           content: [{ type: "text" as const, text: formatResult(finalTodos) }],

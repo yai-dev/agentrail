@@ -3,8 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { TransformContextFn } from "@agentrail/runtime-core";
-import { SessionManager, compactToolResults } from "@agentrail/memo";
 import {
   createDefaultCapabilityContextProviders,
   createDefaultCapabilityTransformContext,
@@ -13,9 +11,11 @@ import {
   type CreateSessionManagedAgent,
 } from "@agentrail/host";
 import { KnowledgeManager } from "@agentrail/knowledge";
-import { SkillManager } from "@agentrail/skills";
-import { SandboxManager } from "@agentrail/sandbox";
+import { SessionManager, compactToolResults } from "@agentrail/memo";
 import { UserMemoryConsolidationService } from "@agentrail/plugin-user-memory";
+import type { TransformContextFn } from "@agentrail/runtime-core";
+import { SandboxManager } from "@agentrail/sandbox";
+import { SkillManager } from "@agentrail/skills";
 import { config } from "../config.js";
 
 const TRANSFORM_CACHE_TTL_MS = 5_000;
@@ -45,6 +45,7 @@ interface OrchestrationManagerRequest {
   tenantId: string;
   userId: string;
   sessionId: string;
+  sessionRef: import("@agentrail/memo").SessionRef;
   createManagedAgent: CreateSessionManagedAgent;
 }
 
@@ -92,8 +93,7 @@ export function buildTransformContext(
     includeSkillsContext: options.includeSkillsContext,
     delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
     cacheTtlMs: TRANSFORM_CACHE_TTL_MS,
-    buildMemoryIndex: () =>
-      sessionManager.buildMemoryIndex(tenantId, userId, sessionId),
+    buildMemoryIndex: () => sessionManager.buildMemoryIndex(tenantId, userId, sessionId),
     listKnowledgeMetadatas: async () => {
       const kbList = await knowledgeManager.listKbs(tenantId);
       return Promise.all(kbList.map((id) => knowledgeManager.getMetadata(tenantId, id)));
@@ -117,8 +117,7 @@ export function buildContextProviders(
     includeSkillsContext: options.includeSkillsContext,
     delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
     cacheTtlMs: TRANSFORM_CACHE_TTL_MS,
-    buildMemoryIndex: () =>
-      sessionManager.buildMemoryIndex(tenantId, userId, sessionId),
+    buildMemoryIndex: () => sessionManager.buildMemoryIndex(tenantId, userId, sessionId),
     listKnowledgeMetadatas: async () => {
       const kbList = await knowledgeManager.listKbs(tenantId);
       return Promise.all(kbList.map((id) => knowledgeManager.getMetadata(tenantId, id)));

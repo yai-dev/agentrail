@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import "@agentrail/runtime-core/providers";
-import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
 import type { Message } from "@agentrail/runtime-core";
+import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
+import "@agentrail/runtime-core/providers";
 import { config } from "../config.js";
 
 function trunc(s: string, max: number): string {
@@ -42,9 +42,7 @@ function renderMessage(m: Message): string | null {
 
   if (m.role === "toolResult") {
     // Include a brief excerpt of tool results; full content is in messages.jsonl.bak
-    const resultText = m.content
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("");
+    const resultText = m.content.map((b) => (b.type === "text" ? b.text : "")).join("");
     const clean = resultText.trim();
     return clean ? `  ↳ ${m.toolName} result: ${trunc(clean, 400)}` : null;
   }
@@ -125,10 +123,7 @@ export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
         const msg = (event.error as Error)?.message ?? "unknown error";
         return `(summarization failed: ${msg})`;
       }
-      if (
-        event.type === "message_update" &&
-        event.event.type === "text_delta"
-      ) {
+      if (event.type === "message_update" && event.event.type === "text_delta") {
         summary += event.event.delta;
       }
       if (event.type === "agent_end") break;

@@ -5,9 +5,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { intro, outro, text, confirm, spinner, note, cancel } from "@clack/prompts";
-import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { cancel, confirm, intro, note, outro, spinner, text } from "@clack/prompts";
 import { existsSync } from "node:fs";
+import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,10 +28,9 @@ async function resolveLatestVersion(pkg: string): Promise<string> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8_000);
-    const res = await fetch(
-      `https://registry.npmjs.org/${encodeURIComponent(pkg)}/latest`,
-      { signal: controller.signal },
-    );
+    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg)}/latest`, {
+      signal: controller.signal,
+    });
     clearTimeout(timeoutId);
     if (!res.ok) return "latest";
     const data = (await res.json()) as { version: string };
@@ -41,10 +40,7 @@ async function resolveLatestVersion(pkg: string): Promise<string> {
   }
 }
 
-async function processFile(
-  filePath: string,
-  replacements: Record<string, string>,
-): Promise<void> {
+async function processFile(filePath: string, replacements: Record<string, string>): Promise<void> {
   const content = await readFile(filePath, "utf-8");
   const updated = Object.entries(replacements).reduce(
     (acc, [key, val]) => acc.replaceAll(`{{${key}}}`, val),
@@ -54,11 +50,7 @@ async function processFile(
 }
 
 function toPlaceholderKey(pkg: string): string {
-  return pkg
-    .replace(/^@/, "")
-    .replace(/\//g, "_")
-    .replace(/-/g, "_")
-    .toUpperCase();
+  return pkg.replace(/^@/, "").replace(/\//g, "_").replace(/-/g, "_").toUpperCase();
 }
 
 async function main(): Promise<void> {
@@ -74,8 +66,7 @@ async function main(): Promise<void> {
     const result = await text({
       message: "Project name:",
       placeholder: "my-agentrail-app",
-      validate: (v) =>
-        v.trim().length === 0 ? "Project name cannot be empty" : undefined,
+      validate: (v) => (v.trim().length === 0 ? "Project name cannot be empty" : undefined),
     });
     if (typeof result !== "string") {
       cancel("Operation cancelled");

@@ -15,6 +15,7 @@ function formatSendInputResult(inputId: string, agentId: string): string {
   });
 }
 
+/** Creates the runtime tool that queues input for a managed sub-agent. */
 export function createSendInputTool(manager: OrchestrationManager) {
   return tool()
     .name("send_input")

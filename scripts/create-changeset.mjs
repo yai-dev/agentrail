@@ -3,9 +3,9 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { createInterface } from "node:readline/promises";
 import process from "node:process";
+import { createInterface } from "node:readline/promises";
+import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIR, "..");
@@ -234,9 +234,9 @@ async function promptForSelections(packages) {
       console.log(`  ${index + 1}. ${pkg.name} (current ${pkg.version})`);
     });
 
-    const rawSelection = (await rl.question(
-      "\nSelect packages by number, full name, or short name (comma separated): ",
-    )).trim();
+    const rawSelection = (
+      await rl.question("\nSelect packages by number, full name, or short name (comma separated): ")
+    ).trim();
 
     if (!rawSelection) {
       fail("No packages selected.");
@@ -244,7 +244,10 @@ async function promptForSelections(packages) {
 
     const chosenPackages = [];
     const seen = new Set();
-    const tokens = rawSelection.split(",").map((token) => token.trim()).filter(Boolean);
+    const tokens = rawSelection
+      .split(",")
+      .map((token) => token.trim())
+      .filter(Boolean);
 
     for (const token of tokens) {
       let pkg = null;
@@ -273,9 +276,12 @@ async function promptForSelections(packages) {
       const patchVersion = incrementVersion(pkg.version, "patch");
       const minorVersion = incrementVersion(pkg.version, "minor");
       const majorVersion = incrementVersion(pkg.version, "major");
-      const answer = (await rl.question(
-        `Bump for ${pkg.name} [patch|minor|major] (patch -> ${patchVersion}, minor -> ${minorVersion}, major -> ${majorVersion}) [patch]: `,
-      )).trim() || "patch";
+      const answer =
+        (
+          await rl.question(
+            `Bump for ${pkg.name} [patch|minor|major] (patch -> ${patchVersion}, minor -> ${minorVersion}, major -> ${majorVersion}) [patch]: `,
+          )
+        ).trim() || "patch";
 
       if (!VALID_BUMPS.has(answer)) {
         fail(`Invalid bump '${answer}' for '${pkg.name}'.`);
@@ -358,7 +364,9 @@ async function main() {
 
   console.log(`Created ${filePath}`);
   console.log(
-    `Selected packages: ${selections.map((selection) => `${selection.name} -> ${selection.nextVersion}`).join(", ")}`,
+    `Selected packages: ${selections
+      .map((selection) => `${selection.name} -> ${selection.nextVersion}`)
+      .join(", ")}`,
   );
 }
 

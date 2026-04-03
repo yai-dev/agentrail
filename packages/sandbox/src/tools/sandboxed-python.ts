@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { tool } from "@agentrail/runtime-core";
 import { Type } from "@sinclair/typebox";
+import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import path from "node:path";
 import type { SandboxManager } from "../sandbox-manager.js";
 
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -104,6 +104,7 @@ async function collectArtifactSnapshots(
   return snapshots;
 }
 
+/** Creates the Python execution tool that runs scripts inside the sandbox. */
 export function createSandboxedPython(
   manager: SandboxManager,
   sessionId: string,
@@ -138,18 +139,17 @@ export function createSandboxedPython(
       const beforeSnapshots = await collectArtifactSnapshots(hostArtifactDir, ARTIFACT_DIR);
       const beforeMap = new Map(beforeSnapshots.map((item) => [item.sandboxPath, item.mtimeMs]));
 
-      const result = await manager.runInSandbox(
-        sessionId,
-        ["python3", sandboxScriptPath],
-        {
-          timeout: timeout ?? DEFAULT_TIMEOUT_MS,
-          workingDir: workDir,
-        },
-      );
+      const result = await manager.runInSandbox(sessionId, ["python3", sandboxScriptPath], {
+        timeout: timeout ?? DEFAULT_TIMEOUT_MS,
+        workingDir: workDir,
+      });
 
       const afterSnapshots = await collectArtifactSnapshots(hostArtifactDir, ARTIFACT_DIR);
       const changedArtifacts = afterSnapshots
-        .filter((item) => (beforeMap.get(item.sandboxPath) ?? -1) < item.mtimeMs && item.mtimeMs >= startedAt)
+        .filter(
+          (item) =>
+            (beforeMap.get(item.sandboxPath) ?? -1) < item.mtimeMs && item.mtimeMs >= startedAt,
+        )
         .map((item) => item.sandboxPath);
 
       const outputFiles = [...new Set([...changedArtifacts, ...(expected_output_files ?? [])])];

@@ -3,24 +3,21 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
-import type {
-  CreateManagedAgentInput,
-  ModelConfig,
-  SubAgentRuntime,
-} from "@agentrail/orchestration";
-import {
-  createSandboxedPython,
-  SandboxManager,
-} from "@agentrail/sandbox";
 import {
   createKbListTool,
   createKbReadTool,
   createKbSearchTool,
   KnowledgeManager,
 } from "@agentrail/knowledge";
-import type { DeepResearchRuntimeConfig } from "../runtime.js";
+import type {
+  CreateManagedAgentInput,
+  ModelConfig,
+  SubAgentRuntime,
+} from "@agentrail/orchestration";
+import type { RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
+import { createSandboxedPython, SandboxManager } from "@agentrail/sandbox";
 import { getRolePrompt } from "../prompts.js";
+import type { DeepResearchRuntimeConfig } from "../runtime.js";
 import { createFetchUrlTool, createWebSearchTool } from "../tools.js";
 
 export interface DeepResearchSubAgentRuntimeConfig {
@@ -37,9 +34,7 @@ export class DeepResearchSubAgentRuntime implements SubAgentRuntime {
   private readonly knowledgeManager: KnowledgeManager;
   private readonly sandboxManager: SandboxManager;
 
-  constructor(
-    private readonly runtimeConfig: DeepResearchSubAgentRuntimeConfig,
-  ) {
+  constructor(private readonly runtimeConfig: DeepResearchSubAgentRuntimeConfig) {
     this.knowledgeManager = new KnowledgeManager(runtimeConfig.runtime.dataDir);
     this.sandboxManager = new SandboxManager(
       runtimeConfig.runtime.dataDir,
@@ -53,10 +48,7 @@ export class DeepResearchSubAgentRuntime implements SubAgentRuntime {
 
   buildSystemPrompt(input: CreateManagedAgentInput): string {
     const currentDate = new Date().toISOString().slice(0, 10);
-    const rolePrompt = getRolePrompt(
-      input.role as "researcher" | "analyst" | "coder",
-      currentDate,
-    );
+    const rolePrompt = getRolePrompt(input.role as "researcher" | "analyst" | "coder", currentDate);
     return [
       rolePrompt,
       "[Deep Research Sub-Agent Context]",
@@ -79,11 +71,7 @@ export class DeepResearchSubAgentRuntime implements SubAgentRuntime {
     ];
 
     if (input.role === "researcher") {
-      return [
-        createWebSearchTool(this.runtimeConfig.runtime),
-        createFetchUrlTool(),
-        ...kbTools,
-      ];
+      return [createWebSearchTool(this.runtimeConfig.runtime), createFetchUrlTool(), ...kbTools];
     }
 
     if (input.role === "coder") {

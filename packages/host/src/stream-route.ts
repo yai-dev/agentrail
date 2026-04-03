@@ -3,13 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Hono } from "hono";
-import { streamText } from "hono/streaming";
-import { runCompactionIfNeeded } from "./compaction.js";
-import type { Message, TransformContextFn, Usage } from "@agentrail/runtime-core";
-import { isRuntimeError } from "@agentrail/runtime-core";
-import type { SandboxManager } from "@agentrail/sandbox";
-import type { OrchestrationManager } from "@agentrail/orchestration";
 import {
   mapOrchestrationEvent,
   TRACE_PERSISTED_EVENT_TYPES,
@@ -18,95 +11,114 @@ import {
   type AgentrailErrorEvent,
   type WorkflowTraceEventEnvelope,
 } from "@agentrail/events";
-import type {
-  AgentrailProfile,
-  AgentrailRequestLifecycleContext,
-  AgentrailSessionStore,
-  AttachmentFile,
-  AttachmentHandler,
-  AgentrailPlugin,
-  ContextProvider,
-} from "./types.js";
-import {
-  runPluginRequestHook,
-} from "./plugins.js";
+import type { SessionRef } from "@agentrail/memo";
+import type { OrchestrationManager } from "@agentrail/orchestration";
+import type { Message, TransformContextFn, Usage } from "@agentrail/runtime-core";
+import { isRuntimeError } from "@agentrail/runtime-core";
+import type { SandboxManager } from "@agentrail/sandbox";
+import { Hono } from "hono";
+import { streamText } from "hono/streaming";
+import { runCompactionIfNeeded } from "./compaction.js";
+import { runPluginRequestHook } from "./plugins.js";
 import {
   buildEffectiveMessage,
   createSseEventWriter,
   persistUploadedFiles,
   resolveStreamTransformContext,
-  type StreamRequest,
   validateStreamRequest,
+  type StreamRequest,
 } from "./stream-route-internals.js";
+import type {
+  AgentrailPlugin,
+  AgentrailProfile,
+  AgentrailRequestLifecycleContext,
+  AgentrailSessionStore,
+  AttachmentFile,
+  AttachmentHandler,
+  ContextProvider,
+} from "./types.js";
 
+/**
+ * Configuration for the streaming SSE chat route factory.
+ *
+ * @see {@link https://agentrail.run/reference/host-primitives}
+ */
 export interface AgentrailStreamRouteOptions {
+  /** Root data directory used for uploads and session-backed helpers. */
   dataDir: string;
+  /** Default profile ID used when the request omits `agentId`. */
   defaultAgentId: string;
+  /** Session store implementation used for history persistence and compaction. */
   sessionStore: AgentrailSessionStore;
+  /** Sandbox manager used to persist uploads and prepare isolated execution. */
   sandboxManager: SandboxManager;
+  /** Resolves a hosted profile for the given request context. */
   resolveProfile(
     agentId: string,
     context: {
       tenantId: string;
       userId: string;
       sessionId: string;
-      sessionDir: string;
+      sessionRef: SessionRef;
+      sessionStore: AgentrailSessionStore;
     },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
+  /** Summarizer used when streaming history needs compaction. */
   summarize(messages: Message[]): Promise<string>;
+  /** Token thresholds that decide when to compact history. */
   compaction: {
     triggerTokens: number;
     minMessages: number;
   };
+  /** Optional plugins that can observe lifecycle events. */
   plugins?: AgentrailPlugin[];
+  /** Static context providers prepended before conversation history. */
   contextProviders?: ContextProvider[];
+  /** Dynamic context-provider resolver invoked per request. */
   getContextProviders?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
   }) => Promise<ContextProvider[]> | ContextProvider[];
+  /** Dynamic transform-context resolver invoked per request. */
   getTransformContext?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
   }) => Promise<TransformContextFn> | TransformContextFn;
+  /** Optional attachment handler that turns uploaded files into extra context. */
   attachmentHandler?: AttachmentHandler;
-  onRequestStart?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
-  onRequestEnd?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
-  onTurnPersisted?: (
-    context: AgentrailRequestLifecycleContext,
-  ) => void | Promise<void>;
+  onRequestStart?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  onRequestEnd?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  onTurnPersisted?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
   getOrchestrationManager?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
+    sessionRef: SessionRef;
   }) => Promise<OrchestrationManager>;
-  handleResolvedRequest?: (
-    context: AgentrailResolvedStreamContext,
-  ) => Promise<boolean> | boolean;
+  /** Optional hook that can fully handle a resolved stream request. */
+  handleResolvedRequest?: (context: AgentrailResolvedStreamContext) => Promise<boolean> | boolean;
   /**
    * Optional observer called after each SSE event is written, for events whose
    * type is in TRACE_PERSISTED_EVENT_TYPES. Fire-and-forget; must not throw.
    * Intended for trace persistence in application layers (e.g. playground-server).
    */
   onTraceEvent?: (
-    context: { tenantId: string; sessionId: string; sessionDir: string },
+    context: { tenantId: string; sessionId: string; sessionRef: SessionRef },
     envelope: WorkflowTraceEventEnvelope,
   ) => void;
 }
 
+/** Fully resolved stream request context exposed to custom handlers. */
 export interface AgentrailResolvedStreamContext {
   request: StreamRequest;
   agentId: string;
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
   signal: AbortSignal;
   sessionStore: AgentrailSessionStore;
   uploadedFiles: AttachmentFile[];
@@ -114,9 +126,13 @@ export interface AgentrailResolvedStreamContext {
   persistTurn: (messages: Message[], usage: Usage) => Promise<void>;
 }
 
-export function createStreamRoute(
-  options: AgentrailStreamRouteOptions,
-): Hono {
+/**
+ * Creates the hosted streaming route that emits SSE-style newline-delimited events.
+ *
+ * @see {@link https://agentrail.run/guides/consume-stream}
+ * @see {@link https://agentrail.run/reference/host-primitives}
+ */
+export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
   const plugins = options.plugins ?? [];
   const route = new Hono();
 
@@ -149,7 +165,7 @@ export function createStreamRoute(
       sessionId,
     );
     const sid = sessionInfo.sessionId;
-    const sessionDir = options.sessionStore.getSessionDir(tenantId, sid);
+    const sessionRef = sessionInfo.sessionRef;
     const requestContext: AgentrailRequestLifecycleContext = {
       kind: "stream",
       tenantId,
@@ -179,7 +195,7 @@ export function createStreamRoute(
     if (!options.handleResolvedRequest) {
       preloadedProfile = await options.resolveProfile(
         agentId,
-        { tenantId, userId, sessionId: sid, sessionDir },
+        { tenantId, userId, sessionId: sid, sessionRef, sessionStore: options.sessionStore },
         (event) => forwardSubAgentEvent(event),
       );
       if (!preloadedProfile) {
@@ -203,7 +219,7 @@ export function createStreamRoute(
         if (!type || !TRACE_PERSISTED_EVENT_TYPES.has(type)) return;
         const envelope = wrapTraceEvent("runtime", event as Record<string, unknown>, traceSeq++);
         try {
-          options.onTraceEvent({ tenantId, sessionId: sid, sessionDir }, envelope);
+          options.onTraceEvent({ tenantId, sessionId: sid, sessionRef }, envelope);
         } catch {
           // observer must not break the stream
         }
@@ -242,7 +258,7 @@ export function createStreamRoute(
             tenantId,
             userId,
             sessionId: sid,
-            sessionDir,
+            sessionRef,
             signal: abortController.signal,
             sessionStore: options.sessionStore,
             uploadedFiles,
@@ -254,11 +270,13 @@ export function createStreamRoute(
           }
         }
 
-        const profile = preloadedProfile ?? await options.resolveProfile(
-          agentId,
-          { tenantId, userId, sessionId: sid, sessionDir },
-          (event) => forwardSubAgentEvent(event),
-        );
+        const profile =
+          preloadedProfile ??
+          (await options.resolveProfile(
+            agentId,
+            { tenantId, userId, sessionId: sid, sessionRef, sessionStore: options.sessionStore },
+            (event) => forwardSubAgentEvent(event),
+          ));
         if (!profile) {
           const errorEvent: AgentrailErrorEvent = {
             type: "error",
@@ -271,7 +289,7 @@ export function createStreamRoute(
         }
 
         const agent = await profile.createAgent(
-          { tenantId, userId, sessionId: sid, sessionDir },
+          { tenantId, userId, sessionId: sid, sessionRef, sessionStore: options.sessionStore },
           (event) => forwardSubAgentEvent(event),
         );
 
@@ -280,6 +298,7 @@ export function createStreamRoute(
             tenantId,
             userId,
             sessionId: sid,
+            sessionRef,
           });
           unsubscribeOrchestration = manager.subscribe(({ event }) => {
             const mapped = mapOrchestrationEvent(event);
@@ -313,11 +332,11 @@ export function createStreamRoute(
         );
 
         const history = await options.sessionStore.loadMessagesWithBudget(tenantId, sid);
-        const transformContext = await resolveStreamTransformContext(
-          options,
-          plugins,
-          { tenantId, userId, sessionId: sid },
-        );
+        const transformContext = await resolveStreamTransformContext(options, plugins, {
+          tenantId,
+          userId,
+          sessionId: sid,
+        });
 
         const agentStream = agent.stream(effectiveMessage, {
           messages: history,
@@ -358,7 +377,9 @@ export function createStreamRoute(
               type: "context_usage",
               inputTokens: totalInputTokens,
               outputTokens: event.usage.outputTokens ?? 0,
-              budgetUsedPct: Math.round((totalInputTokens / (profile?.contextWindow ?? 200_000)) * 100),
+              budgetUsedPct: Math.round(
+                (totalInputTokens / (profile?.contextWindow ?? 200_000)) * 100,
+              ),
             };
             await writeEvent(usageEvent);
             break;

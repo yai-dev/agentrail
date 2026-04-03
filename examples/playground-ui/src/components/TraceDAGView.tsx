@@ -3,8 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useMemo } from "react";
-import type { AgentRunTrace, TraceStep, LlmTurnStep, ToolCallStep, WorkflowTraceEventEnvelope } from "../types/trace";
+import { useMemo, useState } from "react";
+import type {
+  AgentRunTrace,
+  LlmTurnStep,
+  ToolCallStep,
+  TraceStep,
+  WorkflowTraceEventEnvelope,
+} from "../types/trace";
 import { WorkspaceEmptyState } from "./WorkspaceEmptyState";
 
 // ─── Design tokens (matched to WS dark theme) ────────────────────────────────
@@ -50,11 +56,8 @@ function buildLayout(steps: TraceStep[], source: "main" | "skill" = "main"): Lay
       const toolStep = step as ToolCallStep;
 
       if (toolStep.toolName === "Skill") {
-        const skillName =
-          (toolStep.args as { skillName?: string } | null)?.skillName ?? "skill";
-        const skillSteps = steps.filter(
-          (s) => s.source === "skill" && s.skillName === skillName,
-        );
+        const skillName = (toolStep.args as { skillName?: string } | null)?.skillName ?? "skill";
+        const skillSteps = steps.filter((s) => s.source === "skill" && s.skillName === skillName);
         rows.push({
           kind: "skill_section",
           skillName,
@@ -70,10 +73,7 @@ function buildLayout(steps: TraceStep[], source: "main" | "skill" = "main"): Lay
       i++;
       while (i < filtered.length) {
         const next = filtered[i]!;
-        if (
-          next.kind === "tool" &&
-          (next as ToolCallStep).parentLlmId === toolStep.parentLlmId
-        ) {
+        if (next.kind === "tool" && (next as ToolCallStep).parentLlmId === toolStep.parentLlmId) {
           group.push(next as ToolCallStep);
           i++;
         } else {
@@ -148,7 +148,11 @@ function argSummary(args: unknown, toolName: string): string | undefined {
 }
 
 function prettyJson(v: unknown): string {
-  try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+  try {
+    return JSON.stringify(v, null, 2);
+  } catch {
+    return String(v);
+  }
 }
 
 function extractResultSummary(result: unknown): string {
@@ -172,24 +176,28 @@ function extractResultSummary(result: unknown): string {
 
 function VLine({ height = 18 }: { height?: number }) {
   return (
-    <div style={{
-      width: "1px",
-      height,
-      background: `linear-gradient(to bottom, ${C.line}, ${C.border})`,
-      flexShrink: 0,
-      alignSelf: "center",
-    }} />
+    <div
+      style={{
+        width: "1px",
+        height,
+        background: `linear-gradient(to bottom, ${C.line}, ${C.border})`,
+        flexShrink: 0,
+        alignSelf: "center",
+      }}
+    />
   );
 }
 
 function HBar({ width }: { width: number }) {
   return (
-    <div style={{
-      height: "1px",
-      width,
-      background: C.line,
-      flexShrink: 0,
-    }} />
+    <div
+      style={{
+        height: "1px",
+        width,
+        background: C.line,
+        flexShrink: 0,
+      }}
+    />
   );
 }
 
@@ -231,18 +239,32 @@ function LlmNode({ step, selected, traceStart, onClick }: LlmNodeProps) {
           position: "relative",
         }}
       >
-        <span style={{
-          position: "absolute", top: "8px", right: "9px",
-          width: "7px", height: "7px", borderRadius: "50%",
-          background: color, flexShrink: 0,
-          ...(step.status === "running" ? { animation: "status-running-pulse 1.55s ease-in-out infinite" } : {}),
-        }} />
-        <span style={{
-          fontSize: "12px", fontWeight: 700,
-          color: selected ? C.purple : C.text,
-          display: "flex", alignItems: "center", gap: "5px",
-          paddingRight: "16px",
-        }}>
+        <span
+          style={{
+            position: "absolute",
+            top: "8px",
+            right: "9px",
+            width: "7px",
+            height: "7px",
+            borderRadius: "50%",
+            background: color,
+            flexShrink: 0,
+            ...(step.status === "running"
+              ? { animation: "status-running-pulse 1.55s ease-in-out infinite" }
+              : {}),
+          }}
+        />
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: 700,
+            color: selected ? C.purple : C.text,
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            paddingRight: "16px",
+          }}
+        >
           🤖
           <span>Turn {step.index + 1}</span>
           {step.source === "skill" && (
@@ -251,16 +273,23 @@ function LlmNode({ step, selected, traceStart, onClick }: LlmNodeProps) {
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {step.stopReason && (
-            <span style={{ fontSize: "10px", color: C.muted }}>
-              stop: {step.stopReason}
-            </span>
+            <span style={{ fontSize: "10px", color: C.muted }}>stop: {step.stopReason}</span>
           )}
-          <span style={{ fontSize: "11px", fontWeight: 600, color, fontVariantNumeric: "tabular-nums" }}>
+          <span
+            style={{ fontSize: "11px", fontWeight: 600, color, fontVariantNumeric: "tabular-nums" }}
+          >
             {dur}
           </span>
         </span>
       </button>
-      <span style={{ fontSize: "10px", color: C.muted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+      <span
+        style={{
+          fontSize: "10px",
+          color: C.muted,
+          fontVariantNumeric: "tabular-nums",
+          whiteSpace: "nowrap",
+        }}
+      >
         {offset}
       </span>
     </div>
@@ -302,31 +331,56 @@ function ToolNode({ step, selected, onClick }: ToolNodeProps) {
         flexShrink: 0,
       }}
     >
-      <span style={{
-        position: "absolute", top: "7px", right: "8px",
-        width: "6px", height: "6px", borderRadius: "50%", background: color,
-        ...(step.status === "running" ? { animation: "status-running-pulse 1.55s ease-in-out infinite" } : {}),
-      }} />
-      <span style={{
-        fontSize: "11px", fontWeight: 600, color: selected ? C.accent : C.text,
-        display: "flex", alignItems: "center", gap: "4px", paddingRight: "14px",
-      }}>
+      <span
+        style={{
+          position: "absolute",
+          top: "7px",
+          right: "8px",
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          background: color,
+          ...(step.status === "running"
+            ? { animation: "status-running-pulse 1.55s ease-in-out infinite" }
+            : {}),
+        }}
+      />
+      <span
+        style={{
+          fontSize: "11px",
+          fontWeight: 600,
+          color: selected ? C.accent : C.text,
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          paddingRight: "14px",
+        }}
+      >
         <span>{toolIcon(step.toolName)}</span>
         <span>{step.toolName}</span>
       </span>
       {sub && (
-        <span style={{
-          fontSize: "9.5px", color: C.muted,
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          maxWidth: "150px",
-        }}>
+        <span
+          style={{
+            fontSize: "9.5px",
+            color: C.muted,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            maxWidth: "150px",
+          }}
+        >
           {sub}
         </span>
       )}
-      <span style={{
-        fontSize: "10px", fontWeight: 600, color,
-        fontVariantNumeric: "tabular-nums",
-      }}>
+      <span
+        style={{
+          fontSize: "10px",
+          fontWeight: 600,
+          color,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
         {dur}
       </span>
     </button>
@@ -346,8 +400,7 @@ interface RowRendererProps {
 function RowRenderer({ rows, traceStart, selectedId, onSelect, depth = 0 }: RowRendererProps) {
   const [collapsedSkills, setCollapsedSkills] = useState<Record<string, boolean>>({});
 
-  const toggleSkill = (key: string) =>
-    setCollapsedSkills((p) => ({ ...p, [key]: !p[key] }));
+  const toggleSkill = (key: string) => setCollapsedSkills((p) => ({ ...p, [key]: !p[key] }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
@@ -357,7 +410,15 @@ function RowRenderer({ rows, traceStart, selectedId, onSelect, depth = 0 }: RowR
 
         if (row.kind === "llm") {
           return (
-            <div key={row.step.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+            <div
+              key={row.step.id}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
               {!isFirst && <VLine />}
               <LlmNode
                 step={row.step}
@@ -374,14 +435,28 @@ function RowRenderer({ rows, traceStart, selectedId, onSelect, depth = 0 }: RowR
           const multi = row.steps.length > 1;
           const barW = Math.min(row.steps.length * 150, 460);
           return (
-            <div key={row.steps.map(s => s.id).join(",")} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+            <div
+              key={row.steps.map((s) => s.id).join(",")}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
               <VLine height={12} />
               {multi && <HBar width={barW} />}
-              <div style={{
-                display: "flex", flexDirection: "row", gap: "8px",
-                alignItems: "flex-start", justifyContent: "center", flexWrap: "wrap",
-              }}>
-                {row.steps.map(step => (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: "8px",
+                  alignItems: "flex-start",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {row.steps.map((step) => (
                   <ToolNode
                     key={step.id}
                     step={step}
@@ -399,25 +474,46 @@ function RowRenderer({ rows, traceStart, selectedId, onSelect, depth = 0 }: RowR
         if (row.kind === "skill_section") {
           const collapsed = collapsedSkills[row.hostToolId] ?? false;
           return (
-            <div key={row.hostToolId} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+            <div
+              key={row.hostToolId}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
               <VLine />
-              <div style={{
-                border: `1px solid rgba(167,139,250,0.25)`,
-                borderRadius: "10px",
-                padding: "10px 14px 12px",
-                background: "linear-gradient(135deg, rgba(167,139,250,0.06), rgba(139,92,246,0.03))",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 0,
-                width: "min(460px, 96%)",
-              }}>
+              <div
+                style={{
+                  border: `1px solid rgba(167,139,250,0.25)`,
+                  borderRadius: "10px",
+                  padding: "10px 14px 12px",
+                  background:
+                    "linear-gradient(135deg, rgba(167,139,250,0.06), rgba(139,92,246,0.03))",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 0,
+                  width: "min(460px, 96%)",
+                }}
+              >
                 {/* skill header */}
                 <button
                   onClick={() => toggleSkill(row.hostToolId)}
                   style={{
-                    display: "flex", alignItems: "center", gap: "6px",
-                    background: "none", border: "none", cursor: "pointer",
-                    color: "rgba(167,139,250,0.85)", fontSize: "11px", fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "rgba(167,139,250,0.85)",
+                    fontSize: "11px",
+                    fontWeight: 700,
                     padding: "0 0 collapsed ? 0 : 10px",
-                    width: "100%", justifyContent: "center",
+                    width: "100%",
+                    justifyContent: "center",
                     letterSpacing: "0.04em",
                     paddingBottom: collapsed ? "0" : "10px",
                   }}
@@ -429,17 +525,18 @@ function RowRenderer({ rows, traceStart, selectedId, onSelect, depth = 0 }: RowR
                   </span>
                 </button>
 
-                {!collapsed && (
-                  row.rows.length > 0
-                    ? <RowRenderer
+                {!collapsed &&
+                  (row.rows.length > 0 ? (
+                    <RowRenderer
                       rows={row.rows}
                       traceStart={traceStart}
                       selectedId={selectedId}
                       onSelect={onSelect}
                       depth={depth + 1}
                     />
-                    : <span style={{ fontSize: "11px", color: C.muted }}>No sub-agent steps</span>
-                )}
+                  ) : (
+                    <span style={{ fontSize: "11px", color: C.muted }}>No sub-agent steps</span>
+                  ))}
               </div>
               <VLine />
             </div>
@@ -456,10 +553,16 @@ function RowRenderer({ rows, traceStart, selectedId, onSelect, depth = 0 }: RowR
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.1em",
-      textTransform: "uppercase", color: C.muted, marginBottom: "6px",
-    }}>
+    <div
+      style={{
+        fontSize: "9.5px",
+        fontWeight: 700,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        color: C.muted,
+        marginBottom: "6px",
+      }}
+    >
       {children}
     </div>
   );
@@ -470,25 +573,38 @@ function CodeBlock({ text, maxHeight = 180 }: { text: string; maxHeight?: number
   const long = text.length > 500;
   return (
     <div style={{ position: "relative" }}>
-      <pre style={{
-        fontSize: "11px", fontFamily: "var(--mono, monospace)",
-        background: "rgba(0,0,0,0.35)", border: `1px solid ${C.border}`,
-        borderRadius: "6px", padding: "10px 12px", margin: 0,
-        overflowX: "auto", overflowY: "hidden",
-        color: C.text, lineHeight: 1.55,
-        maxHeight: expanded || !long ? "none" : maxHeight,
-        transition: "max-height 0.2s ease",
-      }}>
+      <pre
+        style={{
+          fontSize: "11px",
+          fontFamily: "var(--mono, monospace)",
+          background: "rgba(0,0,0,0.35)",
+          border: `1px solid ${C.border}`,
+          borderRadius: "6px",
+          padding: "10px 12px",
+          margin: 0,
+          overflowX: "auto",
+          overflowY: "hidden",
+          color: C.text,
+          lineHeight: 1.55,
+          maxHeight: expanded || !long ? "none" : maxHeight,
+          transition: "max-height 0.2s ease",
+        }}
+      >
         {expanded || !long ? text : text.slice(0, 480) + "\n…"}
       </pre>
       {long && (
         <button
-          onClick={() => setExpanded(v => !v)}
+          onClick={() => setExpanded((v) => !v)}
           style={{
-            position: "absolute", bottom: "6px", right: "8px",
-            fontSize: "10px", padding: "2px 7px",
-            background: "rgba(14,165,233,0.15)", color: C.accent,
-            border: `1px solid rgba(14,165,233,0.3)`, borderRadius: "4px",
+            position: "absolute",
+            bottom: "6px",
+            right: "8px",
+            fontSize: "10px",
+            padding: "2px 7px",
+            background: "rgba(14,165,233,0.15)",
+            color: C.accent,
+            border: `1px solid rgba(14,165,233,0.3)`,
+            borderRadius: "4px",
             cursor: "pointer",
           }}
         >
@@ -510,20 +626,35 @@ function DetailPanel({ step, traceStart }: DetailPanelProps) {
   const accentColor = step.kind === "llm" ? C.purple : C.accent;
 
   return (
-    <div style={{
-      padding: "16px",
-      display: "flex", flexDirection: "column", gap: "16px",
-      overflow: "hidden",
-    }}>
+    <div
+      style={{
+        padding: "16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px",
+        overflow: "hidden",
+      }}
+    >
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <div style={{
-          width: "34px", height: "34px", borderRadius: "8px",
-          background: `linear-gradient(135deg, rgba(${step.kind === "llm" ? "167,139,250" : "14,165,233"},0.2), rgba(${step.kind === "llm" ? "139,92,246" : "2,132,199"},0.1))`,
-          border: `1px solid ${step.kind === "llm" ? "rgba(167,139,250,0.3)" : "rgba(14,165,233,0.3)"}`,
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px",
-          flexShrink: 0,
-        }}>
+        <div
+          style={{
+            width: "34px",
+            height: "34px",
+            borderRadius: "8px",
+            background: `linear-gradient(135deg, rgba(${
+              step.kind === "llm" ? "167,139,250" : "14,165,233"
+            },0.2), rgba(${step.kind === "llm" ? "139,92,246" : "2,132,199"},0.1))`,
+            border: `1px solid ${
+              step.kind === "llm" ? "rgba(167,139,250,0.3)" : "rgba(14,165,233,0.3)"
+            }`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "16px",
+            flexShrink: 0,
+          }}
+        >
           {step.kind === "llm" ? "🤖" : toolIcon((step as ToolCallStep).toolName)}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -537,11 +668,17 @@ function DetailPanel({ step, traceStart }: DetailPanelProps) {
           </div>
         </div>
         {step.kind === "tool" && (step as ToolCallStep).isError && (
-          <span style={{
-            fontSize: "9px", fontWeight: 700, padding: "2px 7px",
-            background: "rgba(248,113,113,0.15)", color: C.red,
-            border: `1px solid rgba(248,113,113,0.3)`, borderRadius: "4px",
-          }}>
+          <span
+            style={{
+              fontSize: "9px",
+              fontWeight: 700,
+              padding: "2px 7px",
+              background: "rgba(248,113,113,0.15)",
+              color: C.red,
+              border: `1px solid rgba(248,113,113,0.3)`,
+              borderRadius: "4px",
+            }}
+          >
             ERROR
           </span>
         )}
@@ -555,10 +692,13 @@ function DetailPanel({ step, traceStart }: DetailPanelProps) {
         <>
           <div>
             <SectionLabel>Status</SectionLabel>
-            <span style={{
-              fontSize: "12px", fontWeight: 600,
-              color: statusDotColor(step.status),
-            }}>
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: 600,
+                color: statusDotColor(step.status),
+              }}
+            >
               {step.status}
             </span>
           </div>
@@ -585,10 +725,15 @@ function DetailPanel({ step, traceStart }: DetailPanelProps) {
             <div>
               <SectionLabel>Result</SectionLabel>
               <CodeBlock text={prettyJson((step as ToolCallStep).result)} maxHeight={220} />
-              <div style={{
-                fontSize: "10px", color: C.muted, marginTop: "5px",
-                lineHeight: 1.4, wordBreak: "break-all",
-              }}>
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: C.muted,
+                  marginTop: "5px",
+                  lineHeight: 1.4,
+                  wordBreak: "break-all",
+                }}
+              >
                 {extractResultSummary((step as ToolCallStep).result)}
               </div>
             </div>
@@ -608,7 +753,9 @@ function DetailPanel({ step, traceStart }: DetailPanelProps) {
 // ─── Agent Start / End markers ────────────────────────────────────────────────
 
 function AgentMarker({
-  label, status, extra,
+  label,
+  status,
+  extra,
 }: {
   label: string;
   status: "running" | "done" | "error";
@@ -616,18 +763,29 @@ function AgentMarker({
 }) {
   const color = statusDotColor(status);
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: "8px",
-      padding: "5px 14px 5px 10px",
-      borderRadius: "20px",
-      border: `1px solid ${C.borderHi}`,
-      background: C.surface,
-    }}>
-      <span style={{
-        width: "8px", height: "8px", borderRadius: "50%",
-        background: color, flexShrink: 0,
-        ...(status === "running" ? { animation: "status-running-pulse 1.55s ease-in-out infinite" } : {}),
-      }} />
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "5px 14px 5px 10px",
+        borderRadius: "20px",
+        border: `1px solid ${C.borderHi}`,
+        background: C.surface,
+      }}
+    >
+      <span
+        style={{
+          width: "8px",
+          height: "8px",
+          borderRadius: "50%",
+          background: color,
+          flexShrink: 0,
+          ...(status === "running"
+            ? { animation: "status-running-pulse 1.55s ease-in-out infinite" }
+            : {}),
+        }}
+      />
       <span style={{ fontSize: "11px", fontWeight: 600, color: C.text }}>{label}</span>
       {extra && <span style={{ fontSize: "10px", color: C.muted }}>{extra}</span>}
     </div>
@@ -657,9 +815,7 @@ function filterEnvelopes(
     if (filter === "orchestration") return e.source === "orchestration";
     if (filter === "waits")
       return (
-        type === "waiting_for_user_input" ||
-        type === "wait_registered" ||
-        type === "wait_resolved"
+        type === "waiting_for_user_input" || type === "wait_registered" || type === "wait_resolved"
       );
     if (filter === "errors") return type === "error";
     return true;
@@ -674,22 +830,31 @@ function FilterBar({
   onChange: (f: TraceFilter) => void;
 }) {
   return (
-    <div style={{
-      display: "flex", gap: "4px", padding: "6px 10px",
-      overflowX: "auto", flexShrink: 0,
-      borderBottom: `1px solid ${C.border}`,
-      background: C.surface,
-    }}>
+    <div
+      style={{
+        display: "flex",
+        gap: "4px",
+        padding: "6px 10px",
+        overflowX: "auto",
+        flexShrink: 0,
+        borderBottom: `1px solid ${C.border}`,
+        background: C.surface,
+      }}
+    >
       {FILTER_LABELS.map(({ id, label }) => (
         <button
           key={id}
           onClick={() => onChange(id)}
           style={{
-            fontSize: "10px", padding: "2px 9px", borderRadius: "5px",
+            fontSize: "10px",
+            padding: "2px 9px",
+            borderRadius: "5px",
             border: `1px solid ${active === id ? "rgba(14,165,233,0.5)" : C.border}`,
             background: active === id ? "rgba(14,165,233,0.1)" : "transparent",
             color: active === id ? C.accent : C.muted,
-            cursor: "pointer", whiteSpace: "nowrap", fontWeight: 600,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            fontWeight: 600,
             transition: "all 0.12s",
           }}
         >
@@ -733,19 +898,18 @@ export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
   // When forced, show all envelopes (respecting the active filter if set).
   // Otherwise only show the filter-narrowed subset.
   const envelopesToShow = forceEnvelopeList
-    ? (activeFilter === "all" ? envelopes : filteredEnvelopes)
+    ? activeFilter === "all"
+      ? envelopes
+      : filteredEnvelopes
     : filteredEnvelopes;
 
   const effectiveIdx = Math.min(selectedRunIdx, Math.max(0, traces.length - 1));
   const trace = traces[effectiveIdx] ?? null;
 
-  const layout = useMemo(
-    () => (trace ? buildLayout(trace.steps, "main") : []),
-    [trace],
-  );
+  const layout = useMemo(() => (trace ? buildLayout(trace.steps, "main") : []), [trace]);
 
   const handleSelectStep = (step: TraceStep) => {
-    setSelectedStep(prev => prev?.id === step.id ? null : step);
+    setSelectedStep((prev) => (prev?.id === step.id ? null : step));
   };
 
   // True empty: no traces AND no envelopes at all.
@@ -760,135 +924,189 @@ export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
   }
 
   return (
-    <div style={{
-      display: "flex", flexDirection: "column", height: "100%", overflow: "hidden",
-      background: C.bg,
-    }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflow: "hidden",
+        background: C.bg,
+      }}
+    >
       {/* Filter bar */}
-      <FilterBar active={activeFilter} onChange={(f) => { setActiveFilter(f); setSelectedStep(null); }} />
+      <FilterBar
+        active={activeFilter}
+        onChange={(f) => {
+          setActiveFilter(f);
+          setSelectedStep(null);
+        }}
+      />
 
       {/* Envelope list for orchestration / waits / errors filters, or when
           the DAG projection is empty (e.g. DeepResearch with no turn_* events) */}
-      {showEnvelopeList && (
-        <EnvelopeListView envelopes={envelopesToShow} />
-      )}
+      {showEnvelopeList && <EnvelopeListView envelopes={envelopesToShow} />}
 
       {/* DAG view for all / runtime filters */}
       {!showEnvelopeList && (
-      <>
-      {/* Run selector */}
-      {traces.length > 1 && (
-        <div style={{
-          display: "flex", gap: "4px", padding: "8px 10px",
-          overflowX: "auto", flexShrink: 0,
-          borderBottom: `1px solid ${C.border}`,
-          background: C.surface,
-        }}>
-          {traces.map((t, idx) => (
-            <button
-              key={t.id}
-              onClick={() => { setSelectedRunIdx(idx); setSelectedStep(null); }}
+        <>
+          {/* Run selector */}
+          {traces.length > 1 && (
+            <div
               style={{
-                fontSize: "10px", padding: "3px 10px", borderRadius: "5px",
-                border: `1px solid ${effectiveIdx === idx ? "rgba(14,165,233,0.5)" : C.border}`,
-                background: effectiveIdx === idx ? "rgba(14,165,233,0.1)" : "transparent",
-                color: effectiveIdx === idx ? C.accent : C.muted,
-                cursor: "pointer", whiteSpace: "nowrap", fontWeight: 600,
-                fontVariantNumeric: "tabular-nums",
-                transition: "all 0.12s",
+                display: "flex",
+                gap: "4px",
+                padding: "8px 10px",
+                overflowX: "auto",
+                flexShrink: 0,
+                borderBottom: `1px solid ${C.border}`,
+                background: C.surface,
               }}
             >
-              Run {idx + 1}
-              {t.status === "running" && (
-                <span style={{ color: C.accent, marginLeft: "4px" }}>●</span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* DAG + Detail split */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* DAG column */}
-        <div style={{
-          flex: selectedStep ? "0 0 55%" : "1 1 100%",
-          overflowY: "auto", overflowX: "hidden",
-          padding: "20px 16px",
-          display: "flex", flexDirection: "column", alignItems: "center",
-          borderRight: selectedStep ? `1px solid ${C.border}` : "none",
-          gap: 0,
-        }}>
-          {trace && (
-            <>
-              <AgentMarker label="Agent Start" status={trace.status === "running" ? "running" : "done"} />
-              <VLine height={20} />
-
-              <RowRenderer
-                rows={layout}
-                traceStart={trace.startTime}
-                selectedId={selectedStep?.id ?? null}
-                onSelect={handleSelectStep}
-              />
-
-              {trace.endTime ? (
-                <>
-                  <VLine height={20} />
-                  <AgentMarker
-                    label="Agent End"
-                    status={trace.status}
-                    extra={[
-                      formatDuration(trace.startTime, trace.endTime),
-                      trace.usage
-                        ? `↑${(trace.usage.inputTokens / 1000).toFixed(1)}K ↓${(trace.usage.outputTokens / 1000).toFixed(1)}K`
-                        : undefined,
-                    ].filter(Boolean).join(" · ")}
-                  />
-                </>
-              ) : (
-                <>
-                  <VLine height={20} />
-                  <AgentMarker label="Running…" status="running" />
-                </>
-              )}
-            </>
+              {traces.map((t, idx) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setSelectedRunIdx(idx);
+                    setSelectedStep(null);
+                  }}
+                  style={{
+                    fontSize: "10px",
+                    padding: "3px 10px",
+                    borderRadius: "5px",
+                    border: `1px solid ${effectiveIdx === idx ? "rgba(14,165,233,0.5)" : C.border}`,
+                    background: effectiveIdx === idx ? "rgba(14,165,233,0.1)" : "transparent",
+                    color: effectiveIdx === idx ? C.accent : C.muted,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    fontWeight: 600,
+                    fontVariantNumeric: "tabular-nums",
+                    transition: "all 0.12s",
+                  }}
+                >
+                  Run {idx + 1}
+                  {t.status === "running" && (
+                    <span style={{ color: C.accent, marginLeft: "4px" }}>●</span>
+                  )}
+                </button>
+              ))}
+            </div>
           )}
-        </div>
 
-        {/* Detail panel */}
-        {selectedStep && trace && (
-          <div style={{
-            flex: "0 0 45%",
-            overflowY: "auto",
-            background: C.surface,
-            borderLeft: `1px solid ${C.border}`,
-          }}>
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "8px 12px",
-              borderBottom: `1px solid ${C.border}`,
-              background: C.surfaceHi,
-              position: "sticky", top: 0, zIndex: 1,
-            }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", color: C.muted, textTransform: "uppercase" }}>
-                Details
-              </span>
-              <button
-                onClick={() => setSelectedStep(null)}
+          {/* DAG + Detail split */}
+          <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+            {/* DAG column */}
+            <div
+              style={{
+                flex: selectedStep ? "0 0 55%" : "1 1 100%",
+                overflowY: "auto",
+                overflowX: "hidden",
+                padding: "20px 16px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                borderRight: selectedStep ? `1px solid ${C.border}` : "none",
+                gap: 0,
+              }}
+            >
+              {trace && (
+                <>
+                  <AgentMarker
+                    label="Agent Start"
+                    status={trace.status === "running" ? "running" : "done"}
+                  />
+                  <VLine height={20} />
+
+                  <RowRenderer
+                    rows={layout}
+                    traceStart={trace.startTime}
+                    selectedId={selectedStep?.id ?? null}
+                    onSelect={handleSelectStep}
+                  />
+
+                  {trace.endTime ? (
+                    <>
+                      <VLine height={20} />
+                      <AgentMarker
+                        label="Agent End"
+                        status={trace.status}
+                        extra={[
+                          formatDuration(trace.startTime, trace.endTime),
+                          trace.usage
+                            ? `↑${(trace.usage.inputTokens / 1000).toFixed(1)}K ↓${(
+                                trace.usage.outputTokens / 1000
+                              ).toFixed(1)}K`
+                            : undefined,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <VLine height={20} />
+                      <AgentMarker label="Running…" status="running" />
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Detail panel */}
+            {selectedStep && trace && (
+              <div
                 style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  color: C.muted, fontSize: "16px", lineHeight: 1,
-                  padding: "0 2px", borderRadius: "3px",
-                  transition: "color 0.12s",
+                  flex: "0 0 45%",
+                  overflowY: "auto",
+                  background: C.surface,
+                  borderLeft: `1px solid ${C.border}`,
                 }}
               >
-                ×
-              </button>
-            </div>
-            <DetailPanel step={selectedStep} traceStart={trace.startTime} />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "8px 12px",
+                    borderBottom: `1px solid ${C.border}`,
+                    background: C.surfaceHi,
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 1,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      color: C.muted,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Details
+                  </span>
+                  <button
+                    onClick={() => setSelectedStep(null)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: C.muted,
+                      fontSize: "16px",
+                      lineHeight: 1,
+                      padding: "0 2px",
+                      borderRadius: "3px",
+                      transition: "color 0.12s",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <DetailPanel step={selectedStep} traceStart={trace.startTime} />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      </>
+        </>
       )}
     </div>
   );
@@ -899,12 +1117,20 @@ export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
 function EnvelopeListView({ envelopes }: { envelopes: WorkflowTraceEventEnvelope[] }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const toggle = (id: string) =>
-    setExpanded((p) => ({ ...p, [id]: !p[id] }));
+  const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
   if (envelopes.length === 0) {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontSize: "13px" }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: C.muted,
+          fontSize: "13px",
+        }}
+      >
         No events match this filter.
       </div>
     );
@@ -916,31 +1142,57 @@ function EnvelopeListView({ envelopes }: { envelopes: WorkflowTraceEventEnvelope
         const type = String(env.event.type ?? "");
         const isExpanded = expanded[env.id] ?? false;
         return (
-          <div key={env.id} style={{
-            marginBottom: "6px",
-            border: `1px solid ${C.border}`,
-            borderRadius: "7px",
-            background: C.surface,
-            overflow: "hidden",
-          }}>
+          <div
+            key={env.id}
+            style={{
+              marginBottom: "6px",
+              border: `1px solid ${C.border}`,
+              borderRadius: "7px",
+              background: C.surface,
+              overflow: "hidden",
+            }}
+          >
             <button
               onClick={() => toggle(env.id)}
               style={{
-                width: "100%", display: "flex", alignItems: "center", gap: "8px",
-                padding: "7px 10px", background: "none", border: "none", cursor: "pointer",
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "7px 10px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
                 textAlign: "left",
               }}
             >
-              <span style={{
-                fontSize: "9px", fontWeight: 700, padding: "2px 6px",
-                borderRadius: "4px", flexShrink: 0,
-                background: env.source === "orchestration" ? "rgba(167,139,250,0.15)" : "rgba(14,165,233,0.12)",
-                color: env.source === "orchestration" ? C.purple : C.accent,
-              }}>
+              <span
+                style={{
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  flexShrink: 0,
+                  background:
+                    env.source === "orchestration"
+                      ? "rgba(167,139,250,0.15)"
+                      : "rgba(14,165,233,0.12)",
+                  color: env.source === "orchestration" ? C.purple : C.accent,
+                }}
+              >
                 {env.source}
               </span>
-              <span style={{ fontSize: "11px", fontWeight: 600, color: C.text, flex: 1 }}>{type}</span>
-              <span style={{ fontSize: "10px", color: C.muted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "11px", fontWeight: 600, color: C.text, flex: 1 }}>
+                {type}
+              </span>
+              <span
+                style={{
+                  fontSize: "10px",
+                  color: C.muted,
+                  fontVariantNumeric: "tabular-nums",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {new Date(env.timestamp).toLocaleTimeString()}
               </span>
               <span style={{ fontSize: "9px", color: C.muted }}>{isExpanded ? "▲" : "▼"}</span>

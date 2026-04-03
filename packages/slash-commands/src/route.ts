@@ -18,21 +18,16 @@ export function createCommandsRoute(registry: SlashCommandRegistry): Hono {
 
   commands.get("/", async (c) => {
     const sessionId = c.req.query("sessionId") ?? undefined;
-    const commandList = registry
-      .definitions()
-      .map((command) => ({
-        name: `/${command.name}`,
-        description: command.description,
-        scope: command.scope,
-        requiresSession: command.requiresSession,
-        runsInBackground: command.runsInBackground,
-        writesConversationHistory: command.writesConversationHistory,
-        available: !command.requiresSession || !!sessionId,
-        unavailableReason:
-          command.requiresSession && !sessionId
-            ? "需要先进入一个已有会话"
-            : null,
-      }));
+    const commandList = registry.definitions().map((command) => ({
+      name: `/${command.name}`,
+      description: command.description,
+      scope: command.scope,
+      requiresSession: command.requiresSession,
+      runsInBackground: command.runsInBackground,
+      writesConversationHistory: command.writesConversationHistory,
+      available: !command.requiresSession || !!sessionId,
+      unavailableReason: command.requiresSession && !sessionId ? "需要先进入一个已有会话" : null,
+    }));
     return c.json({ commands: commandList });
   });
 

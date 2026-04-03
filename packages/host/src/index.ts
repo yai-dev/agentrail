@@ -9,8 +9,9 @@
  * `@agentrail/host` exposes low-level primitives, while `@agentrail/host/defaults`
  * provides the recommended, opinionated SDK for most integrations.
  */
-export * from "./types.js";
 export * from "./chat-route.js";
+export * from "./types.js";
+/** Host-side compaction configuration type. */
 export type { CompactionConfig } from "./compaction.js";
 export * from "./context-pipeline.js";
 export * from "./defaults.js";

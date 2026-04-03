@@ -61,5 +61,12 @@ export function AuthenticatedMarkdownImage({ src, alt, className }: Props) {
     return <span className="deep-research-image-loading">图片加载失败</span>;
   }
 
-  return <img className={className} src={resolvedSrc} alt={alt ?? ""} onError={() => setStatus("failed")} />;
+  return (
+    <img
+      className={className}
+      src={resolvedSrc}
+      alt={alt ?? ""}
+      onError={() => setStatus("failed")}
+    />
+  );
 }

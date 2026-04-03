@@ -3,25 +3,24 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { createSessionRef } from "@agentrail/memo";
 import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { DeepResearchStore } from "../src/store.js";
+import { createFileSystemDeepResearchStore } from "../src/store.js";
 import type { DeepResearchState } from "../src/types.js";
 
 const tempDirs: string[] = [];
 
 afterEach(async () => {
-  await Promise.all(
-    tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })),
-  );
+  await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
-async function createSessionDir(): Promise<string> {
+async function createDataDir(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "agentrail-deep-research-"));
   tempDirs.push(dir);
-  return join(dir, "tenants", "default", "sessions", "session-1");
+  return dir;
 }
 
 function createState(runId: string): DeepResearchState {
@@ -47,8 +46,11 @@ function createState(runId: string): DeepResearchState {
 
 describe("DeepResearchStore", () => {
   it("persists and reloads state plus events", async () => {
-    const sessionDir = await createSessionDir();
-    const store = new DeepResearchStore(sessionDir);
+    const dataDir = await createDataDir();
+    const store = createFileSystemDeepResearchStore(
+      dataDir,
+      createSessionRef("default", "session-1"),
+    );
     const state = createState("run-1");
 
     await store.initializeRun(state);
@@ -69,8 +71,11 @@ describe("DeepResearchStore", () => {
   });
 
   it("tracks the latest run", async () => {
-    const sessionDir = await createSessionDir();
-    const store = new DeepResearchStore(sessionDir);
+    const dataDir = await createDataDir();
+    const store = createFileSystemDeepResearchStore(
+      dataDir,
+      createSessionRef("default", "session-1"),
+    );
     const first = createState("run-1");
     const second = createState("run-2");
     second.run.updatedAt = "2026-03-27T11:00:00.000Z";

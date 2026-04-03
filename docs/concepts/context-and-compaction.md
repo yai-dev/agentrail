@@ -13,7 +13,9 @@ const identityProvider: ContextProvider = async (context) => {
   return [
     {
       role: "user",
-      content: `Tenant: ${context.tenantId}\nUser: ${context.userId}\nDate: ${new Date().toISOString()}`,
+      content: `Tenant: ${context.tenantId}\nUser: ${
+        context.userId
+      }\nDate: ${new Date().toISOString()}`,
       timestamp: Date.now(),
     },
   ];
@@ -117,15 +119,18 @@ import type { Message } from "@agentrail/runtime-core";
 const summarize = async (messages: Message[]) =>
   messages.map((m) => `${m.role}: ${JSON.stringify(m.content)}`).join("\n");
 
-app.route("/chat", createChatRoute({
-  sessionStore,
-  resolveProfile,
-  summarize,
-  compaction: {
-    triggerTokens: 80_000,   // compact when history exceeds this many tokens
-    minMessages: 20,         // only compact if there are at least this many messages
-  },
-}));
+app.route(
+  "/chat",
+  createChatRoute({
+    sessionStore,
+    resolveProfile,
+    summarize,
+    compaction: {
+      triggerTokens: 80_000, // compact when history exceeds this many tokens
+      minMessages: 20, // only compact if there are at least this many messages
+    },
+  }),
+);
 ```
 
 ### The Summarize Function

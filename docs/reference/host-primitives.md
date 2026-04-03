@@ -80,13 +80,17 @@ interface AgentrailChatRouteOptions {
   /** Static context providers applied to every request */
   contextProviders?: ContextProvider[];
   /** Dynamic context providers built per request */
-  getContextProviders?: (
-    context: { tenantId: string; userId: string; sessionId: string },
-  ) => Promise<ContextProvider[]> | ContextProvider[];
+  getContextProviders?: (context: {
+    tenantId: string;
+    userId: string;
+    sessionId: string;
+  }) => Promise<ContextProvider[]> | ContextProvider[];
   /** Alternative to getContextProviders: supply a full transformContext function */
-  getTransformContext?: (
-    context: { tenantId: string; userId: string; sessionId: string },
-  ) => Promise<TransformContextFn> | TransformContextFn;
+  getTransformContext?: (context: {
+    tenantId: string;
+    userId: string;
+    sessionId: string;
+  }) => Promise<TransformContextFn> | TransformContextFn;
   /** Intercept a resolved request before agent execution */
   handleResolvedRequest?: (
     context: AgentrailResolvedChatContext,
@@ -118,7 +122,9 @@ app.route(
         messages: [
           {
             role: "user",
-            content: `Summarize the following conversation in 3-5 sentences:\n\n${messages.map((m) => `${m.role}: ${m.content}`).join("\n")}`,
+            content: `Summarize the following conversation in 3-5 sentences:\n\n${messages
+              .map((m) => `${m.role}: ${m.content}`)
+              .join("\n")}`,
           },
         ],
       });
@@ -172,25 +178,29 @@ interface AgentrailStreamRouteOptions {
   compaction: { triggerTokens: number; minMessages: number };
   plugins?: AgentrailPlugin[];
   contextProviders?: ContextProvider[];
-  getContextProviders?: (
-    context: { tenantId: string; userId: string; sessionId: string },
-  ) => Promise<ContextProvider[]> | ContextProvider[];
-  getTransformContext?: (
-    context: { tenantId: string; userId: string; sessionId: string },
-  ) => Promise<TransformContextFn> | TransformContextFn;
+  getContextProviders?: (context: {
+    tenantId: string;
+    userId: string;
+    sessionId: string;
+  }) => Promise<ContextProvider[]> | ContextProvider[];
+  getTransformContext?: (context: {
+    tenantId: string;
+    userId: string;
+    sessionId: string;
+  }) => Promise<TransformContextFn> | TransformContextFn;
   /** Handles uploaded file context injection */
   attachmentHandler?: AttachmentHandler;
   onRequestStart?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
   onRequestEnd?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
   onTurnPersisted?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
   /** Returns an OrchestrationManager for the session — enables orchestration events */
-  getOrchestrationManager?: (
-    context: { tenantId: string; userId: string; sessionId: string },
-  ) => Promise<OrchestrationManager>;
+  getOrchestrationManager?: (context: {
+    tenantId: string;
+    userId: string;
+    sessionId: string;
+  }) => Promise<OrchestrationManager>;
   /** Intercept a resolved request before streaming begins */
-  handleResolvedRequest?: (
-    context: AgentrailResolvedStreamContext,
-  ) => Promise<boolean> | boolean;
+  handleResolvedRequest?: (context: AgentrailResolvedStreamContext) => Promise<boolean> | boolean;
   /** Called for each trace-eligible SSE event — use for trace persistence */
   onTraceEvent?: (
     context: { tenantId: string; sessionId: string; sessionDir: string },

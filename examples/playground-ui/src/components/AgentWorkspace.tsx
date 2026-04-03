@@ -3,15 +3,21 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { DisplayToolCall, TurnActions } from "../App";
-import { extractResultText, fetchWorkspaceFiles, fetchWorkspaceFile, fetchBrowserScreenshot, type WorkspaceFileResult } from "../api";
+import {
+  extractResultText,
+  fetchBrowserScreenshot,
+  fetchWorkspaceFile,
+  fetchWorkspaceFiles,
+  type WorkspaceFileResult,
+} from "../api";
 import type { AgentRunTrace, WorkflowTraceEventEnvelope } from "../types/trace";
-import { TraceDAGView } from "./TraceDAGView";
 import { AgentTeamPanel } from "./AgentTeamPanel";
 import { DeepResearchPanel } from "./DeepResearchPanel";
+import { TraceDAGView } from "./TraceDAGView";
 import { WorkspaceEmptyState } from "./WorkspaceEmptyState";
 // mammoth imported dynamically inside DocxPreview
 
@@ -19,7 +25,13 @@ import { WorkspaceEmptyState } from "./WorkspaceEmptyState";
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type WorkspaceTab = "activity" | "workspace" | "browser" | "trace" | "agent_team" | "deep_research";
+export type WorkspaceTab =
+  | "activity"
+  | "workspace"
+  | "browser"
+  | "trace"
+  | "agent_team"
+  | "deep_research";
 
 interface ActiveFileView {
   path: string;
@@ -60,7 +72,8 @@ function humanizeAction(toolName: string, args: unknown): string {
     case "Read": {
       const p = String(a.path ?? "");
       const fname = basename(p).toLowerCase();
-      if (fname.includes("reference") || fname.includes("business-knowledge")) return "读取业务知识库";
+      if (fname.includes("reference") || fname.includes("business-knowledge"))
+        return "读取业务知识库";
       if (fname.includes("skill.md") || fname.startsWith("skill")) return "读取技能说明";
       if (fname.includes("user.md")) return "读取用户偏好";
       if (fname.includes("agentrail.yaml")) return "读取 YAML 配置";
@@ -138,7 +151,12 @@ function buildFileTree(paths: string[]): TreeNode[] {
 }
 
 function countBrowserCompletions(turns: TurnActions[]): number {
-  const browserTools = new Set(["BrowserNavigate", "BrowserScroll", "BrowserAction", "BrowserContent"]);
+  const browserTools = new Set([
+    "BrowserNavigate",
+    "BrowserScroll",
+    "BrowserAction",
+    "BrowserContent",
+  ]);
   return turns.reduce(
     (n, t) => n + t.toolCalls.filter((tc) => tc.done && browserTools.has(tc.name)).length,
     0,
@@ -222,9 +240,14 @@ function parseCSV(content: string): string[][] {
       let cur = "";
       let inQuote = false;
       for (const ch of line) {
-        if (ch === '"') { inQuote = !inQuote; }
-        else if (ch === "," && !inQuote) { cols.push(cur); cur = ""; }
-        else { cur += ch; }
+        if (ch === '"') {
+          inQuote = !inQuote;
+        } else if (ch === "," && !inQuote) {
+          cols.push(cur);
+          cur = "";
+        } else {
+          cur += ch;
+        }
       }
       cols.push(cur);
       return cols;
@@ -242,12 +265,20 @@ function SpreadsheetTable({ rows }: { rows: string[][] }) {
       <table className="ws-preview-table">
         {header.length > 0 && (
           <thead>
-            <tr>{header.map((h, i) => <th key={i}>{h}</th>)}</tr>
+            <tr>
+              {header.map((h, i) => (
+                <th key={i}>{h}</th>
+              ))}
+            </tr>
           </thead>
         )}
         <tbody>
           {body.map((row, ri) => (
-            <tr key={ri}>{row.map((cell, ci) => <td key={ci}>{cell}</td>)}</tr>
+            <tr key={ri}>
+              {row.map((cell, ci) => (
+                <td key={ci}>{cell}</td>
+              ))}
+            </tr>
           ))}
         </tbody>
       </table>
@@ -278,14 +309,19 @@ function XlsxPreview({ base64 }: { base64: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    import("xlsx").then((XLSX) => {
-      const wb = XLSX.read(base64, { type: "base64" });
-      const sheetName = wb.SheetNames[0];
-      if (!sheetName) { setRows([]); return; }
-      const ws = wb.Sheets[sheetName]!;
-      const data = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" });
-      setRows(data as string[][]);
-    }).catch((e) => setError(String(e)));
+    import("xlsx")
+      .then((XLSX) => {
+        const wb = XLSX.read(base64, { type: "base64" });
+        const sheetName = wb.SheetNames[0];
+        if (!sheetName) {
+          setRows([]);
+          return;
+        }
+        const ws = wb.Sheets[sheetName]!;
+        const data = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" });
+        setRows(data as string[][]);
+      })
+      .catch((e) => setError(String(e)));
   }, [base64]);
 
   if (error) return <p className="ws-preview-error">解析失败：{error}</p>;
@@ -300,14 +336,17 @@ function DocxPreview({ base64 }: { base64: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    import("mammoth").then((mammoth) =>
-      mammoth.extractRawText({ arrayBuffer: base64ToArrayBuffer(base64) })
-    ).then((result) => {
-      if (!cancelled) setText(result.value);
-    }).catch((e) => {
-      if (!cancelled) setError(String(e));
-    });
-    return () => { cancelled = true; };
+    import("mammoth")
+      .then((mammoth) => mammoth.extractRawText({ arrayBuffer: base64ToArrayBuffer(base64) }))
+      .then((result) => {
+        if (!cancelled) setText(result.value);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [base64]);
 
   if (error) return <p className="ws-preview-error">解析失败：{error}</p>;
@@ -339,7 +378,11 @@ function FilePreview({ filePath, result }: { filePath: string; result: Workspace
         </div>
       );
     }
-    return <div className="ws-preview-unavailable"><span>二进制文件，无法预览。</span></div>;
+    return (
+      <div className="ws-preview-unavailable">
+        <span>二进制文件，无法预览。</span>
+      </div>
+    );
   }
 
   if (ext === "md") return <MarkdownPreview content={result.content} />;
@@ -351,7 +394,15 @@ function FilePreview({ filePath, result }: { filePath: string; result: Workspace
 // StatusIcon
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StatusIcon({ done, isError, running }: { done: boolean; isError?: boolean; running: boolean }) {
+function StatusIcon({
+  done,
+  isError,
+  running,
+}: {
+  done: boolean;
+  isError?: boolean;
+  running: boolean;
+}) {
   if (!done && running) {
     return <span className="ws-ai-status-dot running" />;
   }
@@ -359,7 +410,13 @@ function StatusIcon({ done, isError, running }: { done: boolean; isError?: boole
     return (
       <svg className="ws-ai-status-icon done" viewBox="0 0 16 16" fill="none">
         <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M5 8l2 2 4-4"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
@@ -367,7 +424,12 @@ function StatusIcon({ done, isError, running }: { done: boolean; isError?: boole
     return (
       <svg className="ws-ai-status-icon error" viewBox="0 0 16 16" fill="none">
         <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path
+          d="M5.5 5.5l5 5M10.5 5.5l-5 5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
@@ -504,7 +566,12 @@ function ActivityFeed({ main, skillTurns }: ActivityFeedProps) {
               {nestedCalls.length > 0 && (
                 <div className="ws-ai-nested-list">
                   {nestedCalls.map((ntc, nidx) => (
-                    <ActivityItem key={ntc.id} tool={ntc} nested isLast={nidx === nestedCalls.length - 1} />
+                    <ActivityItem
+                      key={ntc.id}
+                      tool={ntc}
+                      nested
+                      isLast={nidx === nestedCalls.length - 1}
+                    />
                   ))}
                 </div>
               )}
@@ -587,25 +654,28 @@ function FileTreeNode({
           <span className="ws-tree-dir-icon">📁</span>
           <span className="ws-tree-name">{node.name}</span>
         </div>
-        {isExpanded && node.children.map((child) => (
-          <FileTreeNode
-            key={child.fullPath}
-            node={child}
-            depth={depth + 1}
-            activePath={activePath}
-            selectedPath={selectedPath}
-            expandedDirs={expandedDirs}
-            onToggleDir={onToggleDir}
-            onSelectFile={onSelectFile}
-          />
-        ))}
+        {isExpanded &&
+          node.children.map((child) => (
+            <FileTreeNode
+              key={child.fullPath}
+              node={child}
+              depth={depth + 1}
+              activePath={activePath}
+              selectedPath={selectedPath}
+              expandedDirs={expandedDirs}
+              onToggleDir={onToggleDir}
+              onSelectFile={onSelectFile}
+            />
+          ))}
       </div>
     );
   }
 
   return (
     <div
-      className={`ws-tree-row ws-tree-file-row${isActive ? " active" : ""}${isSelected ? " selected" : ""}`}
+      className={`ws-tree-row ws-tree-file-row${isActive ? " active" : ""}${
+        isSelected ? " selected" : ""
+      }`}
       style={{ paddingLeft: `${8 + depth * 14}px` }}
       onClick={() => onSelectFile(node.fullPath)}
       role="button"
@@ -656,13 +726,7 @@ function FileContentView({ view }: { view: ActiveFileView }) {
 // WorkspaceFilesTab
 // ─────────────────────────────────────────────────────────────────────────────
 
-function WorkspaceFilesTab({
-  sessionId,
-  turns,
-}: {
-  sessionId?: string;
-  turns: TurnActions[];
-}) {
+function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: TurnActions[] }) {
   const [files, setFiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(["/workspace"]));
@@ -782,11 +846,7 @@ function WorkspaceFilesTab({
       <div className="ws-file-tree">
         <div className="ws-tree-header">
           <span className="ws-tree-title">/workspace</span>
-          <button
-            className="ws-tree-refresh"
-            onClick={() => fetchFiles()}
-            title="刷新文件列表"
-          >
+          <button className="ws-tree-refresh" onClick={() => fetchFiles()} title="刷新文件列表">
             {loading ? "⟳" : "↻"}
           </button>
         </div>
@@ -836,7 +896,11 @@ function WorkspaceFilesTab({
               {basename(activeFileView!.path)}
             </span>
             <span className="ws-file-viewer-type">
-              {activeFileView!.type === "read" ? "读取" : activeFileView!.type === "write" ? "写入" : "编辑"}
+              {activeFileView!.type === "read"
+                ? "读取"
+                : activeFileView!.type === "write"
+                  ? "写入"
+                  : "编辑"}
             </span>
           </div>
           <FileContentView view={activeFileView!} />
@@ -876,7 +940,10 @@ function BrowserTab({
     fetchBrowserScreenshot(sessionId, ctrl.signal).then((url) => {
       if (ctrl.signal.aborted) return;
       if (url) {
-        setBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url; });
+        setBlobUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
         setImgLoading(false);
       } else {
         setImgError(true);
@@ -887,7 +954,12 @@ function BrowserTab({
   }, [screenshotTs, shouldFetch, sessionId]);
 
   // Revoke blob URL on unmount
-  useEffect(() => () => { if (blobUrl) URL.revokeObjectURL(blobUrl); }, [blobUrl]);
+  useEffect(
+    () => () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    },
+    [blobUrl],
+  );
 
   if (!sessionId || !browserUrl) {
     return (
@@ -903,7 +975,9 @@ function BrowserTab({
     <div className="ws-tab-browser">
       <div className="ws-browser-toolbar">
         {browserUrl ? (
-          <span className="ws-browser-url" title={browserUrl}>{browserUrl}</span>
+          <span className="ws-browser-url" title={browserUrl}>
+            {browserUrl}
+          </span>
         ) : (
           <span className="ws-browser-url ws-browser-url-empty">未导航</span>
         )}
@@ -922,7 +996,9 @@ function BrowserTab({
         {imgError ? (
           <div className="ws-browser-error">
             <span>截图加载失败</span>
-            <button className="ws-browser-retry" onClick={onRefresh}>重试</button>
+            <button className="ws-browser-retry" onClick={onRefresh}>
+              重试
+            </button>
           </div>
         ) : (
           <img
@@ -974,27 +1050,30 @@ function AgentWorkspaceInner({
   const [screenshotTs, setScreenshotTs] = useState<number>(0);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = panelRef.current?.getBoundingClientRect().width ?? 380;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
+  const handleResizeMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = panelRef.current?.getBoundingClientRect().width ?? 380;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
 
-    const onMove = (ev: MouseEvent) => {
-      const delta = startX - ev.clientX;
-      const next = Math.max(320, Math.min(820, startWidth + delta));
-      onWidthChange?.(next);
-    };
-    const onUp = () => {
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  }, [onWidthChange]);
+      const onMove = (ev: MouseEvent) => {
+        const delta = startX - ev.clientX;
+        const next = Math.max(320, Math.min(820, startWidth + delta));
+        onWidthChange?.(next);
+      };
+      const onUp = () => {
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [onWidthChange],
+  );
 
   const prevBrowserCountRef = useRef(0);
   const prevFileCountRef = useRef(0);
@@ -1027,14 +1106,17 @@ function AgentWorkspaceInner({
     onRequestedTabHandled?.();
   }, [browserCount, onRequestedTabHandled, requestedTab]);
 
-  const handleTabClick = useCallback((tab: WorkspaceTab) => {
-    setActiveTab(tab);
-    // Only refresh screenshot when clicking the browser tab if the AI has
-    // already navigated somewhere (prevents fetching a blank-page screenshot).
-    if (tab === "browser" && browserCount > 0) {
-      setScreenshotTs(Date.now());
-    }
-  }, [browserCount]);
+  const handleTabClick = useCallback(
+    (tab: WorkspaceTab) => {
+      setActiveTab(tab);
+      // Only refresh screenshot when clicking the browser tab if the AI has
+      // already navigated somewhere (prevents fetching a blank-page screenshot).
+      if (tab === "browser" && browserCount > 0) {
+        setScreenshotTs(Date.now());
+      }
+    },
+    [browserCount],
+  );
 
   const tabs: Array<{ id: WorkspaceTab; label: string }> = [
     { id: "activity", label: "活动" },
@@ -1051,12 +1133,18 @@ function AgentWorkspaceInner({
       <div className="workspace-header">
         <span className="workspace-title">
           {isActive ? "Agent 正在为您工作…" : "Agent Computer"}
-          {totalTools > 0 && !isActive && (
-            <span className="workspace-count">{totalTools}</span>
-          )}
+          {totalTools > 0 && !isActive && <span className="workspace-count">{totalTools}</span>}
         </span>
         <button className="workspace-close-btn" onClick={onClose} title="关闭">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
@@ -1077,8 +1165,8 @@ function AgentWorkspaceInner({
       </div>
 
       <div className="workspace-body">
-        {activeTab === "activity" && (
-          groups.length === 0 || totalTools === 0 ? (
+        {activeTab === "activity" &&
+          (groups.length === 0 || totalTools === 0 ? (
             <WorkspaceEmptyState
               icon="⬡"
               title="还没有活动记录"
@@ -1090,12 +1178,9 @@ function AgentWorkspaceInner({
                 <ActivityFeed key={main.turnIndex} main={main} skillTurns={skillTurns} />
               ))}
             </div>
-          )
-        )}
+          ))}
 
-        {activeTab === "workspace" && (
-          <WorkspaceFilesTab sessionId={sessionId} turns={turns} />
-        )}
+        {activeTab === "workspace" && <WorkspaceFilesTab sessionId={sessionId} turns={turns} />}
 
         {activeTab === "browser" && (
           <BrowserTab
@@ -1115,12 +1200,13 @@ function AgentWorkspaceInner({
         )}
 
         {activeTab === "agent_team" && (
-          <AgentTeamPanel state={orchestrationState ?? null} isLoading={orchestrationLoading ?? false} />
+          <AgentTeamPanel
+            state={orchestrationState ?? null}
+            isLoading={orchestrationLoading ?? false}
+          />
         )}
 
-        {activeTab === "trace" && (
-          <TraceDAGView traces={traces} envelopes={envelopes} />
-        )}
+        {activeTab === "trace" && <TraceDAGView traces={traces} envelopes={envelopes} />}
       </div>
     </div>
   );

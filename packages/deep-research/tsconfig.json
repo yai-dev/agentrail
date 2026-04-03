@@ -9,6 +9,7 @@
   "include": ["src"],
   "references": [
     { "path": "../runtime-core" },
+    { "path": "../memo" },
     { "path": "../orchestration" },
     { "path": "../knowledge" },
     { "path": "../prompts" },

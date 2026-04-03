@@ -3,10 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { OrchestrationState, OrchestrationStreamEvent, OrchestrationEvent } from "./types/orchestration.js";
-import type { WorkflowTraceEventEnvelope } from "./types/trace.js";
 import { normalizeHistoryEvents } from "./hooks/orchestrationStateReducer.js";
 import type { DeepResearchState, DeepResearchStreamEvent } from "./types/deepResearch.js";
+import type {
+  OrchestrationEvent,
+  OrchestrationState,
+  OrchestrationStreamEvent,
+} from "./types/orchestration.js";
+import type { WorkflowTraceEventEnvelope } from "./types/trace.js";
 
 export interface UsageStat {
   inputTokens: number;
@@ -44,8 +48,22 @@ export type StreamEvent =
   | { type: "message_update"; event: LlmEvent }
   | { type: "tool_execution_start"; toolCallId: string; toolName: string; args: unknown }
   | { type: "tool_execution_update"; toolCallId: string; toolName: string; partialResult: unknown }
-  | { type: "tool_execution_end"; toolCallId: string; toolName: string; result: unknown; isError: boolean }
-  | { type: "waiting_for_user_input"; toolCallId: string; question: string; hint?: string; options?: string[]; multiple?: boolean; custom?: boolean }
+  | {
+      type: "tool_execution_end";
+      toolCallId: string;
+      toolName: string;
+      result: unknown;
+      isError: boolean;
+    }
+  | {
+      type: "waiting_for_user_input";
+      toolCallId: string;
+      question: string;
+      hint?: string;
+      options?: string[];
+      multiple?: boolean;
+      custom?: boolean;
+    }
   | { type: "error"; error: { message: string } }
   | OrchestrationStreamEvent
   | DeepResearchStreamEvent
@@ -153,7 +171,10 @@ export async function* streamChat(
   }
 
   if (!response.ok) {
-    if (response.status === 401) { dispatchUnauthorized(); return; }
+    if (response.status === 401) {
+      dispatchUnauthorized();
+      return;
+    }
     const text = await response.text().catch(() => response.statusText);
     throw new Error(`Server error ${response.status}: ${text}`);
   }
@@ -206,20 +227,20 @@ export type HistoryItem = HistoryMessage | CompactionMarker;
 export async function deleteSession(sessionId: string): Promise<void> {
   await fetch(
     `/api/sessions/${encodeURIComponent(sessionId)}?tenantId=${encodeURIComponent(_tenantId)}`,
-    { method: "DELETE", headers: authHeaders() }
+    { method: "DELETE", headers: authHeaders() },
   );
 }
 
 export async function respondToQuestion(sessionId: string, answer: string): Promise<boolean> {
-  const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/respond`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ answer }),
-    }
-  );
-  if (res.status === 401) { dispatchUnauthorized(); return false; }
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/respond`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ answer }),
+  });
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return false;
+  }
   return res.ok;
 }
 
@@ -230,13 +251,18 @@ export interface SessionHistoryResult {
 
 export async function fetchSessionMessages(
   sessionId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<SessionHistoryResult> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/messages?tenantId=${encodeURIComponent(_tenantId)}`,
-    { signal, headers: authHeaders() }
+    `/api/sessions/${encodeURIComponent(sessionId)}/messages?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
+    { signal, headers: authHeaders() },
   );
-  if (res.status === 401) { dispatchUnauthorized(); return { messages: [], contextUsage: null }; }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return { messages: [], contextUsage: null };
+  }
   if (!res.ok) return { messages: [], contextUsage: null };
   const data = (await res.json()) as {
     messages?: HistoryMessage[];
@@ -255,10 +281,17 @@ export async function fetchCompactedMessages(
   signal?: AbortSignal,
 ): Promise<HistoryMessage[]> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/compacted-messages?tenantId=${encodeURIComponent(_tenantId)}${archiveId ? `&archiveId=${encodeURIComponent(archiveId)}` : ""}`,
+    `/api/sessions/${encodeURIComponent(
+      sessionId,
+    )}/compacted-messages?tenantId=${encodeURIComponent(_tenantId)}${
+      archiveId ? `&archiveId=${encodeURIComponent(archiveId)}` : ""
+    }`,
     { signal, headers: authHeaders() },
   );
-  if (res.status === 401) { dispatchUnauthorized(); return []; }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return [];
+  }
   if (!res.ok) return [];
   return (await res.json()) as HistoryMessage[];
 }
@@ -282,9 +315,7 @@ export interface SlashCommandMeta {
   unavailableReason: string | null;
 }
 
-export async function fetchSlashCommands(
-  sessionId: string | null,
-): Promise<SlashCommandMeta[]> {
+export async function fetchSlashCommands(sessionId: string | null): Promise<SlashCommandMeta[]> {
   const res = await fetch(
     `/api/commands${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`,
     { headers: authHeaders() },
@@ -294,7 +325,7 @@ export async function fetchSlashCommands(
     return [];
   }
   if (!res.ok) return [];
-  const data = await res.json() as { commands?: SlashCommandMeta[] };
+  const data = (await res.json()) as { commands?: SlashCommandMeta[] };
   return data.commands ?? [];
 }
 
@@ -328,11 +359,14 @@ export async function runCommand(
 // KB management
 
 export async function fetchKBList(signal?: AbortSignal): Promise<string[]> {
-  const res = await fetch(
-    `/api/knowledge?tenantId=${encodeURIComponent(_tenantId)}`,
-    { signal, headers: authHeaders() }
-  );
-  if (res.status === 401) { dispatchUnauthorized(); return []; }
+  const res = await fetch(`/api/knowledge?tenantId=${encodeURIComponent(_tenantId)}`, {
+    signal,
+    headers: authHeaders(),
+  });
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return [];
+  }
   if (!res.ok) return [];
   const data = (await res.json()) as { kbs?: string[] };
   return data.kbs ?? [];
@@ -341,18 +375,16 @@ export async function fetchKBList(signal?: AbortSignal): Promise<string[]> {
 export async function createKB(kbId: string): Promise<void> {
   await fetch(
     `/api/knowledge/${encodeURIComponent(kbId)}/init?tenantId=${encodeURIComponent(_tenantId)}`,
-    { method: "POST", headers: authHeaders() }
+    { method: "POST", headers: authHeaders() },
   );
 }
 
 export async function deleteKB(kbId: string): Promise<void> {
   await fetch(
     `/api/knowledge/${encodeURIComponent(kbId)}?tenantId=${encodeURIComponent(_tenantId)}`,
-    { method: "DELETE", headers: authHeaders() }
+    { method: "DELETE", headers: authHeaders() },
   );
 }
-
-
 
 export interface KBDocMeta {
   docId: string;
@@ -379,20 +411,25 @@ export async function* ingestDocument(
   kbId: string,
   title: string,
   content: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): AsyncGenerator<IngestionEvent> {
   const res = await fetch(
-    `/api/knowledge/${encodeURIComponent(kbId)}/documents/stream?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/knowledge/${encodeURIComponent(kbId)}/documents/stream?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ title, content }),
       signal,
-    }
+    },
   );
 
   if (!res.ok) {
-    if (res.status === 401) { dispatchUnauthorized(); return; }
+    if (res.status === 401) {
+      dispatchUnauthorized();
+      return;
+    }
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`Server error ${res.status}: ${text}`);
   }
@@ -421,10 +458,15 @@ export async function* ingestDocument(
 
 export async function fetchKBDocuments(kbId: string, signal?: AbortSignal): Promise<KBDocMeta[]> {
   const res = await fetch(
-    `/api/knowledge/${encodeURIComponent(kbId)}/documents?tenantId=${encodeURIComponent(_tenantId)}`,
-    { signal, headers: authHeaders() }
+    `/api/knowledge/${encodeURIComponent(kbId)}/documents?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
+    { signal, headers: authHeaders() },
   );
-  if (res.status === 401) { dispatchUnauthorized(); return []; }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return [];
+  }
   if (!res.ok) return [];
   const data = (await res.json()) as { documents?: KBDocMeta[] };
   return data.documents ?? [];
@@ -432,26 +474,42 @@ export async function fetchKBDocuments(kbId: string, signal?: AbortSignal): Prom
 
 export async function deleteKBDocument(kbId: string, docId: string): Promise<void> {
   await fetch(
-    `/api/knowledge/${encodeURIComponent(kbId)}/documents/${encodeURIComponent(docId)}?tenantId=${encodeURIComponent(_tenantId)}`,
-    { method: "DELETE", headers: authHeaders() }
+    `/api/knowledge/${encodeURIComponent(kbId)}/documents/${encodeURIComponent(
+      docId,
+    )}?tenantId=${encodeURIComponent(_tenantId)}`,
+    { method: "DELETE", headers: authHeaders() },
   );
 }
 
 export async function searchKB(kbId: string, q: string, signal?: AbortSignal): Promise<unknown[]> {
   const res = await fetch(
-    `/api/knowledge/${encodeURIComponent(kbId)}/search?tenantId=${encodeURIComponent(_tenantId)}&q=${encodeURIComponent(q)}`,
-    { signal, headers: authHeaders() }
+    `/api/knowledge/${encodeURIComponent(kbId)}/search?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}&q=${encodeURIComponent(q)}`,
+    { signal, headers: authHeaders() },
   );
-  if (res.status === 401) { dispatchUnauthorized(); return []; }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return [];
+  }
   if (!res.ok) return [];
   const data = (await res.json()) as { results?: unknown[] };
   return data.results ?? [];
 }
 
 /** List files in the sandbox workspace for a session. */
-export async function fetchWorkspaceFiles(sessionId: string, signal?: AbortSignal): Promise<string[]> {
-  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/workspace`, { signal, headers: authHeaders() });
-  if (res.status === 401) { dispatchUnauthorized(); return []; }
+export async function fetchWorkspaceFiles(
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<string[]> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/workspace`, {
+    signal,
+    headers: authHeaders(),
+  });
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return [];
+  }
   if (!res.ok) return [];
   const data = (await res.json()) as { files?: string[] };
   return data.files ?? [];
@@ -463,10 +521,7 @@ export interface WorkspaceFileResult {
   mimeType?: string;
 }
 
-export async function fetchAuthorizedBlob(
-  url: string,
-  signal?: AbortSignal,
-): Promise<Blob> {
+export async function fetchAuthorizedBlob(url: string, signal?: AbortSignal): Promise<Blob> {
   const res = await fetch(url, { signal, headers: authHeaders() });
   if (res.status === 401) {
     dispatchUnauthorized();
@@ -478,18 +533,12 @@ export async function fetchAuthorizedBlob(
   return await res.blob();
 }
 
-export async function fetchAuthorizedBlobUrl(
-  url: string,
-  signal?: AbortSignal,
-): Promise<string> {
+export async function fetchAuthorizedBlobUrl(url: string, signal?: AbortSignal): Promise<string> {
   const blob = await fetchAuthorizedBlob(url, signal);
   return URL.createObjectURL(blob);
 }
 
-export async function fetchAuthorizedDataUrl(
-  url: string,
-  signal?: AbortSignal,
-): Promise<string> {
+export async function fetchAuthorizedDataUrl(url: string, signal?: AbortSignal): Promise<string> {
   const blob = await fetchAuthorizedBlob(url, signal);
   return await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -503,14 +552,28 @@ export async function fetchAuthorizedDataUrl(
 }
 
 /** Read the content of a single file from the sandbox workspace. */
-export async function fetchWorkspaceFile(sessionId: string, containerPath: string, signal?: AbortSignal): Promise<WorkspaceFileResult> {
+export async function fetchWorkspaceFile(
+  sessionId: string,
+  containerPath: string,
+  signal?: AbortSignal,
+): Promise<WorkspaceFileResult> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/workspace/file?path=${encodeURIComponent(containerPath)}`,
-    { signal, headers: authHeaders() }
+    `/api/sessions/${encodeURIComponent(sessionId)}/workspace/file?path=${encodeURIComponent(
+      containerPath,
+    )}`,
+    { signal, headers: authHeaders() },
   );
-  if (res.status === 401) { dispatchUnauthorized(); throw new Error("Unauthorized"); }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    throw new Error("Unauthorized");
+  }
   if (!res.ok) throw new Error(`Failed to read file: ${res.status}`);
-  const data = (await res.json()) as { content?: string; error?: string; encoding?: "base64"; mimeType?: string };
+  const data = (await res.json()) as {
+    content?: string;
+    error?: string;
+    encoding?: "base64";
+    mimeType?: string;
+  };
   if (data.error) throw new Error(data.error);
   return { content: data.content ?? "", encoding: data.encoding, mimeType: data.mimeType };
 }
@@ -524,12 +587,15 @@ export async function fetchBrowserScreenshot(
   sessionId: string,
   signal?: AbortSignal,
 ): Promise<string | null> {
-  const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/browser/screenshot`,
-    { signal, headers: authHeaders() },
-  ).catch(() => null);
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/browser/screenshot`, {
+    signal,
+    headers: authHeaders(),
+  }).catch(() => null);
   if (!res) return null;
-  if (res.status === 401) { dispatchUnauthorized(); return null; }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return null;
+  }
   if (!res.ok) return null;
   const blob = await res.blob().catch(() => null);
   if (!blob) return null;
@@ -554,16 +620,21 @@ export function extractResultText(result: unknown): string {
  */
 export async function fetchOrchestrationState(
   sessionId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<OrchestrationState | null> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/orchestration?tenantId=${encodeURIComponent(_tenantId)}`,
-    { signal, headers: authHeaders() }
+    `/api/sessions/${encodeURIComponent(sessionId)}/orchestration?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
+    { signal, headers: authHeaders() },
   );
-  if (res.status === 401) { dispatchUnauthorized(); return null; }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return null;
+  }
   if (!res.ok) return null;
 
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     run?: OrchestrationState["run"];
     agents?: OrchestrationState["agents"];
     events?: OrchestrationEvent[];
@@ -586,12 +657,17 @@ export async function fetchSessionTrace(
   signal?: AbortSignal,
 ): Promise<WorkflowTraceEventEnvelope[]> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/trace?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/sessions/${encodeURIComponent(sessionId)}/trace?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     { signal, headers: authHeaders() },
   );
-  if (res.status === 401) { dispatchUnauthorized(); return []; }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return [];
+  }
   if (!res.ok) return [];
-  const data = await res.json() as { events?: WorkflowTraceEventEnvelope[] };
+  const data = (await res.json()) as { events?: WorkflowTraceEventEnvelope[] };
   return data.events ?? [];
 }
 
@@ -600,12 +676,17 @@ export async function fetchDeepResearchState(
   signal?: AbortSignal,
 ): Promise<DeepResearchState | null> {
   const res = await fetch(
-    `/api/sessions/${encodeURIComponent(sessionId)}/deep-research?tenantId=${encodeURIComponent(_tenantId)}`,
+    `/api/sessions/${encodeURIComponent(sessionId)}/deep-research?tenantId=${encodeURIComponent(
+      _tenantId,
+    )}`,
     { signal, headers: authHeaders() },
   );
-  if (res.status === 401) { dispatchUnauthorized(); return null; }
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return null;
+  }
   if (!res.ok) return null;
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     state?: Omit<DeepResearchState, "events"> | null;
     events?: DeepResearchStreamEvent[];
   };

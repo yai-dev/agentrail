@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useRef, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { StreamEvent } from "../api";
 import type { AgentRunTrace, LlmTurnStep, ToolCallStep, TraceStep } from "../types/trace";
 
@@ -37,26 +37,21 @@ export function useAgentTrace() {
     const traceId = currentTraceIdRef.current;
     if (!traceId) return;
     setTraces((prev) =>
-      prev.map((t) =>
-        t.id === traceId ? { ...t, steps: [...t.steps, step] } : t,
-      ),
+      prev.map((t) => (t.id === traceId ? { ...t, steps: [...t.steps, step] } : t)),
     );
   }, []);
 
-  const patchStep = useCallback(
-    (stepId: string, updater: (s: TraceStep) => TraceStep) => {
-      const traceId = currentTraceIdRef.current;
-      if (!traceId) return;
-      setTraces((prev) =>
-        prev.map((t) =>
-          t.id === traceId
-            ? { ...t, steps: t.steps.map((s) => (s.id === stepId ? updater(s) : s)) }
-            : t,
-        ),
-      );
-    },
-    [],
-  );
+  const patchStep = useCallback((stepId: string, updater: (s: TraceStep) => TraceStep) => {
+    const traceId = currentTraceIdRef.current;
+    if (!traceId) return;
+    setTraces((prev) =>
+      prev.map((t) =>
+        t.id === traceId
+          ? { ...t, steps: t.steps.map((s) => (s.id === stepId ? updater(s) : s)) }
+          : t,
+      ),
+    );
+  }, []);
 
   // ─── public API ─────────────────────────────────────────────────────────────
 
@@ -78,14 +73,11 @@ export function useAgentTrace() {
           steps: [],
         };
         setTraces((prev) => [...prev, trace]);
-
       } else if (event.type === "skill_start") {
         const se = event as { type: "skill_start"; skillName: string };
         activeSkillRef.current = se.skillName;
-
       } else if (event.type === "skill_end") {
         activeSkillRef.current = null;
-
       } else if (event.type === "turn_start") {
         const source: "main" | "skill" = activeSkillRef.current ? "skill" : "main";
         const id = crypto.randomUUID();
@@ -101,7 +93,6 @@ export function useAgentTrace() {
           skillName: activeSkillRef.current ?? undefined,
         };
         appendStep(step);
-
       } else if (event.type === "turn_end") {
         const te = event as { type: "turn_end"; message: { stopReason: string } };
         const source: "main" | "skill" = activeSkillRef.current ? "skill" : "main";
@@ -115,7 +106,6 @@ export function useAgentTrace() {
           stopReason: te.message?.stopReason,
           status: te.message?.stopReason === "error" ? "error" : "done",
         }));
-
       } else if (event.type === "tool_execution_start") {
         const tes = event as {
           type: "tool_execution_start";
@@ -138,7 +128,6 @@ export function useAgentTrace() {
           parentLlmId,
         };
         appendStep(step);
-
       } else if (event.type === "tool_execution_end") {
         const tee = event as {
           type: "tool_execution_end";
@@ -153,19 +142,18 @@ export function useAgentTrace() {
           isError: tee.isError,
           status: tee.isError ? "error" : "done",
         }));
-
       } else if (event.type === "agent_end") {
-        const ae = event as { type: "agent_end"; usage: { inputTokens: number; outputTokens: number } };
+        const ae = event as {
+          type: "agent_end";
+          usage: { inputTokens: number; outputTokens: number };
+        };
         const traceId = currentTraceIdRef.current;
         if (!traceId) return;
         setTraces((prev) =>
           prev.map((t) =>
-            t.id === traceId
-              ? { ...t, endTime: now, status: "done", usage: ae.usage }
-              : t,
+            t.id === traceId ? { ...t, endTime: now, status: "done", usage: ae.usage } : t,
           ),
         );
-
       } else if (event.type === "error") {
         const traceId = currentTraceIdRef.current;
         if (!traceId) return;

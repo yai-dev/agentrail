@@ -6,11 +6,11 @@
 import { createChatRoute } from "@agentrail/host";
 import { DEFAULT_AGENT_ID } from "../agents/index.js";
 import { buildSummarizeFn } from "../agents/summarizer.js";
-import { buildContextProviders, sessionManager } from "../context/index.js";
+import { handlePlaygroundDeepResearchMode } from "../chat/deep-research.js";
 import { config } from "../config.js";
+import { buildContextProviders, sessionManager } from "../context/index.js";
 import { playgroundPlugins } from "../plugins/index.js";
 import { resolvePlaygroundProfile } from "../profiles/default-profile.js";
-import { handlePlaygroundDeepResearchMode } from "../chat/deep-research.js";
 
 const summarize = buildSummarizeFn();
 

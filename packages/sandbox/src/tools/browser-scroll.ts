@@ -20,7 +20,9 @@ Usage:
 
 const parametersSchema = Type.Object({
   selector: Type.Optional(
-    Type.String({ description: "CSS selector of the element to scroll. If omitted, scrolls the page." }),
+    Type.String({
+      description: "CSS selector of the element to scroll. If omitted, scrolls the page.",
+    }),
   ),
   direction: Type.Optional(
     Type.Union(
@@ -32,13 +34,18 @@ const parametersSchema = Type.Object({
     Type.Integer({ description: "Pixels to scroll. Defaults to 500.", default: 500 }),
   ),
   deltaX: Type.Optional(
-    Type.Integer({ description: "Horizontal scroll delta in pixels (alternative to direction+amount)." }),
+    Type.Integer({
+      description: "Horizontal scroll delta in pixels (alternative to direction+amount).",
+    }),
   ),
   deltaY: Type.Optional(
-    Type.Integer({ description: "Vertical scroll delta in pixels (alternative to direction+amount)." }),
+    Type.Integer({
+      description: "Vertical scroll delta in pixels (alternative to direction+amount).",
+    }),
   ),
 });
 
+/** Creates the browser scroll tool for moving within the current page. */
 export function createBrowserScroll(
   manager: SandboxManager,
   sessionId: string,
@@ -63,7 +70,13 @@ export function createBrowserScroll(
         res = await fetch(browserUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ selector, direction: direction ?? "down", amount: amount ?? 500, deltaX, deltaY }),
+          body: JSON.stringify({
+            selector,
+            direction: direction ?? "down",
+            amount: amount ?? 500,
+            deltaX,
+            deltaY,
+          }),
           signal: abortSignal,
         });
       } catch (err) {
@@ -74,7 +87,7 @@ export function createBrowserScroll(
         };
       }
 
-      const data = await res.json() as { scrollX?: number; scrollY?: number; error?: string };
+      const data = (await res.json()) as { scrollX?: number; scrollY?: number; error?: string };
 
       if (!res.ok || data.error) {
         const errMsg = data.error ?? res.statusText;
@@ -88,7 +101,9 @@ export function createBrowserScroll(
         content: [
           {
             type: "text" as const,
-            text: `Scrolled successfully. Page scroll position: x=${data.scrollX ?? 0}, y=${data.scrollY ?? 0}`,
+            text: `Scrolled successfully. Page scroll position: x=${data.scrollX ?? 0}, y=${
+              data.scrollY ?? 0
+            }`,
           },
         ],
         details: { scrollX: data.scrollX, scrollY: data.scrollY },

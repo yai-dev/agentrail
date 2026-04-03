@@ -79,6 +79,7 @@ Process-level lifecycle hooks. Use them to bootstrap and tear down plugin-owned 
 Runs before the host hands the request to a profile. If the plugin returns a response, the normal profile execution is skipped entirely.
 
 Use it for:
+
 - slash commands (`/summarize`, `/reset`, `/help`)
 - admin-only request handling
 - pre-flight validation that should block the agent

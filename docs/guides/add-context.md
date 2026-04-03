@@ -16,7 +16,7 @@ They are the main way to answer questions like:
 - which identity or tenant hints should the agent see?
 - which memory, knowledge, or workspace summaries should be visible?
 
-If profiles define *who the agent is*, context providers define *what the agent knows at request time*.
+If profiles define _who the agent is_, context providers define _what the agent knows at request time_.
 
 ## Typical Context Inputs
 

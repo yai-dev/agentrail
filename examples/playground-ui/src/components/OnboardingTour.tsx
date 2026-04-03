@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "agentrail-onboarding-done";
 
@@ -18,13 +18,15 @@ const STEPS: TourStep[] = [
   {
     selector: null,
     title: "欢迎使用 Agentrail Playground",
-    description: "这是一个基于 Agentrail 的示例应用，演示流式对话、工具调用、记忆、技能与多 Agent 编排。点击「下一步」开始功能引导。",
+    description:
+      "这是一个基于 Agentrail 的示例应用，演示流式对话、工具调用、记忆、技能与多 Agent 编排。点击「下一步」开始功能引导。",
     placement: "center",
   },
   {
     selector: ".session-sidebar",
     title: "会话列表",
-    description: "左侧边栏管理你的所有对话。点击顶部 + 按钮创建新会话，点击已有会话切换，悬停后可删除。",
+    description:
+      "左侧边栏管理你的所有对话。点击顶部 + 按钮创建新会话，点击已有会话切换，悬停后可删除。",
     placement: "right",
   },
   {
@@ -36,25 +38,29 @@ const STEPS: TourStep[] = [
   {
     selector: ".input-bar",
     title: "消息输入区",
-    description: "在此输入你的问题或指令。支持拖拽或点击附件按钮上传文件（Excel、Word、图片等），按 Enter 或点击发送。",
+    description:
+      "在此输入你的问题或指令。支持拖拽或点击附件按钮上传文件（Excel、Word、图片等），按 Enter 或点击发送。",
     placement: "bottom",
   },
   {
     selector: ".workspace-toggle-btn",
     title: "工作区面板",
-    description: "点击此按钮切换右侧「Agent 工作区」面板，可实时查看 AI 调用的工具步骤、文件变更和浏览器截图。",
+    description:
+      "点击此按钮切换右侧「Agent 工作区」面板，可实时查看 AI 调用的工具步骤、文件变更和浏览器截图。",
     placement: "bottom",
   },
   {
     selector: ".workspace-panel",
     title: "Agent 工作区",
-    description: "这里展示 AI 每次回答时调用的所有工具操作。点击每一行可展开查看详细的输入与输出，包含文件树和浏览器预览。",
+    description:
+      "这里展示 AI 每次回答时调用的所有工具操作。点击每一行可展开查看详细的输入与输出，包含文件树和浏览器预览。",
     placement: "left",
   },
   {
     selector: ".settings-gear-btn",
     title: "身份设置",
-    description: "点击此齿轮图标打开设置，可修改当前的 Tenant ID 和 User ID，切换不同的数据租户或用户身份。",
+    description:
+      "点击此齿轮图标打开设置，可修改当前的 Tenant ID 和 User ID，切换不同的数据租户或用户身份。",
     placement: "bottom",
   },
 ];
