@@ -19,7 +19,7 @@ export function assertToolCalledWith(
   
   const match = calls.some((tc) => {
     try {
-      assert.deepStrictEqual(tc.args, args);
+      assert.deepStrictEqual(tc.arguments, args);
       return true;
     } catch {
       return false;

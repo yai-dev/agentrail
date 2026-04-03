@@ -11,6 +11,7 @@ export function createTestAgent(options: CreateTestAgentOptions): Agent {
   const { definition, llmProvider } = options;
   
   // Register the mock provider
+  LlmProviderRegistry.resetInstance(); // Reset to prevent leaks across tests
   const registry = LlmProviderRegistry.getInstance();
   registry.register(llmProvider);
 
@@ -19,9 +20,7 @@ export function createTestAgent(options: CreateTestAgentOptions): Agent {
     ...definition,
     model: {
       provider: llmProvider.provider,
-      modelId: typeof definition.model === "string" 
-        ? (definition.model.includes(":") ? definition.model.split(":")[1] : definition.model)
-        : definition.model.modelId,
+      modelId: definition.model.modelId,
     }
   };
 

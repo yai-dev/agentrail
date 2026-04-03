@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { defineTool } from "@agentrail/runtime-core";
+import { z } from "zod";
 import { MockLlmProvider } from "../src/mock-llm-provider";
 import { createTestAgent } from "../src/test-agent-factory";
 import { assertToolCalled, assertToolCalledWith, assertFinalText } from "../src/assertions";
@@ -18,6 +20,16 @@ describe("Testing Package", () => {
         id: "test-agent",
         system: "You are a testing assistant",
         model: "mock:mock-model",
+        tools: [
+          defineTool({
+            name: "get_weather",
+            description: "Get the current weather in a given location",
+            schema: z.object({ city: z.string() }),
+            execute: async () => {
+              return { text: "Sunny" };
+            }
+          })
+        ],
       }, 
       llmProvider: mock 
     });
@@ -26,7 +38,7 @@ describe("Testing Package", () => {
     
     expect(result.text).toContain("I'll call the weather tool.");
     expect(result.toolCalls[0].name).toBe("get_weather");
-    expect(result.toolCalls[0].args).toEqual({ city: "Tokyo" });
+    expect(result.toolCalls[0].arguments).toEqual({ city: "Tokyo" });
 
     // Assertions check for the *last* turn or the overall result?
     // Wait, the result object contains all turns' messages.

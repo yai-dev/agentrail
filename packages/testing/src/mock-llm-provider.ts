@@ -2,15 +2,13 @@ import type {
   LlmProvider, 
   LlmRequest, 
   LlmStream, 
-  LlmStreamEvent 
-} from "@agentrail/runtime-core";
-import type { 
+  LlmStreamEvent,
   AssistantMessage, 
   StopReason,
-  AssistantContent
-} from "@agentrail/runtime-core/types/message.types";
-import type { ToolCall } from "@agentrail/runtime-core/types/content.types";
-import type { Usage } from "@agentrail/runtime-core/types/usage.types";
+  AssistantContent,
+  ToolCall,
+  Usage
+} from "@agentrail/runtime-core";
 
 export interface MockProviderResponse {
   text?: string;
@@ -34,6 +32,7 @@ export class MockLlmProvider implements LlmProvider {
     }
 
     const { messages, model } = request;
+    const callIndex = this.callCount;
     const content: AssistantContent[] = [];
     
     if (response.text) {
@@ -44,11 +43,9 @@ export class MockLlmProvider implements LlmProvider {
       for (const [index, tc] of response.toolCalls.entries()) {
         content.push({
           type: "toolCall",
-          toolCall: {
-            id: `call_${this.callCount}_${index}`,
-            name: tc.name,
-            args: tc.input
-          }
+          id: `call_${callIndex}_${index}`,
+          name: tc.name,
+          arguments: tc.input
         });
       }
     }
@@ -95,9 +92,10 @@ export class MockLlmProvider implements LlmProvider {
       if (response.toolCalls) {
         for (const [index, tc] of response.toolCalls.entries()) {
           const toolCall: ToolCall = {
-            id: `call_${this.callCount}_${index}`,
+            type: "toolCall",
+            id: `call_${callIndex}_${index}`,
             name: tc.name,
-            args: tc.input
+            arguments: tc.input
           };
           yield { type: "toolcall_start", contentIndex, partial: partialMessage };
           yield { type: "toolcall_end", contentIndex, toolCall, partial: partialMessage };
@@ -109,7 +107,7 @@ export class MockLlmProvider implements LlmProvider {
     }
 
     const streamObj: LlmStream = {
-      [Symbol.asyncIterator]: generateEvents,
+      [Symbol.asyncIterator]: () => generateEvents()[Symbol.asyncIterator](),
       result: async () => finalMessage
     };
 
