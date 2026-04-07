@@ -42,23 +42,12 @@ It is designed for developers who want more structure than ad hoc agent scripts,
 - **Session memory and knowledge** — built-in message history compaction, knowledge-base indexing, and retrieval
 - **Docker sandbox isolation** — run LLM-generated code safely, fully isolated from the host environment
 
-## Package Map
+## Packages
 
-- [![npm](https://img.shields.io/npm/v/@agentrail/runtime-core)](https://www.npmjs.com/package/@agentrail/runtime-core) `@agentrail/runtime-core`: agent definition, execution loop, tool contracts, provider abstractions
-- [![npm](https://img.shields.io/npm/v/@agentrail/host)](https://www.npmjs.com/package/@agentrail/host) `@agentrail/host`: hosted request primitives for chat and stream lifecycles
-- [![npm](https://img.shields.io/npm/v/@agentrail/host)](https://www.npmjs.com/package/@agentrail/host) `@agentrail/host/defaults`: recommended hosted SDK and default capability builders
-- [![npm](https://img.shields.io/npm/v/@agentrail/prompts)](https://www.npmjs.com/package/@agentrail/prompts) `@agentrail/prompts`: prompt fragments, bundles, rendering, and file loading
-- [![npm](https://img.shields.io/npm/v/@agentrail/orchestration)](https://www.npmjs.com/package/@agentrail/orchestration) `@agentrail/orchestration`: managed sub-agents, mailboxing, waits, and recovery
-- [![npm](https://img.shields.io/npm/v/@agentrail/memo)](https://www.npmjs.com/package/@agentrail/memo) `@agentrail/memo`: session storage, message history, and compaction
-- [![npm](https://img.shields.io/npm/v/@agentrail/knowledge)](https://www.npmjs.com/package/@agentrail/knowledge) `@agentrail/knowledge`: knowledge-base indexing and reading tools
-- [![npm](https://img.shields.io/npm/v/@agentrail/skills)](https://www.npmjs.com/package/@agentrail/skills) `@agentrail/skills`: skill discovery and skill tool execution
-- [![npm](https://img.shields.io/npm/v/@agentrail/sandbox)](https://www.npmjs.com/package/@agentrail/sandbox) `@agentrail/sandbox`: sandbox lifecycle and execution/browser tools
-- [![npm](https://img.shields.io/npm/v/@agentrail/tools)](https://www.npmjs.com/package/@agentrail/tools) `@agentrail/tools`: general-purpose tools such as ask-user and todo writing
-- [![npm](https://img.shields.io/npm/v/@agentrail/events)](https://www.npmjs.com/package/@agentrail/events) `@agentrail/events`: shared event contracts
-- [![npm](https://img.shields.io/npm/v/@agentrail/config)](https://www.npmjs.com/package/@agentrail/config) `@agentrail/config`: typed YAML config loading, defaults, and validation for Agentrail apps
-- [![npm](https://img.shields.io/npm/v/@agentrail/plugin-user-memory)](https://www.npmjs.com/package/@agentrail/plugin-user-memory) `@agentrail/plugin-user-memory`: plugin for persistent user memory across sessions
-- [![npm](https://img.shields.io/npm/v/@agentrail/slash-commands)](https://www.npmjs.com/package/@agentrail/slash-commands) `@agentrail/slash-commands`: slash command parsing and dispatch
-- [![npm](https://img.shields.io/npm/v/@agentrail/deep-research)](https://www.npmjs.com/package/@agentrail/deep-research) `@agentrail/deep-research`: deep research workflow built on top of Agentrail
+- [![npm](https://img.shields.io/npm/v/@agentrail/core)](https://www.npmjs.com/package/@agentrail/core) `@agentrail/core`: agent definition, execution loop, tool contracts, prompt SDK, session types, LLM providers
+- [![npm](https://img.shields.io/npm/v/@agentrail/capabilities)](https://www.npmjs.com/package/@agentrail/capabilities) `@agentrail/capabilities`: sandbox, knowledge, skills, orchestration, browser automation, and built-in tools
+- [![npm](https://img.shields.io/npm/v/@agentrail/app)](https://www.npmjs.com/package/@agentrail/app) `@agentrail/app`: hosted request lifecycle (`createAgentApp`), profiles (`defineProfile`), session management, plugins, config, events
+- [![npm](https://img.shields.io/npm/v/@agentrail/deep-research)](https://www.npmjs.com/package/@agentrail/deep-research) `@agentrail/deep-research`: deep research workflow (standalone addon)
 - [![npm](https://img.shields.io/npm/v/@agentrail/create-agentrail-app)](https://www.npmjs.com/package/@agentrail/create-agentrail-app) `@agentrail/create-agentrail-app`: scaffolding CLI for new Agentrail projects
 
 ## Examples
@@ -84,8 +73,8 @@ For contributor workflow details, see [CONTRIBUTING.md](CONTRIBUTING.md).
 Useful verification commands while working on the framework:
 
 ```bash
-pnpm --filter @agentrail/host test
-pnpm --filter @agentrail/prompts test
+pnpm --filter @agentrail/core test
+pnpm --filter @agentrail/app test
 pnpm --filter @agentrail/playground-server typecheck
 ```
 

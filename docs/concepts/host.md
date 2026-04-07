@@ -49,45 +49,50 @@ Use it when you need:
 - compaction and budget visibility
 - multi-agent orchestration event forwarding
 
-## Two Abstraction Levels
+## Abstraction Levels
 
-The host package deliberately splits into two layers:
+`@agentrail/app` provides both a high-level entry point and lower-level primitives:
 
-### `@agentrail/host` — Primitives
+### Recommended — `createAgentApp`
 
-Low-level, stable building blocks:
+The one-call entry point for most apps:
 
-- `createChatRoute` and `createStreamRoute` — route factories
-- `createProfileResolver` — resolver from a profile list
-- `createTransformContext` — combine context providers into a transform function
+```ts
+import { createAgentApp, SessionManager } from "@agentrail/app";
+
+const { app } = createAgentApp({
+  profiles: [defaultProfile],
+  sessionManager: new SessionManager(DATA_DIR),
+  summarize,
+});
+```
+
+This mounts both `/chat` (JSON) and `/stream` (SSE) endpoints and wires the full request lifecycle.
+
+### Low-Level Escape Hatches
+
+Available from `@agentrail/app` when you need direct control:
+
+- `createChatRoute` and `createStreamRoute` — mount individual route primitives
+- `createHostedProfileResolver` — build a custom profile resolver
+- `createTransformContext` — compose context providers into a transform function
 - `createOrchestrationRegistry` — per-session orchestration manager registry
+- `defineHostedProfile` — raw profile construction without the `defineProfile` conveniences
 
-Use primitives when you need a custom request lifecycle, non-default profile resolution, or are integrating Agentrail into an existing server architecture.
+Use these when you need a custom request lifecycle, non-default profile resolution, or are integrating into an existing server architecture.
 
-### `@agentrail/host/defaults` — Defaults SDK
-
-The recommended assembly path for most apps. It wraps the primitives with opinionated helpers:
-
-- `defineHostedProfile` — structured profile definition
-- `createHostedProfileResolver` — resolver from a list of hosted profiles
-- `createDefaultContextProviders` — standard context provider stack
-- `createDefaultToolset` — capability-oriented tool assembly
-- `createDefaultOrchestrationBinding` — orchestration wiring
-
-**Start with `host/defaults`.** It is not a black box — it is a recommended assembly of primitives you can unwrap and replace piece by piece as your app grows.
-
-## Choosing Between Them
+## Choosing a Path
 
 ```
-New app or first host → use @agentrail/host/defaults
+New app or first host → use createAgentApp + defineProfile
 │
-├── Need custom request lifecycle?   → drop to @agentrail/host primitives for that part
-├── Need non-default profile logic?  → use createProfileResolver directly
-├── Need custom context ordering?    → use createTransformContext directly
-└── Building a completely custom server? → use all primitives
+├── Need custom request lifecycle?   → use createChatRoute / createStreamRoute directly
+├── Need non-default profile logic?  → use createHostedProfileResolver
+├── Need custom context ordering?    → use createTransformContext
+└── Building a completely custom server? → use all low-level primitives
 ```
 
-You do not have to choose one or the other wholesale. The most common pattern is to use defaults for most of the stack and drop to primitives only for the one part that needs custom behavior.
+You do not have to choose one or the other wholesale. The most common pattern is to use `createAgentApp` for most of the stack and drop to primitives only for the part that needs custom behavior.
 
 ## Request Body Shape
 
@@ -114,5 +119,4 @@ Both routes accept a JSON body:
 
 ## Related Reference
 
-- [Host Defaults Reference](../reference/host-defaults.md)
 - [Host Primitives Reference](../reference/host-primitives.md)

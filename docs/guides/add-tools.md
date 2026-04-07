@@ -30,21 +30,33 @@ Agentrail intentionally keeps those separate.
 
 ## Your Main Options
 
-### 1. Use `@agentrail/tools`
+### 1. Use `@agentrail/capabilities`
 
-Use built-in helper tools when the framework already provides the behavior you need.
+Use built-in capability tools when the framework already provides the behavior you need.
 
 Examples include:
 
 - ask-user style interactions
 - todo/task progress writing
-- basic helper utilities shared across hosts
+- filesystem, browser, and knowledge tools
 
-This is the lowest-friction path when you want a working host quickly.
+This is the lowest-friction path when you want a working host quickly. Add capabilities to a profile via:
+
+```ts
+import { defineProfile } from "@agentrail/app";
+import { filesystem, webSearch } from "@agentrail/capabilities";
+
+export const defaultProfile = defineProfile({
+  id: "default",
+  model: "anthropic/claude-sonnet-4-5",
+  system: "You are a helpful assistant.",
+  capabilities: [filesystem(), webSearch()],
+});
+```
 
 ### 2. Define a custom runtime tool
 
-Use `tool()` or `defineSimpleTool()` from `@agentrail/runtime-core` when:
+Use `defineTool()` from `@agentrail/core` when:
 
 - your app needs a domain-specific tool
 - the logic belongs to runtime execution rather than host routing
@@ -56,25 +68,37 @@ This is the right layer for:
 - internal workflow actions
 - reusable agent-side capabilities
 
-### 3. Use the defaults layer for hosted composition
+### 3. Compose tools in `defineProfile`
 
-Use `createDefaultToolset` or `buildDefaultCapabilityTools` when you want the recommended hosted composition path.
+Pass tools directly into `defineProfile` or mix custom tools with capability descriptors:
+
+```ts
+import { defineProfile } from "@agentrail/app";
+import { filesystem } from "@agentrail/capabilities";
+import { customerLookupTool } from "./tools/customer-lookup.js";
+
+export const supportProfile = defineProfile({
+  id: "support",
+  model: "anthropic/claude-sonnet-4-5",
+  system: "You are a support assistant.",
+  tools: [customerLookupTool],
+  capabilities: [filesystem()],
+});
+```
 
 This is especially useful when you want to combine:
 
-- execution tools
-- browser tools
-- orchestration tools
-- capability tools
-- optional app-specific tools
+- custom domain tools
+- built-in capability tools (execution, browser, orchestration, knowledge)
+- optional app-specific utilities
 
 ## Minimal Custom Tool Example
 
 ```ts
 import { Type } from "@sinclair/typebox";
-import { tool } from "@agentrail/runtime-core";
+import { defineTool } from "@agentrail/core";
 
-export const customerLookupTool = tool({
+export const customerLookupTool = defineTool({
   name: "CustomerLookup",
   label: "Customer Lookup",
   description: "Look up customer details by account id.",
@@ -111,12 +135,10 @@ This keeps route files small and avoids duplicated tool lists.
 
 ## Repository Example
 
-The current repository shows two useful patterns:
+The current repository shows capability composition patterns in:
 
-- default capability assembly in:
-  - [packages/host/src/defaults/capability-tools.ts](../../packages/host/src/defaults/capability-tools.ts)
-- default toolset merging in:
-  - [packages/host/src/defaults/toolset.ts](../../packages/host/src/defaults/toolset.ts)
+- `packages/capabilities/src/` — capability descriptor factories (`filesystem`, `knowledge`, `orchestration`, etc.)
+- `packages/app/src/profile/define-profile.ts` — how `defineProfile` assembles tools from capability descriptors
 
 These are good references for:
 
@@ -152,7 +174,7 @@ Start with the defaults layer when possible, then add custom tools only where yo
 
 - [Build a Profile](build-a-profile.md)
 - [Add Context](add-context.md)
-- [Host Defaults Reference](../reference/host-defaults.md)
+- [Use Capability Packages](use-capability-packages.md)
 
 ## Next Step
 

@@ -41,7 +41,7 @@ Added by the host layer on top of runtime events:
 | `context_compaction_end`   | Compaction finishes              |
 | `context_usage`            | Token budget status after a turn |
 
-These are defined in `@agentrail/events` and forwarded by the stream route.
+These are defined in `@agentrail/app` and forwarded by the stream route.
 
 ### 3. Orchestration-Mapped Events
 
@@ -61,7 +61,7 @@ When a hosted session uses orchestration, the orchestration manager emits intern
 | `wait_registered`            | An orchestration wait was registered    |
 | `wait_resolved`              | An orchestration wait resolved          |
 
-The mapping is done by `mapOrchestrationEvent` in `@agentrail/events`, so UIs do not need to understand the raw internal orchestration event schema.
+The mapping is done by `mapOrchestrationEvent` in `@agentrail/app`, so UIs do not need to understand the raw internal orchestration event schema.
 
 ## Event Flow
 
@@ -80,7 +80,7 @@ context_usage    ──►  (host adds) ──►                    ──►  
 
 ## Event Types
 
-The two main event type unions in `@agentrail/events`:
+The two main event type unions in `@agentrail/app`:
 
 - **`AgentrailHostEvent`** — host-level and orchestration-mapped events
 - **`AgentrailEvent`** — the full union combining runtime events, skill SSE events, and host events

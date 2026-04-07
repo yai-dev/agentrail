@@ -21,7 +21,7 @@ Without structure, these collapse into one unmanageable string. The prompt SDK m
 A `PromptFragment` is the smallest unit — a named piece of prompt content:
 
 ```ts
-import { definePromptFragment } from "@agentrail/prompts";
+import { definePromptFragment } from "@agentrail/core";
 
 const coreFragment = definePromptFragment({
   key: "core-behavior",
@@ -41,7 +41,7 @@ Fragments can be defined inline (via `content`) or loaded from a Markdown file (
 A `PromptBundle` is an ordered collection of fragments organized into named layers:
 
 ```ts
-import { definePromptBundle } from "@agentrail/prompts";
+import { definePromptBundle } from "@agentrail/core";
 
 const myBundle = definePromptBundle({
   base: {
@@ -73,7 +73,7 @@ Layers can also specify per-fragment `replace` overrides to swap a fragment from
 `createPromptBuilder` assembles a bundle and handles rendering:
 
 ```ts
-import { createPromptBuilder } from "@agentrail/prompts";
+import { createPromptBuilder } from "@agentrail/core";
 
 const builder = createPromptBuilder(myBundle);
 
@@ -120,9 +120,23 @@ The `PromptLoader` inside `createPromptBuilder` caches files by modification tim
 
 ## Using Prompts in a Profile
 
-In a hosted profile, pass the bundle to `defineHostedProfile`:
+For static prompts, pass a string directly to `defineProfile`:
 
 ```ts
+import { defineProfile } from "@agentrail/app";
+
+defineProfile({
+  id: "default",
+  model: "anthropic/claude-sonnet-4-5",
+  system: "You are a helpful assistant.",
+});
+```
+
+For dynamic prompts built with the prompt SDK, use `promptBuilder` (advanced path via `defineHostedProfile`):
+
+```ts
+import { defineHostedProfile } from "@agentrail/app";
+
 defineHostedProfile({
   id: "default",
   name: "Default Assistant",
@@ -137,7 +151,7 @@ defineHostedProfile({
 });
 ```
 
-The defaults layer renders the bundle (with request-time variables) and passes the resulting string as `systemPrompt` to `createAgent`.
+The app layer renders the bundle (with request-time variables) and passes the resulting string as `systemPrompt` to `createAgent`.
 
 ## Recommended File Organization
 
@@ -163,11 +177,11 @@ The older `loadPromptFile` function used a module-level singleton cache. It is d
 
 ```ts
 // Deprecated
-import { loadPromptFile } from "@agentrail/prompts";
+import { loadPromptFile } from "@agentrail/core";
 const text = loadPromptFile("/path/to/system.md");
 
 // Recommended
-import { createPromptBuilder } from "@agentrail/prompts";
+import { createPromptBuilder } from "@agentrail/core";
 const builder = createPromptBuilder(myBundle);
 const text = builder.loadFile("/path/to/system.md");
 ```

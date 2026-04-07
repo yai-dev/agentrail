@@ -4,7 +4,7 @@ Plugins extend the host layer with cross-cutting behavior that does not belong i
 
 ## What a Plugin Is
 
-A plugin is a lightweight object that implements the `AgentrailPlugin` interface from `@agentrail/host`. It can hook into:
+A plugin is a lightweight object that implements the `AgentrailPlugin` interface from `@agentrail/app`. It can hook into:
 
 - the process lifecycle (startup and shutdown)
 - individual request lifecycles (start, end, turn persisted)

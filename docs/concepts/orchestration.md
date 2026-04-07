@@ -16,7 +16,7 @@ Do **not** use orchestration for single-agent tasks that can be solved with more
 
 ### OrchestrationManager
 
-`@agentrail/orchestration` provides the `OrchestrationManager`, which coordinates sub-agents for a single session. One manager instance exists per session, managed by the `OrchestrationRegistry` on the host.
+`@agentrail/capabilities` provides the `OrchestrationManager`, which coordinates sub-agents for a single session. One manager instance exists per session, managed by the `OrchestrationRegistry` on the host.
 
 ### Run
 
@@ -57,12 +57,14 @@ Each sub-agent has a **mailbox** — a persisted event queue for inputs and clos
 
 From the parent agent's perspective, orchestration is accessed through four runtime tools. These are injected by the host layer:
 
+
 | Tool          | Purpose                                  |
 | ------------- | ---------------------------------------- |
 | `spawn-agent` | Create a sub-agent and assign it a role  |
 | `send-input`  | Send a work item to a sub-agent          |
 | `wait-agent`  | Block until agents reach a desired state |
 | `close-agent` | Terminate a sub-agent                    |
+
 
 The parent agent calls these tools like any other tool. The orchestration manager handles the actual coordination.
 
@@ -122,7 +124,7 @@ This means orchestration workflows survive process restarts — the manager reco
 The host exposes orchestration via the `OrchestrationRegistry`, which manages one `OrchestrationManager` per session:
 
 ```ts
-import { createOrchestrationRegistry } from "@agentrail/host";
+import { createOrchestrationRegistry } from "@agentrail/app";
 
 const orchestrationRegistry = createOrchestrationRegistry({
   getOrCreateManager: async (sessionId) => {
@@ -131,7 +133,7 @@ const orchestrationRegistry = createOrchestrationRegistry({
 });
 ```
 
-The `createDefaultOrchestrationBinding` helper from `@agentrail/host/defaults` wires this together with hosted profiles automatically.
+The `createDefaultOrchestrationBinding` helper from `@agentrail/app` wires this together with hosted profiles automatically. The recommended path is to use `defineProfile({ capabilities: [orchestration(registry)] })` instead.
 
 ## Orchestration vs Plugins
 
@@ -149,3 +151,4 @@ Orchestration is for **multi-agent work distribution**. Plugins are for **cross-
 - [Multi-Agent Guide](../guides/multi-agent.md)
 - [Deep Research Example](../examples/deep-research.md)
 - [Host Primitives Reference](../reference/host-primitives.md)
+

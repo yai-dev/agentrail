@@ -38,7 +38,7 @@ These are usually injected as synthetic user messages ahead of the conversation 
 Use a provider when you want a simple, explicit injection function:
 
 ```ts
-import type { ContextProvider } from "@agentrail/host";
+import type { ContextProvider } from "@agentrail/app";
 
 const identityProvider: ContextProvider = async (context) => {
   return [
@@ -76,7 +76,7 @@ That path is especially useful when you want to compose:
 
 The current implementation lives in:
 
-- [packages/host/src/defaults/capability-context.ts](../../packages/host/src/defaults/capability-context.ts)
+- [packages/app/src/host/capability-context.ts](../../packages/app/src/host/capability-context.ts)
 
 ## Repository Example
 
@@ -134,7 +134,7 @@ If the defaults layer is too opinionated, use these primitives directly:
 - `createTransformContext`
 - `createContextProviderFromTransform`
 
-These live in the host package and let you build a custom context pipeline without adopting the default capability stack.
+These live in `@agentrail/app` and let you build a custom context pipeline without adopting the default capability stack.
 
 ## Related Docs
 

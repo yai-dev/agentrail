@@ -7,7 +7,7 @@ Context providers inject request-time information into the agent's message list.
 A `ContextProvider` is an async function that receives the current request context and returns an array of messages to prepend before the session history:
 
 ```ts
-import type { ContextProvider } from "@agentrail/host";
+import type { ContextProvider } from "@agentrail/app";
 
 const identityProvider: ContextProvider = async (context) => {
   return [
@@ -44,10 +44,10 @@ Context providers are **not** the right place for:
 
 When a request arrives, the host runs all registered context providers in order and assembles their output into a list of messages. This list is prepended to the session history before the agent sees it.
 
-The pipeline is built with `createTransformContext` from `@agentrail/host`:
+The pipeline is built with `createTransformContext` from `@agentrail/app`:
 
 ```ts
-import { createTransformContext } from "@agentrail/host";
+import { createTransformContext } from "@agentrail/app";
 
 const transformContext = createTransformContext([
   identityProvider,
@@ -61,10 +61,10 @@ Order matters. Identity and date headers should come first; memory and knowledge
 
 ## Defaults Layer
 
-Use `createDefaultCapabilityContextProviders` from `@agentrail/host/defaults` to assemble the standard capability context stack:
+Use `createDefaultCapabilityContextProviders` from `@agentrail/app` to assemble the standard capability context stack:
 
 ```ts
-import { createDefaultCapabilityContextProviders } from "@agentrail/host/defaults";
+import { createDefaultCapabilityContextProviders } from "@agentrail/app";
 
 const contextProviders = createDefaultCapabilityContextProviders({
   memory: memoryManager,
@@ -84,10 +84,11 @@ Each profile declares a `contextWindow` — the maximum number of tokens the mod
 - compute `budgetUsedPct` in SSE events so the client can show a context usage indicator
 
 ```ts
-defineHostedProfile({
+defineProfile({
   id: "default",
+  model: "anthropic/claude-sonnet-4-5",
   contextWindow: 200_000, // actual limit of the model used by this profile
-  // ...
+  system: "You are a helpful assistant.",
 });
 ```
 
@@ -110,27 +111,25 @@ From the agent's perspective, the summary message appears as part of the convers
 
 ### Configuration
 
-Pass `summarize` and `compaction` to `createChatRoute` or `createStreamRoute`:
+Pass `summarize` and `compaction` to `createAgentApp`:
 
 ```ts
-import type { Message } from "@agentrail/runtime-core";
+import type { Message } from "@agentrail/core";
+import { createAgentApp, SessionManager } from "@agentrail/app";
 
 // In production, replace this with a real LLM summarization call
 const summarize = async (messages: Message[]) =>
   messages.map((m) => `${m.role}: ${JSON.stringify(m.content)}`).join("\n");
 
-app.route(
-  "/chat",
-  createChatRoute({
-    sessionStore,
-    resolveProfile,
-    summarize,
-    compaction: {
-      triggerTokens: 80_000, // compact when history exceeds this many tokens
-      minMessages: 20, // only compact if there are at least this many messages
-    },
-  }),
-);
+const { app } = createAgentApp({
+  profiles: [defaultProfile],
+  sessionManager: new SessionManager(DATA_DIR),
+  summarize,
+  compaction: {
+    triggerTokens: 80_000, // compact when history exceeds this many tokens
+    minMessages: 20, // only compact if there are at least this many messages
+  },
+});
 ```
 
 ### The Summarize Function
@@ -162,4 +161,3 @@ When compaction runs, the stream route emits `context_compaction_start` and `con
 
 - [Session Store Reference](../reference/session-store.md)
 - [Add Context Guide](../guides/add-context.md)
-- [Host Defaults Reference](../reference/host-defaults.md)

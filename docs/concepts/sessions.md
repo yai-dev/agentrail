@@ -46,12 +46,12 @@ The contract includes:
 
 ## Default Implementation: `SessionManager`
 
-The default session store is `SessionManager` from `@agentrail/memo`. It uses the local filesystem to persist sessions, with one directory per session:
+The default session store is `SessionManager` from `@agentrail/app`. It uses the local filesystem to persist sessions, with one directory per session:
 
 ```ts
-import { SessionManager } from "@agentrail/memo";
+import { SessionManager } from "@agentrail/app";
 
-const sessionStore = new SessionManager("/tmp/agentrail-sessions");
+const sessionManager = new SessionManager("/tmp/agentrail-sessions");
 ```
 
 The path is the root directory under which all tenant/session data is stored. In production, use a persistent volume or replace `SessionManager` with a database-backed implementation.

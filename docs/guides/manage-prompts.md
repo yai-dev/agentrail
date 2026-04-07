@@ -22,7 +22,7 @@ Without a shared prompt layer, teams usually end up with some mix of:
 - duplicated prompt files for different modes
 - unclear override rules between base behavior and workflow-specific behavior
 
-`@agentrail/prompts` gives you one model for all of those cases.
+`@agentrail/core` (which includes the prompt SDK) gives you one model for all of those cases.
 
 ## Recommended Structure
 
@@ -67,7 +67,7 @@ Use them like this:
 ```ts
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createPromptBuilder, definePromptBundle, definePromptFragment } from "@agentrail/prompts";
+import { createPromptBuilder, definePromptBundle, definePromptFragment } from "@agentrail/core";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -136,7 +136,7 @@ A good prompt ownership model is:
 - workflow packages own workflow role prompts
 - example apps own example-specific prompt content
 
-That means the prompt SDK lives in `packages/prompts`, but the actual content can live close to the code that owns it.
+That means the prompt SDK lives in `packages/core/src/prompts`, but the actual content can live close to the code that owns it.
 
 For example:
 
