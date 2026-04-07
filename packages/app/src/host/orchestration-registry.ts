@@ -48,8 +48,18 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
 
   async getManager(request: AgentrailOrchestrationRegistryRequest): Promise<OrchestrationManager> {
     const key = this.getKey(request.tenantId, request.sessionId);
-    if (!this.bindings.has(key)) {
+    const existing = this.bindings.get(key);
+    if (!existing) {
       this.bindings.set(key, request.createManagedAgent);
+    } else if (existing !== request.createManagedAgent) {
+      // Warn when a different factory is supplied for an already-bound session.
+      // The existing factory is kept to avoid re-initialising in-flight agents.
+      console.warn(
+        `[OrchestrationRegistry] A different createManagedAgent factory was passed for ` +
+        `session "${request.sessionId}" (tenant "${request.tenantId}"). ` +
+        `The original factory will continue to be used for this session. ` +
+        `Call invalidate() first if you intentionally want to replace it.`,
+      );
     }
 
     let managerPromise = this.managers.get(key);

@@ -50,8 +50,12 @@ export interface AgentrailStreamRouteOptions {
   defaultAgentId: string;
   /** Session store implementation used for history persistence and compaction. */
   sessionStore: AgentrailSessionStore;
-  /** Sandbox manager used to persist uploads and prepare isolated execution. */
-  sandboxManager: SandboxManager;
+  /**
+   * Sandbox manager used to persist uploads and prepare isolated execution.
+   * Optional — when absent the `/stream` route works without file-upload or
+   * sandbox-snapshot support but all other streaming features are available.
+   */
+  sandboxManager?: SandboxManager;
   /** Resolves a hosted profile for the given request context. */
   resolveProfile(
     agentId: string,
@@ -188,7 +192,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
 
     await options.onRequestStart?.(requestContext);
     await runPluginRequestHook(plugins, "onRequestStart", requestContext);
-    const sandboxReady = options.sandboxManager.ensureSandbox(sid, tenantId, userId);
+    const sandboxReady = options.sandboxManager?.ensureSandbox(sid, tenantId, userId);
 
     let forwardSubAgentEvent: (event: object) => void = () => {};
     let preloadedProfile: AgentrailProfile | null | undefined;
@@ -234,16 +238,18 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         await runPluginRequestHook(plugins, "onTurnPersisted", requestContext);
       };
       try {
-        try {
-          await sandboxReady;
-        } catch (err) {
-          const errorEvent: AgentrailErrorEvent = {
-            type: "error",
-            error: { message: `Sandbox initialization failed: ${String(err)}` },
-          };
-          await writeEvent(errorEvent);
-          maybeTraceEvent(errorEvent);
-          return;
+        if (sandboxReady) {
+          try {
+            await sandboxReady;
+          } catch (err) {
+            const errorEvent: AgentrailErrorEvent = {
+              type: "error",
+              error: { message: `Sandbox initialization failed: ${String(err)}` },
+            };
+            await writeEvent(errorEvent);
+            maybeTraceEvent(errorEvent);
+            return;
+          }
         }
 
         if (options.handleResolvedRequest) {
@@ -318,7 +324,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           options.compaction,
           {
             workspaceSnapshot: await options.sandboxManager
-              .listWorkspace(sid)
+              ?.listWorkspace(sid)
               .catch(() => undefined),
             onBeforeCompact: async () => {
               await writeEvent({ type: "context_compaction_start" });

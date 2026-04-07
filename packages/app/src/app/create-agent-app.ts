@@ -31,7 +31,12 @@ export interface CreateAgentAppOptions {
   profiles: ProfileDefinition[];
   /**
    * Optional summarizer for context-window compaction.
-   * When omitted, the agent will stop responding when the context fills up.
+   *
+   * When omitted a no-op fallback is used that simply concatenates message
+   * content. This means compaction will technically run but the replacement
+   * placeholder will **not** contain a meaningful summary — the agent may
+   * lose context rather than receiving a condensed recap. For production use
+   * always provide a real summarizer backed by an LLM call.
    */
   summarize?: (messages: Message[]) => Promise<string>;
   /**
@@ -52,7 +57,8 @@ export interface CreateAgentAppOptions {
   contextProviders?: ContextProvider[];
   /**
    * Sandbox manager for upload handling and workspace snapshots in the stream route.
-   * Required when using the `/stream` endpoint with file upload features.
+   * When omitted the `/stream` endpoint is still available but file-upload and
+   * workspace-snapshot features are disabled.
    */
   sandboxManager?: SandboxManager;
 }
@@ -91,6 +97,8 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
   const sessionManager = new SessionManager(dataDir);
   const resolveProfile = createProfileResolver(profiles);
 
+  // Fallback summarizer: produces a raw transcript. Not suitable for production
+  // — provide a real LLM-backed summarizer via the `summarize` option instead.
   const noop = async (messages: Message[]) => {
     return messages.map((m) => ("content" in m ? String(m.content) : "")).join("\n");
   };
@@ -109,14 +117,14 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
   const app = new Hono();
   app.route("/chat", createChatRoute(chatRouteOptions));
 
-  if (sandboxManager) {
-    const streamRouteOptions = {
-      ...chatRouteOptions,
-      dataDir,
-      sandboxManager,
-    };
-    app.route("/stream", createStreamRoute(streamRouteOptions));
-  }
+  // Always mount /stream. sandboxManager is optional — when absent, file-upload
+  // and workspace-snapshot features are simply not available.
+  const streamRouteOptions = {
+    ...chatRouteOptions,
+    dataDir,
+    ...(sandboxManager ? { sandboxManager } : {}),
+  };
+  app.route("/stream", createStreamRoute(streamRouteOptions));
 
   return app;
 }

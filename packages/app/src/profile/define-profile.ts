@@ -90,9 +90,22 @@ export function defineProfile(def: StaticProfileShape | DynamicProfileShape): Pr
         const { model, prompt, tools } = def.agent;
         const system =
           typeof prompt === "function" ? await prompt(context) : prompt;
+
+        // If modelConfig overrides (apiKey, baseUrl, …) are present, merge them
+        // with the string model shorthand to produce a full ModelConfig object.
+        let resolvedModel: string | ModelConfig = model;
+        if (def.modelConfig && Object.keys(def.modelConfig).length > 0) {
+          const colonIdx = model.indexOf(":");
+          const baseConfig: ModelConfig =
+            colonIdx > 0
+              ? { provider: model.slice(0, colonIdx), modelId: model.slice(colonIdx + 1) }
+              : { provider: model, modelId: model };
+          resolvedModel = { ...baseConfig, ...def.modelConfig };
+        }
+
         return defineAgent({
           id: def.id,
-          model,
+          model: resolvedModel,
           system,
           tools: tools ?? [],
         });

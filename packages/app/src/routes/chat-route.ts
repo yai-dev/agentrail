@@ -177,13 +177,19 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         return c.json({ error: `Agent profile '${agentId}' not found` }, 404);
       }
 
-      const agent = await profile.createAgent({
-        tenantId: request.tenantId,
-        userId: request.userId,
-        sessionId,
-        sessionRef,
-        sessionStore: options.sessionStore,
-      });
+      // Pass a no-op sub-agent event handler so that capabilities relying on
+      // onSubAgentEvent (e.g. orchestration tools) work on the /chat path too.
+      // Events are discarded here — use the /stream endpoint for live event delivery.
+      const agent = await profile.createAgent(
+        {
+          tenantId: request.tenantId,
+          userId: request.userId,
+          sessionId,
+          sessionRef,
+          sessionStore: options.sessionStore,
+        },
+        () => { /* sub-agent events are not forwarded on the JSON /chat route */ },
+      );
       const allMessages = await options.sessionStore.loadAllMessages(request.tenantId, sessionId);
       await runCompactionIfNeeded(
         options.sessionStore,

@@ -1,5 +1,8 @@
 import { defineAgent, isRuntimeError, type Message } from "@agentrail/core";
 import { defineProfile } from "@agentrail/app";
+// To add filesystem, browser, knowledge, or orchestration capabilities install
+// @agentrail/capabilities and import the relevant factory functions:
+//   import { filesystem, knowledge, browser } from "@agentrail/capabilities";
 
 const MODEL_PROVIDER = (process.env.MODEL_PROVIDER ?? "anthropic") as "anthropic" | "openai";
 const MODEL_ID = process.env.MODEL_ID ?? "claude-3-5-sonnet-20241022";

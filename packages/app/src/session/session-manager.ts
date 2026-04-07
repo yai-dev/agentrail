@@ -400,7 +400,10 @@ export class SessionManager {
   ): Promise<void> {
     const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
     const logDir = this.getSubAgentLogDir(tenantId, sessionId);
-    const filename = `skill-${entry.skillName}-${entry.startedAt}.jsonl`;
+    // Sanitise skillName to prevent path traversal: replace any character that
+    // is not alphanumeric, hyphen, underscore, or dot with an underscore.
+    const safeSkillName = entry.skillName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filename = `skill-${safeSkillName}-${entry.startedAt}.jsonl`;
     const filePath = path.join(logDir, filename);
 
     await mkdir(logDir, { recursive: true });

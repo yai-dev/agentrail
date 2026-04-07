@@ -28,8 +28,13 @@ export function browser(opts?: BrowserOptions): CapabilityDescriptor {
     type: "browser",
 
     async buildTools(ctx: CapabilityBuildContext) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const sm = (opts?.sandboxManager ?? ctx.sandboxManager)!;
+      const sm = opts?.sandboxManager ?? ctx.sandboxManager;
+      if (!sm) {
+        throw new Error(
+          'browser() capability requires a SandboxManager. ' +
+          'Pass one via browser({ sandboxManager }) or ensure the host provides it.',
+        );
+      }
       const { tenantId, userId, sessionId } = ctx;
 
       return [

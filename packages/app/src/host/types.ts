@@ -3,8 +3,17 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef, TodoStorage } from "@agentrail/core";
+import type { SessionRef } from "@agentrail/core";
 import type { Agent, Message, Usage } from "@agentrail/core";
+// Import for local use within this file AND re-export so that consumers can
+// import from either @agentrail/app or @agentrail/core without getting
+// structurally-incompatible types.
+import type {
+  AgentrailSessionStore,
+  ContextProvider,
+  ContextProviderContext,
+} from "@agentrail/core";
+export type { AgentrailSessionStore, ContextProvider, ContextProviderContext } from "@agentrail/core";
 
 /**
  * Context passed to a hosted profile when constructing a runtime agent.
@@ -63,52 +72,6 @@ export interface AgentrailChatRequestContext {
   signal: AbortSignal;
 }
 
-/**
- * Minimal storage surface the host runtime needs to load, persist, and compact
- * session history. The default file-backed SessionManager satisfies this shape.
- */
-export interface AgentrailSessionStore {
-  getOrCreate(
-    tenantId: string,
-    userId: string,
-    agentId: string,
-    sessionId?: string,
-  ): Promise<{ sessionId: string; sessionRef: SessionRef }>;
-  loadMessages(tenantId: string, sessionId: string, limit?: number): Promise<Message[]>;
-  loadMessagesWithBudget(
-    tenantId: string,
-    sessionId: string,
-    tokenBudget?: number,
-  ): Promise<Message[]>;
-  loadAllMessages(tenantId: string, sessionId: string): Promise<Message[]>;
-  appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promise<void>;
-  recordTurn(tenantId: string, sessionId: string, usage: Usage): Promise<void>;
-  compactIfNeeded(
-    tenantId: string,
-    sessionId: string,
-    summarizeFn: (messages: Message[]) => Promise<string>,
-    options?: {
-      triggerTokens?: number;
-      compactFraction?: number;
-      preloadedMessages?: Message[];
-      workspaceSnapshot?: string;
-    },
-  ): Promise<boolean>;
-  createTodoStorage?(sessionRef: SessionRef): TodoStorage;
-  persistSkillSubAgentLog?(
-    sessionRef: SessionRef,
-    entry: {
-      skillName: string;
-      task: string;
-      input: string;
-      systemPrompt: string;
-      messages: unknown[];
-      resultText: string;
-      startedAt: number;
-      finishedAt: number;
-    },
-  ): Promise<void>;
-}
 
 /** Fully resolved context for a chat request after session lookup. */
 export interface AgentrailResolvedChatContext {
@@ -130,13 +93,6 @@ export interface AgentrailChatSuccessBody {
   stopReason: string;
 }
 
-/** Minimal context passed to context providers during message assembly. */
-export interface ContextProviderContext {
-  tenantId: string;
-  userId: string;
-  sessionId: string;
-}
-
 /** Lifecycle hook context shared across chat and stream routes. */
 export interface AgentrailRequestLifecycleContext {
   kind: "chat" | "stream";
@@ -145,12 +101,6 @@ export interface AgentrailRequestLifecycleContext {
   sessionId: string;
   agentId: string;
 }
-
-/** Supplies additional messages that should be prepended before runtime history. */
-export type ContextProvider = (
-  context: ContextProviderContext,
-  messages: Message[],
-) => Promise<Message[]> | Message[];
 
 /** Lightweight host extension contract for request interception and lifecycle hooks. */
 export interface AgentrailPlugin {

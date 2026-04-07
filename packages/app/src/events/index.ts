@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { randomUUID } from "node:crypto";
 import type { OrchestrationEvent } from "@agentrail/capabilities";
 import type { RuntimeEvent } from "@agentrail/core";
 import type { ExtendedSseEvent } from "@agentrail/capabilities";
@@ -184,10 +185,11 @@ export function wrapTraceEvent(
   event: Record<string, unknown>,
   sequence?: number,
 ): WorkflowTraceEventEnvelope {
+  const seq = sequence ?? _wrapSeq++;
   return {
-    id: `${source}-${Date.now()}-${_wrapSeq++}`,
+    id: randomUUID(),
     timestamp: new Date().toISOString(),
-    sequence: sequence ?? _wrapSeq,
+    sequence: seq,
     source,
     event,
   };

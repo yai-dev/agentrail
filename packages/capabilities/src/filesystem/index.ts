@@ -30,8 +30,13 @@ export function filesystem(opts?: FilesystemOptions): CapabilityDescriptor {
     type: "filesystem",
 
     async buildTools(ctx: CapabilityBuildContext) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const sm = (opts?.sandboxManager ?? ctx.sandboxManager)!;
+      const sm = opts?.sandboxManager ?? ctx.sandboxManager;
+      if (!sm) {
+        throw new Error(
+          'filesystem() capability requires a SandboxManager. ' +
+          'Pass one via filesystem({ sandboxManager }) or ensure the host provides it.',
+        );
+      }
       const { tenantId, userId, sessionId, sessionRef, sessionStore } = ctx;
 
       const todoStorage = sessionStore.createTodoStorage?.(sessionRef);
