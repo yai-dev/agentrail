@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { WorkflowTraceEventEnvelope } from "@agentrail/events";
-import { createStreamRoute } from "@agentrail/host";
-import { createFileSystemSessionTraceStore } from "@agentrail/memo";
+import type { WorkflowTraceEventEnvelope } from "@agentrail/app";
+import { createStreamRoute } from "@agentrail/app";
+import { createFileSystemSessionTraceStore } from "@agentrail/app";
 import { DEFAULT_AGENT_ID } from "../agents/index.js";
 import { buildSummarizeFn } from "../agents/summarizer.js";
 import { handlePlaygroundDeepResearchModeStream } from "../chat/deep-research.js";

@@ -7,7 +7,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig(async () => {
-  const { getPlaygroundUiConfig } = await import("@agentrail/config");
+  const { getPlaygroundUiConfig } = await import("@agentrail/app");
   const config = getPlaygroundUiConfig();
   const backendPort = String(config.backendPort);
   const uiPort = config.port;

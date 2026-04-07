@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AgentrailSessionStore } from "@agentrail/host";
-import type { SessionRef } from "@agentrail/memo";
-import type { ExtendedSseEvent } from "@agentrail/skills";
+import type { AgentrailSessionStore } from "@agentrail/app";
+import type { SessionRef } from "@agentrail/core";
+import type { ExtendedSseEvent } from "@agentrail/capabilities";
 import { DEFAULT_HOSTED_AGENT_ID, createDefaultAgent } from "./default-agent.js";
 
 export async function getAgent(

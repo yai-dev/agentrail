@@ -10,10 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@agentrail/runtime-core": "{{VERSION_AGENTRAIL_RUNTIME_CORE}}",
-    "@agentrail/host": "{{VERSION_AGENTRAIL_HOST}}",
-    "@agentrail/memo": "{{VERSION_AGENTRAIL_MEMO}}",
-    "@agentrail/sandbox": "{{VERSION_AGENTRAIL_SANDBOX}}",
+    "@agentrail/core": "{{VERSION_AGENTRAIL_CORE}}",
+    "@agentrail/app": "{{VERSION_AGENTRAIL_APP}}",
     "hono": "{{VERSION_HONO}}",
     "@hono/node-server": "{{VERSION_HONO_NODE_SERVER}}"
   },

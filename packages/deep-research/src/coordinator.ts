@@ -3,13 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/memo";
+import type { SessionRef } from "@agentrail/core";
 import {
   OrchestrationManager,
   createFilesystemOrchestrationPersistence,
-} from "@agentrail/orchestration";
-import { defineAgent, type Message, type RuntimeEvent } from "@agentrail/runtime-core";
-import { SandboxManager } from "@agentrail/sandbox";
+} from "@agentrail/capabilities";
+import { defineAgent, type Message, type RuntimeEvent } from "@agentrail/core";
+import { SandboxManager } from "@agentrail/capabilities";
 import { randomUUID } from "node:crypto";
 import { copyFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";

@@ -4,9 +4,9 @@
  */
 
 // Register built-in LLM providers (Anthropic, OpenAI) as side effects
-import "@agentrail/runtime-core/providers";
+import "@agentrail/core/providers";
 
-import { runPluginLifecycle } from "@agentrail/host";
+import { runPluginLifecycle } from "@agentrail/app";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";

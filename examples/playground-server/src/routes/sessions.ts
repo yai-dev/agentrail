@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { isCompactionMessage, parseCompactionMetadata, SessionManager } from "@agentrail/memo";
-import type { Message } from "@agentrail/runtime-core";
+import { isCompactionMessage, parseCompactionMetadata, SessionManager } from "@agentrail/app";
+import type { Message } from "@agentrail/core";
 import { Hono } from "hono";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";

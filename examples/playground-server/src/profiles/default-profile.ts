@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createHostedProfileResolver, defineHostedProfile } from "@agentrail/host/defaults";
-import type { ExtendedSseEvent } from "@agentrail/skills";
+import { createHostedProfileResolver, defineHostedProfile } from "@agentrail/app";
+import type { ExtendedSseEvent } from "@agentrail/capabilities";
 import { DEFAULT_AGENT_ID, getAgent } from "../agents/index.js";
 import { buildSystemPrompt } from "../prompts/index.js";
 

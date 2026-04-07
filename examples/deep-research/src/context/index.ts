@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { KnowledgeManager } from "@agentrail/knowledge";
-import { SessionManager } from "@agentrail/memo";
-import { SandboxManager } from "@agentrail/sandbox";
+import { KnowledgeManager } from "@agentrail/capabilities";
+import { SessionManager } from "@agentrail/app";
+import { SandboxManager } from "@agentrail/capabilities";
 import { config } from "../config.js";
 
 export const sessionManager = new SessionManager(config.dataDir);

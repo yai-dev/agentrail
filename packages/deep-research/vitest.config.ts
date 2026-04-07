@@ -9,7 +9,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@agentrail/prompts": resolve(__dirname, "../prompts/src/index.ts"),
+      "@agentrail/prompts": resolve(__dirname, "../core/src/prompts/index.ts"),
     },
   },
   test: {

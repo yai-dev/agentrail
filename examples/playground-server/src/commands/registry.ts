@@ -9,7 +9,7 @@ import {
   type SlashCommandContext,
   type SlashCommandDefinition,
   type SlashCommandResult,
-} from "@agentrail/slash-commands";
+} from "@agentrail/app";
 import { handleCompactCommand } from "./handlers/compact.js";
 import { handleMemoryConsolidateCommand } from "./handlers/memory-consolidate.js";
 

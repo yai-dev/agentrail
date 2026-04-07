@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createChatRoute } from "@agentrail/host";
+import { createChatRoute } from "@agentrail/app";
 import { DEFAULT_AGENT_ID } from "../agents/index.js";
 import { buildSummarizeFn } from "../agents/summarizer.js";
 import { handlePlaygroundDeepResearchMode } from "../chat/deep-research.js";

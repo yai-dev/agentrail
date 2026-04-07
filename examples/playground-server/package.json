@@ -13,20 +13,10 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
-    "@agentrail/config": "workspace:*",
+    "@agentrail/core": "workspace:*",
+    "@agentrail/capabilities": "workspace:*",
+    "@agentrail/app": "workspace:*",
     "@agentrail/deep-research": "workspace:*",
-    "@agentrail/host": "workspace:*",
-    "@agentrail/orchestration": "workspace:*",
-    "@agentrail/tools": "workspace:*",
-    "@agentrail/events": "workspace:*",
-    "@agentrail/knowledge": "workspace:*",
-    "@agentrail/memo": "workspace:*",
-    "@agentrail/plugin-user-memory": "workspace:*",
-    "@agentrail/prompts": "workspace:*",
-    "@agentrail/runtime-core": "workspace:*",
-    "@agentrail/sandbox": "workspace:*",
-    "@agentrail/slash-commands": "workspace:*",
-    "@agentrail/skills": "workspace:*",
     "hono": "^4.7.4"
   },
   "devDependencies": {

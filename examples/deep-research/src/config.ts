@@ -3,6 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { getDeepResearchConfig } from "@agentrail/config";
+import { getDeepResearchConfig } from "@agentrail/app";
 
 export const config = getDeepResearchConfig();

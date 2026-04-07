@@ -9,13 +9,13 @@ import {
   createOrchestrationRegistry,
   type ContextProvider,
   type CreateSessionManagedAgent,
-} from "@agentrail/host";
-import { KnowledgeManager } from "@agentrail/knowledge";
-import { SessionManager, compactToolResults } from "@agentrail/memo";
-import { UserMemoryConsolidationService } from "@agentrail/plugin-user-memory";
-import type { TransformContextFn } from "@agentrail/runtime-core";
-import { SandboxManager } from "@agentrail/sandbox";
-import { SkillManager } from "@agentrail/skills";
+} from "@agentrail/app";
+import { KnowledgeManager } from "@agentrail/capabilities";
+import { SessionManager, compactToolResults } from "@agentrail/app";
+import { UserMemoryConsolidationService } from "@agentrail/app";
+import type { TransformContextFn } from "@agentrail/core";
+import { SandboxManager } from "@agentrail/capabilities";
+import { SkillManager } from "@agentrail/capabilities";
 import { config } from "../config.js";
 
 const TRANSFORM_CACHE_TTL_MS = 5_000;
@@ -45,7 +45,7 @@ interface OrchestrationManagerRequest {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionRef: import("@agentrail/memo").SessionRef;
+  sessionRef: import("@agentrail/core").SessionRef;
   createManagedAgent: CreateSessionManagedAgent;
 }
 

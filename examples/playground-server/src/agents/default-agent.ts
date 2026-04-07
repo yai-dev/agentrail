@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AgentrailSessionStore } from "@agentrail/host";
-import { createDefaultToolset } from "@agentrail/host/defaults";
-import type { SessionRef } from "@agentrail/memo";
+import type { AgentrailSessionStore } from "@agentrail/app";
+import { createDefaultToolset } from "@agentrail/app";
+import type { SessionRef } from "@agentrail/core";
 import {
   createCloseAgentTool,
   createSendInputTool,
@@ -14,9 +14,9 @@ import {
   createWaitAgentTool,
   type CreateManagedAgentInput,
   type ManagedAgentInstance,
-} from "@agentrail/orchestration";
-import { defineAgent } from "@agentrail/runtime-core";
-import type { ExtendedSseEvent } from "@agentrail/skills";
+} from "@agentrail/capabilities";
+import { defineAgent } from "@agentrail/core";
+import type { ExtendedSseEvent } from "@agentrail/capabilities";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "../config.js";

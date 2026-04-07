@@ -3,6 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { getPlaygroundServerConfig } from "@agentrail/config";
+import { getPlaygroundServerConfig } from "@agentrail/app";
 
 export const config = getPlaygroundServerConfig();

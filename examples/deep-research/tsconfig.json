@@ -9,12 +9,9 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
-    { "path": "../../packages/config" },
-    { "path": "../../packages/deep-research" },
-    { "path": "../../packages/runtime-core" },
-    { "path": "../../packages/orchestration" },
-    { "path": "../../packages/memo" },
-    { "path": "../../packages/knowledge" },
-    { "path": "../../packages/sandbox" }
+    { "path": "../../packages/core" },
+    { "path": "../../packages/capabilities" },
+    { "path": "../../packages/app" },
+    { "path": "../../packages/deep-research" }
   ]
 }

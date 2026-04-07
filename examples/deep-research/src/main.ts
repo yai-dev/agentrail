@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import "@agentrail/runtime-core/providers";
+import "@agentrail/core/providers";
 
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";

@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { IngestionEvent } from "@agentrail/knowledge";
-import { KnowledgeManager } from "@agentrail/knowledge";
+import type { IngestionEvent } from "@agentrail/capabilities";
+import { KnowledgeManager } from "@agentrail/capabilities";
 import { Hono } from "hono";
 import { streamText } from "hono/streaming";
 import { runIngestionAgent } from "../agents/ingestion-agent.js";

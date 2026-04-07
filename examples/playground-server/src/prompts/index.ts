@@ -8,7 +8,7 @@ import {
   definePromptBundle,
   definePromptFragment,
   type PromptVars,
-} from "@agentrail/prompts";
+} from "@agentrail/core";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 

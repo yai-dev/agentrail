@@ -14,10 +14,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const AGENTRAIL_PACKAGES = [
-  "@agentrail/runtime-core",
-  "@agentrail/host",
-  "@agentrail/memo",
-  "@agentrail/sandbox",
+  "@agentrail/core",
+  "@agentrail/app",
 ] as const;
 
 const THIRD_PARTY_PACKAGES = ["hono", "@hono/node-server"] as const;

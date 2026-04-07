@@ -12,8 +12,8 @@ import type {
   AgentrailChatHandledResponse,
   AgentrailResolvedChatContext,
   AgentrailResolvedStreamContext,
-} from "@agentrail/host";
-import type { Message, Usage } from "@agentrail/runtime-core";
+} from "@agentrail/app";
+import type { Message, Usage } from "@agentrail/core";
 import { config } from "../config.js";
 
 function buildDeepResearchRuntime() {

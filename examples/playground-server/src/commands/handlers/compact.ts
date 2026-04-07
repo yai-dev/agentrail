@@ -7,7 +7,7 @@ import type {
   ParsedSlashCommand,
   SlashCommandContext,
   SlashCommandResult,
-} from "@agentrail/slash-commands";
+} from "@agentrail/app";
 import { buildSummarizeFn } from "../../agents/summarizer.js";
 import { sandboxManager, sessionManager } from "../../context/index.js";
 

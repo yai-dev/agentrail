@@ -3,11 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AgentrailSessionStore } from "@agentrail/host";
-import { buildDefaultCapabilityTools } from "@agentrail/host/defaults";
-import type { SessionRef } from "@agentrail/memo";
-import type { RuntimeTool } from "@agentrail/runtime-core";
-import type { ExtendedSseEvent } from "@agentrail/skills";
+import type { AgentrailSessionStore } from "@agentrail/app";
+import { buildDefaultCapabilityTools } from "@agentrail/app";
+import type { SessionRef } from "@agentrail/core";
+import type { RuntimeTool } from "@agentrail/core";
+import type { ExtendedSseEvent } from "@agentrail/capabilities";
 
 import { config } from "../config.js";
 import { knowledgeManager, sandboxManager, skillManager } from "../context/index.js";

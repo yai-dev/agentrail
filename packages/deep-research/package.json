@@ -20,12 +20,8 @@
     "test": "pnpm exec vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@agentrail/knowledge": "workspace:*",
-    "@agentrail/memo": "workspace:*",
-    "@agentrail/orchestration": "workspace:*",
-    "@agentrail/prompts": "workspace:*",
-    "@agentrail/runtime-core": "workspace:*",
-    "@agentrail/sandbox": "workspace:*",
+    "@agentrail/core": "workspace:*",
+    "@agentrail/capabilities": "workspace:*",
     "hono": "^4.7.4"
   },
   "devDependencies": {

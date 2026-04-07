@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/memo";
-import { initializeWorker } from "@agentrail/orchestration/worker";
-import "@agentrail/runtime-core/providers";
+import type { SessionRef } from "@agentrail/core";
+import { initializeWorker } from "@agentrail/capabilities/orchestration/worker";
+import "@agentrail/core/providers";
 import { DefaultSubAgentRuntime } from "./default-subagent-runtime.js";
 
 interface WorkerInitPayload {

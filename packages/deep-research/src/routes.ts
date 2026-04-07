@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/memo";
+import { createSessionRef } from "@agentrail/core";
 import { Hono } from "hono";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";

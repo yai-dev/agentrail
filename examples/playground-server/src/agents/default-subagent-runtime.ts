@@ -3,15 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { buildDefaultCapabilityTools } from "@agentrail/host/defaults";
-import type { SessionRef } from "@agentrail/memo";
-import { SessionManager } from "@agentrail/memo";
+import { buildDefaultCapabilityTools, SessionManager } from "@agentrail/app";
+import type { SessionRef } from "@agentrail/core";
+import type { ModelConfig } from "@agentrail/core";
 import type {
   CreateManagedAgentInput,
-  ModelConfig,
   SubAgentRuntime,
-} from "@agentrail/orchestration";
-import type { RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
+} from "@agentrail/capabilities";
+import type { RuntimeTool, TransformContextFn } from "@agentrail/core";
 
 import { config } from "../config.js";
 import { knowledgeManager, sandboxManager } from "../context/index.js";

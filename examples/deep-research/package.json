@@ -12,13 +12,10 @@
     "typecheck": "tsc -b --force --pretty false"
   },
   "dependencies": {
-    "@agentrail/config": "workspace:*",
+    "@agentrail/app": "workspace:*",
+    "@agentrail/capabilities": "workspace:*",
+    "@agentrail/core": "workspace:*",
     "@agentrail/deep-research": "workspace:*",
-    "@agentrail/knowledge": "workspace:*",
-    "@agentrail/memo": "workspace:*",
-    "@agentrail/orchestration": "workspace:*",
-    "@agentrail/runtime-core": "workspace:*",
-    "@agentrail/sandbox": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "hono": "^4.7.4"
   },
