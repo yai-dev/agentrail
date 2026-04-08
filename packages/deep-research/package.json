@@ -22,7 +22,8 @@
   "dependencies": {
     "@agentrail/capabilities": "workspace:*",
     "@agentrail/core": "workspace:*",
-    "hono": "^4.7.4"
+    "hono": "^4.12.12",
+    "node-html-parser": "^7.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

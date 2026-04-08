@@ -46,7 +46,7 @@ export function extractJsonObject<T>(text: string): T | null {
   const direct = tryParseJson<T>(trimmed);
   if (direct) return direct;
 
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]+?)```/i);
+  const fenced = trimmed.match(/```(?:json)?[ \t]*\r?\n([\s\S]{1,100000}?)```/i);
   if (fenced?.[1]) {
     const parsed = tryParseJsonWithRepairs<T>(fenced[1].trim());
     if (parsed) return parsed;
@@ -167,8 +167,7 @@ export function normalizePlan(
 }
 
 export function buildFallbackPlan(query: string): DeepResearchPlan {
-  const processingNeeded =
-    /(统计|对比|比较|趋势|比例|分布|chart|plot|trend|compare|stat|统计图|图表)/i.test(query);
+  const processingNeeded = /(chart|plot|trend|compare|stat|forecast|distribution|ratio)/i.test(query);
   return {
     title: `Deep Research: ${query.slice(0, 60)}`,
     thought: "Collect external sources, synthesize them, and produce a sourced report.",
@@ -256,14 +255,17 @@ function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
+const DECODE_ENTITIES: Record<string, string> = {
+  nbsp: " ",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  "#39": "'",
+  quot: '"',
+};
+
 function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&nbsp;?/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/gi, '"');
+  return text.replace(/&(nbsp|amp|lt|gt|#39|quot);?/gi, (_, e) => DECODE_ENTITIES[e.toLowerCase()] ?? `&${e};`);
 }
 
 export function normalizeResearchUrl(rawUrl: string): string {
@@ -298,7 +300,7 @@ function uniqueStrings(
 function normalizeName(input: string): string {
   return input
     .toLowerCase()
-    .replace(/[\s"'`“”‘’()（）\-_,.:;|/\\]+/g, "")
+    .replace(/[\s"'`“”‘’()\-_,.:;|/\\]+/g, "")
     .trim();
 }
 
@@ -331,7 +333,7 @@ function sanitizeDigestLine(text: string): string {
 function isNoiseLine(text: string): boolean {
   if (!text) return true;
   if (text.length < 18) return true;
-  if (/^(title|summary|sources?|notes?|details?)[:：]?$/i.test(text)) return true;
+  if (/^(title|summary|sources?|notes?|details?):?$/i.test(text)) return true;
   if (/^[\W_]+$/.test(text)) return true;
   if (/^https?:\/\//i.test(text)) return true;
   if (/^\[[^\]]+\]\s*$/.test(text)) return true;
@@ -341,7 +343,7 @@ function isNoiseLine(text: string): boolean {
 
 function splitIntoSentences(text: string): string[] {
   return stripMarkdown(text)
-    .split(/(?<=[。！？.!?])\s+/)
+    .split(/(?<=[.!?])\s+/)
     .map((sentence) => sanitizeDigestLine(sentence))
     .filter((sentence) => !isNoiseLine(sentence));
 }
@@ -373,74 +375,6 @@ function compressAtomicLines(lines: string[], limit: number): string[] {
   return accepted;
 }
 
-function extractOfficialName(summary: string, query: string): string | null {
-  const patterns = [
-    /正式名称(?:为|：)\s*["“]?([^"”\n]+?公司)/u,
-    /企业全称(?:\s*[*：:]|\s+)\s*([^|\n]+?公司)/u,
-    /^##\s*([^—\n]+?(?:公司|Inc\.|Corp\.|Corporation))\s*[—-]/mu,
-    /统一社会信用代码[\s\S]{0,120}?([^|\n]+?公司)/u,
-  ];
-  for (const pattern of patterns) {
-    const match = summary.match(pattern);
-    if (match?.[1]) {
-      return sanitizeDigestLine(match[1].replace(/\*\*/g, ""));
-    }
-  }
-
-  const queryMatch = query.match(
-    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]{1,120}(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
-  );
-  return queryMatch?.[1]?.trim() ?? null;
-}
-
-function extractExcludedEntities(summary: string): string[] {
-  const patterns = [
-    /与["“]?([^"”\n]{2,80}?)["”]?(?:（|\(|的区分|是|相比)/gu,
-    /不同于["“]?([^"”\n]{2,80}?)["”]?/gu,
-    /区分["“]?([^"”\n]{2,80}?)["”]?/gu,
-  ];
-  const results: string[] = [];
-  for (const pattern of patterns) {
-    for (const match of summary.matchAll(pattern)) {
-      if (match[1]) results.push(sanitizeDigestLine(match[1]));
-    }
-  }
-  return uniqueStrings(results);
-}
-
-function extractRelatedEntities(summary: string): string[] {
-  const entities: string[] = [];
-  const patterns = [
-    /(Anthropic|Google DeepMind|DeepMind|xAI|Microsoft|Meta|Amazon|Apple|Perplexity|BYD|Waymo|Volkswagen|BMW|Ford|GM|Rivian|NIO|Xpeng|Xiaomi)/gi,
-    /(?:竞争对手|竞品|同行|对比对象)[：:]\s*([^\n]+)/gu,
-  ];
-  for (const pattern of patterns) {
-    for (const match of summary.matchAll(pattern)) {
-      if (match[1]) entities.push(sanitizeDigestLine(match[1]));
-    }
-  }
-  return uniqueStrings(entities);
-}
-
-function extractAliases(query: string, summary: string, officialName?: string): string[] {
-  const candidates: string[] = [];
-  const queryName = query.match(
-    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]{1,120}(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
-  )?.[1];
-  if (queryName) candidates.push(queryName);
-
-  const mentionMatches = summary.matchAll(
-    /["“]([^"”\n]{2,60}(?:公司|集团|企业|Inc\.|Corp\.|Corporation))["”]/gu,
-  );
-  for (const match of mentionMatches) {
-    if (match[1]) candidates.push(match[1]);
-  }
-
-  return uniqueStrings(candidates).filter(
-    (name) => normalizeName(name) !== normalizeName(officialName ?? ""),
-  );
-}
-
 function sanitizeScopeTerms(values: string[]): string[] {
   return uniqueStrings(values)
     .map((item) => sanitizeDigestLine(item))
@@ -453,24 +387,6 @@ function sanitizeScopeTerms(values: string[]): string[] {
         !/\\n/.test(item),
     )
     .slice(0, 10);
-}
-
-function deriveScopeTerms(query: string, summary: string): string[] {
-  const phrases = [
-    ...query.split(/[，。,、;；]/),
-    ...(summary.match(
-      /(?:市场|产品|预测|趋势|反馈|增长|份额|营收|竞争|采用|技术|自动驾驶|机器人|电池|储能)[^\n。；;]{0,24}/gu,
-    ) ?? []),
-  ];
-  return sanitizeScopeTerms(phrases);
-}
-
-function inferProfileModeFromQuery(query: string): DeepResearchEntityProfile["mode"] {
-  return /(公司|集团|主体|法定代表人|统一社会信用代码|工商|注册资本|运营状况|资质|认证|同名|企业全称|企业名称)/u.test(
-    query,
-  )
-    ? "entity_disambiguation"
-    : "topic_scope";
 }
 
 function sanitizeProfileConfidence(value?: string): DeepResearchEntityProfile["confidence"] {
@@ -517,8 +433,7 @@ export function normalizeResearchProfile(
     source?: DeepResearchEntityProfile["source"];
   },
 ): DeepResearchEntityProfile {
-  const mode =
-    options?.preferredMode ?? profile?.mode ?? existing?.mode ?? inferProfileModeFromQuery(query);
+  const mode = options?.preferredMode ?? profile?.mode ?? existing?.mode ?? "topic_scope";
   const officialName = sanitizeDigestLine(profile?.officialName ?? existing?.officialName ?? "");
 
   return {
@@ -566,62 +481,6 @@ export function normalizeResearchProfile(
   };
 }
 
-/**
- * `deriveEntityProfile` is now the fallback path.
- *
- * It no longer decides the main intent for the whole run. Instead, it tries to
- * salvage useful profile hints from an already-produced summary when the
- * planner or researcher omitted fields.
- */
-export function deriveEntityProfile(
-  query: string,
-  summary: string,
-  existing?: DeepResearchEntityProfile | null,
-): DeepResearchEntityProfile | null {
-  const preferredMode = existing?.mode ?? inferProfileModeFromQuery(query);
-  const officialName =
-    preferredMode === "entity_disambiguation"
-      ? (extractOfficialName(summary, query) ?? existing?.officialName)
-      : existing?.officialName;
-  const aliases = extractAliases(query, summary, officialName);
-  const scopeTerms = deriveScopeTerms(query, summary);
-  const disambiguationNotes = uniqueStrings(
-    toCandidateLines(summary)
-      .filter((line) =>
-        /(正式名称|可能为同一实体|不同实体|区分|同名|无“|无"|核实|命名)/u.test(line),
-      )
-      .slice(0, 4),
-  );
-  const excludedEntities =
-    preferredMode === "entity_disambiguation" ? extractExcludedEntities(summary) : [];
-  const relatedEntities = preferredMode === "topic_scope" ? extractRelatedEntities(summary) : [];
-
-  if (
-    !officialName &&
-    aliases.length === 0 &&
-    scopeTerms.length === 0 &&
-    disambiguationNotes.length === 0
-  ) {
-    return existing ?? null;
-  }
-
-  return normalizeResearchProfile(
-    query,
-    {
-      mode: preferredMode,
-      officialName: officialName ?? undefined,
-      aliases,
-      scopeTerms,
-      disambiguationNotes,
-      excludedEntities,
-      relatedEntities,
-      confidence: existing?.confidence ?? "low",
-      source: "fallback_rules",
-    },
-    existing,
-    { preferredMode, source: "fallback_rules" },
-  );
-}
 
 function computeDigestConfidence(
   sources: DeepResearchSource[],
@@ -650,13 +509,13 @@ export function buildStepDigest(
   const findings = compressAtomicLines(
     candidates.filter(
       (line) =>
-        !/(待确认|仍需|open question|unknown|未知|不确定|可能|尚未|未披露|未证实)/i.test(line),
+        !/(open question|unknown|uncertain|unverified|not confirmed|possibly|may be|pending)/i.test(line),
     ),
     5,
   );
   const openQuestions = compressAtomicLines(
     candidates.filter((line) =>
-      /(待确认|仍需|建议.*核实|open question|uncertain|未查到|未披露|可能|不确定|仍待)/i.test(line),
+      /(open question|uncertain|unverified|not confirmed|not found|possibly|may be|pending|needs? verification)/i.test(line),
     ),
     3,
   );
@@ -821,7 +680,7 @@ function scoreKnownSource(source: DeepResearchSource, queryText = ""): number {
   const haystack = `${source.title} ${source.snippet ?? ""} ${source.domain}`.toLowerCase();
   const queryTerms = queryText
     .toLowerCase()
-    .split(/[\s,，。:：/]+/)
+    .split(/[\s,:/]+/)
     .map((term) => term.trim())
     .filter((term) => term.length >= 3)
     .slice(0, 12);
