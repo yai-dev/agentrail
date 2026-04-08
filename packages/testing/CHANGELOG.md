@@ -1,0 +1,7 @@
+# @agentrail/testing
+
+## 0.0.2
+
+### Patch Changes
+
+- [#76](https://github.com/yai-dev/agentrail/pull/76) [`b236977`](https://github.com/yai-dev/agentrail/commit/b236977763b49b8a26d668c72de1282cff8fd6a4) Thanks [@jaideepkathiresan](https://github.com/jaideepkathiresan)! - Added @agentrail/testing package.

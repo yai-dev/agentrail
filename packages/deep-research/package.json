@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/deep-research",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Reusable Deep Research workflow package for Agentrail examples.",
   "type": "module",
   "files": [

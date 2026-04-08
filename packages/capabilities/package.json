@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/capabilities",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "App-layer capability descriptors: filesystem, browser, knowledge, skills, orchestration, and memory for Agentrail.",
   "type": "module",
   "files": [
