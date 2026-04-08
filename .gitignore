@@ -140,3 +140,7 @@ vite.config.ts.timestamp-*
 
 # Local development config file
 config/agentrail.yaml
+examples/playground-server/test/*.js
+examples/playground-server/test/*.js.map
+examples/playground-server/test/*.d.ts
+examples/playground-server/test/*.d.ts.map
