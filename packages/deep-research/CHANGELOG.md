@@ -1,5 +1,19 @@
 # @agentrail/deep-research
 
+## 0.0.7
+
+### Patch Changes
+
+- [#110](https://github.com/yai-dev/agentrail/pull/110) [`4ea5933`](https://github.com/yai-dev/agentrail/commit/4ea5933b1b9bfb831c23e51227fb7c4625abb2f8) Thanks [@yai-dev](https://github.com/yai-dev)! - fix: upgrade dependencies and harden regex patterns against ReDoS
+  - Upgrade `hono` to ^4.12.12, `@hono/node-server` to ^1.19.13, and `vite` to ^6.4.2 to address known CVEs
+  - Replace `stripHtml` regex chain with `node-html-parser` to eliminate polynomial ReDoS and handle malformed HTML robustly
+  - Bound all unbounded quantifiers (`\d+`, ` +`) in compaction and fenced-code-block regexes to prevent ReDoS on crafted input
+  - Remove Chinese-only regex fallbacks (`extractOfficialName`, `extractExcludedEntities`, etc.) that were non-functional for non-Chinese users; rely on structured LLM output instead
+
+- Updated dependencies [[`cd58ddc`](https://github.com/yai-dev/agentrail/commit/cd58ddc9afa437cfbfa9bbcf33a82fcfd9acb8da)]:
+  - @agentrail/core@0.2.0
+  - @agentrail/capabilities@0.1.2
+
 ## 0.0.6
 
 ### Patch Changes
