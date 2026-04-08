@@ -18,6 +18,9 @@ const SUMMARY_RE = /<!--\s*summary:\s*(.+?)\s*-->/;
 const COMPACTION_ARCHIVE_RE = /Archive ID:\s*([0-9]{4,})/i;
 const COMPRESSED_COUNT_RE = /(\d+)\s+messages\s+\(\d+\s+tokens estimated\)\s+were compressed/i;
 
+/** Maximum session file size that will be parsed into memory (20 MB). */
+const MAX_SESSION_FILE_BYTES = 20 * 1024 * 1024;
+
 /** Legacy backup file used by older compaction implementations. */
 export const LEGACY_BACKUP_FILE = "messages.jsonl.bak";
 
@@ -65,6 +68,13 @@ export async function buildMemoryEntry(name: string, filePath: string): Promise<
 
 export async function readJsonlMessages(filePath: string): Promise<Message[]> {
   try {
+    const fileStat = await stat(filePath);
+    if (fileStat.size > MAX_SESSION_FILE_BYTES) {
+      console.warn(
+        `[session] skipping oversized messages file (${fileStat.size} bytes): ${filePath}`,
+      );
+      return [];
+    }
     const raw = await readFile(filePath, "utf8");
     return raw
       .trim()

@@ -12,6 +12,7 @@ import path from "node:path";
 
 const STATE_FILE = ".memory-state.json";
 const SESSION_SUMMARY_FILE = "user-memory.json";
+const MAX_SESSIONS_PER_USER = 500;
 
 export interface UserMemoryConfig {
   provider: string;
@@ -160,6 +161,7 @@ export class UserMemoryConsolidationService {
   private readonly inFlight = new Set<string>();
   private readonly activeForeground = new Map<string, number>();
   private timer: ReturnType<typeof setInterval> | null = null;
+  private scanning = false;
 
   constructor(
     private readonly sessionManager: SessionManager,
@@ -212,6 +214,16 @@ export class UserMemoryConsolidationService {
 
   private async scanAllUsers(): Promise<void> {
     if (this.config.enabled === false) return;
+    if (this.scanning) return;
+    this.scanning = true;
+    try {
+      await this.scanAllUsersInner();
+    } finally {
+      this.scanning = false;
+    }
+  }
+
+  private async scanAllUsersInner(): Promise<void> {
     const tenantsDir = path.join(this.dataDir, "tenants");
     let tenantEntries;
     try {
@@ -245,7 +257,7 @@ export class UserMemoryConsolidationService {
     const sessions = await this.sessionManager.listSessionIdsByUser(
       tenantId,
       userId,
-      Number.MAX_SAFE_INTEGER,
+      MAX_SESSIONS_PER_USER,
     );
     if (sessions.length === 0) return;
 
@@ -293,7 +305,7 @@ export class UserMemoryConsolidationService {
     const sessions = await this.sessionManager.listSessionIdsByUser(
       tenantId,
       userId,
-      Number.MAX_SAFE_INTEGER,
+      MAX_SESSIONS_PER_USER,
     );
     if (sessions.length === 0) return;
 
