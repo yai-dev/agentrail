@@ -142,12 +142,12 @@ export type AgentrailEvent = RuntimeEvent | ExtendedSseEvent | AgentrailHostEven
  */
 export const TRACE_PERSISTED_EVENT_TYPES = new Set([
   // Runtime / skill events
-  "agent_start",
-  "agent_end",
-  "turn_start",
-  "turn_end",
-  "tool_execution_start",
-  "tool_execution_end",
+  "session.start",
+  "session.end",
+  "turn.start",
+  "turn.complete",
+  "tool.before",
+  "tool.after",
   "skill_start",
   "skill_end",
   "waiting_for_user_input",

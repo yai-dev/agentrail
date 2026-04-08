@@ -240,7 +240,7 @@ export class AgentImpl implements Agent {
     let stopReason: StopReason = "stop";
 
     for await (const event of stream) {
-      if (event.type === "agent_end") {
+      if (event.type === "session.end") {
         messages = event.messages;
         usage = event.usage;
       }

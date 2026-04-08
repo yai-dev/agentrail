@@ -110,18 +110,84 @@ export interface AgentrailRequestLifecycleContext {
   agentId: string;
 }
 
-/** Lightweight host extension contract for request interception and lifecycle hooks. */
+/**
+ * Lightweight host extension contract for request interception and lifecycle hooks.
+ *
+ * A plugin is a named, optionally versioned object that the host mounts at startup.
+ * Plugins can intercept incoming requests, supply context providers to every agent
+ * call, handle file attachments, and observe request/turn lifecycle events.
+ *
+ * ### Lifecycle
+ * 1. `start()` — called once when `createAgentApp` initialises. Use to open
+ *    connections or warm up caches.
+ * 2. Per-request hooks run in declaration order:
+ *    `interceptChatRequest` → `onRequestStart` → _(agent runs)_ → `onRequestEnd`
+ *    → `onTurnPersisted`
+ * 3. `stop()` — called on graceful shutdown. Use to flush buffers and close
+ *    connections.
+ *
+ * @see {@link https://agentrail.run/reference/plugin-contract}
+ */
 export interface AgentrailPlugin {
+  /** Human-readable plugin identifier used in logs and error messages. */
   name: string;
+
+  /**
+   * Semantic version string (`MAJOR.MINOR.PATCH`) of the plugin implementation.
+   * Providing a version is strongly recommended for diagnostics and compatibility
+   * checks — e.g. `"1.0.0"`.
+   */
+  version?: string;
+
+  /**
+   * Initialise the plugin. Called once when the host application starts.
+   * Throw to abort startup with a descriptive error.
+   */
   start?(): void | Promise<void>;
+
+  /**
+   * Tear down the plugin. Called on graceful host shutdown.
+   * Errors thrown here are logged but do not prevent other plugins from stopping.
+   */
   stop?(): void | Promise<void>;
+
+  /**
+   * Intercept an incoming chat request before the agent runs.
+   * Return a non-null `AgentrailChatHandledResponse` to short-circuit execution
+   * (e.g. for rate limiting or cached replies). Return `null` to continue.
+   */
   interceptChatRequest?(
     context: AgentrailChatRequestContext,
   ): Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
+
+  /**
+   * Additional context providers contributed by this plugin. They are merged
+   * with profile-level providers and called before each agent turn.
+   */
   contextProviders?: ContextProvider[];
+
+  /**
+   * Optional handler that converts uploaded file attachments into additional
+   * agent context text. Called after request validation, before agent execution.
+   */
   attachmentHandler?: AttachmentHandler;
+
+  /**
+   * Called at the very start of each chat or stream request, before the agent
+   * begins processing. Useful for emitting metrics or opening per-request spans.
+   */
   onRequestStart?(context: AgentrailRequestLifecycleContext): void | Promise<void>;
+
+  /**
+   * Called after the agent finishes and the response is fully sent.
+   * Errors thrown here are logged but do not affect the HTTP response.
+   */
   onRequestEnd?(context: AgentrailRequestLifecycleContext): void | Promise<void>;
+
+  /**
+   * Called after the turn's messages have been persisted to the session store.
+   * Use for post-turn side effects such as triggering memory consolidation.
+   */
   onTurnPersisted?(context: AgentrailRequestLifecycleContext): void | Promise<void>;
 }
 

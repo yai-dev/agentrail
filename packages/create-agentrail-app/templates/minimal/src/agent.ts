@@ -50,7 +50,7 @@ export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
       if (event.type === "message_update" && event.event.type === "text_delta") {
         summary += event.event.delta;
       }
-      if (event.type === "agent_end") break;
+      if (event.type === "session.end") break;
     }
 
     return summary.trim() || "(summarization produced no output)";

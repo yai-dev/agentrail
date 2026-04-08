@@ -36,20 +36,20 @@ export interface ContextUsageStat {
 
 export type StreamEvent =
   | { type: "session_id"; sessionId: string }
-  | { type: "agent_start" }
-  | { type: "agent_end"; usage: UsageStat }
+  | { type: "session.start" }
+  | { type: "session.end"; usage: UsageStat }
   | { type: "context_usage"; inputTokens: number; outputTokens: number; budgetUsedPct: number }
   | { type: "context_compaction_start" }
   | { type: "context_compaction_end" }
-  | { type: "turn_start" }
-  | { type: "turn_end"; message: { stopReason: string } }
-  | { type: "message_start" }
-  | { type: "message_end" }
-  | { type: "message_update"; event: LlmEvent }
-  | { type: "tool_execution_start"; toolCallId: string; toolName: string; args: unknown }
-  | { type: "tool_execution_update"; toolCallId: string; toolName: string; partialResult: unknown }
+  | { type: "turn.start" }
+  | { type: "turn.complete"; message: { stopReason: string } }
+  | { type: "message.start" }
+  | { type: "message.end" }
+  | { type: "message.update"; event: LlmEvent }
+  | { type: "tool.before"; toolCallId: string; toolName: string; args: unknown }
+  | { type: "tool.update"; toolCallId: string; toolName: string; partialResult: unknown }
   | {
-      type: "tool_execution_end";
+      type: "tool.after";
       toolCallId: string;
       toolName: string;
       result: unknown;

@@ -497,8 +497,8 @@ export default function App() {
                 ];
               }
             });
-          } else if (event.type === "turn_end") {
-            const te = event as { type: "turn_end"; message: { stopReason: string } };
+          } else if (event.type === "turn.complete") {
+            const te = event as { type: "turn.complete"; message: { stopReason: string } };
             if (te.message?.stopReason === "error") {
               patchLastAssistant((m) => ({
                 ...m,
@@ -530,8 +530,8 @@ export default function App() {
               outputTokens: cu.outputTokens,
               budgetUsedPct: cu.budgetUsedPct,
             });
-          } else if (event.type === "agent_end") {
-            const ae = event as { type: "agent_end"; usage: UsageStat };
+          } else if (event.type === "session.end") {
+            const ae = event as { type: "session.end"; usage: UsageStat };
             patchLastAssistant((m) => ({ ...m, usage: ae.usage, streaming: false }));
             // Clear any lingering direct-mode skill indicator (direct mode has no skill_end event).
             if (activeSkillRef.current !== null) {

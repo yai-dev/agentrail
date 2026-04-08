@@ -72,7 +72,7 @@ Every `execute` function must return a `ToolResult`:
 
 ## Streaming Tool Updates
 
-For long-running tools, use `ctx.onUpdate` to emit intermediate results while the tool is still executing. The host forwards these as `tool_execution_update` events over SSE:
+For long-running tools, use `ctx.onUpdate` to emit intermediate results while the tool is still executing. The host forwards these as `tool.update` events over SSE:
 
 ```ts
 .execute(async (params, ctx) => {

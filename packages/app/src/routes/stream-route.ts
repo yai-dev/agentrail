@@ -405,7 +405,7 @@ async function drainAgentStream(
     await opts.writeEvent(event);
     opts.onTraceEvent(event);
 
-    if (event.type === "agent_end") {
+    if (event.type === "session.end") {
       capturedMessages = event.messages;
       capturedUsage = event.usage;
 

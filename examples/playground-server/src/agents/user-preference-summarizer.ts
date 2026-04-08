@@ -161,10 +161,10 @@ async function runSummarizeUserPreferences(tenantId: string, userId: string): Pr
     `From the following conversation excerpt(s), extract user preferences and focus areas for USER.md:\n\n${formatted}`,
   )) {
     if (isRuntimeError(event)) return;
-    if (event.type === "message_update" && event.event.type === "text_delta") {
+    if (event.type === "message.update" && event.event.type === "text_delta") {
       summary += event.event.delta;
     }
-    if (event.type === "agent_end") break;
+    if (event.type === "session.end") break;
   }
   summary = summary.trim();
   if (!summary) return;
