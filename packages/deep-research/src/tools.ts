@@ -39,17 +39,21 @@ function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  nbsp: " ",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+};
+
 function stripHtml(html: string): string {
   return normalizeWhitespace(
     html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<script[\s\S]*?<\/script\s*>/gi, " ")
       .replace(/<style[\s\S]*?<\/style>/gi, " ")
       .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
       .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">"),
+      .replace(/&(nbsp|amp|lt|gt);/gi, (_, e) => HTML_ENTITIES[e.toLowerCase()] ?? `&${e};`),
   );
 }
 

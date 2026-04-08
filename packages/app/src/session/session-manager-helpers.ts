@@ -16,7 +16,7 @@ import type {
 
 const SUMMARY_RE = /<!--\s*summary:\s*(.+?)\s*-->/;
 const COMPACTION_ARCHIVE_RE = /Archive ID:\s*([0-9]{4,})/i;
-const COMPRESSED_COUNT_RE = /(\d+)\s+messages\s+\(\d+\s+tokens estimated\)\s+were compressed/i;
+const COMPRESSED_COUNT_RE = /(\d+) +messages +\(\d+ +tokens +estimated\) +were +compressed/i;
 
 /** Maximum session file size that will be parsed into memory (20 MB). */
 const MAX_SESSION_FILE_BYTES = 20 * 1024 * 1024;

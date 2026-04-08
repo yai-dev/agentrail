@@ -46,7 +46,7 @@ export function extractJsonObject<T>(text: string): T | null {
   const direct = tryParseJson<T>(trimmed);
   if (direct) return direct;
 
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]+?)```/i);
+  const fenced = trimmed.match(/```(?:json)?[ \t]*\r?\n([\s\S]{1,100000}?)```/i);
   if (fenced?.[1]) {
     const parsed = tryParseJsonWithRepairs<T>(fenced[1].trim());
     if (parsed) return parsed;
@@ -256,14 +256,17 @@ function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
+const DECODE_ENTITIES: Record<string, string> = {
+  nbsp: " ",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  "#39": "'",
+  quot: '"',
+};
+
 function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&nbsp;?/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/gi, '"');
+  return text.replace(/&(nbsp|amp|lt|gt|#39|quot);?/gi, (_, e) => DECODE_ENTITIES[e.toLowerCase()] ?? `&${e};`);
 }
 
 export function normalizeResearchUrl(rawUrl: string): string {
@@ -375,10 +378,10 @@ function compressAtomicLines(lines: string[], limit: number): string[] {
 
 function extractOfficialName(summary: string, query: string): string | null {
   const patterns = [
-    /正式名称(?:为|：)\s*["“]?([^"”\n]+?公司)/u,
-    /企业全称(?:\s*[*：:]|\s+)\s*([^|\n]+?公司)/u,
-    /^##\s*([^—\n]+?(?:公司|Inc\.|Corp\.|Corporation))\s*[—-]/mu,
-    /统一社会信用代码[\s\S]{0,120}?([^|\n]+?公司)/u,
+    /正式名称(?:为|：)[ \t]*[“”]?([^“”\n]{1,200}公司)/u,
+    /企业全称[ \t]*[*：:]*[ \t]*([^|\n]{1,200}公司)/u,
+    /^##[ \t]*([^—\n]{1,200}(?:公司|Inc\.|Corp\.|Corporation))[ \t]*[—-]/mu,
+    /统一社会信用代码[\s\S]{0,120}([^|\n]{1,200}公司)/u,
   ];
   for (const pattern of patterns) {
     const match = summary.match(pattern);

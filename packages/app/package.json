@@ -33,7 +33,7 @@
   "dependencies": {
     "@agentrail/capabilities": "workspace:*",
     "@agentrail/core": "workspace:*",
-    "hono": "^4.7.4",
+    "hono": "^4.12.12",
     "yaml": "^2.0.0"
   },
   "devDependencies": {

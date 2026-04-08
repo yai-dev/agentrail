@@ -51,11 +51,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/deep-research
       '@hono/node-server':
-        specifier: ^1.13.7
-        version: 1.19.11(hono@4.12.9)
+        specifier: ^1.19.13
+        version: 1.19.13(hono@4.12.12)
       hono:
-        specifier: ^4.7.4
-        version: 4.12.9
+        specifier: ^4.12.12
+        version: 4.12.12
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -82,11 +82,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/deep-research
       '@hono/node-server':
-        specifier: ^1.13.7
-        version: 1.19.11(hono@4.12.9)
+        specifier: ^1.19.13
+        version: 1.19.13(hono@4.12.12)
       hono:
-        specifier: ^4.7.4
-        version: 4.12.9
+        specifier: ^4.12.12
+        version: 4.12.12
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -142,10 +142,10 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
         specifier: ^4.3.4
-        version: 4.7.0(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.7.0(vite@6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
       vite:
-        specifier: ^6.0.0
-        version: 6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)
+        specifier: ^6.4.2
+        version: 6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)
 
   packages/app:
     dependencies:
@@ -156,8 +156,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       hono:
-        specifier: ^4.7.4
-        version: 4.12.9
+        specifier: ^4.12.12
+        version: 4.12.12
       yaml:
         specifier: ^2.0.0
         version: 2.8.3
@@ -170,7 +170,7 @@ importers:
         version: 1.8.16
       vite-tsconfig-paths:
         specifier: ^6.1.1
-        version: 6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
+        version: 6.1.1(typescript@5.9.3)(vite@5.4.21(@types/node@22.19.15))
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.15)
@@ -204,7 +204,7 @@ importers:
         version: 1.8.16
       vite-tsconfig-paths:
         specifier: ^6.1.1
-        version: 6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
+        version: 6.1.1(typescript@5.9.3)(vite@6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.15)
@@ -229,7 +229,7 @@ importers:
         version: 1.8.16
       vite-tsconfig-paths:
         specifier: ^6.1.1
-        version: 6.1.1(typescript@5.9.3)(vite@5.4.21(@types/node@22.19.15))
+        version: 6.1.1(typescript@5.9.3)(vite@6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.15)
@@ -253,8 +253,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       hono:
-        specifier: ^4.7.4
-        version: 4.12.9
+        specifier: ^4.12.12
+        version: 4.12.12
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -264,7 +264,7 @@ importers:
         version: 1.8.16
       vite-tsconfig-paths:
         specifier: ^6.1.1
-        version: 6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
+        version: 6.1.1(typescript@5.9.3)(vite@6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.15)
@@ -286,7 +286,7 @@ importers:
         version: 5.9.3
       vite-tsconfig-paths:
         specifier: ^6.1.1
-        version: 6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
+        version: 6.1.1(typescript@5.9.3)(vite@6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.19.15)
@@ -938,8 +938,8 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hono/node-server@1.19.11':
-    resolution: {integrity: sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g==}
+  '@hono/node-server@1.19.13':
+    resolution: {integrity: sha512-TsQLe4i2gvoTtrHje625ngThGBySOgSK3Xo2XRYOdqGN1teR8+I7vchQC46uLJi8OF62YTYA3AhSpumtkhsaKQ==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
@@ -2168,8 +2168,8 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
 
-  hono@4.12.9:
-    resolution: {integrity: sha512-wy3T8Zm2bsEvxKZM5w21VdHDDcwVS1yUFFY6i8UobSsKfFceT7TOwhbhfKsDyx7tYQlmRM5FLpIuYvNFyjctiA==}
+  hono@4.12.12:
+    resolution: {integrity: sha512-p1JfQMKaceuCbpJKAPKVqyqviZdS0eUxH9v82oWo1kb9xjQ5wA6iP3FNVAPDFlz5/p7d45lO+BpSk1tuSZMF4Q==}
     engines: {node: '>=16.9.0'}
 
   html-url-attributes@3.0.1:
@@ -3234,8 +3234,8 @@ packages:
       terser:
         optional: true
 
-  vite@6.4.1:
-    resolution: {integrity: sha512-+Oxm7q9hDoLMyJOYfUYBuHQo+dkAloi33apOPP56pzj+vsdJDzr+j1NISE5pyaAuKL4A3UD34qd0lx5+kfKp2g==}
+  vite@6.4.2:
+    resolution: {integrity: sha512-2N/55r4JDJ4gdrCvGgINMy+HH3iRpNIz8K6SFwVsA+JbQScLiC+clmAxBgwiSPgcG9U15QmvqCGWzMbqda5zGQ==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
     peerDependencies:
@@ -3953,9 +3953,9 @@ snapshots:
       protobufjs: 7.5.4
       yargs: 17.7.2
 
-  '@hono/node-server@1.19.11(hono@4.12.9)':
+  '@hono/node-server@1.19.13(hono@4.12.12)':
     dependencies:
-      hono: 4.12.9
+      hono: 4.12.12
 
   '@iconify/types@2.0.0': {}
 
@@ -4347,7 +4347,7 @@ snapshots:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
-  '@vitejs/plugin-react@4.7.0(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))':
+  '@vitejs/plugin-react@4.7.0(vite@6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.0)
@@ -4355,7 +4355,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)
+      vite: 6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:
       - supports-color
 
@@ -5307,7 +5307,7 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.4
 
-  hono@4.12.9: {}
+  hono@4.12.12: {}
 
   html-url-attributes@3.0.1: {}
 
@@ -6607,12 +6607,12 @@ snapshots:
       - supports-color
       - typescript
 
-  vite-tsconfig-paths@6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)):
+  vite-tsconfig-paths@6.1.1(typescript@5.9.3)(vite@6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
       debug: 4.4.3
       globrex: 0.1.2
       tsconfck: 3.1.6(typescript@5.9.3)
-      vite: 6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)
+      vite: 6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -6626,7 +6626,7 @@ snapshots:
       '@types/node': 22.19.15
       fsevents: 2.3.3
 
-  vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3):
+  vite@6.4.2(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.4)
