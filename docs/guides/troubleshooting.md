@@ -18,7 +18,7 @@ This registers both the Anthropic and OpenAI providers.
 
 - Check that the correct environment variable is set (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`).
 - Make sure the key is not expired or revoked.
-- If using a custom `baseUrl`, confirm the endpoint accepts your key format.
+- If using a custom `baseUrl`, confirm the endpoint accepts your key format. See [Using OpenAI-Compatible Providers](use-openai-compatible-providers.md) for a full list of supported providers and configuration examples.
 
 ### Wrong model or provider
 
