@@ -8,8 +8,8 @@ import type {
   ImageContent,
   TextContent,
   ToolResultContent,
-} from "./content.types.js";
-import type { Usage } from "./usage.types.js";
+} from "@/types/content.types.js";
+import type { Usage } from "@/types/usage.types.js";
 
 /** Terminal reason reported by a model invocation or agent loop. */
 export type StopReason = "stop" | "length" | "toolUse" | "error" | "aborted";

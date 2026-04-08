@@ -8,7 +8,7 @@ import { exec } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import type { KnowledgeManager } from "./knowledge-manager.js";
+import type { KnowledgeManager } from "@/knowledge/knowledge-manager.js";
 
 const execAsync = promisify(exec);
 

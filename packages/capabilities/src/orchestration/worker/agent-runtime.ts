@@ -5,7 +5,7 @@
 
 import type { SessionRef } from "@agentrail/core";
 import type { Message, RuntimeTool, TransformContextFn } from "@agentrail/core";
-import type { CreateManagedAgentInput } from "../orchestration-manager.js";
+import type { CreateManagedAgentInput } from "@/orchestration/orchestration-manager.js";
 
 /** Provider/model selection used by a sub-agent worker runtime. */
 export interface ModelConfig {

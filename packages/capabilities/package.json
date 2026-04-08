@@ -19,7 +19,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
@@ -36,6 +36,8 @@
     "@types/dockerode": "^3.3.38",
     "@types/node": "^22.0.0",
     "@types/tar-stream": "^3.1.4",
+    "tsc-alias": "^1.8.16",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^2.0.0"
   },
   "repository": {

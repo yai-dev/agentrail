@@ -17,10 +17,32 @@ import {
 } from "@agentrail/capabilities";
 import { buildSkillTool } from "@agentrail/capabilities";
 import { createAskUserQuestionTool, createTodoWriteTool } from "@agentrail/capabilities";
-import type { DefaultCapabilityToolOptions, DefaultCapabilityTools } from "./shared-types.js";
+import type { DefaultCapabilityToolOptions, DefaultCapabilityTools } from "@/host/defaults/shared-types.js";
 
 /**
  * Builds the default capability toolset used by the reference host and examples.
+ *
+ * @deprecated Use capability descriptors instead:
+ * ```ts
+ * import { filesystem, browser, knowledge, skills, askUser, orchestration, memoryContext } from "@agentrail/capabilities";
+ * import { createOrchestrationRegistry } from "@agentrail/app";
+ *
+ * const orchestrationRegistry = createOrchestrationRegistry({ dataDir });
+ *
+ * defineProfile({
+ *   capabilities: [
+ *     filesystem({ sandboxManager }),
+ *     browser({ sandboxManager }),
+ *     knowledge(knowledgeManager),
+ *     skills(skillManager),
+ *     askUser(waitHandleRegistry),
+ *     orchestration(orchestrationRegistry, (input, ctx) =>
+ *       createSubAgentProcess({ ...ctx, input, workerPath: WORKER_PATH }),
+ *     ),
+ *     memoryContext({ buildMemoryIndex: (ctx) => sessionManager.buildMemoryIndex(...ctx) }),
+ *   ],
+ * });
+ * ```
  */
 export async function buildDefaultCapabilityTools(
   options: DefaultCapabilityToolOptions,

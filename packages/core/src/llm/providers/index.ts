@@ -11,5 +11,5 @@
  *
  *   import "@agentrail/runtime-core/providers";
  */
-export * from "./anthropic.js";
-export * from "./openai.js";
+export * from "@/llm/providers/anthropic.js";
+export * from "@/llm/providers/openai.js";

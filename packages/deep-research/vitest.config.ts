@@ -5,10 +5,14 @@
 
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
+  plugins: [tsconfigPaths()],
   resolve: {
     alias: {
+      "@agentrail/core": resolve(__dirname, "../core/src/index.ts"),
+      "@agentrail/capabilities": resolve(__dirname, "../capabilities/src/index.ts"),
       "@agentrail/prompts": resolve(__dirname, "../core/src/prompts/index.ts"),
     },
   },

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { estimateMessageTokens } from "../session/token-estimator.js";
+import { estimateMessageTokens } from "@/session/token-estimator.js";
 import type { Message } from "@agentrail/core";
-import type { AgentrailSessionStore } from "./types.js";
+import type { AgentrailSessionStore } from "@/host/types.js";
 
 /** Token thresholds that control when host-side history compaction runs. */
 export interface CompactionConfig {

@@ -4,8 +4,8 @@
  */
 
 import type { ContextProvider, MemoryIndex, Message } from "@agentrail/core";
-import type { KBMetadata } from "../knowledge/types.js";
-import type { SkillMeta } from "../skills/types.js";
+import type { KBMetadata } from "@/knowledge/types.js";
+import type { SkillMeta } from "@/skills/types.js";
 
 /** Request-scoped data needed to build default capability context messages. */
 export interface DefaultCapabilityContextOptions {

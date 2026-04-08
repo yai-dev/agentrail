@@ -10,7 +10,7 @@ import {
   type AgentrailContextUsageEvent,
   type AgentrailErrorEvent,
   type WorkflowTraceEventEnvelope,
-} from "../events/index.js";
+} from "@/events/index.js";
 import type { SessionRef } from "@agentrail/core";
 import type { OrchestrationManager } from "@agentrail/capabilities";
 import type { Message, TransformContextFn, Usage } from "@agentrail/core";
@@ -18,8 +18,8 @@ import { isRuntimeError } from "@agentrail/core";
 import type { SandboxManager } from "@agentrail/capabilities";
 import { Hono } from "hono";
 import { streamText } from "hono/streaming";
-import { runCompactionIfNeeded } from "../host/compaction.js";
-import { runPluginRequestHook } from "../host/plugins.js";
+import { runCompactionIfNeeded } from "@/host/compaction.js";
+import { runPluginRequestHook } from "@/host/plugins.js";
 import {
   buildEffectiveMessage,
   createSseEventWriter,
@@ -27,16 +27,17 @@ import {
   resolveStreamTransformContext,
   validateStreamRequest,
   type StreamRequest,
-} from "./stream-route-internals.js";
+} from "@/routes/stream-route-internals.js";
 import type {
   AgentrailPlugin,
   AgentrailProfile,
+  AgentrailProfileContext,
   AgentrailRequestLifecycleContext,
   AgentrailSessionStore,
   AttachmentFile,
   AttachmentHandler,
   ContextProvider,
-} from "../host/types.js";
+} from "@/host/types.js";
 
 /**
  * Configuration for the streaming SSE chat route factory.
@@ -44,8 +45,12 @@ import type {
  * @see {@link https://agentrail.run/reference/host-primitives}
  */
 export interface AgentrailStreamRouteOptions {
-  /** Root data directory used for uploads and session-backed helpers. */
-  dataDir: string;
+  /**
+   * Root data directory used for persisting uploaded attachments.
+   * Required only when the `/stream` endpoint receives requests with file attachments.
+   * When absent, attachment uploads throw a clear error; all other streaming features work normally.
+   */
+  dataDir?: string;
   /** Default profile ID used when the request omits `agentId`. */
   defaultAgentId: string;
   /** Session store implementation used for history persistence and compaction. */
@@ -294,10 +299,18 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           return;
         }
 
+        const profileCtx: AgentrailProfileContext = {
+          tenantId,
+          userId,
+          sessionId: sid,
+          sessionRef,
+          sessionStore: options.sessionStore,
+        };
         const agent = await profile.createAgent(
-          { tenantId, userId, sessionId: sid, sessionRef, sessionStore: options.sessionStore },
+          profileCtx,
           (event) => forwardSubAgentEvent(event),
         );
+        const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
 
         if (options.getOrchestrationManager) {
           const manager = await options.getOrchestrationManager({
@@ -338,11 +351,14 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         );
 
         const history = await options.sessionStore.loadMessagesWithBudget(tenantId, sid);
-        const transformContext = await resolveStreamTransformContext(options, plugins, {
-          tenantId,
-          userId,
-          sessionId: sid,
-        });
+        const transformContext = await resolveStreamTransformContext(
+          {
+            ...options,
+            contextProviders: [...(options.contextProviders ?? []), ...capProviders],
+          },
+          plugins,
+          { tenantId, userId, sessionId: sid },
+        );
 
         const agentStream = agent.stream(effectiveMessage, {
           messages: history,

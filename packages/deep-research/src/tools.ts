@@ -4,8 +4,8 @@
  */
 
 import { tool, Type } from "@agentrail/core";
-import type { DeepResearchRuntimeConfig } from "./runtime.js";
-import { normalizeResearchUrl } from "./utils.js";
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import { normalizeResearchUrl } from "@/utils.js";
 
 interface TavilySearchResult {
   title?: string;

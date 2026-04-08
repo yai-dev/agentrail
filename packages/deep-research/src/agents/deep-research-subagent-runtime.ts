@@ -16,9 +16,9 @@ import type {
 import type { ModelConfig } from "@agentrail/core";
 import type { RuntimeTool, TransformContextFn } from "@agentrail/core";
 import { createSandboxedPython, SandboxManager } from "@agentrail/capabilities";
-import { getRolePrompt } from "../prompts.js";
-import type { DeepResearchRuntimeConfig } from "../runtime.js";
-import { createFetchUrlTool, createWebSearchTool } from "../tools.js";
+import { getRolePrompt } from "@/prompts.js";
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import { createFetchUrlTool, createWebSearchTool } from "@/tools.js";
 
 export interface DeepResearchSubAgentRuntimeConfig {
   tenantId: string;

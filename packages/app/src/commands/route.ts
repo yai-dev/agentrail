@@ -4,7 +4,7 @@
  */
 
 import { Hono } from "hono";
-import type { SlashCommandRegistry } from "./registry.js";
+import type { SlashCommandRegistry } from "@/commands/registry.js";
 
 interface CommandRequest {
   command: string;

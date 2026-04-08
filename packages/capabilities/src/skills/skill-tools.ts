@@ -5,8 +5,8 @@
 
 import type { AssistantMessage, ModelConfig, RuntimeTool } from "@agentrail/core";
 import { defineAgent, extractText, isAgentEnd, tool, Type } from "@agentrail/core";
-import type { SkillManager } from "./skill-manager.js";
-import type { ExtendedSseEvent } from "./types.js";
+import type { SkillManager } from "@/skills/skill-manager.js";
+import type { ExtendedSseEvent } from "@/skills/types.js";
 
 /**
  * Build the single `Skill` tool.

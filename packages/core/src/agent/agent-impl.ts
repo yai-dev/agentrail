@@ -4,29 +4,29 @@
  */
 
 import { randomUUID } from "node:crypto";
-import type { Agent } from "../interfaces/agent.js";
-import type { LlmClient } from "../interfaces/llm-client.js";
-import { DefaultLlmClient } from "../llm/default-llm-client.js";
+import type { Agent } from "@/interfaces/agent.js";
+import type { LlmClient } from "@/interfaces/llm-client.js";
+import { DefaultLlmClient } from "@/llm/default-llm-client.js";
 import type {
   AgentInput,
   AgentResult,
   AgentRunOptions,
   AgentStream,
   TransformContextFn,
-} from "../types/agent.types.js";
+} from "@/types/agent.types.js";
 import {
   createEmptyAssistantMessage,
   extractText,
   extractToolCalls,
-} from "../types/agent.types.js";
-import type { UserContent } from "../types/content.types.js";
-import type { Message, StopReason, UserMessage } from "../types/message.types.js";
-import { isAssistantMessage, isUserMessage } from "../types/message.types.js";
-import type { RuntimeEvent } from "../types/result.types.js";
-import type { RuntimeTool } from "../types/tool.types.js";
-import type { Usage } from "../types/usage.types.js";
-import { agentLoop } from "./agent-loop.js";
-import type { AgentConfig, ModelConfig } from "./define-agent.js";
+} from "@/types/agent.types.js";
+import type { UserContent } from "@/types/content.types.js";
+import type { Message, StopReason, UserMessage } from "@/types/message.types.js";
+import { isAssistantMessage, isUserMessage } from "@/types/message.types.js";
+import type { RuntimeEvent } from "@/types/result.types.js";
+import type { RuntimeTool } from "@/types/tool.types.js";
+import type { Usage } from "@/types/usage.types.js";
+import { agentLoop } from "@/agent/agent-loop.js";
+import type { AgentConfig, ModelConfig } from "@/agent/define-agent.js";
 
 // ============================================================================
 // ============================================================================
@@ -60,6 +60,7 @@ export class AgentImpl implements Agent {
   readonly id: string;
   readonly name: string;
 
+  private readonly config: AgentConfig;
   private readonly spec: InternalSpec;
   private readonly llmClient?: LlmClient;
   private readonly defaultMaxTokens?: number;
@@ -69,6 +70,7 @@ export class AgentImpl implements Agent {
   private readonly defaultMaxTurnsMessage?: string;
 
   constructor(config: AgentConfig) {
+    this.config = config;
     this.id = config.id;
     this.name = config.name ?? config.id;
 
@@ -115,6 +117,11 @@ export class AgentImpl implements Agent {
 
   async batch(inputs: AgentInput[], options?: AgentRunOptions): Promise<AgentResult[]> {
     return Promise.all(inputs.map((input) => this.invoke(input, options)));
+  }
+
+  withTools(extra: RuntimeTool[]): Agent {
+    const existing = this.normalizeTools(this.config.tools) ?? [];
+    return new AgentImpl({ ...this.config, tools: [...existing, ...extra] });
   }
 
   // ============================================================================

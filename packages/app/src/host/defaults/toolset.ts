@@ -4,8 +4,8 @@
  */
 
 import type { RuntimeTool } from "@agentrail/core";
-import type { ContextProvider } from "../types.js";
-import type { DefaultContextProvidersInput, DefaultToolsetInput } from "./shared-types.js";
+import type { ContextProvider } from "@/host/types.js";
+import type { DefaultContextProvidersInput, DefaultToolsetInput } from "@/host/defaults/shared-types.js";
 
 /**
  * Merges base and optional context providers into a single ordered list.

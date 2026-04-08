@@ -12,10 +12,10 @@ export type {
   ToolCall,
   ToolResultContent,
   UserContent,
-} from "./content.types.js";
+} from "@/types/content.types.js";
 
 /** Token and cost accounting types exported from the runtime core type surface. */
-export type { Cost, Usage } from "./usage.types.js";
+export type { Cost, Usage } from "@/types/usage.types.js";
 
 /** Message role and envelope types exported from the runtime core type surface. */
 export type {
@@ -26,9 +26,9 @@ export type {
   StopReason,
   ToolResultMessage,
   UserMessage,
-} from "./message.types.js";
+} from "@/types/message.types.js";
 
-export { isAssistantMessage, isToolResultMessage, isUserMessage } from "./message.types.js";
+export { isAssistantMessage, isToolResultMessage, isUserMessage } from "@/types/message.types.js";
 
 /** Tool contract and helper types exported from the runtime core type surface. */
 export type {
@@ -38,7 +38,7 @@ export type {
   ToolDefinition,
   ToolResult,
   ToolUpdateCallback,
-} from "./tool.types.js";
+} from "@/types/tool.types.js";
 
 /** Agent invocation input/output types exported from the runtime core type surface. */
 export type {
@@ -48,12 +48,12 @@ export type {
   AgentStream,
   GetSteeringMessagesFn,
   TransformContextFn,
-} from "./agent.types.js";
+} from "@/types/agent.types.js";
 
-export { createEmptyAssistantMessage, extractText, extractToolCalls } from "./agent.types.js";
+export { createEmptyAssistantMessage, extractText, extractToolCalls } from "@/types/agent.types.js";
 
 /** Runtime stream event types exported from the runtime core type surface. */
-export type { LlmStreamEvent, RuntimeEvent } from "./result.types.js";
+export type { LlmStreamEvent, RuntimeEvent } from "@/types/result.types.js";
 
 export {
   isAgentEnd,
@@ -61,4 +61,4 @@ export {
   isLlmStreamError,
   isLlmStreamTerminal,
   isRuntimeError,
-} from "./result.types.js";
+} from "@/types/result.types.js";

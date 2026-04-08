@@ -8,8 +8,8 @@ import type {
   SlashCommandContext,
   SlashCommandResult,
 } from "@agentrail/app";
-import { buildSummarizeFn } from "../../agents/summarizer.js";
-import { sandboxManager, sessionManager } from "../../context/index.js";
+import { buildSummarizeFn } from "@/agents/summarizer.js";
+import { sandboxManager, sessionManager } from "@/context/index.js";
 
 export async function handleCompactCommand(
   parsed: ParsedSlashCommand,

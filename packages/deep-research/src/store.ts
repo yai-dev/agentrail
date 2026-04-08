@@ -7,7 +7,7 @@ import type { SessionRef } from "@agentrail/core";
 import { resolveSessionRef } from "@agentrail/core";
 import { appendFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { DeepResearchEvent, DeepResearchState } from "./types.js";
+import type { DeepResearchEvent, DeepResearchState } from "@/types.js";
 
 const STATE_FILE = "state.json";
 const EVENTS_FILE = "events.jsonl";

@@ -115,15 +115,15 @@ Pass `summarize` and `compaction` to `createAgentApp`:
 
 ```ts
 import type { Message } from "@agentrail/core";
-import { createAgentApp, SessionManager } from "@agentrail/app";
+import { createAgentApp } from "@agentrail/app";
 
 // In production, replace this with a real LLM summarization call
 const summarize = async (messages: Message[]) =>
   messages.map((m) => `${m.role}: ${JSON.stringify(m.content)}`).join("\n");
 
-const { app } = createAgentApp({
+const app = createAgentApp({
+  dataDir: DATA_DIR,
   profiles: [defaultProfile],
-  sessionManager: new SessionManager(DATA_DIR),
   summarize,
   compaction: {
     triggerTokens: 80_000, // compact when history exceeds this many tokens

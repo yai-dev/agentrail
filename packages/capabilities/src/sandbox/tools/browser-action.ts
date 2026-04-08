@@ -5,7 +5,7 @@
 
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
-import type { SandboxManager } from "../sandbox-manager.js";
+import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 
 const BROWSER_TIMEOUT_MS = 20_000;
 

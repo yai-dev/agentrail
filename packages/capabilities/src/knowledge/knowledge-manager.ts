@@ -17,7 +17,7 @@ import {
   removeDocumentReferencesFromIndexes,
   replaceIndexDocumentPaths,
   writeJsonFile,
-} from "./knowledge-manager-helpers.js";
+} from "@/knowledge/knowledge-manager-helpers.js";
 import type {
   IngestionJob,
   IngestionStep,
@@ -26,7 +26,7 @@ import type {
   KnowledgeIndex,
   SearchResult,
   Taxonomy,
-} from "./types.js";
+} from "@/knowledge/types.js";
 
 const execFileAsync = promisify(execFile);
 

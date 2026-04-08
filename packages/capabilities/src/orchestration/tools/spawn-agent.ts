@@ -4,8 +4,8 @@
  */
 
 import { Type, tool } from "@agentrail/core";
-import type { OrchestrationManager } from "../orchestration-manager.js";
-import type { OrchestrationAgent } from "../types.js";
+import type { OrchestrationManager } from "@/orchestration/orchestration-manager.js";
+import type { OrchestrationAgent } from "@/orchestration/types.js";
 
 function formatSpawnResult(agent: OrchestrationAgent): string {
   return JSON.stringify({

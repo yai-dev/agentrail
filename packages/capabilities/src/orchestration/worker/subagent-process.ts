@@ -10,9 +10,9 @@ import type {
   CreateManagedAgentInput,
   ManagedAgentEventHandlers,
   ManagedAgentInstance,
-} from "../orchestration-manager.js";
-import type { AgentInputEnvelope, ManagedAgentDeliveryResult } from "../types.js";
-import type { SubagentWorkerConfig } from "./agent-runtime.js";
+} from "@/orchestration/orchestration-manager.js";
+import type { AgentInputEnvelope, ManagedAgentDeliveryResult } from "@/orchestration/types.js";
+import type { SubagentWorkerConfig } from "@/orchestration/worker/agent-runtime.js";
 
 interface WorkerReadyMessage {
   type: "ready";

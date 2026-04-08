@@ -15,19 +15,37 @@ import type {
   AgentrailProfileContext,
   AgentrailSessionStore,
   ContextProvider,
-} from "../types.js";
+} from "@/host/types.js";
 
-/** Rich hosted profile definition used by the host defaults helpers. */
+/**
+ * Rich hosted profile definition used by the host defaults helpers.
+ *
+ * @deprecated Use `defineProfile()` with `capabilities` instead.
+ * `HostedProfileDefinition` will be removed in a future release once all
+ * consumers have migrated to `ProfileDefinition` / `AgentrailProfile`.
+ */
 export interface HostedProfileDefinition extends AgentrailProfile {
   /** Optional static prompt string used when building the runtime agent. */
   prompt?: string;
   /** Optional async prompt builder invoked per request. */
   promptBuilder?: (context: AgentrailProfileContext) => string | Promise<string>;
-  /** Additional context providers exposed only by this profile. */
+  /**
+   * Additional context providers exposed only by this profile.
+   *
+   * @deprecated Implement `getContextProviders` on `AgentrailProfile` directly,
+   * or declare `capabilities` on `defineProfile()` — capability descriptors
+   * populate `AgentrailProfile.getContextProviders` automatically.
+   */
   getContextProviders?: (
     context: AgentrailProfileContext,
   ) => Promise<ContextProvider[]> | ContextProvider[];
-  /** Optional early-return hook for chat requests. */
+  /**
+   * Optional early-return hook for chat requests.
+   *
+   * @deprecated Use `AgentrailPlugin.interceptChatRequest` instead.
+   * Plugins provide the same interception capability with a cleaner separation
+   * of concerns between request handling and agent definition.
+   */
   handleChat?: (context: {
     request: {
       message: string;

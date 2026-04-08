@@ -5,7 +5,9 @@
     "types": ["node"],
     "outDir": "dist",
     "rootDir": "src",
-    "composite": true
+    "composite": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src/**/*.ts"],
   "references": [

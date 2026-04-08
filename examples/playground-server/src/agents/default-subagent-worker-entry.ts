@@ -6,7 +6,7 @@
 import type { SessionRef } from "@agentrail/core";
 import { initializeWorker } from "@agentrail/capabilities/orchestration/worker";
 import "@agentrail/core/providers";
-import { DefaultSubAgentRuntime } from "./default-subagent-runtime.js";
+import { DefaultSubAgentRuntime } from "@/agents/default-subagent-runtime.js";
 
 interface WorkerInitPayload {
   type: "init";

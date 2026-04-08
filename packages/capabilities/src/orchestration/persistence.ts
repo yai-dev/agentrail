@@ -6,14 +6,14 @@
 import type { SessionRef } from "@agentrail/core";
 import { resolveSessionRef } from "@agentrail/core";
 import path from "node:path";
-import { createFilesystemOrchestrationStore } from "./orchestration-store.js";
-import type { RecoveredOrchestrationState } from "./recovery.js";
+import { createFilesystemOrchestrationStore } from "@/orchestration/orchestration-store.js";
+import type { RecoveredOrchestrationState } from "@/orchestration/recovery.js";
 import type {
   OrchestrationEvent,
   OrchestrationMailboxEvent,
   OrchestrationMailboxState,
   OrchestrationSnapshot,
-} from "./types.js";
+} from "@/orchestration/types.js";
 
 export interface OrchestrationPersistence {
   appendEvent(event: OrchestrationEvent): Promise<void>;

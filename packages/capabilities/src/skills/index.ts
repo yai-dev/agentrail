@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-export { SkillManager } from "./skill-manager.js";
-export { buildSkillTool } from "./skill-tools.js";
+export { SkillManager } from "@/skills/skill-manager.js";
+export { buildSkillTool } from "@/skills/skill-tools.js";
 /** Public skill metadata and event types surfaced by the skills package. */
 export type {
   ExtendedSseEvent,
@@ -12,4 +12,4 @@ export type {
   SkillEndEvent,
   SkillMeta,
   SkillStartEvent,
-} from "./types.js";
+} from "@/skills/types.js";

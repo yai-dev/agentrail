@@ -123,16 +123,16 @@ export const heartbeatPlugin: AgentrailPlugin = {
 Pass your plugins to `createAgentApp`:
 
 ```ts
-import { createAgentApp, SessionManager } from "@agentrail/app";
+import { createAgentApp } from "@agentrail/app";
 
-const { app } = createAgentApp({
+const app = createAgentApp({
+  dataDir: DATA_DIR,
   profiles: [defaultProfile],
-  sessionManager: new SessionManager(DATA_DIR),
   plugins: [requestLoggerPlugin, timezonePlugin],
 });
 ```
 
-For lower-level control, you can also pass `plugins` directly to `createChatRoute` or `createStreamRoute` from `@agentrail/app`.
+For lower-level control, you can also pass `plugins` directly to `createChatRoute` or `createStreamRoute` from `@agentrail/app/advanced`.
 
 ## Execution Order
 

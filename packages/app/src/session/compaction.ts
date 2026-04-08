@@ -9,7 +9,7 @@ import type {
   TextContent,
   ToolResultMessage,
 } from "@agentrail/core";
-import { estimateMessageTokens } from "./token-estimator.js";
+import { estimateMessageTokens } from "@/session/token-estimator.js";
 
 /** Thresholds that control view-only compaction of large tool results. */
 export interface ToolResultCompactionOptions {

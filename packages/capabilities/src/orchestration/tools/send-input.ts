@@ -4,7 +4,7 @@
  */
 
 import { Type, tool } from "@agentrail/core";
-import type { OrchestrationManager } from "../orchestration-manager.js";
+import type { OrchestrationManager } from "@/orchestration/orchestration-manager.js";
 
 function formatSendInputResult(inputId: string, agentId: string): string {
   return JSON.stringify({

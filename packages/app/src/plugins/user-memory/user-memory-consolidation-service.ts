@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { SessionManager, isCompactionMessage } from "../../session/session-manager.js";
+import { SessionManager, isCompactionMessage } from "@/session/session-manager.js";
 import type { Message } from "@agentrail/core";
 import { defineAgent, isRuntimeError } from "@agentrail/core";
 import "@agentrail/core/providers";

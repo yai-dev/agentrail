@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AssistantMessage, LlmStreamEvent } from "../types/index.js";
+import type { AssistantMessage, LlmStreamEvent } from "@/types/index.js";
 
 /** Generic async event stream that also exposes a final result promise. */
 export class EventStream<TEvent, TResult = TEvent> implements AsyncIterable<TEvent> {

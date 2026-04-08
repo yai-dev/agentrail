@@ -3,16 +3,16 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "../types.js";
-import type { SandboxManager } from "../sandbox/index.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
+import type { SandboxManager } from "@/sandbox/index.js";
 import {
   createSandboxedBash,
   createSandboxedEdit,
   createSandboxedGrep,
   createSandboxedRead,
   createSandboxedWrite,
-} from "../sandbox/index.js";
-import { createTodoWriteTool } from "../tools/index.js";
+} from "@/sandbox/index.js";
+import { createTodoWriteTool } from "@/tools/index.js";
 
 export interface FilesystemOptions {
   /** Override the sandbox manager (e.g. from a custom image). */

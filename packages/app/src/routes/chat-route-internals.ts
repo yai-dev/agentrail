@@ -5,14 +5,14 @@
 
 import type { TransformContextFn } from "@agentrail/core";
 import type { Context } from "hono";
-import { createTransformContext } from "../host/context-pipeline.js";
-import { collectPluginContextProviders } from "../host/plugins.js";
+import { createTransformContext } from "@/host/context-pipeline.js";
+import { collectPluginContextProviders } from "@/host/plugins.js";
 import type {
   AgentrailChatHandledResponse,
   AgentrailChatRequest,
   AgentrailPlugin,
   ContextProvider,
-} from "../host/types.js";
+} from "@/host/types.js";
 
 /** Builds a standardized handled-response payload for chat validation failures. */
 export function makeChatValidationError(message: string): AgentrailChatHandledResponse {

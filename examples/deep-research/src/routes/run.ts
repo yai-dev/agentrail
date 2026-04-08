@@ -4,8 +4,8 @@
  */
 
 import { createDeepResearchRunRoute } from "@agentrail/deep-research";
-import { config } from "../config.js";
-import { sessionManager } from "../context/index.js";
+import { config } from "@/config.js";
+import { sessionManager } from "@/context/index.js";
 
 const run = createDeepResearchRunRoute({
   sessionStore: sessionManager,

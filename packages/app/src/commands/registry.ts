@@ -3,13 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { parseCommand } from "./parse-command.js";
+import { parseCommand } from "@/commands/parse-command.js";
 import type {
   ParsedSlashCommand,
   SlashCommandContext,
   SlashCommandDefinition,
   SlashCommandResult,
-} from "./types.js";
+} from "@/commands/types.js";
 
 export interface SlashCommandRegistry {
   definitions(): SlashCommandDefinition[];

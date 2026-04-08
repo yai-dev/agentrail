@@ -5,8 +5,8 @@
 
 import { initializeWorker } from "@agentrail/capabilities/orchestration/worker";
 import "@agentrail/core/providers";
-import type { DeepResearchRuntimeConfig } from "../runtime.js";
-import { DeepResearchSubAgentRuntime } from "./deep-research-subagent-runtime.js";
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import { DeepResearchSubAgentRuntime } from "@/agents/deep-research-subagent-runtime.js";
 
 interface WorkerInitPayload {
   type: "init";

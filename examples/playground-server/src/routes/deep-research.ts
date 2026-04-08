@@ -4,7 +4,7 @@
  */
 
 import { createDeepResearchRoute } from "@agentrail/deep-research";
-import { config } from "../config.js";
+import { config } from "@/config.js";
 
 const deepResearch = createDeepResearchRoute({
   dataDir: config.dataDir,

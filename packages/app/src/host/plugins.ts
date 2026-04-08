@@ -12,7 +12,7 @@ import type {
   AttachmentHandler,
   AttachmentHandlerResult,
   ContextProvider,
-} from "./types.js";
+} from "@/host/types.js";
 
 type RequestHookName = "onRequestStart" | "onRequestEnd" | "onTurnPersisted";
 

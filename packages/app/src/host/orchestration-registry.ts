@@ -23,7 +23,12 @@ export interface AgentrailOrchestrationRegistryRequest {
   userId: string;
   sessionId: string;
   sessionRef: SessionRef;
-  createManagedAgent: CreateSessionManagedAgent;
+  /**
+   * Factory that creates managed agents for this session.
+   * Required the first time a manager is created for a given session.
+   * May be omitted when a manager already exists (e.g. stream-route SSE subscription).
+   */
+  createManagedAgent?: CreateSessionManagedAgent;
 }
 
 /** Registry that returns one orchestration manager per session. */
@@ -48,22 +53,32 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
 
   async getManager(request: AgentrailOrchestrationRegistryRequest): Promise<OrchestrationManager> {
     const key = this.getKey(request.tenantId, request.sessionId);
-    const existing = this.bindings.get(key);
-    if (!existing) {
-      this.bindings.set(key, request.createManagedAgent);
-    } else if (existing !== request.createManagedAgent) {
-      // Warn when a different factory is supplied for an already-bound session.
-      // The existing factory is kept to avoid re-initialising in-flight agents.
-      console.warn(
-        `[OrchestrationRegistry] A different createManagedAgent factory was passed for ` +
-        `session "${request.sessionId}" (tenant "${request.tenantId}"). ` +
-        `The original factory will continue to be used for this session. ` +
-        `Call invalidate() first if you intentionally want to replace it.`,
-      );
+
+    if (request.createManagedAgent) {
+      const existing = this.bindings.get(key);
+      if (!existing) {
+        this.bindings.set(key, request.createManagedAgent);
+      } else if (existing !== request.createManagedAgent) {
+        // Warn when a different factory is supplied for an already-bound session.
+        // The existing factory is kept to avoid re-initialising in-flight agents.
+        console.warn(
+          `[OrchestrationRegistry] A different createManagedAgent factory was passed for ` +
+          `session "${request.sessionId}" (tenant "${request.tenantId}"). ` +
+          `The original factory will continue to be used for this session. ` +
+          `Call invalidate() first if you intentionally want to replace it.`,
+        );
+      }
     }
 
     let managerPromise = this.managers.get(key);
     if (!managerPromise) {
+      if (!request.createManagedAgent) {
+        throw new Error(
+          `[OrchestrationRegistry] Cannot create a manager for session "${request.sessionId}" ` +
+          `without a createManagedAgent factory. The orchestration() capability must be ` +
+          `initialized before the stream route subscribes to events.`,
+        );
+      }
       managerPromise = this.createManager(key, request);
       this.managers.set(key, managerPromise);
     }

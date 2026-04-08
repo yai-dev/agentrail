@@ -12,9 +12,9 @@ import { createSubAgentProcess } from "@agentrail/capabilities";
 import type { Message, Usage } from "@agentrail/core";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DeepResearchCoordinatorOptions } from "./coordinator.js";
-import type { DeepResearchRun } from "./types.js";
-import { nowIso } from "./utils.js";
+import type { DeepResearchCoordinatorOptions } from "@/coordinator.js";
+import type { DeepResearchRun } from "@/types.js";
+import { nowIso } from "@/utils.js";
 
 export function getDeepResearchWorkerPath(): string {
   const currentFile = fileURLToPath(import.meta.url);

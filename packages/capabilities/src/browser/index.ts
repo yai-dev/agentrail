@@ -3,14 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "../types.js";
-import type { SandboxManager } from "../sandbox/index.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
+import type { SandboxManager } from "@/sandbox/index.js";
 import {
   createBrowserAction,
   createBrowserContent,
   createBrowserNavigate,
   createBrowserScroll,
-} from "../sandbox/index.js";
+} from "@/sandbox/index.js";
 
 export interface BrowserOptions {
   /** Override the sandbox manager (e.g. from a custom image). */

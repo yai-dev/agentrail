@@ -6,14 +6,14 @@
 import type { TransformContextFn } from "@agentrail/core";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { createTransformContext } from "../host/context-pipeline.js";
-import { collectPluginContextProviders, runAttachmentHandlers } from "../host/plugins.js";
+import { createTransformContext } from "@/host/context-pipeline.js";
+import { collectPluginContextProviders, runAttachmentHandlers } from "@/host/plugins.js";
 import type {
   AgentrailPlugin,
   AttachmentFile,
   AttachmentHandler,
   ContextProvider,
-} from "../host/types.js";
+} from "@/host/types.js";
 
 interface AttachmentInput {
   name: string;
@@ -59,12 +59,19 @@ export function validateStreamRequest(
 }
 
 export async function persistUploadedFiles(
-  dataDir: string,
+  dataDir: string | undefined,
   sessionId: string,
   attachments?: AttachmentInput[],
 ): Promise<AttachmentFile[]> {
   if (!Array.isArray(attachments) || attachments.length === 0) {
     return [];
+  }
+
+  if (!dataDir) {
+    throw new Error(
+      "stream route: dataDir is required when the request includes attachments. " +
+        "Pass dataDir to createAgentApp() or createStreamRoute() to enable file upload support.",
+    );
   }
 
   const uploadsDir = path.join(dataDir, "sandboxes", sessionId, "uploads");

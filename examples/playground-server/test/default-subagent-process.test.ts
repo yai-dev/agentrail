@@ -3,19 +3,19 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/memo";
+import { createSessionRef } from "@agentrail/core";
 import type {
   AgentInputEnvelope,
   CreateManagedAgentInput,
   ManagedAgentDeliveryResult,
-} from "@agentrail/orchestration";
-import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
+} from "@agentrail/capabilities";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
 import {
   createManagedSubAgentInstance,
   createSubAgentProcess,
   resolveWorkerCwd,
   resolveWorkerExecArgv,
-} from "@agentrail/orchestration/worker";
+} from "@agentrail/capabilities/orchestration/worker";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -301,6 +301,7 @@ test("real default sub-agent worker completes a wake-driven turn", async () => {
     });
 
     const result = await instance.deliverInput(createEnvelope());
+    assert.ok(result, "deliverInput should return a result");
     assert.equal(result.outputText, "process me");
     await waitFor(() => seen.includes("idle"));
     assert.deepEqual(seen, ["started:input-process-test", "completed:process me", "idle"]);
@@ -373,6 +374,7 @@ test("real default sub-agent worker reports malformed mailbox data as a failed t
     });
 
     const result = await instance.deliverInput(createEnvelope());
+    assert.ok(result, "deliverInput should return a result");
     assert.equal(result.outcome, "failed");
     assert.match(result.error ?? "", /JSON|Unexpected token|Expected property name/i);
 

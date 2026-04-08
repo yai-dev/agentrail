@@ -3,11 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-export { createAskUserQuestionTool } from "./ask-user-question.js";
-export type { WaitHandleRegistry } from "./ask-user-question.js";
-export { bashTool } from "./bash.js";
-export { editTool } from "./edit.js";
-export { grepTool } from "./grep.js";
-export { readTool } from "./read.js";
-export { createTodoWriteTool } from "./todo-write.js";
-export { writeTool } from "./write.js";
+export { createAskUserQuestionTool } from "@/tools/ask-user-question.js";
+export type { WaitHandleRegistry } from "@/tools/ask-user-question.js";
+export { bashTool } from "@/tools/bash.js";
+export { editTool } from "@/tools/edit.js";
+export { grepTool } from "@/tools/grep.js";
+export { readTool } from "@/tools/read.js";
+export { createTodoWriteTool } from "@/tools/todo-write.js";
+export { writeTool } from "@/tools/write.js";

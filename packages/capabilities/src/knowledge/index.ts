@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-export { createKbListTool, createKbReadTool, createKbSearchTool } from "./kb-tools.js";
-export { KnowledgeManager } from "./knowledge-manager.js";
+export { createKbListTool, createKbReadTool, createKbSearchTool } from "@/knowledge/kb-tools.js";
+export { KnowledgeManager } from "@/knowledge/knowledge-manager.js";
 export type {
   IngestionEvent,
   IngestionJob,
@@ -14,4 +14,4 @@ export type {
   KnowledgeIndex,
   SearchResult,
   Taxonomy,
-} from "./types.js";
+} from "@/knowledge/types.js";

@@ -7,7 +7,7 @@ import { createSessionRef } from "@agentrail/core";
 import type { OrchestrationAgent, OrchestrationEvent } from "@agentrail/capabilities";
 import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
 import { Hono } from "hono";
-import { config } from "../config.js";
+import { config } from "@/config.js";
 
 const orchestration = new Hono();
 

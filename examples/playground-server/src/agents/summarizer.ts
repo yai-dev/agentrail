@@ -6,7 +6,7 @@
 import type { Message } from "@agentrail/core";
 import { defineAgent, isRuntimeError } from "@agentrail/core";
 import "@agentrail/core/providers";
-import { config } from "../config.js";
+import { config } from "@/config.js";
 
 function trunc(s: string, max: number): string {
   return s.length > max ? s.slice(0, max) + "…" : s;

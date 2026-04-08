@@ -6,7 +6,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc -b --force && mkdir -p dist/prompts && cp src/prompts/*.md dist/prompts/",
+    "build": "tsc -b && tsc-alias && mkdir -p dist/prompts && cp src/prompts/*.md dist/prompts/",
     "dev": "node --import=tsx/esm --watch src/main.ts",
     "start": "node dist/main.js",
     "typecheck": "tsc -b --force --pretty false"
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.19.3"
   },
   "license": "Apache-2.0"

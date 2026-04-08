@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Agent } from "../interfaces/agent.js";
-import type { LlmClient } from "../interfaces/llm-client.js";
-import type { RuntimeTool } from "../types/tool.types.js";
+import type { Agent } from "@/interfaces/agent.js";
+import type { LlmClient } from "@/interfaces/llm-client.js";
+import type { RuntimeTool } from "@/types/tool.types.js";
 
 // ============================================================================
 // ============================================================================
@@ -100,6 +100,6 @@ export function defineAgent(config: AgentConfig): Agent {
 // ============================================================================
 // ============================================================================
 
-import { AgentImpl } from "./agent-impl.js";
+import { AgentImpl } from "@/agent/agent-impl.js";
 
-export { AgentImpl } from "./agent-impl.js";
+export { AgentImpl } from "@/agent/agent-impl.js";

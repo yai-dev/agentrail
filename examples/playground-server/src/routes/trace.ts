@@ -8,7 +8,7 @@ import { createFileSystemSessionTraceStore } from "@agentrail/app";
 import { createSessionRef } from "@agentrail/core";
 import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
 import { Hono } from "hono";
-import { config } from "../config.js";
+import { config } from "@/config.js";
 
 const trace = new Hono();
 

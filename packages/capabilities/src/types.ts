@@ -6,17 +6,14 @@
 import type {
   AgentrailSessionStore,
   ContextProvider,
-  MemoryIndex,
-  Message,
   ModelConfig,
   RuntimeTool,
   SessionRef,
 } from "@agentrail/core";
-import type { KBMetadata, KnowledgeManager } from "./knowledge/index.js";
-import type { OrchestrationManager } from "./orchestration/index.js";
-import type { SandboxManager } from "./sandbox/index.js";
-import type { SkillManager, SkillMeta } from "./skills/index.js";
-import type { WaitHandleRegistry } from "./tools/index.js";
+import type { KnowledgeManager } from "@/knowledge/index.js";
+import type { SandboxManager } from "@/sandbox/index.js";
+import type { SkillManager } from "@/skills/index.js";
+import type { WaitHandleRegistry } from "@/tools/index.js";
 
 /**
  * Request-scoped context passed to `CapabilityDescriptor.buildTools` and
@@ -34,30 +31,16 @@ export interface CapabilityBuildContext {
   sessionRef: SessionRef;
   sessionStore: AgentrailSessionStore;
   modelConfig?: ModelConfig;
-  /** Populated when a filesystem or browser capability is present. */
+  /** Optional override for the sandbox manager (e.g. custom image). */
   sandboxManager?: SandboxManager;
-  /** Populated when a knowledge capability is present. */
+  /** Optional override for the knowledge manager. */
   knowledgeManager?: KnowledgeManager;
-  /** Populated when a skills capability is present. */
+  /** Optional override for the skills manager. */
   skillManager?: SkillManager;
-  /** Populated when an orchestration capability is present. */
-  orchestrationManager?: OrchestrationManager;
   /** Populated by the tools capability (ask-user-question tool). */
   waitHandleRegistry?: WaitHandleRegistry;
-  /** Delegates skill invocations to a managed sub-agent when true. */
-  delegateSkillsToSubAgent?: boolean;
   /** Forwarded to the sub-agent orchestration system. */
   onSubAgentEvent?: (event: object) => void;
-  /** Returns the current memory/notes index for the active session. */
-  buildMemoryIndex?: () => Promise<MemoryIndex>;
-  /** Returns knowledge base metadata for the current tenant. */
-  listKnowledgeMetadatas?: () => Promise<(KBMetadata | null)[]>;
-  /** Returns available skill definitions for the current tenant. */
-  listSkills?: () => Promise<SkillMeta[]>;
-  /** Returns the current workspace snapshot from the sandbox, if available. */
-  listWorkspaceSnapshot?: () => Promise<string | undefined>;
-  /** Compact message history to fit context window constraints. */
-  compactMessages?: (messages: Message[]) => Message[];
 }
 
 /**

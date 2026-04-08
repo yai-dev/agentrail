@@ -67,8 +67,10 @@ The scaffold generates two source files. Here is what each one does.
 export const defaultProfile = defineProfile({
   id: AGENT_ID,
   name: "my-agent Agent",
-  model: `${MODEL_PROVIDER}/${MODEL_ID}`,
-  system: "You are a helpful assistant.",
+  agent: {
+    model: `${MODEL_PROVIDER}:${MODEL_ID}`,
+    prompt: "You are a helpful assistant.",
+  },
 });
 ```
 
@@ -79,9 +81,9 @@ The file also exports `buildSummarizeFn`, which creates a second agent whose onl
 ### `src/main.ts` — Server entry point
 
 ```ts
-const { app: agentApp } = createAgentApp({
+const agentApp = createAgentApp({
+  dataDir: DATA_DIR,
   profiles: [defaultProfile],
-  sessionManager: new SessionManager(DATA_DIR),
   summarize: buildSummarizeFn(),
   compaction: { triggerTokens: 40_000, minMessages: 10 },
 });
@@ -89,7 +91,7 @@ const { app: agentApp } = createAgentApp({
 app.route("/api", agentApp);
 ```
 
-`createAgentApp` handles the full request lifecycle: session lookup or creation, context assembly, LLM streaming, tool dispatch, compaction, and SSE event forwarding. It mounts both `/chat` (JSON) and `/stream` (SSE) endpoints under the given prefix.
+`createAgentApp` handles the full request lifecycle: session lookup or creation, context assembly, LLM streaming, tool dispatch, compaction, and SSE event forwarding. It returns a Hono app with both `/chat` (JSON) and `/stream` (SSE) endpoints.
 
 ## Manual Setup (Without Scaffold)
 
@@ -120,8 +122,10 @@ import { defineProfile } from "@agentrail/app";
 const defaultProfile = defineProfile({
   id: "default",
   name: "Default Agent",
-  model: "anthropic/claude-3-5-sonnet-20241022",
-  system: "You are a helpful assistant.",
+  agent: {
+    model: "anthropic:claude-3-5-sonnet-20241022",
+    prompt: "You are a helpful assistant.",
+  },
 });
 ```
 
@@ -130,9 +134,7 @@ const defaultProfile = defineProfile({
 ```ts
 import type { Message } from "@agentrail/core";
 import { Hono } from "hono";
-import { SessionManager, createAgentApp } from "@agentrail/app";
-
-const sessionManager = new SessionManager("/tmp/agentrail");
+import { createAgentApp } from "@agentrail/app";
 
 // In production, replace this with a real LLM summarization call.
 // See src/agent.ts in the scaffold for a complete example.
@@ -141,9 +143,9 @@ const summarize = async (messages: Message[]) =>
 
 const app = new Hono();
 
-const { app: agentApp } = createAgentApp({
+const agentApp = createAgentApp({
+  dataDir: "/tmp/agentrail",
   profiles: [defaultProfile],
-  sessionManager,
   summarize,
   compaction: { triggerTokens: 80_000, minMessages: 20 },
 });
@@ -174,12 +176,12 @@ curl -X POST http://localhost:3000/api/chat \
 ## `/chat` endpoint vs `/stream` endpoint
 
 |                   | `/chat` (JSON)       | `/stream` (SSE)    |
-| ----------------- | -------------------- | ------------------- |
-| Response          | JSON                 | SSE event stream    |
-| Tool progress     | Not visible          | Streamed as events  |
-| Compaction events | Not forwarded        | Forwarded via SSE   |
-| Sandbox support   | No                   | Yes                 |
-| Good for          | Simple APIs, testing | Production UIs      |
+| ----------------- | -------------------- | ------------------ |
+| Response          | JSON                 | SSE event stream   |
+| Tool progress     | Not visible          | Streamed as events |
+| Compaction events | Not forwarded        | Forwarded via SSE  |
+| Sandbox support   | No                   | Yes                |
+| Good for          | Simple APIs, testing | Production UIs     |
 
 Both endpoints are mounted automatically by `createAgentApp`. For lower-level control, use `createChatRoute` or `createStreamRoute` from `@agentrail/app` directly (escape-hatch path).
 

@@ -120,38 +120,62 @@ The `PromptLoader` inside `createPromptBuilder` caches files by modification tim
 
 ## Using Prompts in a Profile
 
-For static prompts, pass a string directly to `defineProfile`:
+For static prompts, pass a string directly to the `agent.prompt` field in `defineProfile`:
 
 ```ts
 import { defineProfile } from "@agentrail/app";
 
 defineProfile({
   id: "default",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are a helpful assistant.",
+  name: "Default Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a helpful assistant.",
+  },
 });
 ```
 
-For dynamic prompts built with the prompt SDK, use `promptBuilder` (advanced path via `defineHostedProfile`):
+For dynamic prompts built with the prompt SDK, use a `prompt` factory function:
 
 ```ts
-import { defineHostedProfile } from "@agentrail/app";
+import { createPromptBuilder } from "@agentrail/core";
+import { defineProfile } from "@agentrail/app";
 
-defineHostedProfile({
+defineProfile({
   id: "default",
   name: "Default Assistant",
-  prompt: myBundle,
-  createAgent: ({ systemPrompt, tools }) =>
-    defineAgent({
-      id: "default",
-      model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
-      system: systemPrompt,
-      tools,
-    }),
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: async (ctx) => {
+      const builder = createPromptBuilder(myBundle);
+      return builder.render({ vars: { tenantId: ctx.tenantId } });
+    },
+  },
 });
 ```
 
-The app layer renders the bundle (with request-time variables) and passes the resulting string as `systemPrompt` to `createAgent`.
+For full per-request agent construction, use the dynamic `createAgent` shape:
+
+```ts
+import { defineAgent } from "@agentrail/core";
+import { defineProfile } from "@agentrail/app";
+
+defineProfile({
+  id: "default",
+  name: "Default Assistant",
+  async createAgent(ctx) {
+    const system = await createPromptBuilder(myBundle).render({
+      vars: { tenantId: ctx.tenantId },
+    });
+    return defineAgent({
+      id: "default",
+      model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+      system,
+      maxTurns: 30,
+    });
+  },
+});
+```
 
 ## Recommended File Organization
 

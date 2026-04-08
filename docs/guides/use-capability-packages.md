@@ -49,8 +49,11 @@ import { knowledge } from "@agentrail/capabilities";
 
 export const researchProfile = defineProfile({
   id: "research",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are a research assistant with access to the knowledge base.",
+  name: "Research Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a research assistant with access to the knowledge base.",
+  },
   capabilities: [knowledge(knowledgeManager)],
 });
 ```
@@ -108,8 +111,11 @@ import { filesystem } from "@agentrail/capabilities";
 
 export const coderProfile = defineProfile({
   id: "coder",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are a coding assistant. You can run code in a sandbox.",
+  name: "Coder",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a coding assistant. You can run code in a sandbox.",
+  },
   capabilities: [filesystem(sandboxManager)],
 });
 ```
@@ -117,9 +123,9 @@ export const coderProfile = defineProfile({
 Pass `sandboxManager` to `createAgentApp` as well so it is available during the request lifecycle:
 
 ```ts
-const { app } = createAgentApp({
+const app = createAgentApp({
+  dataDir: DATA_DIR,
   profiles: [coderProfile],
-  sessionManager,
   sandboxManager,
 });
 ```
@@ -155,9 +161,12 @@ import { skills } from "@agentrail/capabilities";
 
 export const assistantProfile = defineProfile({
   id: "assistant",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are a helpful assistant.",
-  capabilities: [skills(skillManager, { delegateToSubAgent: true })],
+  name: "Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a helpful assistant.",
+  },
+  capabilities: [skills(skillManager, { mode: "delegate" })],
 });
 ```
 
@@ -173,12 +182,15 @@ import { filesystem, knowledge, skills } from "@agentrail/capabilities";
 
 export const powerProfile = defineProfile({
   id: "power",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are a powerful assistant.",
+  name: "Power Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a powerful assistant.",
+  },
   capabilities: [
     filesystem(sandboxManager),
     knowledge(knowledgeManager),
-    skills(skillManager, { delegateToSubAgent: true }),
+    skills(skillManager, { mode: "delegate" }),
   ],
 });
 ```

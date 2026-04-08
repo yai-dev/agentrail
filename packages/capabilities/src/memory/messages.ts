@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { KBMetadata } from "../knowledge/types.js";
+import type { KBMetadata } from "@/knowledge/types.js";
 import type { MemoryIndex, MemoryIndexEntry } from "@agentrail/core";
 import type { UserMessage } from "@agentrail/core";
-import type { SkillMeta } from "../skills/types.js";
+import type { SkillMeta } from "@/skills/types.js";
 
 /** Creates a user-scoped identity hint message for default hosted profiles. */
 export function makeUserIdentityMessage(

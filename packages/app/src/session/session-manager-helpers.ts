@@ -5,7 +5,7 @@
 
 import type { Message } from "@agentrail/core";
 import { mkdir, readFile, readdir, stat } from "node:fs/promises";
-import { estimateFileTokens } from "./token-estimator.js";
+import { estimateFileTokens } from "@/session/token-estimator.js";
 import type {
   CompactionMetadata,
   MemoryIndexEntry,

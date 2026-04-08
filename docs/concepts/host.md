@@ -51,44 +51,72 @@ Use it when you need:
 
 ## Abstraction Levels
 
-`@agentrail/app` provides both a high-level entry point and lower-level primitives:
+`@agentrail/app` provides both a high-level entry point and lower-level escape hatches:
 
 ### Recommended — `createAgentApp`
 
 The one-call entry point for most apps:
 
 ```ts
-import { createAgentApp, SessionManager } from "@agentrail/app";
+import { createAgentApp } from "@agentrail/app";
 
-const { app } = createAgentApp({
+const app = createAgentApp({
+  dataDir: "./data",
   profiles: [defaultProfile],
-  sessionManager: new SessionManager(DATA_DIR),
   summarize,
 });
 ```
 
 This mounts both `/chat` (JSON) and `/stream` (SSE) endpoints and wires the full request lifecycle.
 
-### Low-Level Escape Hatches
+For custom session storage, pass `sessionStore` instead of `dataDir`:
 
-Available from `@agentrail/app` when you need direct control:
+```ts
+const app = createAgentApp({
+  sessionStore: myDatabaseSessionStore,
+  profiles: [defaultProfile],
+  summarize,
+});
+```
+
+For dynamic profile routing, use `resolveProfile`:
+
+```ts
+const app = createAgentApp({
+  dataDir: "./data",
+  resolveProfile: async ({ agentId, tenantId }) => loadProfileForTenant(agentId, tenantId),
+  defaultAgentId: "default",
+});
+```
+
+### Low-Level Escape Hatches — `@agentrail/app/advanced`
+
+Available from `@agentrail/app/advanced` when you need direct control:
 
 - `createChatRoute` and `createStreamRoute` — mount individual route primitives
-- `createHostedProfileResolver` — build a custom profile resolver
-- `createTransformContext` — compose context providers into a transform function
 - `createOrchestrationRegistry` — per-session orchestration manager registry
-- `defineHostedProfile` — raw profile construction without the `defineProfile` conveniences
+- `createTransformContext` — compose context providers into a transform function
 
-Use these when you need a custom request lifecycle, non-default profile resolution, or are integrating into an existing server architecture.
+Use these when you need a custom request lifecycle or are integrating into an existing server architecture.
+
+### Compatibility Layer — `@agentrail/app/compat`
+
+Pre-Proposal-106 helpers remain available from `@agentrail/app/compat` for migration purposes:
+
+- `defineHostedProfile`
+- `createHostedProfileResolver`
+- `buildDefaultCapabilityTools`
+
+These are retained for backward compatibility only. Prefer `defineProfile` from `@agentrail/app`.
 
 ## Choosing a Path
 
 ```
 New app or first host → use createAgentApp + defineProfile
 │
-├── Need custom request lifecycle?   → use createChatRoute / createStreamRoute directly
-├── Need non-default profile logic?  → use createHostedProfileResolver
-├── Need custom context ordering?    → use createTransformContext
+├── Need custom session storage?    → pass sessionStore to createAgentApp
+├── Need non-default profile logic? → pass resolveProfile to createAgentApp
+├── Need custom request lifecycle?  → use createChatRoute / createStreamRoute from @agentrail/app/advanced
 └── Building a completely custom server? → use all low-level primitives
 ```
 

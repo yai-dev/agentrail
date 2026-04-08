@@ -10,8 +10,8 @@ import {
   type SlashCommandDefinition,
   type SlashCommandResult,
 } from "@agentrail/app";
-import { handleCompactCommand } from "./handlers/compact.js";
-import { handleMemoryConsolidateCommand } from "./handlers/memory-consolidate.js";
+import { handleCompactCommand } from "@/commands/handlers/compact.js";
+import { handleMemoryConsolidateCommand } from "@/commands/handlers/memory-consolidate.js";
 
 const commandDefinitions: SlashCommandDefinition[] = [
   {

@@ -121,19 +121,69 @@ This means orchestration workflows survive process restarts — the manager reco
 
 ## Host Integration
 
-The host exposes orchestration via the `OrchestrationRegistry`, which manages one `OrchestrationManager` per session:
+### Using `createAgentApp` (recommended)
+
+Create a registry, declare `orchestration(registry, factory)` in the profile, and pass the same
+registry to `createAgentApp` for stream-route SSE event forwarding:
 
 ```ts
-import { createOrchestrationRegistry } from "@agentrail/app";
+import { createAgentApp, createOrchestrationRegistry, defineProfile } from "@agentrail/app";
+import { orchestration, createSubAgentProcess } from "@agentrail/capabilities";
 
-const orchestrationRegistry = createOrchestrationRegistry({
-  getOrCreateManager: async (sessionId) => {
-    // return or create the OrchestrationManager for this session
-  },
+const orchestrationRegistry = createOrchestrationRegistry({ dataDir: "./data" });
+
+const profile = defineProfile({
+  id: "my-agent",
+  name: "My Agent",
+  agent: { model: "anthropic:claude-sonnet-4-5", prompt: SYSTEM_PROMPT },
+  capabilities: [
+    orchestration(orchestrationRegistry, (input, ctx) =>
+      createSubAgentProcess({ ...ctx, input, workerPath: "./subagent-worker.js" }),
+    ),
+  ],
+});
+
+const app = createAgentApp({
+  dataDir: "./data",
+  profiles: [profile],
+  orchestrationRegistry, // forwards sub-agent events to the stream route SSE
 });
 ```
 
-The `createDefaultOrchestrationBinding` helper from `@agentrail/app` wires this together with hosted profiles automatically. The recommended path is to use `defineProfile({ capabilities: [orchestration(registry)] })` instead.
+The `orchestration()` capability creates and manages one `OrchestrationManager` per session
+automatically when `buildTools` is called.
+
+### Manual host (escape hatch)
+
+When using `createChatRoute` / `createStreamRoute` directly, pass the registry to
+`createStreamRoute` via `getOrchestrationManager`:
+
+```ts
+import {
+  createOrchestrationRegistry,
+  createProfileResolver,
+  createStreamRoute,
+} from "@agentrail/app";
+import { orchestration, createSubAgentProcess } from "@agentrail/capabilities";
+
+const orchestrationRegistry = createOrchestrationRegistry({ dataDir });
+
+const profile = defineProfile({
+  // ...
+  capabilities: [
+    orchestration(orchestrationRegistry, (input, ctx) =>
+      createSubAgentProcess({ ...ctx, input, workerPath: WORKER_PATH }),
+    ),
+  ],
+});
+
+const resolver = createProfileResolver([profile]);
+
+const streamRoute = createStreamRoute({
+  // ...
+  resolveProfile: resolver,
+  getOrchestrationManager: (ctx) => orchestrationRegistry.getManager(ctx),
+});
 
 ## Orchestration vs Plugins
 

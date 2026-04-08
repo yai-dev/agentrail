@@ -4,8 +4,8 @@
  */
 
 import { Type, tool } from "@agentrail/core";
-import type { OrchestrationManager } from "../orchestration-manager.js";
-import type { WaitCondition } from "../types.js";
+import type { OrchestrationManager } from "@/orchestration/orchestration-manager.js";
+import type { WaitCondition } from "@/orchestration/types.js";
 
 function formatWaitResult(wait: WaitCondition): string {
   return JSON.stringify({

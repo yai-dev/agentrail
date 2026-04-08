@@ -99,7 +99,7 @@ Use separate liveness and readiness probes if your orchestrator supports them:
 Agentrail does not bundle a logging library. Use the structured logger of your choice and instrument key lifecycle points:
 
 ```ts
-import { createChatRoute } from "@agentrail/host";
+import { createChatRoute } from "@agentrail/app/advanced";
 
 app.route(
   "/chat",

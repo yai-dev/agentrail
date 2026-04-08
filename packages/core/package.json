@@ -19,7 +19,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
@@ -27,12 +27,14 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.34.0",
     "@anthropic-ai/sdk": "^0.39.0",
+    "@sinclair/typebox": "^0.34.0",
     "openai": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsc-alias": "^1.8.16",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^2.0.0"
   },
   "repository": {

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "../types.js";
-import { createKbListTool, createKbReadTool, createKbSearchTool } from "./kb-tools.js";
-import type { KnowledgeManager } from "./knowledge-manager.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
+import { createKbListTool, createKbReadTool, createKbSearchTool } from "@/knowledge/kb-tools.js";
+import type { KnowledgeManager } from "@/knowledge/knowledge-manager.js";
 
 /**
  * Capability that provides knowledge-base tools:

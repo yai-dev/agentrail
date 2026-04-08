@@ -4,7 +4,7 @@
  */
 
 import { Type, type Static, type TSchema } from "@sinclair/typebox";
-import type { RuntimeTool, ToolResult, ToolSignalEvent } from "../types/tool.types.js";
+import type { RuntimeTool, ToolResult, ToolSignalEvent } from "@/types/tool.types.js";
 
 // ============================================================================
 // ============================================================================

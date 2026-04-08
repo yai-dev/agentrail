@@ -82,7 +82,7 @@ describe("defineProfile – dynamic shape", () => {
       createAgent: factory,
     });
     const agent = await profile.createAgent(fakeContext);
-    expect(factory).toHaveBeenCalledWith(fakeContext);
+    expect(factory).toHaveBeenCalledWith(fakeContext, undefined);
     expect(agent).toBe(fakeAgent);
   });
 

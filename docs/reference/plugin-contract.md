@@ -34,7 +34,7 @@ It is not the right place for core agent reasoning behavior. That belongs in pro
 
 The current plugin contract is defined by `AgentrailPlugin` in:
 
-- [packages/host/src/types.ts](../../packages/host/src/types.ts)
+- [packages/app/src/host/types.ts](../../packages/app/src/host/types.ts)
 
 ### `AgentrailPlugin` interface
 
@@ -173,7 +173,7 @@ Use it for behaviors that depend on the conversation state already being durable
 A plugin that combines all hook types:
 
 ```ts
-import type { AgentrailPlugin, ContextProvider } from "@agentrail/host";
+import type { AgentrailPlugin, ContextProvider } from "@agentrail/app";
 
 // --- Context provider ---
 const datestampProvider: ContextProvider = async (ctx, messages) => {
@@ -237,10 +237,23 @@ export const observabilityPlugin: AgentrailPlugin = {
 };
 ```
 
-Register in route assembly:
+Register in route assembly (high-level path):
 
 ```ts
-import { createStreamRoute } from "@agentrail/host";
+import { createAgentApp } from "@agentrail/app";
+import { observabilityPlugin } from "./plugins/observability.js";
+
+const app = createAgentApp({
+  dataDir: DATA_DIR,
+  profiles: [defaultProfile],
+  plugins: [observabilityPlugin],
+});
+```
+
+Or, when using route primitives directly:
+
+```ts
+import { createStreamRoute } from "@agentrail/app/advanced";
 import { observabilityPlugin } from "./plugins/observability.js";
 
 app.route(
@@ -256,7 +269,7 @@ app.route(
 
 The current plugin runtime helpers live in:
 
-- [packages/host/src/plugins.ts](../../packages/host/src/plugins.ts)
+- [packages/app/src/host/plugins.ts](../../packages/app/src/host/plugins.ts)
 
 Important characteristics of the current model:
 

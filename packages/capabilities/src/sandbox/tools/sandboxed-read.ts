@@ -6,7 +6,7 @@
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { readFile } from "node:fs/promises";
-import type { SandboxManager } from "../sandbox-manager.js";
+import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 
 const DEFAULT_READ_LINES = 100;
 const MAX_LINE_LENGTH = 1000;

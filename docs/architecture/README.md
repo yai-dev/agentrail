@@ -51,13 +51,13 @@ Profiles, routes, UI, and business logic. This is the code you write. It uses `@
 
 ## Package Reference
 
-| Package                           | Layer      | Purpose                                                          |
-| --------------------------------- | ---------- | ---------------------------------------------------------------- |
-| `@agentrail/core`                 | 1          | Agent loop, tool contracts, LLM providers, prompts, session types |
-| `@agentrail/capabilities`         | 2          | Sandbox, knowledge, skills, orchestration, built-in tools        |
-| `@agentrail/app`                  | 3          | `createAgentApp`, `defineProfile`, sessions, plugins, config     |
-| `@agentrail/deep-research`        | addon      | Multi-agent deep research workflow                               |
-| `@agentrail/create-agentrail-app` | tooling    | Project scaffold CLI                                             |
+| Package                           | Layer   | Purpose                                                           |
+| --------------------------------- | ------- | ----------------------------------------------------------------- |
+| `@agentrail/core`                 | 1       | Agent loop, tool contracts, LLM providers, prompts, session types |
+| `@agentrail/capabilities`         | 2       | Sandbox, knowledge, skills, orchestration, built-in tools         |
+| `@agentrail/app`                  | 3       | `createAgentApp`, `defineProfile`, sessions, plugins, config      |
+| `@agentrail/deep-research`        | addon   | Multi-agent deep research workflow                                |
+| `@agentrail/create-agentrail-app` | tooling | Project scaffold CLI                                              |
 
 ## Request Lifecycle
 
@@ -73,14 +73,19 @@ One of the core design ideas in Agentrail is a deliberate split between a recomm
 
 The primary entry points are:
 
-- `createAgentApp({ profiles, sessionManager, ... })` — the recommended way to mount both `/chat` and `/stream` endpoints in one call
-- `defineProfile(definition)` — declare profiles with model, system prompt, tools, and capabilities
+- `createAgentApp({ dataDir, profiles, ... })` — the recommended way to mount both `/chat` and `/stream` endpoints in one call
+- `defineProfile(definition)` — declare profiles with agent config, capabilities, and optional per-request factory
 
-Lower-level escape hatches (use when you need finer control):
+Lower-level escape hatches from `@agentrail/app/advanced` (use when you need finer control):
 
 - `createChatRoute(...)` — mount only the `/chat` primitive
 - `createStreamRoute(...)` — mount only the `/stream` primitive
-- `defineHostedProfile(...)` — raw profile definition without the `defineProfile` convenience wrappers
+- `createOrchestrationRegistry(...)` — per-session orchestration manager
+
+Pre-Proposal-106 helpers available from `@agentrail/app/compat` for migration purposes:
+
+- `defineHostedProfile(...)` — use `defineProfile` instead
+- `createHostedProfileResolver(...)` — use `createStaticProfileResolver` or `ProfileResolver` instead
 
 Start with `createAgentApp` + `defineProfile`. They are not black boxes — they are a recommended assembly of primitives that you can unwrap and replace piece by piece as your app grows.
 
@@ -114,7 +119,7 @@ Keeping this boundary clean is what makes Agentrail reusable as a framework rath
 ## Design Principles
 
 - Stable primitives with a recommended SDK path on top.
-- Dependency direction is always framework → runtime-core, never the reverse.
+- Dependency direction is always framework → core, never the reverse.
 - Chat and stream routes share the same lifecycle concepts.
 - Capability packages are independently usable and optionally composed.
 - Business-domain logic stays out of framework core packages.
@@ -122,8 +127,8 @@ Keeping this boundary clean is what makes Agentrail reusable as a framework rath
 ## Repository Reading Order
 
 1. [Concepts: Agents](../concepts/agents.md)
-2. [Concepts: Host](../concepts/host.md)
+2. [Concepts: Profiles](../concepts/profiles.md)
 3. [Guides: Quickstart](../guides/quickstart.md)
-4. [Reference: Host Defaults](../reference/host-defaults.md)
+4. [Reference: Profile Contract](../reference/profile-contract.md)
 5. [Reference: Host Primitives](../reference/host-primitives.md)
 6. [Examples: Playground Server](../examples/playground-server.md)

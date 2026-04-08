@@ -3,12 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AgentrailPlugin } from "../../host/types.js";
+import type { AgentrailPlugin } from "@/host/types.js";
 export {
   UserMemoryConsolidationService,
   type UserMemoryConsolidationService as UserMemoryConsolidationServiceInstance,
-} from "./user-memory-consolidation-service.js";
-export type { UserMemoryConfig } from "./user-memory-consolidation-service.js";
+} from "@/plugins/user-memory/user-memory-consolidation-service.js";
+export type { UserMemoryConfig } from "@/plugins/user-memory/user-memory-consolidation-service.js";
 
 interface UserMemoryPluginHooks {
   start(): void;

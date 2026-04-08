@@ -4,7 +4,7 @@
  */
 
 import { createCommandsRoute, createSlashCommandRegistry } from "@agentrail/app";
-import { getSlashCommandDefinitions } from "../commands/registry.js";
+import { getSlashCommandDefinitions } from "@/commands/registry.js";
 
 const commands = createCommandsRoute(createSlashCommandRegistry(getSlashCommandDefinitions()));
 

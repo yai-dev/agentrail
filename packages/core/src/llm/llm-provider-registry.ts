@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { ProviderNotFoundError } from "../errors.js";
-import type { LlmProvider } from "../interfaces/llm-client.js";
+import { ProviderNotFoundError } from "@/errors.js";
+import type { LlmProvider } from "@/interfaces/llm-client.js";
 
 /** Registry that stores and resolves named `LlmProvider` implementations. */
 export class LlmProviderRegistry {

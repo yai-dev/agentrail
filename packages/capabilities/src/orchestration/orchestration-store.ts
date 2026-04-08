@@ -5,13 +5,13 @@
 
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { recoverOrchestrationState, type RecoveredOrchestrationState } from "./recovery.js";
+import { recoverOrchestrationState, type RecoveredOrchestrationState } from "@/orchestration/recovery.js";
 import type {
   OrchestrationEvent,
   OrchestrationMailboxEvent,
   OrchestrationMailboxState,
   OrchestrationSnapshot,
-} from "./types.js";
+} from "@/orchestration/types.js";
 
 const ORCHESTRATION_DIRECTORY = "orchestration";
 const EVENTS_FILE = "events.jsonl";

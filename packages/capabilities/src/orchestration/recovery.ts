@@ -9,7 +9,7 @@ import type {
   OrchestrationSnapshot,
   OrchestrationTask,
   WaitCondition,
-} from "./types.js";
+} from "@/orchestration/types.js";
 
 /** Recovered orchestration state plus resumable runtime handles. */
 export interface RecoveredOrchestrationState {

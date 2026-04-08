@@ -10,19 +10,20 @@ import {
   resolveChatTransformContext,
   respondHandledJson,
   validateChatRequest,
-} from "./chat-route-internals.js";
-import { runCompactionIfNeeded } from "../host/compaction.js";
-import { runPluginChatRequestInterceptors, runPluginRequestHook } from "../host/plugins.js";
+} from "@/routes/chat-route-internals.js";
+import { runCompactionIfNeeded } from "@/host/compaction.js";
+import { runPluginChatRequestInterceptors, runPluginRequestHook } from "@/host/plugins.js";
 import type {
   AgentrailChatHandledResponse,
   AgentrailChatRequest,
   AgentrailChatSuccessBody,
   AgentrailPlugin,
   AgentrailProfile,
+  AgentrailProfileContext,
   AgentrailRequestLifecycleContext,
   AgentrailSessionStore,
   ContextProvider,
-} from "../host/types.js";
+} from "@/host/types.js";
 
 /**
  * Configuration for the JSON chat route factory.
@@ -180,16 +181,18 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
       // Pass a no-op sub-agent event handler so that capabilities relying on
       // onSubAgentEvent (e.g. orchestration tools) work on the /chat path too.
       // Events are discarded here — use the /stream endpoint for live event delivery.
+      const profileCtx: AgentrailProfileContext = {
+        tenantId: request.tenantId,
+        userId: request.userId,
+        sessionId,
+        sessionRef,
+        sessionStore: options.sessionStore,
+      };
       const agent = await profile.createAgent(
-        {
-          tenantId: request.tenantId,
-          userId: request.userId,
-          sessionId,
-          sessionRef,
-          sessionStore: options.sessionStore,
-        },
+        profileCtx,
         () => { /* sub-agent events are not forwarded on the JSON /chat route */ },
       );
+      const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
       const allMessages = await options.sessionStore.loadAllMessages(request.tenantId, sessionId);
       await runCompactionIfNeeded(
         options.sessionStore,
@@ -203,11 +206,18 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         request.tenantId,
         sessionId,
       );
-      const transformContext = await resolveChatTransformContext(options, plugins, {
-        tenantId: request.tenantId,
-        userId: request.userId,
-        sessionId,
-      });
+      const transformContext = await resolveChatTransformContext(
+        {
+          ...options,
+          contextProviders: [...(options.contextProviders ?? []), ...capProviders],
+        },
+        plugins,
+        {
+          tenantId: request.tenantId,
+          userId: request.userId,
+          sessionId,
+        },
+      );
 
       const result = await agent.invoke(request.message, {
         messages: history,

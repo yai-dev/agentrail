@@ -3,12 +3,42 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "../types.js";
+import type { MemoryIndex, Message } from "@agentrail/core";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
+import type { KBMetadata } from "@/knowledge/types.js";
+import type { SkillMeta } from "@/skills/types.js";
 import {
   createDefaultCapabilityContextProviders,
-} from "./context.js";
+} from "@/memory/context.js";
 
-export type { DefaultCapabilityContextOptions } from "./types.js";
+export type { DefaultCapabilityContextOptions } from "@/memory/types.js";
+
+/** Minimal session reference passed to each builder function. */
+export interface MemorySessionContext {
+  tenantId: string;
+  userId: string;
+  sessionId: string;
+}
+
+/**
+ * Self-contained builder functions captured at profile definition time.
+ * Each function receives the current session context and returns the data
+ * needed to assemble memory/knowledge/skills context messages.
+ */
+export interface MemoryContextBuilders {
+  /** Required — builds the memory/notes index for the current session. */
+  buildMemoryIndex(ctx: MemorySessionContext): Promise<MemoryIndex>;
+  /** Returns knowledge base metadata for the current tenant. */
+  listKnowledgeMetadatas?(ctx: MemorySessionContext): Promise<(KBMetadata | null)[]>;
+  /** Returns available skill definitions. */
+  listSkills?(ctx: MemorySessionContext): Promise<SkillMeta[]>;
+  /** Returns the current workspace snapshot from the sandbox, if available. */
+  listWorkspaceSnapshot?(ctx: MemorySessionContext): Promise<string | undefined>;
+  /** Compacts message history to reduce context window usage. */
+  compactMessages?(messages: Message[]): Message[];
+  /** When true, skills are delegated to a managed sub-agent. Defaults to false. */
+  delegateSkillsToSubAgent?: boolean;
+}
 
 export interface MemoryContextOptions {
   /** Include the skills context summary in injected messages. Defaults to true. */
@@ -21,12 +51,23 @@ export interface MemoryContextOptions {
  * Capability that injects session memory, identity, date, knowledge, and
  * skills context messages into every agent turn via context providers.
  *
- * This is the standard way to give an agent awareness of the user's notes,
- * memory files, available knowledge bases, and installed skills.
+ * All data sources are captured at definition time via `builders`, making
+ * the capability fully self-contained.
+ *
+ * ```ts
+ * memoryContext({
+ *   buildMemoryIndex: (ctx) => sessionManager.buildMemoryIndex(ctx.tenantId, ctx.userId, ctx.sessionId),
+ *   listKnowledgeMetadatas: async (ctx) => { ... },
+ *   listSkills: () => skillManager.listSkills(),
+ * })
+ * ```
  *
  * @see {@link https://agentrail.run/capabilities/memory-context}
  */
-export function memoryContext(opts?: MemoryContextOptions): CapabilityDescriptor {
+export function memoryContext(
+  builders: MemoryContextBuilders,
+  opts?: MemoryContextOptions,
+): CapabilityDescriptor {
   return {
     type: "memory-context",
 
@@ -35,34 +76,30 @@ export function memoryContext(opts?: MemoryContextOptions): CapabilityDescriptor
     },
 
     buildContextProviders(ctx: CapabilityBuildContext) {
-      const {
-        tenantId,
-        userId,
-        sessionId,
-        buildMemoryIndex,
-        listKnowledgeMetadatas,
-        listSkills,
-        listWorkspaceSnapshot,
-        compactMessages,
-        delegateSkillsToSubAgent = false,
-      } = ctx;
-
-      if (!buildMemoryIndex) {
-        return [];
-      }
+      const sessionCtx: MemorySessionContext = {
+        tenantId: ctx.tenantId,
+        userId: ctx.userId,
+        sessionId: ctx.sessionId,
+      };
 
       return createDefaultCapabilityContextProviders({
-        tenantId,
-        userId,
-        sessionId,
+        tenantId: ctx.tenantId,
+        userId: ctx.userId,
+        sessionId: ctx.sessionId,
         includeSkillsContext: opts?.includeSkillsContext ?? true,
-        delegateSkillsToSubAgent,
+        delegateSkillsToSubAgent: builders.delegateSkillsToSubAgent ?? false,
         cacheTtlMs: opts?.cacheTtlMs,
-        buildMemoryIndex,
-        listKnowledgeMetadatas: listKnowledgeMetadatas ?? (() => Promise.resolve([])),
-        listSkills: listSkills ?? (() => Promise.resolve([])),
-        listWorkspaceSnapshot,
-        compactMessages,
+        buildMemoryIndex: () => builders.buildMemoryIndex(sessionCtx),
+        listKnowledgeMetadatas: builders.listKnowledgeMetadatas
+          ? () => builders.listKnowledgeMetadatas!(sessionCtx)
+          : () => Promise.resolve([]),
+        listSkills: builders.listSkills
+          ? () => builders.listSkills!(sessionCtx)
+          : () => Promise.resolve([]),
+        listWorkspaceSnapshot: builders.listWorkspaceSnapshot
+          ? () => builders.listWorkspaceSnapshot!(sessionCtx)
+          : undefined,
+        compactMessages: builders.compactMessages,
       });
     },
   };

@@ -23,9 +23,8 @@ A profile should define:
 
 - the profile id and display name
 - the model (provider and model id)
-- the system prompt (static string or dynamic builder)
+- the system prompt (static string or dynamic function)
 - optional tools and capabilities
-- optional request-specific behavior for chat or workflow modes
 
 A profile should usually **not** own:
 
@@ -41,9 +40,8 @@ Those belong to the host layer.
 
 The usual path looks like this:
 
-1. define a prompt bundle or prompt builder
-2. call `defineProfile` with `model`, `system`, and optional `tools`/`capabilities`
-3. pass the profile array into `createAgentApp({ profiles: [...] })`
+1. call `defineProfile` with `agent: { model, prompt }` and optional `capabilities`
+2. pass the profile array into `createAgentApp({ dataDir, profiles: [...] })`
 
 ## Minimal Example
 
@@ -53,23 +51,25 @@ import { defineProfile } from "@agentrail/app";
 export const supportProfile = defineProfile({
   id: "support",
   name: "Support Agent",
-  model: "anthropic/claude-sonnet-4-5",
-  system: `You are a customer support assistant.
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: `You are a customer support assistant.
 Ask clarifying questions when the request is ambiguous.
 Use tools only when needed.`,
-  maxTurns: 20,
+    maxTurns: 20,
+  },
 });
 ```
 
 Pass it to `createAgentApp` in your entry point:
 
 ```ts
-import { createAgentApp, SessionManager } from "@agentrail/app";
+import { createAgentApp } from "@agentrail/app";
 import { supportProfile } from "./profiles/support.js";
 
-const { app } = createAgentApp({
+const app = createAgentApp({
+  dataDir: DATA_DIR,
   profiles: [supportProfile],
-  sessionManager: new SessionManager(DATA_DIR),
 });
 ```
 
@@ -92,8 +92,8 @@ This is a good template for application code because it keeps the profile file s
 
 Profiles can expose prompt behavior in two common ways:
 
-- `system`: a static string (simplest — recommended for small apps)
-- `promptBuilder`: an async function when rendering depends on variables, layers, or a cached builder (advanced)
+- `agent.prompt`: a static string (simplest — recommended for small apps)
+- `agent.prompt`: an async function `(ctx) => string` when rendering depends on variables or a cached builder
 
 For larger apps, prefer the prompt SDK over raw string literals so that:
 
@@ -103,9 +103,9 @@ For larger apps, prefer the prompt SDK over raw string literals so that:
 
 See [Manage Prompts](manage-prompts.md) for the recommended layout.
 
-## Agent Construction
+## Dynamic Agent Construction
 
-`defineProfile` uses a static agent configuration by default. For advanced use cases you can supply a `createAgent` factory:
+For full per-request control, use the `createAgent` factory:
 
 ```ts
 import { defineAgent } from "@agentrail/core";
@@ -114,13 +114,15 @@ import { defineProfile } from "@agentrail/app";
 export const supportProfile = defineProfile({
   id: "support",
   name: "Support Agent",
-  createAgent: async () =>
-    defineAgent({
+  async createAgent(ctx) {
+    const system = await loadTenantPrompt(ctx.tenantId);
+    return defineAgent({
       id: "support",
       model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
-      system: "You are a customer support assistant.",
+      system,
       maxTurns: 20,
-    }),
+    });
+  },
 });
 ```
 
@@ -131,24 +133,38 @@ Good profile construction code is usually:
 - free of HTTP concerns
 - free of environment parsing
 
-If `createAgent` starts reading request bodies, parsing routes, or booting unrelated services, that logic probably belongs elsewhere.
-
 ## Profile Registration
 
 Pass profiles to `createAgentApp`:
 
 ```ts
-const { app } = createAgentApp({
+const app = createAgentApp({
+  dataDir: DATA_DIR,
   profiles: [supportProfile, researchProfile],
-  sessionManager,
 });
 ```
 
-Profile selection is based on profile id from the request. If your selection rules depend on request mode, tenant-specific policies, or feature flags, you can use `defineHostedProfile` with a custom `createHostedProfileResolver` (lower-level escape hatch in `@agentrail/app`).
+For custom routing (tenant-aware, feature-flag-aware, etc.), use `resolveProfile`:
+
+```ts
+import type { ProfileResolver } from "@agentrail/app";
+
+const resolver: ProfileResolver = async ({ agentId, tenantId }) => {
+  return await loadProfileForTenant(agentId, tenantId);
+};
+
+const app = createAgentApp({
+  dataDir: DATA_DIR,
+  resolveProfile: resolver,
+  defaultAgentId: "support",
+});
+```
+
+`ProfileResolver` is the formal contract for dynamic routing. Implement it when profile selection depends on request context (tenant, mode, feature flags). For a static list, pass `profiles` directly.
 
 ## Multi-Profile Applications
 
-A single Agentrail host can expose multiple hosted profiles.
+A single Agentrail host can expose multiple profiles.
 
 Common reasons to do this:
 

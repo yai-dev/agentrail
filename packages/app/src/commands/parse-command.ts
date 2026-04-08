@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { ParsedSlashCommand } from "./types.js";
+import type { ParsedSlashCommand } from "@/commands/types.js";
 
 export function parseCommand(input: string): ParsedSlashCommand | null {
   const trimmed = input.trim();

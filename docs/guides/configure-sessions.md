@@ -19,19 +19,25 @@ import { SessionManager } from "@agentrail/app";
 const sessionManager = new SessionManager("/data/agentrail");
 ```
 
-Pass it to `createAgentApp`:
+Pass `dataDir` to `createAgentApp` and it will manage `SessionManager` internally:
 
 ```ts
-import { createAgentApp, SessionManager } from "@agentrail/app";
+import { createAgentApp } from "@agentrail/app";
 
-const sessionManager = new SessionManager("/data/agentrail");
-
-const { app } = createAgentApp({
+const app = createAgentApp({
+  dataDir: "/data/agentrail",
   profiles: [defaultProfile],
-  sessionManager,
   summarize,
   compaction: { triggerTokens: 80_000, minMessages: 20 },
 });
+```
+
+When you need direct access to `SessionManager` utilities (e.g. to list sessions or build a memory index), instantiate it separately:
+
+```ts
+import { SessionManager } from "@agentrail/app";
+
+export const sessionManager = new SessionManager("/data/agentrail");
 ```
 
 ## Directory Layout
@@ -103,7 +109,7 @@ These are useful when building session management UIs or context provider implem
 
 ## Implementing a Custom Session Store
 
-If the filesystem-backed `SessionManager` does not fit your requirements (for example, you need database-backed storage or multi-server shared state), implement the `AgentrailSessionStore` interface from `@agentrail/app`:
+If the filesystem-backed `SessionManager` does not fit your requirements (for example, you need database-backed storage or multi-server shared state), implement the `AgentrailSessionStore` interface from `@agentrail/app` and pass it via `sessionStore`:
 
 ```ts
 import type { AgentrailSessionStore } from "@agentrail/app";
@@ -166,7 +172,16 @@ The minimum required methods are all eight listed above. The most frequently cal
 - a **shared filesystem** (NFS, EFS, etc.) mounted at the same path on all instances
 - a **custom `AgentrailSessionStore`** backed by a database (PostgreSQL, Redis, etc.)
 
-The session store interface is designed to make this swap straightforward — replace `SessionManager` with your custom implementation and pass it to `createAgentApp`.
+The session store interface is designed to make this swap straightforward — implement `AgentrailSessionStore` and pass it to `createAgentApp({ sessionStore })`:
+
+```ts
+import { createAgentApp } from "@agentrail/app";
+
+const app = createAgentApp({
+  sessionStore: new DatabaseSessionStore(),
+  profiles: [defaultProfile],
+});
+```
 
 ## Related Concepts
 

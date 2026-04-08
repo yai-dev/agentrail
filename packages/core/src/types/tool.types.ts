@@ -4,7 +4,7 @@
  */
 
 import type { Static, TSchema } from "@sinclair/typebox";
-import type { ImageContent, TextContent } from "./content.types.js";
+import type { ImageContent, TextContent } from "@/types/content.types.js";
 
 /** Schema-only description of a tool that can be exposed to a model. */
 export interface ToolDefinition<TParameters extends TSchema = TSchema> {

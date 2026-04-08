@@ -5,7 +5,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { KBDocMeta, KBMetadata, Taxonomy } from "./types.js";
+import type { KBDocMeta, KBMetadata, Taxonomy } from "@/knowledge/types.js";
 
 export async function ensureJsonFile<T>(filePath: string, defaultValue: T): Promise<void> {
   try {

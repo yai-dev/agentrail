@@ -7,7 +7,7 @@ import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { SandboxManager } from "../sandbox-manager.js";
+import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 
 const toolDescription = `Writes a file to the sandbox workspace.
 

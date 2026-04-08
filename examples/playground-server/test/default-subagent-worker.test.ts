@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/memo";
-import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
+import { createSessionRef } from "@agentrail/core";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
 import assert from "node:assert/strict";
 import { fork } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -88,8 +88,8 @@ test("worker polls mailbox and drains pending work without an explicit wake", as
       messages,
       (message) =>
         message.type === "job_completed" &&
-        message.result &&
         typeof message.result === "object" &&
+        message.result !== null &&
         (message.result as { outputText?: string }).outputText === "poll me",
     );
     await waitForMessage(messages, (message) => message.type === "idle");

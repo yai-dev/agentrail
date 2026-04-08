@@ -3,15 +3,16 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/core";
-import type { Agent, Message, Usage } from "@agentrail/core";
 // Import for local use within this file AND re-export so that consumers can
 // import from either @agentrail/app or @agentrail/core without getting
 // structurally-incompatible types.
 import type {
+  Agent,
   AgentrailSessionStore,
   ContextProvider,
   ContextProviderContext,
+  SessionRef,
+  Usage,
 } from "@agentrail/core";
 export type { AgentrailSessionStore, ContextProvider, ContextProviderContext } from "@agentrail/core";
 
@@ -31,7 +32,7 @@ export interface AgentrailProfileContext {
 /**
  * Low-level profile contract consumed by the host runtime.
  *
- * Register profiles with `createHostedProfileResolver` and pass the resolver
+ * Register profiles with `createProfileResolver` and pass the resolver
  * to `createChatRoute` or `createStreamRoute`.
  *
  * @see {@link https://agentrail.run/concepts/profiles}
@@ -46,6 +47,13 @@ export interface AgentrailProfile {
     context: AgentrailProfileContext,
     onSubAgentEvent?: (event: object) => void,
   ): Promise<Agent>;
+  /**
+   * Returns capability-level context providers for this request.
+   * Populated automatically by `createAgentApp` when the profile declares
+   * `capabilities` via `defineProfile`. Route handlers call this after
+   * `createAgent` and merge the result with the static `contextProviders`.
+   */
+  getContextProviders?(context: AgentrailProfileContext): Promise<ContextProvider[]> | ContextProvider[];
 }
 
 /** JSON request body accepted by the non-streaming chat route. */

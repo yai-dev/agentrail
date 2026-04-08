@@ -11,7 +11,7 @@ import type {
   WaitAgentInput,
   WaitCondition,
   WaitMatch,
-} from "./types.js";
+} from "@/orchestration/types.js";
 
 /** Normalizes a wait input so omitted fields are filled with stable defaults. */
 export function normalizeWaitInput(input: WaitAgentInput): WaitAgentInput {

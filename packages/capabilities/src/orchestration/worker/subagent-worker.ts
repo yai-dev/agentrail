@@ -11,20 +11,20 @@ import {
   type CreateManagedAgentInput,
   type ManagedAgentDeliveryResult,
   type OrchestrationMailboxState,
-} from "../index.js";
-import { createFilesystemOrchestrationStore } from "../orchestration-store.js";
+} from "@/orchestration/index.js";
+import { createFilesystemOrchestrationStore } from "@/orchestration/orchestration-store.js";
 import {
   type SubAgentRuntime,
   type SubagentWorkerConfig,
   type WorkerState,
-} from "./agent-runtime.js";
+} from "@/orchestration/worker/agent-runtime.js";
 import {
   type ParentMessage,
   type WorkerCloseMessage,
   type WorkerInitMessage,
   type WorkerMessage,
   type WorkerRunTurnMessage,
-} from "./worker-messages.js";
+} from "@/orchestration/worker/worker-messages.js";
 
 /** Dependencies required to bootstrap a managed sub-agent worker process. */
 export interface WorkerOptions {

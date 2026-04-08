@@ -13,9 +13,9 @@ import {
   getWaitTargetAgentIds,
   normalizeDeliveryResult,
   normalizeWaitInput,
-} from "./orchestration-manager-helpers.js";
-import type { OrchestrationPersistence } from "./persistence.js";
-import { applyOrchestrationEvent, cloneOrchestrationSnapshot } from "./recovery.js";
+} from "@/orchestration/orchestration-manager-helpers.js";
+import type { OrchestrationPersistence } from "@/orchestration/persistence.js";
+import { applyOrchestrationEvent, cloneOrchestrationSnapshot } from "@/orchestration/recovery.js";
 import type {
   AgentInputEnvelope,
   CloseAgentInput,
@@ -29,7 +29,7 @@ import type {
   SpawnAgentInput,
   WaitAgentInput,
   WaitCondition,
-} from "./types.js";
+} from "@/orchestration/types.js";
 
 /** Live managed-agent instance controlled by `OrchestrationManager`. */
 export interface ManagedAgentInstance {

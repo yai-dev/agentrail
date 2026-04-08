@@ -12,10 +12,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./advanced": {
+      "types": "./dist/advanced.d.ts",
+      "default": "./dist/advanced.js"
+    },
+    "./compat": {
+      "types": "./dist/compat.d.ts",
+      "default": "./dist/compat.js"
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
@@ -23,13 +31,15 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@agentrail/core": "workspace:*",
     "@agentrail/capabilities": "workspace:*",
+    "@agentrail/core": "workspace:*",
     "hono": "^4.7.4",
     "yaml": "^2.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsc-alias": "^1.8.16",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^2.0.0"
   },
   "repository": {

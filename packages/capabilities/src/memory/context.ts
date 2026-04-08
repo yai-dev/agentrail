@@ -4,7 +4,7 @@
  */
 
 import type { TransformContextFn, UserMessage } from "@agentrail/core";
-import { createContextProviderFromTransform } from "../context-pipeline.js";
+import { createContextProviderFromTransform } from "@/context-pipeline.js";
 import type { ContextProvider } from "@agentrail/core";
 import {
   makeDateContextMessage,
@@ -13,9 +13,9 @@ import {
   makeSkillsContextMessage,
   makeUserIdentityMessage,
   translateMemoryPaths,
-} from "./messages.js";
-import type { DefaultCapabilityContextOptions } from "./types.js";
-import { createDefaultContextProviders } from "./types.js";
+} from "@/memory/messages.js";
+import type { DefaultCapabilityContextOptions } from "@/memory/types.js";
+import { createDefaultContextProviders } from "@/memory/types.js";
 
 /**
  * Creates the default transformContext implementation used by the recommended host SDK.

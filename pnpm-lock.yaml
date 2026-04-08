@@ -38,27 +38,18 @@ importers:
 
   examples/deep-research:
     dependencies:
-      '@agentrail/config':
+      '@agentrail/app':
         specifier: workspace:*
-        version: link:../../packages/config
+        version: link:../../packages/app
+      '@agentrail/capabilities':
+        specifier: workspace:*
+        version: link:../../packages/capabilities
+      '@agentrail/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@agentrail/deep-research':
         specifier: workspace:*
         version: link:../../packages/deep-research
-      '@agentrail/knowledge':
-        specifier: workspace:*
-        version: link:../../packages/knowledge
-      '@agentrail/memo':
-        specifier: workspace:*
-        version: link:../../packages/memo
-      '@agentrail/orchestration':
-        specifier: workspace:*
-        version: link:../../packages/orchestration
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../../packages/runtime-core
-      '@agentrail/sandbox':
-        specifier: workspace:*
-        version: link:../../packages/sandbox
       '@hono/node-server':
         specifier: ^1.13.7
         version: 1.19.11(hono@4.12.9)
@@ -69,6 +60,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
+      tsc-alias:
+        specifier: ^1.8.16
+        version: 1.8.16
       tsx:
         specifier: ^4.19.3
         version: 4.21.0
@@ -97,15 +91,18 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
+      tsc-alias:
+        specifier: ^1.8.16
+        version: 1.8.16
       tsx:
         specifier: ^4.19.3
         version: 4.21.0
 
   examples/playground-ui:
     dependencies:
-      '@agentrail/config':
+      '@agentrail/app':
         specifier: workspace:*
-        version: link:../../packages/config
+        version: link:../../packages/app
       '@types/dompurify':
         specifier: ^3.0.5
         version: 3.2.0
@@ -168,6 +165,12 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
+      tsc-alias:
+        specifier: ^1.8.16
+        version: 1.8.16
+      vite-tsconfig-paths:
+        specifier: ^6.1.1
+        version: 6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.15)
@@ -196,19 +199,12 @@ importers:
       '@types/tar-stream':
         specifier: ^3.1.4
         version: 3.1.4
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/config:
-    dependencies:
-      yaml:
-        specifier: ^2.8.1
-        version: 2.8.3
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
+      tsc-alias:
+        specifier: ^1.8.16
+        version: 1.8.16
+      vite-tsconfig-paths:
+        specifier: ^6.1.1
+        version: 6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.15)
@@ -228,6 +224,12 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
+      tsc-alias:
+        specifier: ^1.8.16
+        version: 1.8.16
+      vite-tsconfig-paths:
+        specifier: ^6.1.1
+        version: 6.1.1(typescript@5.9.3)(vite@5.4.21(@types/node@22.19.15))
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.15)
@@ -257,224 +259,12 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/events:
-    dependencies:
-      '@agentrail/orchestration':
-        specifier: workspace:*
-        version: link:../orchestration
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-      '@agentrail/skills':
-        specifier: workspace:*
-        version: link:../skills
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/host:
-    dependencies:
-      '@agentrail/events':
-        specifier: workspace:*
-        version: link:../events
-      '@agentrail/knowledge':
-        specifier: workspace:*
-        version: link:../knowledge
-      '@agentrail/memo':
-        specifier: workspace:*
-        version: link:../memo
-      '@agentrail/orchestration':
-        specifier: workspace:*
-        version: link:../orchestration
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-      '@agentrail/sandbox':
-        specifier: workspace:*
-        version: link:../sandbox
-      '@agentrail/skills':
-        specifier: workspace:*
-        version: link:../skills
-      '@agentrail/tools':
-        specifier: workspace:*
-        version: link:../tools
-      hono:
-        specifier: ^4.7.4
-        version: 4.12.9
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/knowledge:
-    dependencies:
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/memo:
-    dependencies:
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/orchestration:
-    dependencies:
-      '@agentrail/memo':
-        specifier: workspace:*
-        version: link:../memo
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/plugin-user-memory:
-    dependencies:
-      '@agentrail/host':
-        specifier: workspace:*
-        version: link:../host
-      '@agentrail/memo':
-        specifier: workspace:*
-        version: link:../memo
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/prompts:
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/runtime-core:
-    dependencies:
-      '@anthropic-ai/sdk':
-        specifier: ^0.39.0
-        version: 0.39.0
-      '@sinclair/typebox':
-        specifier: ^0.34.0
-        version: 0.34.49
-      openai:
-        specifier: ^4.0.0
-        version: 4.104.0
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/sandbox:
-    dependencies:
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-      '@sinclair/typebox':
-        specifier: ^0.34.0
-        version: 0.34.49
-      dockerode:
-        specifier: ^4.0.4
-        version: 4.0.10
-      tar-stream:
-        specifier: ^3.1.8
-        version: 3.1.8
-    devDependencies:
-      '@types/dockerode':
-        specifier: ^3.3.38
-        version: 3.3.47
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      '@types/tar-stream':
-        specifier: ^3.1.4
-        version: 3.1.4
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/skills:
-    dependencies:
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/slash-commands:
-    dependencies:
-      hono:
-        specifier: ^4.7.4
-        version: 4.12.9
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@22.19.15)
-
-  packages/tools:
-    dependencies:
-      '@agentrail/memo':
-        specifier: workspace:*
-        version: link:../memo
-      '@agentrail/runtime-core':
-        specifier: workspace:*
-        version: link:../runtime-core
-      '@sinclair/typebox':
-        specifier: ^0.34.0
-        version: 0.34.49
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
+      tsc-alias:
+        specifier: ^1.8.16
+        version: 1.8.16
+      vite-tsconfig-paths:
+        specifier: ^6.1.1
+        version: 6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.15)
@@ -1597,6 +1387,10 @@ packages:
     resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
     engines: {node: '>=8'}
 
+  anymatch@3.1.3:
+    resolution: {integrity: sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw==}
+    engines: {node: '>= 8'}
+
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
 
@@ -1687,6 +1481,10 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
+  binary-extensions@2.3.0:
+    resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
+    engines: {node: '>=8'}
+
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
@@ -1774,6 +1572,10 @@ packages:
   chevrotain@11.1.2:
     resolution: {integrity: sha512-opLQzEVriiH1uUQ4Kctsd49bRoFDXGGSC4GUqj7pGyxM3RehRhvTlZJc1FL/Flew2p5uwxa1tUDWKzI4wNM8pg==}
 
+  chokidar@3.6.0:
+    resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
+    engines: {node: '>= 8.10.0'}
+
   chownr@1.1.4:
     resolution: {integrity: sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==}
 
@@ -1806,6 +1608,10 @@ packages:
   commander@8.3.0:
     resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
     engines: {node: '>= 12'}
+
+  commander@9.5.0:
+    resolution: {integrity: sha512-KRs7WVDKg86PWiuAqhDrAQnTXZKraVcCc6vFdL14qrZ/DcWwuRo7VoiYXalXO7S5GKpqYiVEwCbgFDfxNHKJBQ==}
+    engines: {node: ^12.20.0 || >=14}
 
   concurrently@9.2.1:
     resolution: {integrity: sha512-fsfrO0MxV64Znoy8/l1vVIjjHa29SZyyqPgQBwhiDcaW8wJc2W3XWVOGx4M3oJBnv/zdUZIIp1gDeS98GzP8Ng==}
@@ -2305,6 +2111,9 @@ packages:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
     engines: {node: '>=10'}
 
+  globrex@0.1.2:
+    resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
+
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
@@ -2399,6 +2208,10 @@ packages:
 
   is-alphanumerical@2.0.1:
     resolution: {integrity: sha512-hmbYhX/9MUMF5uh7tOXyK/n0ZvWpad5caBA17GsC6vyuCqaWliRG5K1qS9inmUhEMaOBIW7/whAnSwveW/LtZw==}
+
+  is-binary-path@2.1.0:
+    resolution: {integrity: sha512-ZMERYes6pDydyuGidse7OsHxtbI7WVeUEozgR/g7rd0xUimYNlvZRE/K2MgZTjWy725IfelLeVcEM97mmtRGXw==}
+    engines: {node: '>=8'}
 
   is-decimal@2.0.1:
     resolution: {integrity: sha512-AAB9hiomQs5DXWcRB1rqsxGUstbRroFOPPVAomNk/3XHR5JyEZChOyTWe2oayKnsSsr/kcGqF+z6yuH6HHpN0A==}
@@ -2715,6 +2528,10 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
+  mylas@2.1.14:
+    resolution: {integrity: sha512-BzQguy9W9NJgoVn2mRWzbFrFWWztGCcng2QI9+41frfk+Athwgx3qhqhvStz7ExeUUu7Kzw427sNzHpEZNINog==}
+    engines: {node: '>=16.0.0'}
+
   nan@2.26.2:
     resolution: {integrity: sha512-0tTvBTYkt3tdGw22nrAy50x7gpbGCCFH3AFcyS5WiUu7Eu4vWlri1woE6qHBSfy11vksDqkiwjOnlR7WV8G1Hw==}
 
@@ -2743,6 +2560,10 @@ packages:
 
   node-releases@2.0.36:
     resolution: {integrity: sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==}
+
+  normalize-path@3.0.0:
+    resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
+    engines: {node: '>=0.10.0'}
 
   object-inspect@1.13.4:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
@@ -2869,6 +2690,10 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  plimit-lit@1.6.1:
+    resolution: {integrity: sha512-B7+VDyb8Tl6oMJT9oSO2CW8XC/T4UcJGrwOVoNGwOQsQYhlpfajmrMj5xeejqaASq3V/EqThyOeATEOMuSEXiA==}
+    engines: {node: '>=12'}
+
   points-on-curve@0.2.0:
     resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
 
@@ -2923,6 +2748,10 @@ packages:
   quansync@0.2.11:
     resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}
 
+  queue-lit@1.5.2:
+    resolution: {integrity: sha512-tLc36IOPeMAubu8BkW8YDBV+WyIgKlYU7zUNs0J5Vk9skSZ4JfGlPOqplP0aHdfv7HL0B2Pg6nwiq60Qc6M2Hw==}
+    engines: {node: '>=12'}
+
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
@@ -2963,6 +2792,10 @@ packages:
   readable-stream@3.6.2:
     resolution: {integrity: sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==}
     engines: {node: '>= 6'}
+
+  readdirp@3.6.0:
+    resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
+    engines: {node: '>=8.10.0'}
 
   remark-gfm@4.0.1:
     resolution: {integrity: sha512-1quofZ2RQ9EWdeN34S79+KExV1764+wCUGop5CPL1WGdD0ocPpu91lzPGbwWMECpEpd42kJGQwzRfyov9j4yNg==}
@@ -3234,6 +3067,21 @@ packages:
     resolution: {integrity: sha512-q5W7tVM71e2xjHZTlgfTDoPF/SmqKG5hddq9SzR49CH2hayqRKJtQ4mtRlSxKaJlR/+9rEM+mnBHf7I2/BQcpQ==}
     engines: {node: '>=6.10'}
 
+  tsc-alias@1.8.16:
+    resolution: {integrity: sha512-QjCyu55NFyRSBAl6+MTFwplpFcnm2Pq01rR/uxfqJoLMm6X3O14KEGtaSDZpJYaE1bJBGDjD0eSuiIWPe2T58g==}
+    engines: {node: '>=16.20.2'}
+    hasBin: true
+
+  tsconfck@3.1.6:
+    resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
+    peerDependencies:
+      typescript: ^5.0.0
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
@@ -3327,6 +3175,11 @@ packages:
     resolution: {integrity: sha512-AM9aQ/IPrW/6ENLQg3AGY4K1N2TGZdR5e4gu/MmmR2xR3Ll1+dib+nook92g4TV3PXVyeyxdWwtaCAiUL0hMxA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
+
+  vite-tsconfig-paths@6.1.1:
+    resolution: {integrity: sha512-2cihq7zliibCCZ8P9cKJrQBkfgdvcFkOOc3Y02o3GWUDLgqjWsZudaoiuOwO/gzTzy17cS5F7ZPo4bsnS4DGkg==}
+    peerDependencies:
+      vite: '*'
 
   vite@5.4.21:
     resolution: {integrity: sha512-o5a9xKjbtuhY6Bi5S3+HvbRERmouabWbyUcpXXUA1u+GNUKoROi9byOJ8M0nHbHYHkYICiMlqxkg1KkYmm25Sw==}
@@ -4551,6 +4404,11 @@ snapshots:
     dependencies:
       color-convert: 2.0.1
 
+  anymatch@3.1.3:
+    dependencies:
+      normalize-path: 3.0.0
+      picomatch: 2.3.2
+
   argparse@1.0.10:
     dependencies:
       sprintf-js: 1.0.3
@@ -4616,6 +4474,8 @@ snapshots:
   better-path-resolve@1.0.0:
     dependencies:
       is-windows: 1.0.2
+
+  binary-extensions@2.3.0: {}
 
   bl@4.1.0:
     dependencies:
@@ -4724,6 +4584,18 @@ snapshots:
       '@chevrotain/utils': 11.1.2
       lodash-es: 4.17.23
 
+  chokidar@3.6.0:
+    dependencies:
+      anymatch: 3.1.3
+      braces: 3.0.3
+      glob-parent: 5.1.2
+      is-binary-path: 2.1.0
+      is-glob: 4.0.3
+      normalize-path: 3.0.0
+      readdirp: 3.6.0
+    optionalDependencies:
+      fsevents: 2.3.3
+
   chownr@1.1.4: {}
 
   cliui@8.0.1:
@@ -4749,6 +4621,8 @@ snapshots:
   commander@7.2.0: {}
 
   commander@8.3.0: {}
+
+  commander@9.5.0: {}
 
   concurrently@9.2.1:
     dependencies:
@@ -5367,6 +5241,8 @@ snapshots:
       merge2: 1.4.1
       slash: 3.0.0
 
+  globrex@0.1.2: {}
+
   gopd@1.2.0: {}
 
   graceful-fs@4.2.11: {}
@@ -5461,6 +5337,10 @@ snapshots:
     dependencies:
       is-alphabetical: 2.0.1
       is-decimal: 2.0.1
+
+  is-binary-path@2.1.0:
+    dependencies:
+      binary-extensions: 2.3.0
 
   is-decimal@2.0.1: {}
 
@@ -5989,6 +5869,8 @@ snapshots:
 
   ms@2.1.3: {}
 
+  mylas@2.1.14: {}
+
   nan@2.26.2:
     optional: true
 
@@ -6003,6 +5885,8 @@ snapshots:
       whatwg-url: 5.0.0
 
   node-releases@2.0.36: {}
+
+  normalize-path@3.0.0: {}
 
   object-inspect@1.13.4: {}
 
@@ -6106,6 +5990,10 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.2
 
+  plimit-lit@1.6.1:
+    dependencies:
+      queue-lit: 1.5.2
+
   points-on-curve@0.2.0: {}
 
   points-on-path@0.2.1:
@@ -6162,6 +6050,8 @@ snapshots:
       side-channel: 1.1.0
 
   quansync@0.2.11: {}
+
+  queue-lit@1.5.2: {}
 
   queue-microtask@1.2.3: {}
 
@@ -6223,6 +6113,10 @@ snapshots:
       inherits: 2.0.4
       string_decoder: 1.3.0
       util-deprecate: 1.0.2
+
+  readdirp@3.6.0:
+    dependencies:
+      picomatch: 2.3.2
 
   remark-gfm@4.0.1:
     dependencies:
@@ -6560,6 +6454,20 @@ snapshots:
 
   ts-dedent@2.2.0: {}
 
+  tsc-alias@1.8.16:
+    dependencies:
+      chokidar: 3.6.0
+      commander: 9.5.0
+      get-tsconfig: 4.13.7
+      globby: 11.1.0
+      mylas: 2.1.14
+      normalize-path: 3.0.0
+      plimit-lit: 1.6.1
+
+  tsconfck@3.1.6(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
+
   tslib@2.8.1: {}
 
   tsx@4.21.0:
@@ -6666,6 +6574,26 @@ snapshots:
       - sugarss
       - supports-color
       - terser
+
+  vite-tsconfig-paths@6.1.1(typescript@5.9.3)(vite@5.4.21(@types/node@22.19.15)):
+    dependencies:
+      debug: 4.4.3
+      globrex: 0.1.2
+      tsconfck: 3.1.6(typescript@5.9.3)
+      vite: 5.4.21(@types/node@22.19.15)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+
+  vite-tsconfig-paths@6.1.1(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)):
+    dependencies:
+      debug: 4.4.3
+      globrex: 0.1.2
+      tsconfck: 3.1.6(typescript@5.9.3)
+      vite: 6.4.1(@types/node@22.19.15)(tsx@4.21.0)(yaml@2.8.3)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
 
   vite@5.4.21(@types/node@22.19.15):
     dependencies:

@@ -27,7 +27,7 @@ The stream endpoint returns an SSE-style text stream. Each line prefixed with `d
 ### Minimal browser fetch
 
 ```ts
-import type { AgentrailEvent } from "@agentrail/events";
+import type { AgentrailEvent } from "@agentrail/app";
 
 interface ChatState {
   sessionId: string | null;
@@ -236,8 +236,8 @@ async function chatNonStream(message: string): Promise<string> {
 
 **Framework-level** (consumed by this UI):
 
-- `chat` and `stream` route contracts exposed by `@agentrail/host`
-- event shapes surfaced by `@agentrail/events` and the runtime
+- `chat` and `stream` route contracts exposed by `@agentrail/app`
+- event shapes surfaced by `@agentrail/app` and the runtime
 - the session-oriented request model
 
 **Example-level** (specific to this UI):

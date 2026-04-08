@@ -4,8 +4,8 @@
  */
 
 import { Type, type Static, type TSchema } from "@sinclair/typebox";
-import type { RuntimeTool, ToolResult } from "../types/tool.types.js";
-import { type ToolExecutionContext, tool } from "./tool-builder.js";
+import type { RuntimeTool, ToolResult } from "@/types/tool.types.js";
+import { type ToolExecutionContext, tool } from "@/tools/tool-builder.js";
 
 /**
  * Defines a runtime tool using an object-style declaration.

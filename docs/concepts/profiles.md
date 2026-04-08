@@ -16,9 +16,9 @@ This keeps route files thin and makes agent assembly testable and reusable.
 
 ## The Two Profile Shapes
 
-### Recommended — `defineProfile`
+### Static Profile
 
-The primary way to define profiles. Import from `@agentrail/app`:
+The recommended starting point. Supply an `agent` configuration and optional `capabilities`:
 
 ```ts
 import { defineProfile } from "@agentrail/app";
@@ -26,67 +26,86 @@ import { defineProfile } from "@agentrail/app";
 export const defaultProfile = defineProfile({
   id: "default",
   name: "Default Assistant",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are a helpful assistant.",
-  tools: [myTool],
-  capabilities: [filesystem(sandboxManager)],
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a helpful assistant.",
+    maxTurns: 30,
+  },
+  capabilities: [filesystem({ sandboxManager })],
 });
 ```
 
-`defineProfile` handles agent construction, prompt assembly, and capability wiring automatically. This is the right starting point for most apps.
+`defineProfile` handles agent construction, capability wiring, and context provider injection automatically.
 
-### Advanced — `defineHostedProfile`
+### Dynamic Profile
 
-The lower-level primitive from `@agentrail/app`. Use it when you need fine-grained control over construction logic, for example when integrating with an existing agent registry:
+Use the `createAgent` factory when the agent configuration must vary per request (tenant-aware models, runtime feature flags, etc.):
 
 ```ts
-import { defineHostedProfile } from "@agentrail/app";
 import { defineAgent } from "@agentrail/core";
+import { defineProfile } from "@agentrail/app";
 
-export const defaultProfile = defineHostedProfile({
-  id: "default",
-  name: "Default Assistant",
-  prompt: myPromptBundle,
-  createAgent: ({ tools, systemPrompt }) =>
-    defineAgent({
-      id: "default",
-      model: "anthropic/claude-sonnet-4-5",
-      system: systemPrompt,
-      tools,
-    }),
+export const tenantProfile = defineProfile({
+  id: "tenant",
+  name: "Tenant Assistant",
+  async createAgent(ctx) {
+    const system = await loadTenantPrompt(ctx.tenantId);
+    return defineAgent({
+      id: "tenant",
+      model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+      system,
+      maxTurns: 30,
+    });
+  },
+  capabilities: [filesystem({ sandboxManager })],
+  // Required when capabilities need model info (e.g. skills()):
+  modelConfig: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
 });
 ```
-
-`defineHostedProfile` receives a pre-assembled context object with `tools` (built from the capability layer) and `systemPrompt` (rendered from the prompt bundle).
 
 ## Key Fields
 
-| Field              | Purpose                                                                                   |
-| ------------------ | ----------------------------------------------------------------------------------------- |
-| `id`               | Stable identifier used by the host to resolve this profile                                |
-| `name`             | Human-readable label for logs and diagnostics                                             |
-| `contextWindow`    | LLM context window size in tokens (used for token budget calculations, default `200_000`) |
-| `prompt`           | A prompt bundle or builder providing the system prompt                                    |
-| `createAgent`      | Factory function that constructs the agent for a given request                            |
-| `transformContext` | Optional function to inject extra request-time context messages                           |
-| `orchestration`    | Optional orchestration binding for multi-agent workflows                                  |
+| Field           | Purpose                                                                                   |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| `id`            | Stable identifier used by the host to resolve this profile                                |
+| `name`          | Human-readable label for logs and diagnostics                                             |
+| `contextWindow` | LLM context window size in tokens (used for token budget calculations, default `200_000`) |
+| `agent`         | Static agent config (static shape only)                                                   |
+| `createAgent`   | Per-request factory function (dynamic shape only)                                         |
+| `capabilities`  | Capability descriptors to compose into the agent                                          |
+| `modelConfig`   | Model metadata for capabilities that spawn sub-agents (e.g. `skills()`)                  |
 
 ## Profile Registration
 
 Profiles are registered by passing them to `createAgentApp`:
 
 ```ts
-import { createAgentApp, SessionManager } from "@agentrail/app";
+import { createAgentApp } from "@agentrail/app";
 
-const { app } = createAgentApp({
+const app = createAgentApp({
+  dataDir: "./data",
   profiles: [defaultProfile, adminProfile, researchProfile],
-  sessionManager: new SessionManager(DATA_DIR),
 });
 ```
 
-`createAgentApp` builds a resolver internally. It looks up the profile by `agentId` from the request and falls back to the `defaultAgentId` if none is specified.
+`createAgentApp` builds a resolver internally. It looks up the profile by `agentId` from the request and falls back to the first profile if none is specified.
 
-For more complex routing — such as tenant-based profile selection or mode-switching — use `createHostedProfileResolver` from `@agentrail/app` directly and pass it to `createChatRoute` / `createStreamRoute`.
+For more complex routing — tenant-based selection, mode-switching, feature flags — provide a custom `resolveProfile` function:
+
+```ts
+import { createAgentApp } from "@agentrail/app";
+import type { ProfileResolver } from "@agentrail/app";
+
+const resolveProfile: ProfileResolver = async ({ agentId, tenantId }) => {
+  return await loadProfileForTenant(agentId, tenantId);
+};
+
+const app = createAgentApp({
+  dataDir: "./data",
+  resolveProfile,
+  defaultAgentId: "default",
+});
+```
 
 ## Multi-Profile Apps
 
@@ -100,12 +119,12 @@ Most apps start with a single profile and add more over time. Each profile is in
 
 These three concepts often get confused:
 
-| Concern                                              | Belongs in                                  |
-| ---------------------------------------------------- | ------------------------------------------- |
-| Agent execution loop, model, tools                   | Agent (`defineAgent`)                       |
-| How an agent is assembled for a request              | Profile (`defineProfile`)                   |
-| Cross-cutting host behavior (memory, slash commands) | Plugin (`AgentrailPlugin`)                  |
-| Prompt content and fragments                         | Prompt bundle (`definePromptBundle`)        |
+| Concern                                              | Belongs in                           |
+| ---------------------------------------------------- | ------------------------------------ |
+| Agent execution loop, model, tools                   | Agent (`defineAgent`)                |
+| How an agent is assembled for a request              | Profile (`defineProfile`)            |
+| Cross-cutting host behavior (memory, slash commands) | Plugin (`AgentrailPlugin`)           |
+| Prompt content and fragments                         | Prompt builder (`createPromptBuilder`) |
 
 ## Related Concepts
 

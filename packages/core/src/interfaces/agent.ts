@@ -8,7 +8,8 @@ import type {
   AgentResult,
   AgentRunOptions,
   AgentStream,
-} from "../types/agent.types.js";
+} from "@/types/agent.types.js";
+import type { RuntimeTool } from "@/types/tool.types.js";
 
 /**
  * Executable runtime agent interface.
@@ -33,4 +34,7 @@ export interface Agent {
 
   /** Runs the agent independently for each input using shared invocation options. */
   batch(inputs: AgentInput[], options?: AgentRunOptions): Promise<AgentResult[]>;
+
+  /** Returns a new Agent with `extra` tools appended to the existing tool set. */
+  withTools(extra: RuntimeTool[]): Agent;
 }

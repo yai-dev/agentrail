@@ -8,11 +8,11 @@ import "@agentrail/core/providers";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
-import { config } from "./config.js";
-import { sandboxManager } from "./context/index.js";
-import { deepResearch } from "./routes/deep-research.js";
-import { health } from "./routes/health.js";
-import { run } from "./routes/run.js";
+import { config } from "@/config.js";
+import { sandboxManager } from "@/context/index.js";
+import { deepResearch } from "@/routes/deep-research.js";
+import { health } from "@/routes/health.js";
+import { run } from "@/routes/run.js";
 
 const app = new Hono();
 

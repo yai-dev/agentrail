@@ -15,17 +15,19 @@
     }
   },
   "scripts": {
-    "build": "tsc -b --force && mkdir -p dist/prompts && cp src/prompts/*.md dist/prompts/",
+    "build": "tsc -b && tsc-alias && mkdir -p dist/prompts && cp src/prompts/*.md dist/prompts/",
     "typecheck": "tsc -b --pretty false --force",
     "test": "pnpm exec vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@agentrail/core": "workspace:*",
     "@agentrail/capabilities": "workspace:*",
+    "@agentrail/core": "workspace:*",
     "hono": "^4.7.4"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsc-alias": "^1.8.16",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^2.0.0"
   },
   "repository": {

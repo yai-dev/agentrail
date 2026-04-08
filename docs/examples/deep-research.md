@@ -63,10 +63,9 @@ That makes it a strong example of how orchestration and workflows sit on top of 
 
 Framework-level pieces used by this example include:
 
-- `@agentrail/runtime-core`
-- `@agentrail/orchestration`
-- `@agentrail/prompts`
-- host integration patterns such as session stores and route factories
+- `@agentrail/core`
+- `@agentrail/capabilities` (orchestration)
+- `@agentrail/app` (session stores, route factories)
 
 These are reusable across many applications, not just research workflows.
 
@@ -163,7 +162,7 @@ The coordinator drives this via the `OrchestrationManager`. Each phase produces 
 The client subscribes to the run's SSE stream and updates a research dashboard:
 
 ```ts
-import type { AgentrailEvent } from "@agentrail/events";
+import type { AgentrailEvent } from "@agentrail/app";
 
 async function subscribeToRun(runId: string, onUpdate: (patch: object) => void) {
   const response = await fetch(`/run/${runId}/stream`);

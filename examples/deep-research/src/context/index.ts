@@ -6,7 +6,7 @@
 import { KnowledgeManager } from "@agentrail/capabilities";
 import { SessionManager } from "@agentrail/app";
 import { SandboxManager } from "@agentrail/capabilities";
-import { config } from "../config.js";
+import { config } from "@/config.js";
 
 export const sessionManager = new SessionManager(config.dataDir);
 export const knowledgeManager = new KnowledgeManager(config.dataDir);

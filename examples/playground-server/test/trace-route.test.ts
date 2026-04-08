@@ -3,9 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { WorkflowTraceEventEnvelope } from "@agentrail/events";
-import { createFileSystemSessionTraceStore, createSessionRef } from "@agentrail/memo";
-import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
+import type { WorkflowTraceEventEnvelope } from "@agentrail/app";
+import { createFileSystemSessionTraceStore } from "@agentrail/app";
+import { createSessionRef } from "@agentrail/core";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
 import { Hono } from "hono";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";

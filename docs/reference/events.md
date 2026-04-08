@@ -16,9 +16,8 @@ Read this page when:
 The central event union is:
 
 ```ts
-import type { AgentrailEvent, AgentrailHostEvent } from "@agentrail/events";
-import type { RuntimeEvent } from "@agentrail/runtime-core";
-import type { ExtendedSseEvent } from "@agentrail/skills";
+import type { AgentrailEvent, AgentrailHostEvent } from "@agentrail/app";
+import type { RuntimeEvent } from "@agentrail/core";
 
 // AgentrailEvent is the top-level union for all SSE payloads
 type AgentrailEvent = RuntimeEvent | ExtendedSseEvent | AgentrailHostEvent;
@@ -187,7 +186,7 @@ interface AgentrailSubagentClosedEvent {
 
 ## Runtime Events (Summary)
 
-Runtime events come from `@agentrail/runtime-core` and are emitted during agent execution. The most important ones for UI consumers:
+Runtime events come from `@agentrail/core` and are emitted during agent execution. The most important ones for UI consumers:
 
 | Event type                  | When emitted                               |
 | --------------------------- | ------------------------------------------ |
@@ -210,7 +209,7 @@ Not all events are persisted to the trace log. High-frequency streaming events (
 The `TRACE_PERSISTED_EVENT_TYPES` set defines what gets persisted:
 
 ```ts
-import { TRACE_PERSISTED_EVENT_TYPES } from "@agentrail/events";
+import { TRACE_PERSISTED_EVENT_TYPES } from "@agentrail/app";
 
 // Runtime / skill events that are persisted:
 // "agent_start", "agent_end", "turn_start", "turn_end",
@@ -236,7 +235,7 @@ if (TRACE_PERSISTED_EVENT_TYPES.has(event.type)) {
 ### Browser (fetch + ReadableStream)
 
 ```ts
-import type { AgentrailEvent } from "@agentrail/events";
+import type { AgentrailEvent } from "@agentrail/app";
 
 async function streamChat(message: string, sessionId?: string) {
   const response = await fetch("/api/stream", {
@@ -316,7 +315,7 @@ function handleEvent(event: AgentrailEvent) {
 ### Node.js Server-Side
 
 ```ts
-import { mapOrchestrationEvent } from "@agentrail/events";
+import { mapOrchestrationEvent } from "@agentrail/app";
 
 // Use the same line-splitting approach; node-fetch or undici support streaming
 const res = await fetch("http://localhost:3000/api/stream", { ... });
