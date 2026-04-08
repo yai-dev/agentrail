@@ -1,5 +1,5 @@
 ---
-"@agentrail/orchestration": patch
+"@agentrail/capabilities": patch
 ---
 
 Support multiple concurrent orchestration runs in a single `OrchestrationManager`.

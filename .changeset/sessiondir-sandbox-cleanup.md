@@ -1,10 +1,7 @@
 ---
+"@agentrail/app": patch
+"@agentrail/capabilities": patch
 "@agentrail/deep-research": patch
-"@agentrail/host": patch
-"@agentrail/memo": patch
-"@agentrail/orchestration": patch
-"@agentrail/sandbox": patch
-"@agentrail/tools": patch
 ---
 
 Finish the session storage and sandbox execution cleanup across the framework packages.
