@@ -131,12 +131,12 @@ export function useWorkflowTrace(sessionId: string | null): UseWorkflowTraceResu
  * since playground-ui doesn't depend on that package).
  */
 const TRACE_EVENT_TYPES = new Set([
-  "agent_start",
-  "agent_end",
-  "turn_start",
-  "turn_end",
-  "tool_execution_start",
-  "tool_execution_end",
+  "session.start",
+  "session.end",
+  "turn.start",
+  "turn.complete",
+  "tool.before",
+  "tool.after",
   "skill_start",
   "skill_end",
   "waiting_for_user_input",
@@ -185,7 +185,7 @@ function projectEnvelopesToTraces(envelopes: WorkflowTraceEventEnvelope[]): Agen
     // Use envelope timestamp as a proxy for arrival time (ms since epoch)
     const now = new Date(envelope.timestamp).getTime();
 
-    if (type === "agent_start") {
+    if (type === "session.start") {
       currentTrace = {
         id: envelope.id,
         startTime: now,
@@ -201,7 +201,7 @@ function projectEnvelopesToTraces(envelopes: WorkflowTraceEventEnvelope[]): Agen
       activeSkill = (event.skillName as string | undefined) ?? null;
     } else if (type === "skill_end") {
       activeSkill = null;
-    } else if (type === "turn_start") {
+    } else if (type === "turn.start") {
       const source: "main" | "skill" = activeSkill ? "skill" : "main";
       const id = envelope.id + "-llm";
       activeLlmId[source] = id;
@@ -215,7 +215,7 @@ function projectEnvelopesToTraces(envelopes: WorkflowTraceEventEnvelope[]): Agen
         skillName: activeSkill ?? undefined,
       };
       appendStep(step);
-    } else if (type === "turn_end") {
+    } else if (type === "turn.complete") {
       const source: "main" | "skill" = activeSkill ? "skill" : "main";
       const id = activeLlmId[source];
       if (id) {
@@ -228,7 +228,7 @@ function projectEnvelopesToTraces(envelopes: WorkflowTraceEventEnvelope[]): Agen
           status: stopReason === "error" ? "error" : "done",
         }));
       }
-    } else if (type === "tool_execution_start") {
+    } else if (type === "tool.before") {
       const source: "main" | "skill" = activeSkill ? "skill" : "main";
       const step: ToolCallStep = {
         kind: "tool",
@@ -242,7 +242,7 @@ function projectEnvelopesToTraces(envelopes: WorkflowTraceEventEnvelope[]): Agen
         parentLlmId: activeLlmId[source],
       };
       appendStep(step);
-    } else if (type === "tool_execution_end") {
+    } else if (type === "tool.after") {
       const toolCallId = (event.toolCallId as string) ?? envelope.id;
       patchStep(toolCallId, (s) => ({
         ...s,
@@ -251,7 +251,7 @@ function projectEnvelopesToTraces(envelopes: WorkflowTraceEventEnvelope[]): Agen
         isError: !!event.isError,
         status: event.isError ? "error" : "done",
       }));
-    } else if (type === "agent_end") {
+    } else if (type === "session.end") {
       if (currentTrace) {
         const usage = event.usage as { inputTokens: number; outputTokens: number } | undefined;
         currentTrace.endTime = now;

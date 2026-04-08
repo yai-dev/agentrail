@@ -59,7 +59,7 @@ export function useAgentTrace() {
     (event: StreamEvent) => {
       const now = Date.now();
 
-      if (event.type === "agent_start") {
+      if (event.type === "session.start") {
         const id = crypto.randomUUID();
         currentTraceIdRef.current = id;
         activeLlmIdRef.current = {};
@@ -78,7 +78,7 @@ export function useAgentTrace() {
         activeSkillRef.current = se.skillName;
       } else if (event.type === "skill_end") {
         activeSkillRef.current = null;
-      } else if (event.type === "turn_start") {
+      } else if (event.type === "turn.start") {
         const source: "main" | "skill" = activeSkillRef.current ? "skill" : "main";
         const id = crypto.randomUUID();
         activeLlmIdRef.current[source] = id;
@@ -93,8 +93,8 @@ export function useAgentTrace() {
           skillName: activeSkillRef.current ?? undefined,
         };
         appendStep(step);
-      } else if (event.type === "turn_end") {
-        const te = event as { type: "turn_end"; message: { stopReason: string } };
+      } else if (event.type === "turn.complete") {
+        const te = event as { type: "turn.complete"; message: { stopReason: string } };
         const source: "main" | "skill" = activeSkillRef.current ? "skill" : "main";
         const id = activeLlmIdRef.current[source];
         if (!id) return;
@@ -106,9 +106,9 @@ export function useAgentTrace() {
           stopReason: te.message?.stopReason,
           status: te.message?.stopReason === "error" ? "error" : "done",
         }));
-      } else if (event.type === "tool_execution_start") {
+      } else if (event.type === "tool.before") {
         const tes = event as {
-          type: "tool_execution_start";
+          type: "tool.before";
           toolCallId: string;
           toolName: string;
           args: unknown;
@@ -128,9 +128,9 @@ export function useAgentTrace() {
           parentLlmId,
         };
         appendStep(step);
-      } else if (event.type === "tool_execution_end") {
+      } else if (event.type === "tool.after") {
         const tee = event as {
-          type: "tool_execution_end";
+          type: "tool.after";
           toolCallId: string;
           result: unknown;
           isError: boolean;
@@ -142,9 +142,9 @@ export function useAgentTrace() {
           isError: tee.isError,
           status: tee.isError ? "error" : "done",
         }));
-      } else if (event.type === "agent_end") {
+      } else if (event.type === "session.end") {
         const ae = event as {
-          type: "agent_end";
+          type: "session.end";
           usage: { inputTokens: number; outputTokens: number };
         };
         const traceId = currentTraceIdRef.current;

@@ -123,10 +123,10 @@ export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
         const msg = (event.error as Error)?.message ?? "unknown error";
         return `(summarization failed: ${msg})`;
       }
-      if (event.type === "message_update" && event.event.type === "text_delta") {
+      if (event.type === "message.update" && event.event.type === "text_delta") {
         summary += event.event.delta;
       }
-      if (event.type === "agent_end") break;
+      if (event.type === "session.end") break;
     }
     return summary.trim() || "(summarization produced no output)";
   };

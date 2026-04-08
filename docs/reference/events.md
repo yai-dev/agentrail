@@ -186,17 +186,19 @@ interface AgentrailSubagentClosedEvent {
 
 ## Runtime Events (Summary)
 
-Runtime events come from `@agentrail/core` and are emitted during agent execution. The most important ones for UI consumers:
+Runtime events come from `@agentrail/core` and are emitted during agent execution.
+Types use a dotted-namespace convention (`session.*`, `turn.*`, `message.*`, `tool.*`).
+The most important ones for UI consumers:
 
 | Event type                  | When emitted                               |
 | --------------------------- | ------------------------------------------ |
-| `agent_start`               | Agent begins processing a request          |
-| `agent_end`                 | Agent finishes (all turns complete)        |
-| `turn_start`                | A new LLM turn starts                      |
-| `turn_end`                  | A turn finishes                            |
-| `message_update`            | Streaming text delta from the LLM          |
-| `tool_execution_start`      | The agent begins invoking a tool           |
-| `tool_execution_end`        | A tool invocation completes                |
+| `session.start`             | Agent begins processing a request          |
+| `session.end`               | Agent finishes (all turns complete)        |
+| `turn.start`                | A new LLM turn starts                      |
+| `turn.complete`             | A turn finishes                            |
+| `message.update`            | Streaming text delta from the LLM          |
+| `tool.before`               | The agent is about to invoke a tool        |
+| `tool.after`                | A tool invocation completes                |
 | `waiting_for_user_input`    | The agent is paused waiting for user input |
 | `skill_start` / `skill_end` | A skill sub-agent is invoked               |
 
@@ -204,7 +206,7 @@ Runtime events come from `@agentrail/core` and are emitted during agent executio
 
 ## Trace Persistence
 
-Not all events are persisted to the trace log. High-frequency streaming events (`message_update`, `turn_start`, `turn_end`) are intentionally excluded to avoid log bloat.
+Not all events are persisted to the trace log. High-frequency streaming events (`message.update`, `message.start`, `message.end`) are intentionally excluded to avoid log bloat.
 
 The `TRACE_PERSISTED_EVENT_TYPES` set defines what gets persisted:
 
@@ -212,8 +214,8 @@ The `TRACE_PERSISTED_EVENT_TYPES` set defines what gets persisted:
 import { TRACE_PERSISTED_EVENT_TYPES } from "@agentrail/app";
 
 // Runtime / skill events that are persisted:
-// "agent_start", "agent_end", "turn_start", "turn_end",
-// "tool_execution_start", "tool_execution_end",
+// "session.start", "session.end", "turn.start", "turn.complete",
+// "tool.before", "tool.after",
 // "skill_start", "skill_end", "waiting_for_user_input",
 // "context_compaction_start", "context_compaction_end", "error"
 //
@@ -275,13 +277,13 @@ async function streamChat(message: string, sessionId?: string) {
 
 function handleEvent(event: AgentrailEvent) {
   switch (event.type) {
-    case "message_update":
+    case "message.update":
       appendText(event.delta ?? "");
       break;
-    case "tool_execution_start":
-      showToolSpinner(event.tool?.name ?? "tool");
+    case "tool.before":
+      showToolSpinner(event.toolName ?? "tool");
       break;
-    case "tool_execution_end":
+    case "tool.after":
       hideToolSpinner();
       break;
     case "context_usage":
@@ -302,7 +304,7 @@ function handleEvent(event: AgentrailEvent) {
     case "subagent_status":
       updateSubagentStatus(event.agentId, event.status);
       break;
-    case "agent_end":
+    case "session.end":
       markComplete();
       break;
     case "error":

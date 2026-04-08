@@ -106,7 +106,7 @@ export class DeepResearchCoordinator {
 
   async runStreaming(emit: EmitFn): Promise<DeepResearchState> {
     await this.store.initializeRun(this.state);
-    await emit({ type: "agent_start" });
+    await emit({ type: "session.start" });
     await this.emitDeepResearchEvent(
       { type: "deep_research_start", run: this.state.run, timestamp: nowIso() },
       emit,
@@ -172,7 +172,7 @@ export class DeepResearchCoordinator {
         emit,
       );
       await emit({
-        type: "agent_end",
+        type: "session.end",
         messages: [],
         usage: zeroUsage(),
       });
@@ -817,8 +817,8 @@ Snippet: ${source.snippet ?? ""}`,
 
     let report = "";
     for await (const event of reporter.stream(prompt)) {
-      if ((event as RuntimeEvent).type === "message_update") {
-        const update = event as Extract<RuntimeEvent, { type: "message_update" }>;
+      if ((event as RuntimeEvent).type === "message.update") {
+        const update = event as Extract<RuntimeEvent, { type: "message.update" }>;
         if (update.event.type === "text_delta") {
           report += update.event.delta;
           this.state.reportMarkdown = report;
@@ -834,7 +834,7 @@ Snippet: ${source.snippet ?? ""}`,
             emit,
           );
           await emit({
-            type: "message_update",
+            type: "message.update",
             event: {
               type: "text_delta",
               delta: update.event.delta,

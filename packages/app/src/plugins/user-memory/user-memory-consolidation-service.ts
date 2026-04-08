@@ -242,10 +242,10 @@ async function streamToText(
     if (isRuntimeError(event)) {
       throw event.error instanceof Error ? event.error : new Error("LLM request failed");
     }
-    if (event.type === "message_update" && event.event.type === "text_delta") {
+    if (event.type === "message.update" && event.event.type === "text_delta") {
       output += event.event.delta;
     }
-    if (event.type === "agent_end") break;
+    if (event.type === "session.end") break;
   }
   return output.trim();
 }

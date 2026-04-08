@@ -18,7 +18,7 @@ When you `POST` to a stream endpoint:
 1. The server immediately begins executing the agent and starts streaming.
 2. The response body is a series of newline-separated JSON objects, one event per line.
 3. The response header `X-Session-Id` contains the session ID for subsequent requests.
-4. The stream closes after the `agent_end` event and any final host events (`context_usage`).
+4. The stream closes after the `session.end` event and any final host events (`context_usage`).
 
 Each line in the body is a serialized `AgentrailEvent` from `@agentrail/app`. The event's `type` field identifies what happened.
 
@@ -84,15 +84,15 @@ Handle these events to build a complete streaming UI:
 
 | Event type                 | When                      | Key fields                                     |
 | -------------------------- | ------------------------- | ---------------------------------------------- |
-| `message_start`            | LLM starts generating     | —                                              |
-| `message_update`           | Text delta from LLM       | `delta: string`                                |
-| `message_end`              | LLM finished generating   | —                                              |
-| `tool_execution_start`     | Agent begins a tool call  | `toolName`, `toolCallId`, `label`              |
-| `tool_execution_end`       | Tool call completes       | `toolCallId`, `result`                         |
+| `message.start`            | LLM starts generating     | —                                              |
+| `message.update`           | Text delta from LLM       | `delta: string`                                |
+| `message.end`              | LLM finished generating   | —                                              |
+| `tool.before`              | Agent begins a tool call  | `toolName`, `toolCallId`                       |
+| `tool.after`               | Tool call completes       | `toolCallId`, `result`                         |
 | `context_compaction_start` | History compaction begins | —                                              |
 | `context_compaction_end`   | Compaction finished       | —                                              |
 | `context_usage`            | Token budget after turn   | `inputTokens`, `outputTokens`, `budgetUsedPct` |
-| `agent_end`                | Agent loop finished       | `messages`, `usage`                            |
+| `session.end`              | Agent loop finished       | `messages`, `usage`                            |
 | `error`                    | Unrecoverable error       | `error.message`                                |
 
 ## Example Event Handler
@@ -102,17 +102,17 @@ import type { AgentrailEvent } from "@agentrail/app";
 
 function handleEvent(event: AgentrailEvent) {
   switch (event.type) {
-    case "message_update":
+    case "message.update":
       // Append text delta to the UI
       appendText(event.delta ?? "");
       break;
 
-    case "tool_execution_start":
+    case "tool.before":
       // Show a tool-in-progress indicator
-      showToolIndicator(event.label ?? event.toolName, "running");
+      showToolIndicator(event.toolName, "running");
       break;
 
-    case "tool_execution_end":
+    case "tool.after":
       // Update indicator to completed
       showToolIndicator(event.toolCallId, "done");
       break;
@@ -130,7 +130,7 @@ function handleEvent(event: AgentrailEvent) {
       updateBudgetBar(event.budgetUsedPct ?? 0);
       break;
 
-    case "agent_end":
+    case "session.end":
       // Final usage stats
       console.log("Total tokens:", event.usage?.totalTokens);
       break;

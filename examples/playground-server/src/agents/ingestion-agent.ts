@@ -138,7 +138,7 @@ export async function runIngestionAgent(
         throw new Error(msg);
       }
 
-      if (event.type === "tool_execution_start") {
+      if (event.type === "tool.before") {
         const { toolCallId, args } = event as {
           type: string;
           toolCallId: string;
@@ -150,7 +150,7 @@ export async function runIngestionAgent(
         }
       }
 
-      if (event.type === "tool_execution_end") {
+      if (event.type === "tool.after") {
         const { toolCallId, toolName } = event as {
           type: string;
           toolCallId: string;
@@ -187,7 +187,7 @@ export async function runIngestionAgent(
         }
       }
 
-      if (event.type === "agent_end") break;
+      if (event.type === "session.end") break;
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

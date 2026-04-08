@@ -64,12 +64,12 @@ export function agentLoop(
     const newMessages: Message[] = [...prompts];
     const currentMessages: Message[] = [...context.messages, ...prompts];
 
-    stream.push({ type: "agent_start" });
-    stream.push({ type: "turn_start" });
+    stream.push({ type: "session.start" });
+    stream.push({ type: "turn.start" });
 
     for (const prompt of prompts) {
-      stream.push({ type: "message_start", message: prompt });
-      stream.push({ type: "message_end", message: prompt });
+      stream.push({ type: "message.start", message: prompt });
+      stream.push({ type: "message.end", message: prompt });
     }
 
     await runLoop(currentMessages, newMessages, config, context.signal, stream);
@@ -97,8 +97,8 @@ export function agentLoopContinue(
     const newMessages: Message[] = [];
     const currentMessages: Message[] = [...context.messages];
 
-    stream.push({ type: "agent_start" });
-    stream.push({ type: "turn_start" });
+    stream.push({ type: "session.start" });
+    stream.push({ type: "turn.start" });
 
     await runLoop(currentMessages, newMessages, config, context.signal, stream);
   })();
@@ -108,8 +108,8 @@ export function agentLoopContinue(
 
 function createAgentStream(): EventStream<RuntimeEvent, Message[]> {
   return new EventStream<RuntimeEvent, Message[]>(
-    (event: RuntimeEvent) => event.type === "agent_end",
-    (event: RuntimeEvent) => (event.type === "agent_end" ? event.messages : []),
+    (event: RuntimeEvent) => event.type === "session.end",
+    (event: RuntimeEvent) => (event.type === "session.end" ? event.messages : []),
   );
 }
 
@@ -143,15 +143,15 @@ async function runLoop(
 
     while (hasMoreToolCalls || pendingMessages.length > 0) {
       if (!firstTurn) {
-        stream.push({ type: "turn_start" });
+        stream.push({ type: "turn.start" });
       } else {
         firstTurn = false;
       }
 
       if (pendingMessages.length > 0) {
         for (const message of pendingMessages) {
-          stream.push({ type: "message_start", message });
-          stream.push({ type: "message_end", message });
+          stream.push({ type: "message.start", message });
+          stream.push({ type: "message.end", message });
           currentMessages.push(message);
           newMessages.push(message);
         }
@@ -177,8 +177,8 @@ async function runLoop(
       totalUsage = accumulateUsage(totalUsage, message.usage);
 
       if (message.stopReason === "error" || message.stopReason === "aborted") {
-        stream.push({ type: "turn_end", message, toolResults: [] });
-        stream.push({ type: "agent_end", messages: newMessages, usage: totalUsage });
+        stream.push({ type: "turn.complete", message, toolResults: [] });
+        stream.push({ type: "session.end", messages: newMessages, usage: totalUsage });
         stream.end(newMessages);
         return;
       }
@@ -204,7 +204,7 @@ async function runLoop(
         }
       }
 
-      stream.push({ type: "turn_end", message, toolResults });
+      stream.push({ type: "turn.complete", message, toolResults });
 
       if (isLastTurn) {
         maxTurnsReached = true;
@@ -230,7 +230,7 @@ async function runLoop(
     break;
   }
 
-  stream.push({ type: "agent_end", messages: newMessages, usage: totalUsage });
+  stream.push({ type: "session.end", messages: newMessages, usage: totalUsage });
   stream.end(newMessages);
 }
 
@@ -282,7 +282,7 @@ async function streamAssistantResponse(
         partialMessage = event.partial;
         messages.push(partialMessage);
         addedPartial = true;
-        stream.push({ type: "message_start", message: { ...partialMessage } });
+        stream.push({ type: "message.start", message: { ...partialMessage } });
         break;
 
       case "text_start":
@@ -292,7 +292,7 @@ async function streamAssistantResponse(
           partialMessage = event.partial;
           messages[messages.length - 1] = partialMessage;
           bufferedTextEvents.push({
-            type: "message_update",
+            type: "message.update",
             message: { ...partialMessage },
             event,
           });
@@ -309,7 +309,7 @@ async function streamAssistantResponse(
           partialMessage = event.partial;
           messages[messages.length - 1] = partialMessage;
           stream.push({
-            type: "message_update",
+            type: "message.update",
             message: { ...partialMessage },
             event,
           });
@@ -325,14 +325,14 @@ async function streamAssistantResponse(
           messages.push(finalMessage);
         }
         if (!addedPartial) {
-          stream.push({ type: "message_start", message: { ...finalMessage } });
+          stream.push({ type: "message.start", message: { ...finalMessage } });
         }
         if (finalMessage.stopReason !== "toolUse") {
           for (const buffered of bufferedTextEvents) {
             stream.push(buffered);
           }
         }
-        stream.push({ type: "message_end", message: finalMessage });
+        stream.push({ type: "message.end", message: finalMessage });
         return finalMessage;
       }
     }

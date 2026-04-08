@@ -33,7 +33,7 @@ export async function executeToolCalls(
     const tool = tools?.find((t) => t.name === toolCall.name);
 
     stream.push({
-      type: "tool_execution_start",
+      type: "tool.before",
       toolCallId: toolCall.id,
       toolName: toolCall.name,
       args: toolCall.arguments,
@@ -63,13 +63,13 @@ export async function executeToolCalls(
         }
       };
 
-      result = await tool.execute(
+        result = await tool.execute(
         toolCall.id,
         validatedArgs,
         signal,
         (partialResult) => {
           stream.push({
-            type: "tool_execution_update",
+            type: "tool.update",
             toolCallId: toolCall.id,
             toolName: toolCall.name,
             partialResult,
@@ -91,7 +91,7 @@ export async function executeToolCalls(
     }
 
     stream.push({
-      type: "tool_execution_end",
+      type: "tool.after",
       toolCallId: toolCall.id,
       toolName: toolCall.name,
       result,
@@ -109,8 +109,8 @@ export async function executeToolCalls(
     };
 
     results.push(toolResultMessage);
-    stream.push({ type: "message_start", message: toolResultMessage });
-    stream.push({ type: "message_end", message: toolResultMessage });
+    stream.push({ type: "message.start", message: toolResultMessage });
+    stream.push({ type: "message.end", message: toolResultMessage });
 
     if (getSteeringMessages) {
       const steering = await getSteeringMessages();
@@ -138,13 +138,13 @@ function skipToolCall(
   };
 
   stream.push({
-    type: "tool_execution_start",
+    type: "tool.before",
     toolCallId: toolCall.id,
     toolName: toolCall.name,
     args: toolCall.arguments,
   });
   stream.push({
-    type: "tool_execution_end",
+    type: "tool.after",
     toolCallId: toolCall.id,
     toolName: toolCall.name,
     result,
@@ -161,8 +161,8 @@ function skipToolCall(
     timestamp: Date.now(),
   };
 
-  stream.push({ type: "message_start", message: toolResultMessage });
-  stream.push({ type: "message_end", message: toolResultMessage });
+  stream.push({ type: "message.start", message: toolResultMessage });
+  stream.push({ type: "message.end", message: toolResultMessage });
 
   return toolResultMessage;
 }

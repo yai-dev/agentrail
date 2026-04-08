@@ -42,6 +42,8 @@ The current plugin contract is defined by `AgentrailPlugin` in:
 interface AgentrailPlugin {
   /** Stable identifier used in diagnostics and assembly logs */
   name: string;
+  /** Semantic version string (e.g. `"1.0.0"`) — recommended for diagnostics */
+  version?: string;
   /** Runs when the host starts the plugin lifecycle */
   start?(): void | Promise<void>;
   /** Runs when the host shuts plugins down */
@@ -108,6 +110,12 @@ type ContextProvider = (
 ### `name`
 
 A stable plugin identifier for diagnostics and assembly.
+
+### `version`
+
+Optional semantic version string (`MAJOR.MINOR.PATCH`) for the plugin implementation.
+Providing a version is recommended — it appears in host diagnostic logs and makes it
+easier to correlate issues across deployments.
 
 ### `start` / `stop`
 
@@ -194,6 +202,7 @@ let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
 // --- Full plugin ---
 export const observabilityPlugin: AgentrailPlugin = {
   name: "observability",
+  version: "1.0.0",
 
   start() {
     heartbeatTimer = setInterval(() => {

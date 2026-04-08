@@ -41,7 +41,7 @@ test("trace route returns merged runtime and orchestration events", async () => 
     sequence: 0,
     source: "runtime",
     event: {
-      type: "agent_start",
+      type: "session.start",
     },
   });
   await persistence.appendEvent({

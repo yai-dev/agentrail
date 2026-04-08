@@ -99,17 +99,17 @@ async function sendMessage(
 ```ts
 function handleEvent(event: AgentrailEvent, state: ChatState): ChatState {
   switch (event.type) {
-    case "message_update":
+    case "message.update":
       // Streaming text delta from the LLM
       return { ...state, text: state.text + (event.delta ?? "") };
 
-    case "tool_execution_start":
+    case "tool.before":
       return {
         ...state,
-        tools: [...state.tools, { name: event.tool?.name ?? "tool", status: "running" }],
+        tools: [...state.tools, { name: event.toolName, status: "running" }],
       };
 
-    case "tool_execution_end":
+    case "tool.after":
       return {
         ...state,
         tools: state.tools.map((t) => (t.status === "running" ? { ...t, status: "done" } : t)),
@@ -126,7 +126,7 @@ function handleEvent(event: AgentrailEvent, state: ChatState): ChatState {
       console.log("Compaction complete.");
       return state;
 
-    case "agent_end":
+    case "session.end":
       return { ...state, isStreaming: false };
 
     case "error":

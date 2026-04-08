@@ -14,21 +14,23 @@ Events in Agentrail come from three sources:
 
 ### 1. Runtime Core Events
 
-Emitted by the agent loop as it executes. These cover the execution narrative of a single turn:
+Emitted by the agent loop as it executes. These cover the execution narrative of a single turn.
+Event types follow a dotted-namespace convention (`session.*`, `turn.*`, `message.*`, `tool.*`):
 
 | Event                    | When It Fires                                                   |
 | ------------------------ | --------------------------------------------------------------- |
-| `agent_start`            | Agent loop begins                                               |
-| `turn_start`             | A new LLM call round begins                                     |
-| `message_start`          | LLM starts generating a response                                |
-| `message_update`         | LLM emits a text delta                                          |
-| `message_end`            | LLM finishes the response                                       |
-| `tool_execution_start`   | A tool call is being executed                                   |
-| `tool_execution_end`     | A tool call completes                                           |
-| `turn_end`               | The LLM call round finishes                                     |
+| `session.start`          | Agent loop begins                                               |
+| `turn.start`             | A new LLM call round begins                                     |
+| `message.start`          | LLM starts generating a response                                |
+| `message.update`         | LLM emits a text delta                                          |
+| `message.end`            | LLM finishes the response                                       |
+| `tool.before`            | A tool call is about to be executed                             |
+| `tool.update`            | A streaming tool emits a partial result                         |
+| `tool.after`             | A tool call completes (success or error)                        |
+| `turn.complete`          | The LLM call round finishes                                     |
 | `max_turns_reached`      | Agent hit its turn limit                                        |
 | `waiting_for_user_input` | A tool is waiting for user interaction                          |
-| `agent_end`              | Agent loop finishes — includes all new messages and total usage |
+| `session.end`            | Agent loop finishes — includes all new messages and total usage |
 | `error`                  | An unrecoverable error occurred                                 |
 
 ### 2. Host-Level Events
@@ -68,12 +70,12 @@ The mapping is done by `mapOrchestrationEvent` in `@agentrail/app`, so UIs do no
 ```
 runtime-core          host             SSE stream             UI
 ────────────          ────             ──────────             ──
-agent_start      ──►  forward     ──►  JSON line         ──►  start indicator
-turn_start       ──►  forward     ──►                    ──►
-message_update   ──►  forward     ──►                    ──►  text delta
-tool_exec_start  ──►  forward     ──►                    ──►  tool indicator
-tool_exec_end    ──►  forward     ──►                    ──►
-agent_end        ──►  forward     ──►                    ──►  final usage
+session.start    ──►  forward     ──►  JSON line         ──►  start indicator
+turn.start       ──►  forward     ──►                    ──►
+message.update   ──►  forward     ──►                    ──►  text delta
+tool.before      ──►  forward     ──►                    ──►  tool indicator
+tool.after       ──►  forward     ──►                    ──►
+session.end      ──►  forward     ──►                    ──►  final usage
 compaction_start ──►  (host adds) ──►                    ──►  compaction badge
 context_usage    ──►  (host adds) ──►                    ──►  budget bar
 ```
@@ -106,7 +108,7 @@ while (true) {
   if (done) break;
   for (const line of decoder.decode(value).split("\n").filter(Boolean)) {
     const event = JSON.parse(line);
-    if (event.type === "message_update") {
+    if (event.type === "message.update") {
       process.stdout.write(event.delta ?? "");
     }
   }

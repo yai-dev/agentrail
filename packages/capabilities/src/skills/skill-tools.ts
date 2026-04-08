@@ -189,10 +189,10 @@ export async function buildSkillTool(
       // would cause the skill's step-by-step reasoning to appear in the main
       // assistant bubble.
       const WORKSPACE_EVENTS = new Set([
-        "tool_execution_start",
-        "tool_execution_end",
-        "turn_start",
-        "turn_end",
+        "tool.before",
+        "tool.after",
+        "turn.start",
+        "turn.complete",
       ]);
 
       let resultText = "";
