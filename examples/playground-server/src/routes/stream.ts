@@ -3,21 +3,20 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { WorkflowTraceEventEnvelope } from "@agentrail/events";
-import { createStreamRoute } from "@agentrail/host";
-import { createFileSystemSessionTraceStore } from "@agentrail/memo";
-import { DEFAULT_AGENT_ID } from "../agents/index.js";
-import { buildSummarizeFn } from "../agents/summarizer.js";
-import { handlePlaygroundDeepResearchModeStream } from "../chat/deep-research.js";
-import { config } from "../config.js";
+import type { WorkflowTraceEventEnvelope } from "@agentrail/app";
+import { createFileSystemSessionTraceStore } from "@agentrail/app";
+import { createStreamRoute } from "@agentrail/app/advanced";
+import { DEFAULT_AGENT_ID } from "@/agents/index.js";
+import { buildSummarizeFn } from "@/agents/summarizer.js";
+import { handlePlaygroundDeepResearchModeStream } from "@/chat/deep-research.js";
+import { config } from "@/config.js";
 import {
-  buildContextProviders,
-  getOrchestrationManager,
+  orchestrationRegistry,
   sandboxManager,
   sessionManager,
-} from "../context/index.js";
-import { playgroundPlugins } from "../plugins/index.js";
-import { resolvePlaygroundProfile } from "../profiles/default-profile.js";
+} from "@/context/index.js";
+import { playgroundPlugins } from "@/plugins/index.js";
+import { resolvePlaygroundProfile } from "@/profiles/default-profile.js";
 
 const summarize = buildSummarizeFn();
 
@@ -30,19 +29,8 @@ const stream = createStreamRoute({
   compaction: config.compaction,
   plugins: playgroundPlugins,
   resolveProfile: resolvePlaygroundProfile,
-  getContextProviders: ({ tenantId, userId, sessionId }) =>
-    buildContextProviders(tenantId, userId, sessionId),
-  getOrchestrationManager: async ({ tenantId, userId, sessionId, sessionRef }) => {
-    return getOrchestrationManager({
-      tenantId,
-      userId,
-      sessionId,
-      sessionRef,
-      createManagedAgent: async () => {
-        throw new Error("Direct agent creation is handled by the default profile");
-      },
-    });
-  },
+  getOrchestrationManager: ({ tenantId, userId, sessionId, sessionRef }) =>
+    orchestrationRegistry.getManager({ tenantId, userId, sessionId, sessionRef }),
   handleResolvedRequest: handlePlaygroundDeepResearchModeStream,
   onTraceEvent: (ctx, envelope) => {
     const traceStore = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(

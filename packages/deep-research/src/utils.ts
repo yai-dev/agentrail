@@ -17,7 +17,7 @@ import type {
   DeepResearchStep,
   DeepResearchStepDigest,
   PlannerOutput,
-} from "./types.js";
+} from "@/types.js";
 
 /**
  * This file holds the "quality guardrails" for Deep Research.

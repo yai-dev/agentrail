@@ -1,0 +1,55 @@
+{
+  "name": "@agentrail/app",
+  "version": "0.1.0",
+  "description": "App-layer hosting, profiles, session management, and createAgentApp for Agentrail.",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./advanced": {
+      "types": "./dist/advanced.d.ts",
+      "default": "./dist/advanced.js"
+    },
+    "./compat": {
+      "types": "./dist/compat.d.ts",
+      "default": "./dist/compat.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@agentrail/capabilities": "workspace:*",
+    "@agentrail/core": "workspace:*",
+    "hono": "^4.7.4",
+    "yaml": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsc-alias": "^1.8.16",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yai-dev/agentrail.git",
+    "directory": "packages/app"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "license": "Apache-2.0"
+}

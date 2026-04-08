@@ -10,5 +10,5 @@
     "types": ["vite/client"]
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/config" }, { "path": "../../packages/runtime-core" }]
+  "references": [{ "path": "../../packages/app" }, { "path": "../../packages/core" }]
 }

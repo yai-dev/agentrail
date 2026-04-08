@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createPromptBuilder, definePromptBundle, definePromptFragment } from "@agentrail/prompts";
+import { createPromptBuilder, definePromptBundle, definePromptFragment } from "@agentrail/core";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 

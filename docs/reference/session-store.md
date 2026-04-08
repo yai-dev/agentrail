@@ -19,11 +19,11 @@ Read this page when:
 - record usage
 - compact history when needed
 
-The default examples use the filesystem-backed session manager from `@agentrail/memo`.
+The default examples use the filesystem-backed `SessionManager` from `@agentrail/app`.
 
 ## Interface
 
-The full `AgentrailSessionStore` contract defined in `packages/host/src/types.ts`:
+The full `AgentrailSessionStore` contract defined in `packages/app/src/host/types.ts`:
 
 ### `getOrCreate`
 
@@ -116,8 +116,8 @@ Below is a minimal in-memory implementation that satisfies the full interface. U
 
 ```ts
 import { randomUUID } from "node:crypto";
-import type { Message, Usage } from "@agentrail/runtime-core";
-import type { AgentrailSessionStore } from "@agentrail/host";
+import type { Message, Usage } from "@agentrail/core";
+import type { AgentrailSessionStore } from "@agentrail/app";
 
 interface SessionRecord {
   sessionId: string;
@@ -231,10 +231,22 @@ export class InMemorySessionStore implements AgentrailSessionStore {
 }
 ```
 
-**Using the custom store:**
+**Using the custom store with `createAgentApp`:**
 
 ```ts
-import { createStreamRoute } from "@agentrail/host";
+import { createAgentApp } from "@agentrail/app";
+import { InMemorySessionStore } from "./in-memory-session-store.js";
+
+const app = createAgentApp({
+  sessionStore: new InMemorySessionStore(),
+  profiles: [defaultProfile],
+});
+```
+
+Or with route primitives directly:
+
+```ts
+import { createStreamRoute } from "@agentrail/app/advanced";
 import { InMemorySessionStore } from "./in-memory-session-store.js";
 
 app.route(

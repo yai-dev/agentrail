@@ -3,14 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createChatRoute } from "@agentrail/host";
-import { DEFAULT_AGENT_ID } from "../agents/index.js";
-import { buildSummarizeFn } from "../agents/summarizer.js";
-import { handlePlaygroundDeepResearchMode } from "../chat/deep-research.js";
-import { config } from "../config.js";
-import { buildContextProviders, sessionManager } from "../context/index.js";
-import { playgroundPlugins } from "../plugins/index.js";
-import { resolvePlaygroundProfile } from "../profiles/default-profile.js";
+import { createChatRoute } from "@agentrail/app/advanced";
+import { DEFAULT_AGENT_ID } from "@/agents/index.js";
+import { buildSummarizeFn } from "@/agents/summarizer.js";
+import { handlePlaygroundDeepResearchMode } from "@/chat/deep-research.js";
+import { config } from "@/config.js";
+import { sessionManager } from "@/context/index.js";
+import { playgroundPlugins } from "@/plugins/index.js";
+import { resolvePlaygroundProfile } from "@/profiles/default-profile.js";
 
 const summarize = buildSummarizeFn();
 
@@ -21,8 +21,6 @@ const chat = createChatRoute({
   compaction: config.compaction,
   plugins: playgroundPlugins,
   resolveProfile: resolvePlaygroundProfile,
-  getContextProviders: ({ tenantId, userId, sessionId }) =>
-    buildContextProviders(tenantId, userId, sessionId),
   handleResolvedRequest: handlePlaygroundDeepResearchMode,
 });
 

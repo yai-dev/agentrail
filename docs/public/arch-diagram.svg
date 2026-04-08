@@ -7,7 +7,7 @@
     </marker>
   </defs>
 
-  <!-- background panel — slightly lifted from page #060606 -->
+  <!-- background panel -->
   <rect width="900" height="604" fill="#0d0d0b" rx="4"/>
 
   <!-- ─────────────────────────────────────────── -->
@@ -35,73 +35,76 @@
         fill="#444442" letter-spacing="0.1em">DEPENDS ON</text>
 
   <!-- ─────────────────────────────────────────── -->
-  <!-- LAYER 3  Plugins &amp; Workflows            -->
+  <!-- LAYER 3  @agentrail/app  (highlighted)      -->
   <!-- ─────────────────────────────────────────── -->
-  <rect x="20" y="128" width="860" height="84"
-        fill="#101010" stroke="#2a2a28" stroke-width="1" rx="2"/>
+  <rect x="20" y="128" width="860" height="100"
+        fill="rgba(196,255,46,0.05)" stroke="rgba(196,255,46,0.38)" stroke-width="1" rx="2"/>
 
-  <rect x="40" y="144" width="22" height="22" rx="2" fill="#242422"/>
+  <rect x="40" y="144" width="22" height="22" rx="2" fill="#c4ff2e"/>
   <text x="51" y="155" text-anchor="middle" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="11" fill="#666660">3</text>
+        font-family="'Courier New',Courier,monospace" font-size="11" fill="#060606" font-weight="bold">3</text>
 
   <text x="73" y="155" dominant-baseline="middle"
-        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c8c6c0">Plugins &amp; Workflows</text>
+        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c4ff2e">@agentrail/app</text>
 
-  <text x="73" y="181" dominant-baseline="middle"
+  <text x="73" y="179" dominant-baseline="middle"
         font-family="'Courier New',Courier,monospace" font-size="12"
-        fill="#888880" letter-spacing="0.01em">@agentrail/plugin-user-memory  &#183;  @agentrail/slash-commands  &#183;  @agentrail/deep-research</text>
+        fill="rgba(196,255,46,0.55)" letter-spacing="0.01em">createAgentApp  &#183;  defineProfile  &#183;  SessionManager  &#183;  Plugins  &#183;  Slash Commands  &#183;  Config</text>
+
+  <text x="73" y="203" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="11"
+        fill="rgba(196,255,46,0.28)" letter-spacing="0.01em">createChatRoute  &#183;  createStreamRoute  &#183;  createOrchestrationRegistry  &#183;  defineHostedProfile</text>
 
   <!-- arrow -->
-  <line x1="450" y1="220" x2="450" y2="240"
+  <line x1="450" y1="236" x2="450" y2="256"
         stroke="#444442" stroke-width="1" marker-end="url(#ah)"/>
-  <text x="459" y="230" dominant-baseline="middle"
+  <text x="459" y="246" dominant-baseline="middle"
         font-family="'Courier New',Courier,monospace" font-size="9"
         fill="#444442" letter-spacing="0.1em">DEPENDS ON</text>
 
   <!-- ─────────────────────────────────────────── -->
-  <!-- LAYER 2  Host &amp; host/defaults           -->
+  <!-- LAYER 2  @agentrail/capabilities            -->
   <!-- ─────────────────────────────────────────── -->
-  <rect x="20" y="248" width="860" height="208"
-        fill="rgba(196,255,46,0.05)" stroke="rgba(196,255,46,0.38)" stroke-width="1" rx="2"/>
+  <rect x="20" y="264" width="860" height="192"
+        fill="#101010" stroke="#2a2a28" stroke-width="1" rx="2"/>
 
-  <rect x="40" y="264" width="22" height="22" rx="2" fill="#c4ff2e"/>
-  <text x="51" y="275" text-anchor="middle" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="11" fill="#060606" font-weight="bold">2</text>
+  <rect x="40" y="280" width="22" height="22" rx="2" fill="#242422"/>
+  <text x="51" y="291" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="11" fill="#666660">2</text>
 
-  <text x="73" y="275" dominant-baseline="middle"
-        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c4ff2e">Host  &amp;  host/defaults</text>
+  <text x="73" y="291" dominant-baseline="middle"
+        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c8c6c0">@agentrail/capabilities</text>
 
-  <text x="73" y="297" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12"
-        fill="rgba(196,255,46,0.45)" letter-spacing="0.01em">@agentrail/host  &#183;  @agentrail/host/defaults</text>
-
-  <!-- consumes divider -->
-  <text x="40" y="320" dominant-baseline="middle"
+  <!-- includes divider -->
+  <text x="40" y="314" dominant-baseline="middle"
         font-family="'Courier New',Courier,monospace" font-size="9"
-        fill="#484844" letter-spacing="0.16em">CONSUMES &#8594;</text>
-  <line x1="40" y1="330" x2="860" y2="330" stroke="#222220" stroke-width="1"/>
+        fill="#484844" letter-spacing="0.16em">INCLUDES &#8594;</text>
+  <line x1="40" y1="324" x2="860" y2="324" stroke="#222220" stroke-width="1"/>
 
-  <!-- capability packages: 2-column text list with full names -->
   <!-- left col x=54, right col x=484 -->
-  <text x="54" y="350" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/prompts</text>
-  <text x="484" y="350" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/orchestration</text>
+  <text x="54" y="344" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">filesystem</text>
+  <text x="484" y="344" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">browser</text>
 
-  <text x="54" y="374" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/memo</text>
-  <text x="484" y="374" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/knowledge</text>
+  <text x="54" y="368" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">knowledge</text>
+  <text x="484" y="368" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">skills</text>
 
-  <text x="54" y="398" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/sandbox</text>
-  <text x="484" y="398" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/tools</text>
+  <text x="54" y="392" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">orchestration</text>
+  <text x="484" y="392" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">tools</text>
 
-  <text x="54" y="422" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/events</text>
-  <text x="484" y="422" dominant-baseline="middle"
-        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">@agentrail/skills</text>
+  <text x="54" y="416" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">sandbox</text>
+  <text x="484" y="416" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="12.5" fill="rgba(196,255,46,0.7)">memoryContext</text>
+
+  <text x="54" y="440" dominant-baseline="middle"
+        font-family="'Courier New',Courier,monospace" font-size="10.5"
+        fill="rgba(196,255,46,0.28)" letter-spacing="0.01em">via defineProfile&#40;&#123; capabilities: [filesystem(), knowledge(), orchestration(), ...]  &#125;&#41;</text>
 
   <!-- arrow -->
   <line x1="450" y1="464" x2="450" y2="484"
@@ -111,7 +114,7 @@
         fill="#444442" letter-spacing="0.1em">DEPENDS ON</text>
 
   <!-- ─────────────────────────────────────────── -->
-  <!-- LAYER 1  runtime-core  (foundation)         -->
+  <!-- LAYER 1  @agentrail/core  (foundation)      -->
   <!-- ─────────────────────────────────────────── -->
   <rect x="20" y="492" width="860" height="96"
         fill="rgba(196,255,46,0.08)" stroke="#c4ff2e" stroke-width="1" rx="2"/>
@@ -126,13 +129,13 @@
         fill="#060606" letter-spacing="0.12em" font-weight="bold">FOUNDATION</text>
 
   <text x="73" y="519" dominant-baseline="middle"
-        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c4ff2e">runtime-core</text>
+        font-family="Georgia,'Times New Roman',serif" font-size="17" fill="#c4ff2e">@agentrail/core</text>
 
   <text x="73" y="543" dominant-baseline="middle"
         font-family="'Courier New',Courier,monospace" font-size="12"
-        fill="rgba(196,255,46,0.5)" letter-spacing="0.01em">@agentrail/runtime-core</text>
+        fill="rgba(196,255,46,0.5)" letter-spacing="0.01em">Agent Loop  &#183;  Tool Contract  &#183;  LLM Provider API  &#183;  Prompt SDK  &#183;  Session Types</text>
 
   <text x="73" y="566" dominant-baseline="middle"
         font-family="'Courier New',Courier,monospace" font-size="11.5"
-        fill="rgba(196,255,46,0.35)" letter-spacing="0.01em">Agent Loop  &#183;  Tool Contract  &#183;  LLM Provider API  &#183;  Usage Tracking</text>
+        fill="rgba(196,255,46,0.28)" letter-spacing="0.01em">defineAgent  &#183;  defineTool  &#183;  definePromptBundle  &#183;  DefaultLlmClient  &#183;  Usage Tracking</text>
 </svg>

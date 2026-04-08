@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AgentrailPlugin } from "@agentrail/host";
+import type { AgentrailPlugin } from "@agentrail/app";
 
 export function createAttachmentHintsPlugin(): AgentrailPlugin {
   return {

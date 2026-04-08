@@ -9,7 +9,7 @@ Common issues and how to resolve them.
 You forgot to register the built-in providers. Add this import before any agent code runs:
 
 ```ts
-import "@agentrail/runtime-core/providers";
+import "@agentrail/core/providers";
 ```
 
 This registers both the Anthropic and OpenAI providers.

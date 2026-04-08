@@ -4,15 +4,13 @@
     "lib": ["ES2022", "DOM"],
     "types": ["node"],
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src"],
   "references": [
-    { "path": "../runtime-core" },
-    { "path": "../memo" },
-    { "path": "../orchestration" },
-    { "path": "../knowledge" },
-    { "path": "../prompts" },
-    { "path": "../sandbox" }
+    { "path": "../core" },
+    { "path": "../capabilities" }
   ]
 }

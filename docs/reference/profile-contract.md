@@ -1,16 +1,14 @@
 # Profile Contract Reference
 
-Hosted profiles are the bridge between the host layer and runtime agents.
+Profiles are the bridge between the host layer and runtime agents.
 
 ## When To Read This Page
 
 Read this page when:
 
 - you are deciding what belongs inside a profile
-- you need to choose between primitive and hosted profile shapes
+- you need to understand the `AgentrailProfile` low-level contract
 - you want to keep profile boundaries clean as your app grows
-
-They are one of the most important extension points in Agentrail because they define how an app-specific agent is exposed to the host runtime.
 
 ## Mental Model
 
@@ -25,20 +23,64 @@ That means a profile sits between:
 
 Profiles are not route objects and they are not plugins. They are the contract for _agent identity and assembly_.
 
-## Base Contract
+## Recommended API — `defineProfile`
+
+The recommended way to define profiles. Import from `@agentrail/app`:
+
+```ts
+import { defineProfile } from "@agentrail/app";
+import { defineAgent } from "@agentrail/core";
+```
+
+### Static shape
+
+```ts
+export const analyticsProfile = defineProfile({
+  id: "analytics",
+  name: "Analytics Agent",
+  contextWindow: 128_000,
+  agent: {
+    model: "openai:gpt-4o",
+    prompt: async (ctx) => loadSystemPrompt(ctx.tenantId),
+    maxTurns: 20,
+  },
+  capabilities: [filesystem({ sandboxManager })],
+});
+```
+
+### Dynamic shape (per-request agent factory)
+
+```ts
+export const analyticsProfile = defineProfile({
+  id: "analytics",
+  name: "Analytics Agent",
+  async createAgent(ctx) {
+    const system = await loadSystemPrompt(ctx.tenantId);
+    return defineAgent({
+      id: "analytics",
+      model: { provider: "openai", modelId: "gpt-4o" },
+      system,
+      maxTurns: 20,
+    });
+  },
+  capabilities: [filesystem({ sandboxManager })],
+  modelConfig: { provider: "openai", modelId: "gpt-4o" },
+});
+```
+
+## Base Contract — `AgentrailProfile`
 
 The low-level profile contract is defined by `AgentrailProfile` in:
 
-- [packages/host/src/types.ts](../../packages/host/src/types.ts)
-
-### `AgentrailProfile` interface
+- [packages/app/src/host/types.ts](../../packages/app/src/host/types.ts)
 
 ```ts
 interface AgentrailProfileContext {
   tenantId: string;
   userId: string;
   sessionId: string;
-  sessionDir: string;
+  sessionRef: SessionRef;
+  sessionStore: AgentrailSessionStore;
 }
 
 interface AgentrailProfile {
@@ -50,166 +92,53 @@ interface AgentrailProfile {
     context: AgentrailProfileContext,
     onSubAgentEvent?: (event: object) => void,
   ): Promise<Agent>;
+  getContextProviders?(context: AgentrailProfileContext): Promise<ContextProvider[]> | ContextProvider[];
 }
 ```
 
-At the primitive level, a profile must provide:
-
-- `id`
-- `name`
-- `createAgent(context, onSubAgentEvent?)`
-
-That is the minimum required shape.
-
-### `id`
-
-The stable identifier used by the host to resolve the profile.
-
-Use ids that are:
-
-- short
-- stable
-- meaningful inside your app
-
-### `name`
-
-A human-readable display name for logs, UI, or diagnostics.
+At the primitive level, a profile must provide `id`, `name`, and `createAgent`. `defineProfile` handles all of this automatically.
 
 ### `contextWindow`
 
 Optional. The model's context window size in tokens. Defaults to `200_000`.
 
-The stream route uses this value to compute `budgetUsedPct` in SSE events. Set it to the actual limit of the model used by this profile so the budget percentage displayed to clients is correct.
+The stream route uses this value to compute `budgetUsedPct` in SSE events. Set it to the actual limit of the model used by this profile.
+
+## `ProfileDefinition`
+
+`defineProfile` returns a `ProfileDefinition` which extends `AgentrailProfile` with:
 
 ```ts
-defineHostedProfile({
-  id: "gpt4o",
-  name: "GPT-4o",
-  contextWindow: 128_000, // gpt-4o has 128k context
-  createAgent: async (ctx) =>
-    defineAgent({
-      /* ... */
-    }),
-});
-```
-
-### `createAgent`
-
-This method constructs the runtime `Agent` instance for the request.
-
-It receives:
-
-- the profile context (`tenantId`, `userId`, `sessionId`, `sessionDir`)
-- an optional sub-agent event sink
-
-It should return a runtime agent ready to handle `invoke` or `stream`.
-
-### Custom primitive profile example
-
-```ts
-import { defineAgent } from "@agentrail/runtime-core";
-import type { AgentrailProfile, AgentrailProfileContext } from "@agentrail/host";
-
-// Implement AgentrailProfile directly (no defaults layer)
-export const analyticsProfile: AgentrailProfile = {
-  id: "analytics",
-  name: "Analytics Agent",
-  contextWindow: 128_000,
-
-  async createAgent(ctx: AgentrailProfileContext) {
-    const system = await loadSystemPrompt(ctx.tenantId);
-    const tools = await buildAnalyticsTools(ctx.sessionDir);
-
-    return defineAgent({
-      id: "analytics",
-      model: {
-        provider: "openai",
-        modelId: "gpt-4o",
-        apiKey: process.env.OPENAI_API_KEY,
-      },
-      system,
-      tools,
-      maxTurns: 20,
-    });
-  },
-};
-
-// Wire into a primitive resolver
-import { createProfileResolver } from "@agentrail/host";
-
-export const resolveProfile = createProfileResolver([analyticsProfile]);
-```
-
-## Recommended Contract
-
-The defaults layer extends the primitive contract with `HostedProfileDefinition`, defined in:
-
-- [packages/host/src/defaults/shared-types.ts](../../packages/host/src/defaults/shared-types.ts)
-
-### `HostedProfileDefinition` interface
-
-```ts
-interface HostedProfileDefinition extends AgentrailProfile {
-  /** Static system prompt string */
-  prompt?: string;
-  /** Dynamic system prompt — called per request with profile context */
-  promptBuilder?: (context: AgentrailProfileContext) => string | Promise<string>;
-  /** Additional context providers for this profile's requests */
-  getContextProviders?: (
-    context: AgentrailProfileContext,
-  ) => Promise<ContextProvider[]> | ContextProvider[];
-  /** Intercept a chat request before the agent runs */
-  handleChat?: (context: {
-    request: {
-      message: string;
-      mode?: string;
-      tenantId: string;
-      userId: string;
-      sessionId?: string;
-      agentId?: string;
-    };
-    agentId: string;
-    tenantId: string;
-    userId: string;
-    sessionId: string;
-    sessionDir: string;
-    signal: AbortSignal;
-  }) => Promise<AgentrailChatHandledResponse | null> | AgentrailChatHandledResponse | null;
+interface ProfileDefinition extends AgentrailProfile {
+  readonly capabilities?: CapabilityDescriptor[];
+  readonly modelConfig?: Partial<ModelConfig>;
 }
 ```
 
-This lets a profile stay declarative while still carrying the most common hosted-app extensions.
+The `capabilities` field is used by `createAgentApp` when constructing context providers.
 
-## Primitive Profile vs Hosted Profile
+## Profile Resolver
 
-Use the primitive profile contract when:
+To supply a custom resolver, implement `ProfileResolver`:
 
-- you want maximum control
-- you are building custom host assembly
-- you do not want the defaults layer involved
+```ts
+import type { ProfileResolver } from "@agentrail/app";
 
-Use `defineHostedProfile` when:
+export const resolveProfile: ProfileResolver = async ({ agentId, tenantId }) => {
+  // Tenant-aware profile selection
+  return await loadProfileForTenant(agentId, tenantId);
+};
+```
 
-- you want the recommended SDK path
-- you want prompt/profile conventions to stay explicit
-- you want `createHostedProfileResolver` to be the normal resolver path
+Pass it to `createAgentApp({ resolveProfile })` or directly to `createChatRoute` / `createStreamRoute` from `@agentrail/app/advanced`.
 
-## Resolution Contract
+For a static list, use `createStaticProfileResolver`:
 
-Profiles are typically consumed through a resolver function.
+```ts
+import { createStaticProfileResolver } from "@agentrail/app";
 
-The default resolver builder is:
-
-- [packages/host/src/defaults/profile.ts](../../packages/host/src/defaults/profile.ts)
-
-Under the hood, that delegates to the primitive registry helper:
-
-- [packages/host/src/profile-registry.ts](../../packages/host/src/profile-registry.ts)
-
-This means you can:
-
-- start with the defaults layer
-- later wrap or replace the resolver if your selection logic becomes more complex
+const resolveProfile = createStaticProfileResolver([analyticsProfile, supportProfile]);
+```
 
 ## Good Profile Boundaries
 
@@ -228,20 +157,18 @@ A well-shaped profile usually does **not** own:
 - plugin lifecycle
 - unrelated background jobs
 
-If a profile starts booting services or reading route-specific request details directly, the boundary is getting blurry.
-
 ## Repository Example
 
 The current recommended example is:
 
 - [examples/playground-server/src/profiles/default-profile.ts](../../examples/playground-server/src/profiles/default-profile.ts)
 
-That file is useful because it shows:
+That file shows:
 
-- `defineHostedProfile`
-- prompt SDK usage through a prompt builder
-- resolver creation through `createHostedProfileResolver`
-- a clean separation between profile declaration and route mounting
+- `defineProfile` with a static agent config
+- prompt function that renders per-request
+- capability descriptors for filesystem, browser, knowledge, skills, and orchestration
+- registration via `createStaticProfileResolver`
 
 ## Common Mistakes
 
@@ -265,5 +192,5 @@ If it is the latter, it probably does not belong in the profile.
 ## Related Docs
 
 - [Build a Profile](../guides/build-a-profile.md)
-- [Host Defaults Reference](host-defaults.md)
+- [Compatibility APIs Reference](host-defaults.md)
 - [Host Primitives Reference](host-primitives.md)

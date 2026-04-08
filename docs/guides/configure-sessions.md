@@ -11,32 +11,33 @@ Read this guide after:
 
 ## The Default: `SessionManager`
 
-The default session store is `SessionManager` from `@agentrail/memo`. It persists all session data to the local filesystem under a root `dataDir`:
+The default session store is `SessionManager` from `@agentrail/app`. It persists all session data to the local filesystem under a root `dataDir`:
 
 ```ts
-import { SessionManager } from "@agentrail/memo";
+import { SessionManager } from "@agentrail/app";
 
-const sessionStore = new SessionManager("/data/agentrail");
+const sessionManager = new SessionManager("/data/agentrail");
 ```
 
-Pass it to your route factories:
+Pass `dataDir` to `createAgentApp` and it will manage `SessionManager` internally:
 
 ```ts
-import { createChatRoute } from "@agentrail/host";
-import { SessionManager } from "@agentrail/memo";
+import { createAgentApp } from "@agentrail/app";
 
-const sessionStore = new SessionManager("/data/agentrail");
+const app = createAgentApp({
+  dataDir: "/data/agentrail",
+  profiles: [defaultProfile],
+  summarize,
+  compaction: { triggerTokens: 80_000, minMessages: 20 },
+});
+```
 
-app.route(
-  "/chat",
-  createChatRoute({
-    defaultAgentId: "default",
-    sessionStore,
-    resolveProfile,
-    summarize,
-    compaction: { triggerTokens: 80_000, minMessages: 20 },
-  }),
-);
+When you need direct access to `SessionManager` utilities (e.g. to list sessions or build a memory index), instantiate it separately:
+
+```ts
+import { SessionManager } from "@agentrail/app";
+
+export const sessionManager = new SessionManager("/data/agentrail");
 ```
 
 ## Directory Layout
@@ -64,7 +65,7 @@ Each session is isolated to its own directory. Deleting a session directory clea
 For **local development**, the default `~/.agentrail` is fine:
 
 ```ts
-const sessionStore = new SessionManager(
+const sessionManager = new SessionManager(
   process.env.AGENTRAIL_DATA_DIR ?? `${process.env.HOME}/.agentrail`,
 );
 ```
@@ -72,7 +73,7 @@ const sessionStore = new SessionManager(
 For **production**, point `dataDir` at a persistent volume so sessions survive container restarts:
 
 ```ts
-const sessionStore = new SessionManager(process.env.AGENTRAIL_DATA_DIR ?? "/data/agentrail");
+const sessionManager = new SessionManager(process.env.AGENTRAIL_DATA_DIR ?? "/data/agentrail");
 ```
 
 In Docker, mount a named volume at `/data/agentrail`:
@@ -95,24 +96,24 @@ volumes:
 
 ```ts
 // List all sessions for a user
-const sessions = await sessionStore.listSessions(tenantId, userId);
+const sessions = await sessionManager.listSessions(tenantId, userId);
 
 // Build a memory index for context injection
-const memoryIndex = await sessionStore.buildMemoryIndex(tenantId, userId, sessionId);
+const memoryIndex = await sessionManager.buildMemoryIndex(tenantId, userId, sessionId);
 
 // Get the session directory path (synchronous)
-const dir = sessionStore.getSessionDir(tenantId, sessionId);
+const dir = sessionManager.getSessionDir(tenantId, sessionId);
 ```
 
 These are useful when building session management UIs or context provider implementations.
 
 ## Implementing a Custom Session Store
 
-If the filesystem-backed `SessionManager` does not fit your requirements (for example, you need database-backed storage or multi-server shared state), implement the `AgentrailSessionStore` interface from `@agentrail/host`:
+If the filesystem-backed `SessionManager` does not fit your requirements (for example, you need database-backed storage or multi-server shared state), implement the `AgentrailSessionStore` interface from `@agentrail/app` and pass it via `sessionStore`:
 
 ```ts
-import type { AgentrailSessionStore } from "@agentrail/host";
-import type { Message, Usage } from "@agentrail/runtime-core";
+import type { AgentrailSessionStore } from "@agentrail/app";
+import type { Message, Usage } from "@agentrail/core";
 
 export class DatabaseSessionStore implements AgentrailSessionStore {
   async getOrCreate(tenantId, userId, agentId, sessionId?) {
@@ -171,7 +172,16 @@ The minimum required methods are all eight listed above. The most frequently cal
 - a **shared filesystem** (NFS, EFS, etc.) mounted at the same path on all instances
 - a **custom `AgentrailSessionStore`** backed by a database (PostgreSQL, Redis, etc.)
 
-The session store interface is designed to make this swap straightforward — replace `SessionManager` with your custom implementation and pass it to the same route factories.
+The session store interface is designed to make this swap straightforward — implement `AgentrailSessionStore` and pass it to `createAgentApp({ sessionStore })`:
+
+```ts
+import { createAgentApp } from "@agentrail/app";
+
+const app = createAgentApp({
+  sessionStore: new DatabaseSessionStore(),
+  profiles: [defaultProfile],
+});
+```
 
 ## Related Concepts
 

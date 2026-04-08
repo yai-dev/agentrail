@@ -1,6 +1,8 @@
 # Consume Stream (SSE)
 
-`createStreamRoute` returns a streaming HTTP response in newline-delimited JSON format. This guide shows how to consume that stream from a browser client or a Node.js service.
+> **Recommended path**: Use `createAgentApp` from `@agentrail/app` to mount the `/stream` endpoint. `createStreamRoute` is available as a lower-level escape hatch when you need direct control over route mounting.
+
+`createAgentApp` (and the underlying `createStreamRoute`) returns a streaming HTTP response in newline-delimited JSON format. This guide shows how to consume that stream from a browser client or a Node.js service.
 
 ## Prerequisites
 
@@ -18,7 +20,7 @@ When you `POST` to a stream endpoint:
 3. The response header `X-Session-Id` contains the session ID for subsequent requests.
 4. The stream closes after the `agent_end` event and any final host events (`context_usage`).
 
-Each line in the body is a serialized `AgentrailEvent` from `@agentrail/events`. The event's `type` field identifies what happened.
+Each line in the body is a serialized `AgentrailEvent` from `@agentrail/app`. The event's `type` field identifies what happened.
 
 ## Request Format
 
@@ -96,7 +98,7 @@ Handle these events to build a complete streaming UI:
 ## Example Event Handler
 
 ```ts
-import type { AgentrailEvent } from "@agentrail/events";
+import type { AgentrailEvent } from "@agentrail/app";
 
 function handleEvent(event: AgentrailEvent) {
   switch (event.type) {
@@ -206,10 +208,10 @@ These events are especially useful for building orchestration dashboards or prog
 
 ## TypeScript Types
 
-Import the full event union from `@agentrail/events`:
+Import the full event union from `@agentrail/app`:
 
 ```ts
-import type { AgentrailEvent, AgentrailHostEvent } from "@agentrail/events";
+import type { AgentrailEvent, AgentrailHostEvent } from "@agentrail/app";
 ```
 
 `AgentrailEvent` combines runtime events, skill events, and host events — it is the right type for a general-purpose event consumer.

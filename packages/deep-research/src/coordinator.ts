@@ -3,13 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/memo";
+import type { SessionRef } from "@agentrail/core";
 import {
   OrchestrationManager,
   createFilesystemOrchestrationPersistence,
-} from "@agentrail/orchestration";
-import { defineAgent, type Message, type RuntimeEvent } from "@agentrail/runtime-core";
-import { SandboxManager } from "@agentrail/sandbox";
+} from "@agentrail/capabilities";
+import { defineAgent, type Message, type RuntimeEvent } from "@agentrail/core";
+import { SandboxManager } from "@agentrail/capabilities";
 import { randomUUID } from "node:crypto";
 import { copyFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -19,11 +19,11 @@ import {
   mapDeepResearchOrchestrationEvent,
   summarizeHistory,
   zeroUsage,
-} from "./coordinator-internals.js";
-import { getPlannerPrompt, getReporterPrompt } from "./prompts.js";
-import type { DeepResearchRuntimeConfig } from "./runtime.js";
-import type { DeepResearchStore } from "./store.js";
-import { createFileSystemDeepResearchStore } from "./store.js";
+} from "@/coordinator-internals.js";
+import { getPlannerPrompt, getReporterPrompt } from "@/prompts.js";
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import type { DeepResearchStore } from "@/store.js";
+import { createFileSystemDeepResearchStore } from "@/store.js";
 import type {
   AnalystOutput,
   CoderOutput,
@@ -36,7 +36,7 @@ import type {
   DeepResearchStep,
   PlannerOutput,
   ResearcherOutput,
-} from "./types.js";
+} from "@/types.js";
 import {
   buildFetchDomainBudget,
   buildStepDigest,
@@ -60,7 +60,7 @@ import {
   selectSourcesForReport,
   selectSourcesForResearchContext,
   slugifyTitle,
-} from "./utils.js";
+} from "@/utils.js";
 
 export interface DeepResearchCoordinatorOptions {
   tenantId: string;

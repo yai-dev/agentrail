@@ -3,12 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/memo";
+import { createSessionRef } from "@agentrail/core";
 import { Hono } from "hono";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import { createFileSystemDeepResearchStore } from "./store.js";
-import { slugifyTitle } from "./utils.js";
+import { createFileSystemDeepResearchStore } from "@/store.js";
+import { slugifyTitle } from "@/utils.js";
 
 const ARTIFACT_MIME_MAP: Record<string, string> = {
   ".png": "image/png",

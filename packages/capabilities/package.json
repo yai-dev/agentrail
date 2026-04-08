@@ -1,0 +1,53 @@
+{
+  "name": "@agentrail/capabilities",
+  "version": "0.1.0",
+  "description": "App-layer capability descriptors: filesystem, browser, knowledge, skills, orchestration, and memory for Agentrail.",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./orchestration/worker": {
+      "types": "./dist/orchestration/worker/index.d.ts",
+      "default": "./dist/orchestration/worker/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@agentrail/core": "workspace:*",
+    "@sinclair/typebox": "^0.34.0",
+    "dockerode": "^4.0.4",
+    "tar-stream": "^3.1.8"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.38",
+    "@types/node": "^22.0.0",
+    "@types/tar-stream": "^3.1.4",
+    "tsc-alias": "^1.8.16",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yai-dev/agentrail.git",
+    "directory": "packages/capabilities"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "license": "Apache-2.0"
+}

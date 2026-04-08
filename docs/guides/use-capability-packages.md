@@ -1,6 +1,6 @@
 # Use Capability Packages
 
-Agentrail ships several optional capability packages — `@agentrail/knowledge`, `@agentrail/sandbox`, and `@agentrail/skills` — that provide structured data retrieval, isolated code execution, and reusable agent skills. This guide shows how to wire each one into a hosted application.
+Agentrail ships `@agentrail/capabilities` — a single package that bundles knowledge retrieval, sandboxed code execution, skills, orchestration, browser automation, and built-in tools. This guide shows how to wire capabilities into a hosted application.
 
 ## Prerequisites
 
@@ -11,93 +11,69 @@ Read this guide after:
 - [Add Tools](add-tools.md)
 - [Add Context](add-context.md)
 
-## How Capability Packages Fit In
+## How Capabilities Fit In
 
-Each capability package follows the same pattern:
+Capabilities follow a simple pattern:
 
-1. Instantiate a **Manager** (a singleton tied to `dataDir`) at startup
-2. Pass the manager to **context providers** so the agent sees capability summaries on every request
-3. Pass the manager to **tool builders** so the agent can invoke capability operations
+1. Install `@agentrail/capabilities` (single package)
+2. Instantiate any **Manager** singletons (e.g. `SandboxManager`, `KnowledgeManager`) at startup
+3. Declare capabilities in your profile via `defineProfile({ capabilities: [...] })`
 
-The `@agentrail/host/defaults` layer provides helpers that do this wiring for you. You can also wire them manually if you prefer finer control.
+`createAgentApp` wires the context providers and tool builders automatically.
+
+```bash
+pnpm add @agentrail/capabilities
+```
 
 ---
 
-## Knowledge Base (`@agentrail/knowledge`)
+## Knowledge Base
 
-The knowledge package lets you index documents and make them searchable by the agent at request time.
+The knowledge capability lets you index documents and make them searchable by the agent at request time.
 
 ### Instantiate KnowledgeManager
 
 ```ts
-import { KnowledgeManager } from "@agentrail/knowledge";
+import { KnowledgeManager } from "@agentrail/capabilities";
 
 export const knowledgeManager = new KnowledgeManager("/data/agentrail");
 ```
 
 `KnowledgeManager` stores all knowledge bases under `{dataDir}/tenants/{tenantId}/knowledge_bases/`. Each KB is identified by a `kbId` string.
 
-### How It Works
-
-- **Ingestion**: Documents are indexed through an ingestion pipeline (`analyze → classify → summarize → index_update → register`). The playground server exposes API routes for managing KB ingestion.
-- **Retrieval**: At request time, the agent uses KB search tools to query indexed content. KB metadata summaries can also be injected via context providers so the agent knows which KBs exist.
-
-### Wire Into Context Providers
-
-Use `createDefaultCapabilityContextProviders` or `createDefaultCapabilityTransformContext` to inject knowledge metadata into every request:
+### Add to a Profile
 
 ```ts
-import { createDefaultCapabilityContextProviders } from "@agentrail/host/defaults";
+import { defineProfile } from "@agentrail/app";
+import { knowledge } from "@agentrail/capabilities";
 
-const contextProviders = createDefaultCapabilityContextProviders({
-  tenantId,
-  userId,
-  sessionId,
-  listKnowledgeMetadatas: async () => {
-    const kbIds = await knowledgeManager.listKbs(tenantId);
-    return Promise.all(kbIds.map((id) => knowledgeManager.getMetadata(tenantId, id)));
+export const researchProfile = defineProfile({
+  id: "research",
+  name: "Research Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a research assistant with access to the knowledge base.",
   },
-  // other providers...
+  capabilities: [knowledge(knowledgeManager)],
 });
 ```
 
-This injects a summary of available knowledge bases before the conversation history on every request, so the agent knows what is searchable.
-
-### Wire Into Tools
-
-The KB search and management tools are assembled by `buildDefaultCapabilityTools` from `@agentrail/host/defaults`. Pass the `knowledgeManager` as part of the options:
-
-```ts
-import { buildDefaultCapabilityTools } from "@agentrail/host/defaults";
-
-const { executionTools } = await buildDefaultCapabilityTools({
-  tenantId,
-  userId,
-  sessionId,
-  sessionDir,
-  knowledgeManager,
-  sandboxManager,
-  waitHandleRegistry,
-  modelConfig,
-});
-```
-
-The assembled tools include `knowledge-search`, `knowledge-index`, and related KB management operations.
+At request time, the agent receives KB metadata summaries as context and gains access to `knowledge-search` and `knowledge-index` tools.
 
 ---
 
-## Sandbox (`@agentrail/sandbox`)
+## Sandbox (Code Execution)
 
-The sandbox package provides Docker-backed isolated execution per session. It is required for code execution, file operations, and browser tools.
+The sandbox capability provides Docker-backed isolated execution per session. It is required for code execution, file operations, and browser tools.
 
 ### Instantiate SandboxManager
 
 ```ts
-import { SandboxManager } from "@agentrail/sandbox";
+import { SandboxManager } from "@agentrail/capabilities";
 
 export const sandboxManager = new SandboxManager("/data/agentrail", {
   image: "ghcr.io/yai-dev/agentrail-sandbox:latest",
-  idleTimeoutMs: 30 * 60 * 1000, // destroy container after 30 minutes idle
+  idleTimeoutMs: 30 * 60 * 1000,
 });
 ```
 
@@ -127,19 +103,34 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 ```
 
-### Workspace Snapshots in Context
-
-The sandbox maintains a workspace directory per session. You can inject a workspace snapshot as context so the agent knows which files exist:
+### Add to a Profile
 
 ```ts
-listWorkspaceSnapshot: () => sandboxManager.listWorkspace(sessionId),
+import { defineProfile } from "@agentrail/app";
+import { filesystem } from "@agentrail/capabilities";
+
+export const coderProfile = defineProfile({
+  id: "coder",
+  name: "Coder",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a coding assistant. You can run code in a sandbox.",
+  },
+  capabilities: [filesystem(sandboxManager)],
+});
 ```
 
-Pass this to `createDefaultCapabilityContextProviders` alongside your other providers.
+Pass `sandboxManager` to `createAgentApp` as well so it is available during the request lifecycle:
+
+```ts
+const app = createAgentApp({
+  dataDir: DATA_DIR,
+  profiles: [coderProfile],
+  sandboxManager,
+});
+```
 
 ### Graceful Shutdown
-
-Destroy all running containers on process exit:
 
 ```ts
 process.on("SIGTERM", async () => {
@@ -150,99 +141,75 @@ process.on("SIGTERM", async () => {
 
 ---
 
-## Skills (`@agentrail/skills`)
+## Skills
 
-Skills are reusable agent capabilities defined as structured packages stored under `{dataDir}/skills/`. Each skill has a `skill.json` config and an implementation that the agent can invoke.
+Skills are reusable agent capabilities defined as structured packages stored under `{dataDir}/skills/`.
 
 ### Instantiate SkillManager
 
 ```ts
-import { SkillManager } from "@agentrail/skills";
+import { SkillManager } from "@agentrail/capabilities";
 
 export const skillManager = new SkillManager("/data/agentrail");
 ```
 
-Skills are stored at `{dataDir}/skills/{skillName}/skill.json`. The `SkillManager` reads the skills directory and filters out any skill with `"enabled": false` in its config.
-
-### Wire Into Context Providers
-
-Inject the skills inventory as context so the agent knows which skills are available:
+### Add to a Profile
 
 ```ts
-listSkills: () => skillManager.listSkills(),
-```
+import { defineProfile } from "@agentrail/app";
+import { skills } from "@agentrail/capabilities";
 
-Pass this to `createDefaultCapabilityContextProviders`.
-
-### Wire Into Tools
-
-Pass `skillManager` to `buildDefaultCapabilityTools`:
-
-```ts
-const { skillTool } = await buildDefaultCapabilityTools({
-  // ...
-  skillManager,
-  includeSkillTool: true,
-  delegateSkillsToSubAgent: true, // run skills in an isolated sub-agent
+export const assistantProfile = defineProfile({
+  id: "assistant",
+  name: "Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a helpful assistant.",
+  },
+  capabilities: [skills(skillManager, { mode: "delegate" })],
 });
 ```
 
-When `delegateSkillsToSubAgent` is `true`, skill execution is isolated inside a sub-agent. This is the recommended setting for production use.
+When `delegateToSubAgent` is `true`, skill execution is isolated inside a sub-agent. This is the recommended setting for production use.
 
 ---
 
-## Using the Defaults Layer for All Three
-
-The `buildDefaultCapabilityTools` function from `@agentrail/host/defaults` wires Knowledge, Sandbox, and Skills together into a single tool assembly call. This is the recommended path for most apps:
+## Combining Multiple Capabilities
 
 ```ts
-import { buildDefaultCapabilityTools } from "@agentrail/host/defaults";
-import { KnowledgeManager } from "@agentrail/knowledge";
-import { SandboxManager } from "@agentrail/sandbox";
-import { SkillManager } from "@agentrail/skills";
+import { defineProfile } from "@agentrail/app";
+import { filesystem, knowledge, skills } from "@agentrail/capabilities";
 
-// Process-level singletons
-const knowledgeManager = new KnowledgeManager(dataDir);
-const sandboxManager = new SandboxManager(dataDir, { image: config.sandbox.image });
-const skillManager = new SkillManager(dataDir);
-
-// Per-request tool assembly (inside createAgent or getTransformContext)
-const { executionTools, browserTools, skillTool } = await buildDefaultCapabilityTools({
-  tenantId,
-  userId,
-  sessionId,
-  sessionDir,
-  knowledgeManager,
-  sandboxManager,
-  skillManager,
-  waitHandleRegistry,
-  modelConfig,
-  includeSkillTool: true,
-  delegateSkillsToSubAgent: true,
+export const powerProfile = defineProfile({
+  id: "power",
+  name: "Power Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a powerful assistant.",
+  },
+  capabilities: [
+    filesystem(sandboxManager),
+    knowledge(knowledgeManager),
+    skills(skillManager, { mode: "delegate" }),
+  ],
 });
-
-const tools = [...executionTools, ...browserTools, ...(skillTool ? [skillTool] : [])];
 ```
-
-Pass `tools` into `defineAgent` inside your profile's `createAgent` function.
 
 ## What Belongs Where
 
-| Concern                           | Package                |
-| --------------------------------- | ---------------------- |
-| Document search and retrieval     | `@agentrail/knowledge` |
-| Code execution, file I/O, browser | `@agentrail/sandbox`   |
-| Reusable named agent capabilities | `@agentrail/skills`    |
-| Session history and compaction    | `@agentrail/memo`      |
+| Concern                           | Import from                |
+| --------------------------------- | -------------------------- |
+| Document search and retrieval     | `@agentrail/capabilities`  |
+| Code execution, file I/O, browser | `@agentrail/capabilities`  |
+| Reusable named agent capabilities | `@agentrail/capabilities`  |
+| Session history and compaction    | `@agentrail/app`           |
 
 ## Related Concepts
 
-- [Tools](../concepts/tools.md)
 - [Context & Compaction](../concepts/context-and-compaction.md)
 - [Agents](../concepts/agents.md)
 
-## Related Reference
+## Related Guides
 
-- [Host Defaults Reference](../reference/host-defaults.md)
 - [Add Tools Guide](add-tools.md)
 - [Add Context Guide](add-context.md)

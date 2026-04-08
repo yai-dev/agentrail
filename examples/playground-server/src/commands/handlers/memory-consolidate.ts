@@ -7,8 +7,8 @@ import type {
   ParsedSlashCommand,
   SlashCommandContext,
   SlashCommandResult,
-} from "@agentrail/slash-commands";
-import { userMemoryConsolidationService } from "../../context/index.js";
+} from "@agentrail/app";
+import { userMemoryConsolidationService } from "@/context/index.js";
 
 export async function handleMemoryConsolidateCommand(
   parsed: ParsedSlashCommand,

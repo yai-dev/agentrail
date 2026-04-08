@@ -49,45 +49,78 @@ Use it when you need:
 - compaction and budget visibility
 - multi-agent orchestration event forwarding
 
-## Two Abstraction Levels
+## Abstraction Levels
 
-The host package deliberately splits into two layers:
+`@agentrail/app` provides both a high-level entry point and lower-level escape hatches:
 
-### `@agentrail/host` — Primitives
+### Recommended — `createAgentApp`
 
-Low-level, stable building blocks:
+The one-call entry point for most apps:
 
-- `createChatRoute` and `createStreamRoute` — route factories
-- `createProfileResolver` — resolver from a profile list
-- `createTransformContext` — combine context providers into a transform function
+```ts
+import { createAgentApp } from "@agentrail/app";
+
+const app = createAgentApp({
+  dataDir: "./data",
+  profiles: [defaultProfile],
+  summarize,
+});
+```
+
+This mounts both `/chat` (JSON) and `/stream` (SSE) endpoints and wires the full request lifecycle.
+
+For custom session storage, pass `sessionStore` instead of `dataDir`:
+
+```ts
+const app = createAgentApp({
+  sessionStore: myDatabaseSessionStore,
+  profiles: [defaultProfile],
+  summarize,
+});
+```
+
+For dynamic profile routing, use `resolveProfile`:
+
+```ts
+const app = createAgentApp({
+  dataDir: "./data",
+  resolveProfile: async ({ agentId, tenantId }) => loadProfileForTenant(agentId, tenantId),
+  defaultAgentId: "default",
+});
+```
+
+### Low-Level Escape Hatches — `@agentrail/app/advanced`
+
+Available from `@agentrail/app/advanced` when you need direct control:
+
+- `createChatRoute` and `createStreamRoute` — mount individual route primitives
 - `createOrchestrationRegistry` — per-session orchestration manager registry
+- `createTransformContext` — compose context providers into a transform function
 
-Use primitives when you need a custom request lifecycle, non-default profile resolution, or are integrating Agentrail into an existing server architecture.
+Use these when you need a custom request lifecycle or are integrating into an existing server architecture.
 
-### `@agentrail/host/defaults` — Defaults SDK
+### Compatibility Layer — `@agentrail/app/compat`
 
-The recommended assembly path for most apps. It wraps the primitives with opinionated helpers:
+Pre-Proposal-106 helpers remain available from `@agentrail/app/compat` for migration purposes:
 
-- `defineHostedProfile` — structured profile definition
-- `createHostedProfileResolver` — resolver from a list of hosted profiles
-- `createDefaultContextProviders` — standard context provider stack
-- `createDefaultToolset` — capability-oriented tool assembly
-- `createDefaultOrchestrationBinding` — orchestration wiring
+- `defineHostedProfile`
+- `createHostedProfileResolver`
+- `buildDefaultCapabilityTools`
 
-**Start with `host/defaults`.** It is not a black box — it is a recommended assembly of primitives you can unwrap and replace piece by piece as your app grows.
+These are retained for backward compatibility only. Prefer `defineProfile` from `@agentrail/app`.
 
-## Choosing Between Them
+## Choosing a Path
 
 ```
-New app or first host → use @agentrail/host/defaults
+New app or first host → use createAgentApp + defineProfile
 │
-├── Need custom request lifecycle?   → drop to @agentrail/host primitives for that part
-├── Need non-default profile logic?  → use createProfileResolver directly
-├── Need custom context ordering?    → use createTransformContext directly
-└── Building a completely custom server? → use all primitives
+├── Need custom session storage?    → pass sessionStore to createAgentApp
+├── Need non-default profile logic? → pass resolveProfile to createAgentApp
+├── Need custom request lifecycle?  → use createChatRoute / createStreamRoute from @agentrail/app/advanced
+└── Building a completely custom server? → use all low-level primitives
 ```
 
-You do not have to choose one or the other wholesale. The most common pattern is to use defaults for most of the stack and drop to primitives only for the one part that needs custom behavior.
+You do not have to choose one or the other wholesale. The most common pattern is to use `createAgentApp` for most of the stack and drop to primitives only for the part that needs custom behavior.
 
 ## Request Body Shape
 
@@ -114,5 +147,4 @@ Both routes accept a JSON body:
 
 ## Related Reference
 
-- [Host Defaults Reference](../reference/host-defaults.md)
 - [Host Primitives Reference](../reference/host-primitives.md)

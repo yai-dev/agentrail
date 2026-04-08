@@ -4,7 +4,7 @@ An agent is the runtime execution unit in Agentrail. It receives a message, call
 
 ## What an Agent Is
 
-At the runtime layer, an agent is a value that satisfies the `Agent` interface from `@agentrail/runtime-core`. It holds:
+At the runtime layer, an agent is a value that satisfies the `Agent` interface from `@agentrail/core`. It holds:
 
 - a model configuration (provider, model ID, API key)
 - a system prompt
@@ -15,10 +15,10 @@ Agents are stateless between turns. Session history is managed by the host layer
 
 ## Defining an Agent
 
-Use `defineAgent` from `@agentrail/runtime-core`:
+Use `defineAgent` from `@agentrail/core`:
 
 ```ts
-import { defineAgent } from "@agentrail/runtime-core";
+import { defineAgent } from "@agentrail/core";
 
 const agent = defineAgent({
   id: "my-agent",

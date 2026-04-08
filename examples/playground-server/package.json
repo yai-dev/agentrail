@@ -6,31 +6,22 @@
   "type": "module",
   "main": "./dist/main.js",
   "scripts": {
-    "build": "tsc -b --force && mkdir -p dist/prompts && cp src/prompts/*.md dist/prompts/",
+    "build": "tsc -b && tsc-alias && mkdir -p dist/prompts && cp src/prompts/*.md dist/prompts/",
     "dev": "node --import=tsx/esm --watch src/main.ts",
     "start": "node dist/main.js",
-    "typecheck": "tsc -b --force --pretty false"
+    "typecheck": "tsc -b --force --pretty false && tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@hono/node-server": "^1.13.7",
-    "@agentrail/config": "workspace:*",
+    "@agentrail/app": "workspace:*",
+    "@agentrail/capabilities": "workspace:*",
+    "@agentrail/core": "workspace:*",
     "@agentrail/deep-research": "workspace:*",
-    "@agentrail/host": "workspace:*",
-    "@agentrail/orchestration": "workspace:*",
-    "@agentrail/tools": "workspace:*",
-    "@agentrail/events": "workspace:*",
-    "@agentrail/knowledge": "workspace:*",
-    "@agentrail/memo": "workspace:*",
-    "@agentrail/plugin-user-memory": "workspace:*",
-    "@agentrail/prompts": "workspace:*",
-    "@agentrail/runtime-core": "workspace:*",
-    "@agentrail/sandbox": "workspace:*",
-    "@agentrail/slash-commands": "workspace:*",
-    "@agentrail/skills": "workspace:*",
+    "@hono/node-server": "^1.13.7",
     "hono": "^4.7.4"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.19.3"
   },
   "keywords": [],

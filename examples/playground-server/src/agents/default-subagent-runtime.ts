@@ -3,20 +3,24 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { buildDefaultCapabilityTools } from "@agentrail/host/defaults";
-import type { SessionRef } from "@agentrail/memo";
-import { SessionManager } from "@agentrail/memo";
-import type {
-  CreateManagedAgentInput,
-  ModelConfig,
-  SubAgentRuntime,
-} from "@agentrail/orchestration";
-import type { RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
+import { SessionManager } from "@agentrail/app";
+import type { SessionRef } from "@agentrail/core";
+import type { ModelConfig } from "@agentrail/core";
+import {
+  askUser,
+  browser,
+  filesystem,
+  knowledge,
+  type CapabilityBuildContext,
+  type CreateManagedAgentInput,
+  type SubAgentRuntime,
+} from "@agentrail/capabilities";
+import type { RuntimeTool, TransformContextFn } from "@agentrail/core";
 
-import { config } from "../config.js";
-import { knowledgeManager, sandboxManager } from "../context/index.js";
-import { buildSystemPrompt } from "../prompts/index.js";
-import { waitHandleRegistry } from "../wait-handle-registry.js";
+import { config } from "@/config.js";
+import { knowledgeManager, sandboxManager } from "@/context/index.js";
+import { buildSystemPrompt } from "@/prompts/index.js";
+import { waitHandleRegistry } from "@/wait-handle-registry.js";
 
 export interface DefaultSubAgentRuntimeConfig {
   tenantId: string;
@@ -65,20 +69,22 @@ export class DefaultSubAgentRuntime implements SubAgentRuntime {
 
   async buildTools(_input: CreateManagedAgentInput): Promise<RuntimeTool[]> {
     const sessionStore = new SessionManager(this.dataDir);
-    const { executionTools, browserTools } = await buildDefaultCapabilityTools({
+    const capCtx: CapabilityBuildContext = {
       tenantId: this.tenantId,
       userId: this.userId,
       sessionId: this.sessionId,
       sessionRef: this.sessionRef,
       sessionStore,
-      knowledgeManager,
-      sandboxManager,
-      waitHandleRegistry,
-      modelConfig: this.getModelConfig(),
-      includeSkillTool: false,
-    });
+    };
 
-    return [...executionTools, ...browserTools];
+    return (
+      await Promise.all([
+        filesystem({ sandboxManager }).buildTools(capCtx),
+        browser({ sandboxManager }).buildTools(capCtx),
+        knowledge(knowledgeManager).buildTools(capCtx),
+        askUser(waitHandleRegistry).buildTools(capCtx),
+      ])
+    ).flat();
   }
 
   buildTransformContext(): TransformContextFn {

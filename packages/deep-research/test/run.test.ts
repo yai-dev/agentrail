@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/memo";
+import { createSessionRef } from "@agentrail/core";
 import { describe, expect, it, vi } from "vitest";
 import type { DeepResearchState } from "../src/index.js";
 import { createDeepResearchRunRoute, runDeepResearchBlocking } from "../src/run.js";

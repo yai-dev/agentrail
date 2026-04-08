@@ -6,23 +6,12 @@
     "lib": ["ES2022"],
     "baseUrl": ".",
     "paths": {
-      "@agentrail/runtime-core": ["packages/runtime-core/src/index.ts"],
-      "@agentrail/runtime-core/providers": ["packages/runtime-core/src/llm/providers/index.ts"],
-      "@agentrail/orchestration": ["packages/orchestration/src/index.ts"],
-      "@agentrail/orchestration/worker": ["packages/orchestration/src/worker/index.ts"],
-      "@agentrail/memo": ["packages/memo/src/index.ts"],
-      "@agentrail/knowledge": ["packages/knowledge/src/index.ts"],
-      "@agentrail/skills": ["packages/skills/src/index.ts"],
-      "@agentrail/sandbox": ["packages/sandbox/src/index.ts"],
-      "@agentrail/tools": ["packages/tools/src/index.ts"],
-      "@agentrail/config": ["packages/config/src/index.ts"],
-      "@agentrail/deep-research": ["packages/deep-research/src/index.ts"],
-      "@agentrail/slash-commands": ["packages/slash-commands/src/index.ts"],
-      "@agentrail/events": ["packages/events/src/index.ts"],
-      "@agentrail/host": ["packages/host/src/index.ts"],
-      "@agentrail/host/defaults": ["packages/host/src/defaults.ts"],
-      "@agentrail/prompts": ["packages/prompts/src/index.ts"],
-      "@agentrail/plugin-user-memory": ["packages/plugin-user-memory/src/index.ts"]
+      "@agentrail/core": ["packages/core/src/index.ts"],
+      "@agentrail/core/providers": ["packages/core/src/llm/providers/index.ts"],
+      "@agentrail/capabilities": ["packages/capabilities/src/index.ts"],
+      "@agentrail/capabilities/orchestration/worker": ["packages/capabilities/src/orchestration/worker/index.ts"],
+      "@agentrail/app": ["packages/app/src/index.ts"],
+      "@agentrail/deep-research": ["packages/deep-research/src/index.ts"]
     },
     "strict": true,
     "esModuleInterop": true,
@@ -34,19 +23,9 @@
     "composite": true
   },
   "references": [
-    { "path": "packages/runtime-core" },
-    { "path": "packages/config" },
-    { "path": "packages/tools" },
-    { "path": "packages/deep-research" },
-    { "path": "packages/slash-commands" },
-    { "path": "packages/memo" },
-    { "path": "packages/knowledge" },
-    { "path": "packages/skills" },
-    { "path": "packages/sandbox" },
-    { "path": "packages/orchestration" },
-    { "path": "packages/events" },
-    { "path": "packages/prompts" },
-    { "path": "packages/host" },
-    { "path": "packages/plugin-user-memory" }
+    { "path": "packages/core" },
+    { "path": "packages/capabilities" },
+    { "path": "packages/app" },
+    { "path": "packages/deep-research" }
   ]
 }

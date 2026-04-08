@@ -1,5 +1,8 @@
-import { createHostedProfileResolver, defineHostedProfile } from "@agentrail/host/defaults";
-import { defineAgent, isRuntimeError, type Message } from "@agentrail/runtime-core";
+import { defineAgent, isRuntimeError, type Message } from "@agentrail/core";
+import { defineProfile } from "@agentrail/app";
+// To add filesystem, browser, knowledge, or orchestration capabilities install
+// @agentrail/capabilities and import the relevant factory functions:
+//   import { filesystem, knowledge, browser } from "@agentrail/capabilities";
 
 const MODEL_PROVIDER = (process.env.MODEL_PROVIDER ?? "anthropic") as "anthropic" | "openai";
 const MODEL_ID = process.env.MODEL_ID ?? "claude-3-5-sonnet-20241022";
@@ -7,7 +10,7 @@ const MODEL_ID = process.env.MODEL_ID ?? "claude-3-5-sonnet-20241022";
 export const AGENT_ID = "{{PROJECT_NAME}}-agent";
 
 // ---------------------------------------------------------------------------
-// Summarizer — used by the host for Layer 3 context compaction
+// Summarizer — used by the app for Layer 3 context compaction
 // ---------------------------------------------------------------------------
 
 export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
@@ -55,22 +58,14 @@ export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Profile — the agent definition wired into the stream route
+// Profile — the agent definition wired into the app
 // ---------------------------------------------------------------------------
 
-export const defaultProfile = defineHostedProfile({
+export const defaultProfile = defineProfile({
   id: AGENT_ID,
   name: "{{PROJECT_NAME}} Agent",
-  promptBuilder: async () => "You are a helpful assistant.",
-  createAgent: async () =>
-    defineAgent({
-      id: AGENT_ID,
-      name: "{{PROJECT_NAME}} Agent",
-      model: { provider: MODEL_PROVIDER, modelId: MODEL_ID },
-      system: "You are a helpful assistant.",
-      maxTokens: 8192,
-      maxTurns: 20,
-    }),
+  agent: {
+    model: `${MODEL_PROVIDER}:${MODEL_ID}`,
+    prompt: "You are a helpful assistant.",
+  },
 });
-
-export const resolveProfile = createHostedProfileResolver([defaultProfile]);

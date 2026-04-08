@@ -1,6 +1,6 @@
 # Prompt SDK Reference
 
-`@agentrail/prompts` provides the shared prompt composition and loading model used across profiles, sub-agents, and workflow packages.
+`@agentrail/core` provides the shared prompt composition and loading model used across profiles, sub-agents, and workflow packages.
 
 ## When To Read This Page
 
@@ -56,7 +56,7 @@ Layers are rendered in order: `base → capability → profile → mode`. Each l
 Defines a named prompt fragment. Returns the fragment unchanged — exists for type safety and IDE autocomplete.
 
 ```ts
-import { definePromptFragment } from "@agentrail/prompts";
+import { definePromptFragment } from "@agentrail/core";
 
 // Inline content
 export const baseInstructions = definePromptFragment({
@@ -88,7 +88,7 @@ export const personaFragment = definePromptFragment({
 Defines an ordered bundle of fragments across the four layers. Returns the bundle unchanged — exists for type safety.
 
 ```ts
-import { definePromptBundle } from "@agentrail/prompts";
+import { definePromptBundle } from "@agentrail/core";
 import { baseInstructions, safetyRules, personaFragment } from "./fragments.js";
 
 export const supportBundle = definePromptBundle({
@@ -125,7 +125,7 @@ export const supportBundle = definePromptBundle({
 Creates a per-instance builder from a bundle. The builder holds its own `PromptLoader` cache (isolated — no shared state between instances or test runs).
 
 ```ts
-import { createPromptBuilder } from "@agentrail/prompts";
+import { createPromptBuilder } from "@agentrail/core";
 import { supportBundle } from "./prompts/support-bundle.js";
 
 // Create once per profile or per request, not once globally
@@ -182,7 +182,7 @@ interface PromptBuilder {
 A standalone function that interpolates `${variable}` placeholders in a plain string. Used internally by the bundle renderer.
 
 ```ts
-import { renderPrompt } from "@agentrail/prompts";
+import { renderPrompt } from "@agentrail/core";
 
 const template = "Hello, ${name}! You are working on ${project}.";
 const rendered = renderPrompt(template, { name: "Alice", project: "Agentrail" });
@@ -205,11 +205,11 @@ Variable syntax: `${key}` where `key` matches `[A-Za-z0-9_]+`. Values are coerce
 
 ```ts
 // Before (deprecated)
-import { loadPromptFile } from "@agentrail/prompts";
+import { loadPromptFile } from "@agentrail/core";
 const text = loadPromptFile("/path/to/system.md");
 
 // After — use builder.loadFile or a PromptLoader instance
-import { createPromptBuilder, definePromptBundle } from "@agentrail/prompts";
+import { createPromptBuilder, definePromptBundle } from "@agentrail/core";
 const builder = createPromptBuilder(
   definePromptBundle({
     base: {
@@ -228,7 +228,7 @@ A complete prompt setup for a hosted profile:
 
 ```ts
 // prompts/fragments.ts
-import { definePromptFragment } from "@agentrail/prompts";
+import { definePromptFragment } from "@agentrail/core";
 
 export const behaviorFragment = definePromptFragment({
   key: "base.behavior",
@@ -252,7 +252,7 @@ export const personaFragment = definePromptFragment({
 
 ```ts
 // prompts/bundle.ts
-import { definePromptBundle } from "@agentrail/prompts";
+import { definePromptBundle } from "@agentrail/core";
 import { behaviorFragment, toolsFragment, personaFragment } from "./fragments.js";
 
 export const agentBundle = definePromptBundle({
@@ -265,35 +265,21 @@ export const agentBundle = definePromptBundle({
 
 ```ts
 // profiles/my-profile.ts
-import { defineAgent } from "@agentrail/runtime-core";
-import { defineHostedProfile } from "@agentrail/host/defaults";
-import { createPromptBuilder } from "@agentrail/prompts";
+import { createPromptBuilder } from "@agentrail/core";
+import { defineProfile } from "@agentrail/app";
 import { agentBundle } from "../prompts/bundle.js";
 
-export const myProfile = defineHostedProfile({
+export const myProfile = defineProfile({
   id: "default",
   name: "Default Agent",
-
-  promptBuilder: () => {
-    const builder = createPromptBuilder(agentBundle);
-    return builder.render({
-      vars: { currentDate: new Date().toISOString().slice(0, 10) },
-    });
-  },
-
-  createAgent: async (ctx) => {
-    const builder = createPromptBuilder(agentBundle);
-    const system = builder.render();
-    return defineAgent({
-      id: "default",
-      model: {
-        provider: "anthropic",
-        modelId: "claude-sonnet-4-5",
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      },
-      system,
-      tools: [],
-    });
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: () => {
+      const builder = createPromptBuilder(agentBundle);
+      return builder.render({
+        vars: { currentDate: new Date().toISOString().slice(0, 10) },
+      });
+    },
   },
 });
 ```

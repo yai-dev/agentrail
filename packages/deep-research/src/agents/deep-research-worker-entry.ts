@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { initializeWorker } from "@agentrail/orchestration/worker";
-import "@agentrail/runtime-core/providers";
-import type { DeepResearchRuntimeConfig } from "../runtime.js";
-import { DeepResearchSubAgentRuntime } from "./deep-research-subagent-runtime.js";
+import { initializeWorker } from "@agentrail/capabilities/orchestration/worker";
+import "@agentrail/core/providers";
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import { DeepResearchSubAgentRuntime } from "@/agents/deep-research-subagent-runtime.js";
 
 interface WorkerInitPayload {
   type: "init";

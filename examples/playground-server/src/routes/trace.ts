@@ -3,11 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mapOrchestrationEvent, type WorkflowTraceEventEnvelope } from "@agentrail/events";
-import { createFileSystemSessionTraceStore, createSessionRef } from "@agentrail/memo";
-import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
+import { mapOrchestrationEvent, type WorkflowTraceEventEnvelope } from "@agentrail/app";
+import { createFileSystemSessionTraceStore } from "@agentrail/app";
+import { createSessionRef } from "@agentrail/core";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
 import { Hono } from "hono";
-import { config } from "../config.js";
+import { config } from "@/config.js";
 
 const trace = new Hono();
 

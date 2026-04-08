@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message } from "@agentrail/runtime-core";
-import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
-import "@agentrail/runtime-core/providers";
-import { config } from "../config.js";
+import type { Message } from "@agentrail/core";
+import { defineAgent, isRuntimeError } from "@agentrail/core";
+import "@agentrail/core/providers";
+import { config } from "@/config.js";
 
 function trunc(s: string, max: number): string {
   return s.length > max ? s.slice(0, max) + "…" : s;

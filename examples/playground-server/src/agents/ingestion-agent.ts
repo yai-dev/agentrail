@@ -8,11 +8,11 @@ import type {
   IngestionStep,
   KnowledgeManager,
   Taxonomy,
-} from "@agentrail/knowledge";
-import { createKbReadTool } from "@agentrail/knowledge";
-import type { ModelConfig } from "@agentrail/runtime-core";
-import { defineAgent, isRuntimeError } from "@agentrail/runtime-core";
-import { writeTool } from "@agentrail/tools";
+} from "@agentrail/capabilities";
+import { createKbReadTool } from "@agentrail/capabilities";
+import type { ModelConfig } from "@agentrail/core";
+import { defineAgent, isRuntimeError } from "@agentrail/core";
+import { writeTool } from "@agentrail/capabilities";
 import fs from "node:fs/promises";
 import path from "node:path";
 

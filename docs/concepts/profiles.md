@@ -16,81 +16,96 @@ This keeps route files thin and makes agent assembly testable and reusable.
 
 ## The Two Profile Shapes
 
-### Primitive profile — `AgentrailProfile`
+### Static Profile
 
-The minimal contract required by the host. Defined in `@agentrail/host`:
-
-```ts
-interface AgentrailProfile {
-  id: string;
-  name: string;
-  contextWindow?: number;
-  createAgent(
-    context: AgentrailRequestContext,
-    onSubAgentEvent?: SubAgentEventHandler,
-  ): Promise<Agent> | Agent;
-  resolveProfile?(context: AgentrailRequestContext): Promise<AgentrailProfile | null>;
-  transformContext?: TransformContextFn;
-}
-```
-
-Use this shape when you need full control over the construction logic, or when integrating with an existing server that does not use the defaults layer.
-
-### Hosted profile — `defineHostedProfile`
-
-The recommended shape from `@agentrail/host/defaults`. It adds structure around the primitive contract:
+The recommended starting point. Supply an `agent` configuration and optional `capabilities`:
 
 ```ts
-import { defineHostedProfile } from "@agentrail/host/defaults";
-import { defineAgent } from "@agentrail/runtime-core";
+import { defineProfile } from "@agentrail/app";
 
-export const defaultProfile = defineHostedProfile({
+export const defaultProfile = defineProfile({
   id: "default",
   name: "Default Assistant",
-  prompt: myPromptBundle,
-  createAgent: ({ tools, systemPrompt }) =>
-    defineAgent({
-      id: "default",
-      model: {
-        provider: "anthropic",
-        modelId: "claude-sonnet-4-5",
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      },
-      system: systemPrompt,
-      tools,
-    }),
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a helpful assistant.",
+    maxTurns: 30,
+  },
+  capabilities: [filesystem({ sandboxManager })],
 });
 ```
 
-The `createAgent` function in the hosted shape receives a pre-assembled context object with `tools` (built from the capability layer) and `systemPrompt` (rendered from the prompt bundle). You extend or override either as needed.
+`defineProfile` handles agent construction, capability wiring, and context provider injection automatically.
+
+### Dynamic Profile
+
+Use the `createAgent` factory when the agent configuration must vary per request (tenant-aware models, runtime feature flags, etc.):
+
+```ts
+import { defineAgent } from "@agentrail/core";
+import { defineProfile } from "@agentrail/app";
+
+export const tenantProfile = defineProfile({
+  id: "tenant",
+  name: "Tenant Assistant",
+  async createAgent(ctx) {
+    const system = await loadTenantPrompt(ctx.tenantId);
+    return defineAgent({
+      id: "tenant",
+      model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+      system,
+      maxTurns: 30,
+    });
+  },
+  capabilities: [filesystem({ sandboxManager })],
+  // Required when capabilities need model info (e.g. skills()):
+  modelConfig: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+});
+```
 
 ## Key Fields
 
-| Field              | Purpose                                                                                   |
-| ------------------ | ----------------------------------------------------------------------------------------- |
-| `id`               | Stable identifier used by the host to resolve this profile                                |
-| `name`             | Human-readable label for logs and diagnostics                                             |
-| `contextWindow`    | LLM context window size in tokens (used for token budget calculations, default `200_000`) |
-| `prompt`           | A prompt bundle or builder providing the system prompt                                    |
-| `createAgent`      | Factory function that constructs the agent for a given request                            |
-| `transformContext` | Optional function to inject extra request-time context messages                           |
-| `orchestration`    | Optional orchestration binding for multi-agent workflows                                  |
+| Field           | Purpose                                                                                   |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| `id`            | Stable identifier used by the host to resolve this profile                                |
+| `name`          | Human-readable label for logs and diagnostics                                             |
+| `contextWindow` | LLM context window size in tokens (used for token budget calculations, default `200_000`) |
+| `agent`         | Static agent config (static shape only)                                                   |
+| `createAgent`   | Per-request factory function (dynamic shape only)                                         |
+| `capabilities`  | Capability descriptors to compose into the agent                                          |
+| `modelConfig`   | Model metadata for capabilities that spawn sub-agents (e.g. `skills()`)                  |
 
-## Profile Resolver
+## Profile Registration
 
-The host does not hold profiles directly. It holds a **resolver** — a function that takes a request context and returns the right profile.
-
-The simplest resolver is built with `createHostedProfileResolver` (defaults layer):
+Profiles are registered by passing them to `createAgentApp`:
 
 ```ts
-import { createHostedProfileResolver } from "@agentrail/host/defaults";
+import { createAgentApp } from "@agentrail/app";
 
-const resolveProfile = createHostedProfileResolver([defaultProfile, adminProfile, researchProfile]);
+const app = createAgentApp({
+  dataDir: "./data",
+  profiles: [defaultProfile, adminProfile, researchProfile],
+});
 ```
 
-The resolver looks up the profile by `agentId` from the request. If no matching profile is found, it falls back to the `defaultAgentId` configured on the route.
+`createAgentApp` builds a resolver internally. It looks up the profile by `agentId` from the request and falls back to the first profile if none is specified.
 
-For more complex routing — such as tenant-based profile selection or mode-switching — you can wrap `createProfileResolver` from `@agentrail/host` with your own logic.
+For more complex routing — tenant-based selection, mode-switching, feature flags — provide a custom `resolveProfile` function:
+
+```ts
+import { createAgentApp } from "@agentrail/app";
+import type { ProfileResolver } from "@agentrail/app";
+
+const resolveProfile: ProfileResolver = async ({ agentId, tenantId }) => {
+  return await loadProfileForTenant(agentId, tenantId);
+};
+
+const app = createAgentApp({
+  dataDir: "./data",
+  resolveProfile,
+  defaultAgentId: "default",
+});
+```
 
 ## Multi-Profile Apps
 
@@ -104,12 +119,12 @@ Most apps start with a single profile and add more over time. Each profile is in
 
 These three concepts often get confused:
 
-| Concern                                              | Belongs in                      |
-| ---------------------------------------------------- | ------------------------------- |
-| Agent execution loop, model, tools                   | Agent (`defineAgent`)           |
-| How an agent is assembled for a request              | Profile (`defineHostedProfile`) |
-| Cross-cutting host behavior (memory, slash commands) | Plugin (`AgentrailPlugin`)      |
-| Prompt content and fragments                         | Prompt bundle                   |
+| Concern                                              | Belongs in                           |
+| ---------------------------------------------------- | ------------------------------------ |
+| Agent execution loop, model, tools                   | Agent (`defineAgent`)                |
+| How an agent is assembled for a request              | Profile (`defineProfile`)            |
+| Cross-cutting host behavior (memory, slash commands) | Plugin (`AgentrailPlugin`)           |
+| Prompt content and fragments                         | Prompt builder (`createPromptBuilder`) |
 
 ## Related Concepts
 
@@ -121,5 +136,4 @@ These three concepts often get confused:
 ## Related Reference
 
 - [Profile Contract Reference](../reference/profile-contract.md)
-- [Host Defaults Reference](../reference/host-defaults.md)
 - [Build a Profile Guide](../guides/build-a-profile.md)

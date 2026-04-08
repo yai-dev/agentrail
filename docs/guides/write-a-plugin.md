@@ -22,10 +22,10 @@ If the behavior is agent-specific reasoning, put it in a tool or prompt instead.
 
 ## The Plugin Contract
 
-A plugin implements the `AgentrailPlugin` interface from `@agentrail/host`:
+A plugin implements the `AgentrailPlugin` interface from `@agentrail/app`:
 
 ```ts
-import type { AgentrailPlugin } from "@agentrail/host";
+import type { AgentrailPlugin } from "@agentrail/app";
 ```
 
 All fields except `name` are optional. Implement only the hooks you need.
@@ -33,7 +33,7 @@ All fields except `name` are optional. Implement only the hooks you need.
 ## Minimal Example: Request Logger
 
 ```ts
-import type { AgentrailPlugin } from "@agentrail/host";
+import type { AgentrailPlugin } from "@agentrail/app";
 
 export const requestLoggerPlugin: AgentrailPlugin = {
   name: "request-logger",
@@ -120,21 +120,19 @@ export const heartbeatPlugin: AgentrailPlugin = {
 
 ## Registering Plugins
 
-Pass your plugins to the host when assembling the server:
+Pass your plugins to `createAgentApp`:
 
 ```ts
-import { createChatRoute } from "@agentrail/host";
+import { createAgentApp } from "@agentrail/app";
 
-app.route(
-  "/chat",
-  createChatRoute({
-    defaultAgentId: "default",
-    sessionStore,
-    resolveProfile,
-    plugins: [requestLoggerPlugin, timezonePlugin],
-  }),
-);
+const app = createAgentApp({
+  dataDir: DATA_DIR,
+  profiles: [defaultProfile],
+  plugins: [requestLoggerPlugin, timezonePlugin],
+});
 ```
+
+For lower-level control, you can also pass `plugins` directly to `createChatRoute` or `createStreamRoute` from `@agentrail/app/advanced`.
 
 ## Execution Order
 
@@ -154,4 +152,4 @@ app.route(
 
 - [Plugin Contract Reference](../reference/plugin-contract.md)
 - [Build a Profile](build-a-profile.md)
-- [Host Primitives Reference](../reference/host-primitives.md)
+- [Concepts: Plugins](../concepts/plugins.md)

@@ -1,6 +1,6 @@
 # Build a Profile
 
-Use a hosted profile when you want the host layer to manage agent construction for each request.
+Use a profile when you want the host layer to manage agent construction for each request.
 
 ## Prerequisites
 
@@ -17,16 +17,16 @@ A profile is the main boundary between:
 
 If you are building on Agentrail, the profile is usually where your app starts to become unique.
 
-## What A Hosted Profile Owns
+## What A Profile Owns
 
-A hosted profile should define:
+A profile should define:
 
 - the profile id and display name
-- how the prompt is assembled
-- how the agent instance is created
-- optional request-specific behavior for chat or workflow modes
+- the model (provider and model id)
+- the system prompt (static string or dynamic function)
+- optional tools and capabilities
 
-A hosted profile should usually **not** own:
+A profile should usually **not** own:
 
 - route mounting
 - session storage
@@ -40,38 +40,37 @@ Those belong to the host layer.
 
 The usual path looks like this:
 
-1. define a prompt bundle or prompt builder
-2. implement `createAgent`
-3. wrap the result with `defineHostedProfile`
-4. register the profile with `createHostedProfileResolver`
-5. pass the resolver into chat and stream routes
+1. call `defineProfile` with `agent: { model, prompt }` and optional `capabilities`
+2. pass the profile array into `createAgentApp({ dataDir, profiles: [...] })`
 
 ## Minimal Example
 
 ```ts
-import { defineAgent } from "@agentrail/runtime-core";
-import { defineHostedProfile, createHostedProfileResolver } from "@agentrail/host/defaults";
+import { defineProfile } from "@agentrail/app";
 
-export const supportProfile = defineHostedProfile({
+export const supportProfile = defineProfile({
   id: "support",
   name: "Support Agent",
-  createAgent: async () =>
-    defineAgent({
-      id: "support",
-      model: {
-        provider: "anthropic",
-        modelId: "claude-sonnet-4-5",
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      },
-      system: `You are a customer support assistant.
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: `You are a customer support assistant.
 Ask clarifying questions when the request is ambiguous.
 Use tools only when needed.`,
-      tools: [],
-      maxTurns: 20,
-    }),
+    maxTurns: 20,
+  },
 });
+```
 
-export const resolveProfile = createHostedProfileResolver([supportProfile]);
+Pass it to `createAgentApp` in your entry point:
+
+```ts
+import { createAgentApp } from "@agentrail/app";
+import { supportProfile } from "./profiles/support.js";
+
+const app = createAgentApp({
+  dataDir: DATA_DIR,
+  profiles: [supportProfile],
+});
 ```
 
 ## The Real Repository Example
@@ -82,10 +81,10 @@ The playground example follows this pattern in:
 
 That profile:
 
-- uses `defineHostedProfile`
-- builds its prompt with the prompt SDK
-- delegates agent construction to the playground agent registry
-- exports a resolver built with `createHostedProfileResolver`
+- uses `defineProfile`
+- builds its system prompt with the prompt SDK
+- passes capability descriptors via the `capabilities` field
+- is registered via `createAgentApp({ profiles: [...] })` in `main.ts`
 
 This is a good template for application code because it keeps the profile file small and focused.
 
@@ -93,8 +92,8 @@ This is a good template for application code because it keeps the profile file s
 
 Profiles can expose prompt behavior in two common ways:
 
-- `prompt`: when the prompt is already assembled or trivial to render
-- `promptBuilder`: when rendering depends on variables, layers, or a cached builder
+- `agent.prompt`: a static string (simplest — recommended for small apps)
+- `agent.prompt`: an async function `(ctx) => string` when rendering depends on variables or a cached builder
 
 For larger apps, prefer the prompt SDK over raw string literals so that:
 
@@ -104,15 +103,28 @@ For larger apps, prefer the prompt SDK over raw string literals so that:
 
 See [Manage Prompts](manage-prompts.md) for the recommended layout.
 
-## Agent Construction
+## Dynamic Agent Construction
 
-`createAgent` is where you choose how much of the framework you want to use.
+For full per-request control, use the `createAgent` factory:
 
-Typical options:
+```ts
+import { defineAgent } from "@agentrail/core";
+import { defineProfile } from "@agentrail/app";
 
-- create a single-agent runtime with `defineAgent`
-- delegate to an app-specific registry that selects one implementation
-- wrap a workflow package that internally orchestrates sub-agents
+export const supportProfile = defineProfile({
+  id: "support",
+  name: "Support Agent",
+  async createAgent(ctx) {
+    const system = await loadTenantPrompt(ctx.tenantId);
+    return defineAgent({
+      id: "support",
+      model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
+      system,
+      maxTurns: 20,
+    });
+  },
+});
+```
 
 Good profile construction code is usually:
 
@@ -121,21 +133,38 @@ Good profile construction code is usually:
 - free of HTTP concerns
 - free of environment parsing
 
-If `createAgent` starts reading request bodies, parsing routes, or booting unrelated services, that logic probably belongs elsewhere.
+## Profile Registration
 
-## Profile Resolution
+Pass profiles to `createAgentApp`:
 
-`createHostedProfileResolver` is the recommended path when:
+```ts
+const app = createAgentApp({
+  dataDir: DATA_DIR,
+  profiles: [supportProfile, researchProfile],
+});
+```
 
-- you have one or more profiles
-- profile selection is based on profile id
-- you do not need app-specific resolution rules
+For custom routing (tenant-aware, feature-flag-aware, etc.), use `resolveProfile`:
 
-If your selection rules depend on request mode, tenant-specific policies, or feature flags, you can still start with the hosted resolver and wrap it with your own logic before handing it to `createChatRoute` or `createStreamRoute`.
+```ts
+import type { ProfileResolver } from "@agentrail/app";
+
+const resolver: ProfileResolver = async ({ agentId, tenantId }) => {
+  return await loadProfileForTenant(agentId, tenantId);
+};
+
+const app = createAgentApp({
+  dataDir: DATA_DIR,
+  resolveProfile: resolver,
+  defaultAgentId: "support",
+});
+```
+
+`ProfileResolver` is the formal contract for dynamic routing. Implement it when profile selection depends on request context (tenant, mode, feature flags). For a static list, pass `profiles` directly.
 
 ## Multi-Profile Applications
 
-A single Agentrail host can expose multiple hosted profiles.
+A single Agentrail host can expose multiple profiles.
 
 Common reasons to do this:
 

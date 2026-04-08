@@ -1,39 +1,43 @@
 # Host Primitives Reference
 
-The host primitives expose the lower-level request orchestration layer.
+The host primitives expose the lower-level request orchestration layer, available from `@agentrail/app/advanced`.
 
 ## When To Read This Page
 
 Read this page when:
 
-- the defaults layer is no longer enough
+- `createAgentApp` is no longer enough
 - you need route-level or lifecycle-level control
-- you want to understand the host package beneath `@agentrail/host/defaults`
+- you want to understand the primitives that `createAgentApp` wraps
 
-Use these when your application needs custom lifecycle or routing behavior beyond the defaults layer.
-
-If `@agentrail/host/defaults` is the recommended happy path, `@agentrail/host` is the toolbox underneath it.
+Use these when your application needs a custom request lifecycle or is integrating into an existing server architecture that cannot adopt `createAgentApp` directly.
 
 ## When To Use Host Primitives
 
 Use the primitives directly when:
 
-- your request lifecycle differs from the example host flow
-- you need custom profile resolution rules
-- you want to mix your own context pipeline with only part of the defaults layer
+- your request lifecycle differs from the standard flow
+- you need custom profile resolution rules not covered by `resolveProfile`
+- you want to mix your own context pipeline with only part of the standard setup
 - you need custom streaming or orchestration behavior
 - you are integrating Agentrail into an existing server architecture
 
-If you do **not** already know that you need one of those, start with [Host Defaults](host-defaults.md) first.
+If you do **not** already know that you need one of those, start with `createAgentApp` from `@agentrail/app` first.
+
+## Import Path
+
+```ts
+import { createChatRoute, createStreamRoute } from "@agentrail/app/advanced";
+```
 
 ## Main APIs
 
 - `createChatRoute`
 - `createStreamRoute`
-- `createProfileResolver`
 - `createOrchestrationRegistry`
 - `createTransformContext`
 - `createContextProviderFromTransform`
+- `runPluginLifecycle`
 
 ## Route Factories
 
@@ -41,7 +45,7 @@ If you do **not** already know that you need one of those, start with [Host Defa
 
 Defined in:
 
-- [packages/host/src/chat-route.ts](../../packages/host/src/chat-route.ts)
+- [packages/app/src/routes/chat-route.ts](../../packages/app/src/routes/chat-route.ts)
 
 This is the non-streaming host entry point.
 
@@ -72,7 +76,7 @@ interface AgentrailChatRouteOptions {
   /** Resolve a profile by agentId for the current request */
   resolveProfile(
     agentId: string,
-    context: { tenantId: string; userId: string; sessionId: string; sessionDir: string },
+    context: { tenantId: string; userId: string; sessionId: string; sessionRef: SessionRef; sessionStore: AgentrailSessionStore },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
   /** Registered plugins */
@@ -104,11 +108,9 @@ interface AgentrailChatRouteOptions {
 **Minimal example:**
 
 ```ts
-import { createChatRoute } from "@agentrail/host";
-import { SessionManager } from "@agentrail/memo";
-import Anthropic from "@anthropic-ai/sdk";
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { createChatRoute } from "@agentrail/app/advanced";
+import { SessionManager } from "@agentrail/app";
+import { createStaticProfileResolver } from "@agentrail/app";
 
 app.route(
   "/api/chat",
@@ -116,22 +118,11 @@ app.route(
     defaultAgentId: "default",
     sessionStore: new SessionManager(dataDir),
     summarize: async (messages) => {
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 512,
-        messages: [
-          {
-            role: "user",
-            content: `Summarize the following conversation in 3-5 sentences:\n\n${messages
-              .map((m) => `${m.role}: ${m.content}`)
-              .join("\n")}`,
-          },
-        ],
-      });
-      return response.content[0].type === "text" ? response.content[0].text : "";
+      // call your LLM summarizer here
+      return messages.map((m) => String("content" in m ? m.content : "")).join("\n");
     },
     compaction: { triggerTokens: 80_000, minMessages: 20 },
-    resolveProfile,
+    resolveProfile: createStaticProfileResolver([defaultProfile]),
   }),
 );
 ```
@@ -140,7 +131,7 @@ app.route(
 
 Defined in:
 
-- [packages/host/src/stream-route.ts](../../packages/host/src/stream-route.ts)
+- [packages/app/src/routes/stream-route.ts](../../packages/app/src/routes/stream-route.ts)
 
 This is the streaming host entry point.
 
@@ -171,7 +162,7 @@ interface AgentrailStreamRouteOptions {
   sandboxManager: SandboxManager;
   resolveProfile(
     agentId: string,
-    context: { tenantId: string; userId: string; sessionId: string; sessionDir: string },
+    context: { tenantId: string; userId: string; sessionId: string; sessionRef: SessionRef; sessionStore: AgentrailSessionStore },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
   summarize(messages: Message[]): Promise<string>;
@@ -183,27 +174,18 @@ interface AgentrailStreamRouteOptions {
     userId: string;
     sessionId: string;
   }) => Promise<ContextProvider[]> | ContextProvider[];
-  getTransformContext?: (context: {
-    tenantId: string;
-    userId: string;
-    sessionId: string;
-  }) => Promise<TransformContextFn> | TransformContextFn;
-  /** Handles uploaded file context injection */
-  attachmentHandler?: AttachmentHandler;
-  onRequestStart?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
-  onRequestEnd?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
-  onTurnPersisted?: (ctx: AgentrailRequestLifecycleContext) => void | Promise<void>;
   /** Returns an OrchestrationManager for the session — enables orchestration events */
   getOrchestrationManager?: (context: {
     tenantId: string;
     userId: string;
     sessionId: string;
+    sessionRef: SessionRef;
   }) => Promise<OrchestrationManager>;
   /** Intercept a resolved request before streaming begins */
   handleResolvedRequest?: (context: AgentrailResolvedStreamContext) => Promise<boolean> | boolean;
   /** Called for each trace-eligible SSE event — use for trace persistence */
   onTraceEvent?: (
-    context: { tenantId: string; sessionId: string; sessionDir: string },
+    context: { tenantId: string; sessionId: string; sessionRef: SessionRef },
     envelope: WorkflowTraceEventEnvelope,
   ) => void;
 }
@@ -212,43 +194,48 @@ interface AgentrailStreamRouteOptions {
 **Minimal example:**
 
 ```ts
-import { createStreamRoute } from "@agentrail/host";
-import { SandboxManager } from "@agentrail/sandbox";
+import { createStreamRoute } from "@agentrail/app/advanced";
+import { SessionManager, createStaticProfileResolver } from "@agentrail/app";
+import { SandboxManager } from "@agentrail/capabilities";
 
 app.route(
   "/api/stream",
   createStreamRoute({
     dataDir,
     defaultAgentId: "default",
-    sessionStore,
+    sessionStore: new SessionManager(dataDir),
     sandboxManager: new SandboxManager(dataDir),
-    resolveProfile,
+    resolveProfile: createStaticProfileResolver([defaultProfile]),
     summarize,
     compaction: { triggerTokens: 80_000, minMessages: 20 },
     plugins,
-    getContextProviders: async ({ tenantId, userId, sessionId }) =>
-      buildContextProviders({ tenantId, userId, sessionId }),
   }),
 );
 ```
 
 ## Profile Resolution
 
-### `createProfileResolver`
+### `createStaticProfileResolver`
 
-Defined in:
+Available from the main `@agentrail/app` entry point. Builds a simple resolver from a fixed list of profiles. Use this with `createChatRoute` / `createStreamRoute` when `createAgentApp` is not suitable.
 
-- [packages/host/src/profile-registry.ts](../../packages/host/src/profile-registry.ts)
+```ts
+import { createStaticProfileResolver } from "@agentrail/app";
 
-This helper builds a simple resolver from a set of profiles.
+const resolveProfile = createStaticProfileResolver([supportProfile, researchProfile]);
+```
 
-Use it when:
+For policy-driven or tenant-driven routing, implement `ProfileResolver` directly:
 
-- you want a primitive resolver
-- you are not using the defaults wrapper
-- your profile lookup is still id-based and straightforward
+```ts
+import type { ProfileResolver } from "@agentrail/app";
 
-If your profile selection becomes policy-driven or mode-driven, you can wrap this helper with your own resolver logic.
+const resolveProfile: ProfileResolver = async ({ agentId, tenantId }) => {
+  return await loadProfileForTenant(agentId, tenantId);
+};
+```
+
+Pass the result to `createChatRoute` / `createStreamRoute` as `resolveProfile`.
 
 ## Context Pipeline Helpers
 
@@ -256,25 +243,17 @@ If your profile selection becomes policy-driven or mode-driven, you can wrap thi
 
 Defined in:
 
-- [packages/host/src/context-pipeline.ts](../../packages/host/src/context-pipeline.ts)
+- [packages/app/src/host/context-pipeline.ts](../../packages/app/src/host/context-pipeline.ts)
 
-This helper converts an ordered list of `ContextProvider`s into the runtime `transformContext` function shape.
-
-Use it when:
-
-- you are already working with providers
-- the runtime expects a `transformContext`
-- you want one explicit place to control provider order
+Converts an ordered list of `ContextProvider`s into the runtime `transformContext` function shape.
 
 ### `createContextProviderFromTransform`
 
 Also defined in:
 
-- [packages/host/src/context-pipeline.ts](../../packages/host/src/context-pipeline.ts)
+- [packages/app/src/host/context-pipeline.ts](../../packages/app/src/host/context-pipeline.ts)
 
-This helper adapts legacy or runtime-style transform logic back into provider form.
-
-Use it during migration or when some context logic is easier to express as a transform than as a small provider.
+Adapts legacy or runtime-style transform logic back into provider form.
 
 ## Orchestration Integration
 
@@ -282,30 +261,15 @@ Use it during migration or when some context logic is easier to express as a tra
 
 Defined in:
 
-- [packages/host/src/orchestration-registry.ts](../../packages/host/src/orchestration-registry.ts)
+- [packages/app/src/host/orchestration-registry.ts](../../packages/app/src/host/orchestration-registry.ts)
 
-This helper manages per-session orchestration managers and lazy run initialization.
+Manages per-session orchestration managers and lazy run initialization.
 
-Use it when:
+```ts
+import { createOrchestrationRegistry } from "@agentrail/app/advanced";
 
-- your host supports delegated sub-agents
-- you want one orchestration manager per session
-- you want host routes and workflows to share orchestration state
-
-It is intentionally host-facing rather than workflow-specific.
-
-## Plugin Runtime Helpers
-
-The primitive host package also includes plugin runtime helpers in:
-
-- [packages/host/src/plugins.ts](../../packages/host/src/plugins.ts)
-
-These are useful when you want to:
-
-- run plugin lifecycle hooks manually
-- collect plugin context providers
-- run chat interceptors in a custom flow
-- combine attachment handlers
+const orchestrationRegistry = createOrchestrationRegistry({ dataDir });
+```
 
 ## Session Store Boundary
 
@@ -313,7 +277,7 @@ All host primitives depend on the `AgentrailSessionStore` contract rather than a
 
 That means you can plug in:
 
-- the default file-backed session manager
+- the default file-backed `SessionManager`
 - a compatible custom store
 - a future non-filesystem-backed store, as long as it satisfies the contract
 
@@ -333,15 +297,10 @@ The primitives are designed so you can replace any one of those steps without re
 
 ## Recommendation
 
-Use host primitives when you need them, but prefer a layered approach:
-
-- start with defaults
-- drop to primitives only for the part that truly needs custom control
-
-That keeps your host readable and avoids rebuilding framework assembly logic unnecessarily.
+Prefer `createAgentApp` from `@agentrail/app` for most applications. Drop to primitives from `@agentrail/app/advanced` only for the part that truly needs custom control.
 
 ## Related Docs
 
-- [Host Defaults Reference](host-defaults.md)
+- [Compatibility APIs Reference](host-defaults.md)
 - [Profile Contract Reference](profile-contract.md)
 - [Plugin Contract Reference](plugin-contract.md)

@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/memo";
-import { createFilesystemOrchestrationPersistence } from "@agentrail/orchestration";
+import { createSessionRef } from "@agentrail/core";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
 import { Hono } from "hono";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -49,6 +49,7 @@ test("orchestration route exposes mailbox progress and last job state", async ()
       runId: "run-route-test",
       agent: {
         id: "agent-route-test",
+        runId: "run-route-test",
         displayName: "Nova",
         taskId: "task-route-test",
         role: "worker",

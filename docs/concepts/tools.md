@@ -4,7 +4,7 @@ Tools are functions that an agent can invoke during its execution loop. They bri
 
 ## What a Tool Is
 
-A `RuntimeTool` from `@agentrail/runtime-core` has four required parts:
+A `RuntimeTool` from `@agentrail/core` has four required parts:
 
 | Part          | Purpose                                                                   |
 | ------------- | ------------------------------------------------------------------------- |
@@ -18,13 +18,13 @@ The LLM does not execute tools directly. It produces a structured tool call requ
 
 ## Defining a Tool
 
-Use the `tool()` builder from `@agentrail/runtime-core`:
+Use the `defineTool()` builder from `@agentrail/core`:
 
 ```ts
 import { Type } from "@sinclair/typebox";
-import { tool } from "@agentrail/runtime-core";
+import { defineTool } from "@agentrail/core";
 
-export const customerLookupTool = tool()
+export const customerLookupTool = defineTool()
   .name("customer-lookup")
   .label("Customer Lookup")
   .description("Look up a customer by account ID.")
@@ -46,7 +46,7 @@ export const customerLookupTool = tool()
 For tools with no parameters, use `defineSimpleTool`:
 
 ```ts
-import { defineSimpleTool } from "@agentrail/runtime-core";
+import { defineSimpleTool } from "@agentrail/core";
 
 export const pingTool = defineSimpleTool({
   name: "ping",
@@ -107,26 +107,23 @@ Tools in a hosted Agentrail app come from several sources:
 
 Domain-specific tools you define yourself using `tool()` or `defineSimpleTool`. These live in your app's packages or source files and are passed to a profile's `createAgent`.
 
-### 2. `@agentrail/tools`
+### 2. `@agentrail/capabilities` built-in tools
 
-Built-in framework tools covering common patterns:
+The capabilities package exposes tools for common patterns:
 
 - ask-user style interactions
 - task/todo progress writing
-- basic host utility tools
+- file system, browser, knowledge retrieval
+- orchestration tools for multi-agent workflows
 
-### 3. Capability package tools
+Capability tools are added to a profile via `defineProfile({ capabilities: [...] })`:
 
-Each capability package exposes tools when wired into the host:
-
-| Package                    | Example tools                                    |
-| -------------------------- | ------------------------------------------------ |
-| `@agentrail/knowledge`     | knowledge-search, knowledge-index                |
-| `@agentrail/sandbox`       | run-code, read-file, write-file, browser         |
-| `@agentrail/skills`        | skill-list, skill-invoke                         |
-| `@agentrail/orchestration` | spawn-agent, send-input, wait-agent, close-agent |
-
-Use `buildDefaultCapabilityTools` from `@agentrail/host/defaults` to assemble the recommended capability-oriented toolset in one call.
+| Capability         | Example tools                                    |
+| ------------------ | ------------------------------------------------ |
+| `knowledge(km)`    | knowledge-search, knowledge-index                |
+| `filesystem(sbm)`  | run-code, read-file, write-file, browser         |
+| `skills(sm)`       | skill-list, skill-invoke                         |
+| `orchestration(r)` | spawn-agent, send-input, wait-agent, close-agent |
 
 ### 4. Orchestration tools
 
@@ -134,22 +131,22 @@ When a hosted profile uses the orchestration layer, the parent agent gets `spawn
 
 ## Assembling Tools in a Profile
 
-Tools are assembled in the profile's `createAgent` function, not in route files:
+Tools are assembled in `defineProfile`, not in route files:
 
 ```ts
-defineHostedProfile({
+import { defineProfile } from "@agentrail/app";
+import { filesystem } from "@agentrail/capabilities";
+
+export const defaultProfile = defineProfile({
   id: "default",
-  createAgent: ({ tools }) =>
-    defineAgent({
-      id: "default",
-      model: { provider: "anthropic", modelId: "claude-sonnet-4-5" },
-      system: systemPrompt,
-      tools: [...tools, customerLookupTool, pingTool],
-    }),
+  model: "anthropic/claude-sonnet-4-5",
+  system: systemPrompt,
+  tools: [customerLookupTool, pingTool],
+  capabilities: [filesystem(sandboxManager)],
 });
 ```
 
-The `tools` argument here comes from the defaults layer's capability tool assembly. You extend it with your own tools.
+`defineProfile` merges your `tools` with the tools provided by each capability descriptor automatically.
 
 ## What Does Not Belong in a Tool
 
@@ -169,4 +166,4 @@ Tools should be pure runtime concerns. Avoid:
 ## Related Reference
 
 - [Add Tools Guide](../guides/add-tools.md)
-- [Host Defaults Reference](../reference/host-defaults.md)
+- [Use Capability Packages Guide](../guides/use-capability-packages.md)

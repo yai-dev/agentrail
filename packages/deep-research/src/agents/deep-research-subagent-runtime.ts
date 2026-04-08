@@ -8,17 +8,17 @@ import {
   createKbReadTool,
   createKbSearchTool,
   KnowledgeManager,
-} from "@agentrail/knowledge";
+} from "@agentrail/capabilities";
 import type {
   CreateManagedAgentInput,
-  ModelConfig,
   SubAgentRuntime,
-} from "@agentrail/orchestration";
-import type { RuntimeTool, TransformContextFn } from "@agentrail/runtime-core";
-import { createSandboxedPython, SandboxManager } from "@agentrail/sandbox";
-import { getRolePrompt } from "../prompts.js";
-import type { DeepResearchRuntimeConfig } from "../runtime.js";
-import { createFetchUrlTool, createWebSearchTool } from "../tools.js";
+} from "@agentrail/capabilities";
+import type { ModelConfig } from "@agentrail/core";
+import type { RuntimeTool, TransformContextFn } from "@agentrail/core";
+import { createSandboxedPython, SandboxManager } from "@agentrail/capabilities";
+import { getRolePrompt } from "@/prompts.js";
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import { createFetchUrlTool, createWebSearchTool } from "@/tools.js";
 
 export interface DeepResearchSubAgentRuntimeConfig {
   tenantId: string;

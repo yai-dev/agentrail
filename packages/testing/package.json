@@ -15,19 +15,20 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "vitest run"
   },
   "dependencies": {
-    "@agentrail/host": "workspace:*",
-    "@agentrail/runtime-core": "workspace:*"
+    "@agentrail/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.5.0",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^2.1.9"
   },
   "repository": {

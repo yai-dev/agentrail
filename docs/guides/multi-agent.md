@@ -1,6 +1,6 @@
 # Multi-Agent
 
-Use `@agentrail/orchestration` when one hosted agent needs to delegate work to managed sub-agents.
+Use `@agentrail/capabilities` when one hosted agent needs to delegate work to managed sub-agents.
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ If you just need a single agent with tools, orchestration is unnecessary.
 The manager holds the full state of a run. It is created once per session and persists state to the session directory:
 
 ```ts
-import { OrchestrationManager } from "@agentrail/orchestration";
+import { OrchestrationManager } from "@agentrail/capabilities";
 
 const manager = await OrchestrationManager.create({
   sessionDir: "/path/to/session",
@@ -111,7 +111,21 @@ await manager.completeRun({ status: "completed" });
 
 ## How It Looks From the Agent Side
 
-In a typical hosted setup, the parent agent does not call `OrchestrationManager` directly. Instead, the host layer provides orchestration tools:
+In a typical hosted setup, the parent agent does not call `OrchestrationManager` directly. Instead, the app layer provides orchestration tools when you include the `orchestration` capability in your profile:
+
+```ts
+import { defineProfile } from "@agentrail/app";
+import { orchestration } from "@agentrail/capabilities";
+
+export const orchestratorProfile = defineProfile({
+  id: "orchestrator",
+  model: "anthropic/claude-sonnet-4-5",
+  system: "You are an orchestrator that coordinates sub-agents.",
+  capabilities: [orchestration(waitHandleRegistry)],
+});
+```
+
+The available tools are:
 
 | Tool          | Purpose                              |
 | ------------- | ------------------------------------ |

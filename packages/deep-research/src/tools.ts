@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { tool, Type } from "@agentrail/runtime-core";
-import type { DeepResearchRuntimeConfig } from "./runtime.js";
-import { normalizeResearchUrl } from "./utils.js";
+import { tool, Type } from "@agentrail/core";
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import { normalizeResearchUrl } from "@/utils.js";
 
 interface TavilySearchResult {
   title?: string;

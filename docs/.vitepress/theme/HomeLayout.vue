@@ -36,18 +36,17 @@
           </div>
           <pre
             class="at-code-body"
-          ><span class="kw">import</span> <span class="op">{</span> <span class="fn">defineAgent</span> <span class="op">}</span> <span class="kw">from</span> <span class="str">"@agentrail/runtime-core"</span><span class="op">;</span>
-<span class="kw">import</span> <span class="op">{</span> <span class="fn">createWebSearchTool</span> <span class="op">}</span> <span class="kw">from</span> <span class="str">"@agentrail/tools"</span><span class="op">;</span>
+          ><span class="kw">import</span> <span class="op">{</span> <span class="fn">defineAgent</span> <span class="op">}</span> <span class="kw">from</span> <span class="str">"@agentrail/core"</span><span class="op">;</span>
+<span class="kw">import</span> <span class="op">{</span> <span class="fn">defineProfile</span> <span class="op">}</span> <span class="kw">from</span> <span class="str">"@agentrail/app"</span><span class="op">;</span>
 
 <span class="kw">export const</span> <span class="prop">researchAgent</span> <span class="op">=</span> <span class="fn">defineAgent</span><span class="op">({</span>
-  <span class="prop">name</span><span class="op">:</span> <span class="str">"researcher"</span><span class="op">,</span>
+  <span class="prop">id</span><span class="op">:</span> <span class="str">"researcher"</span><span class="op">,</span>
   <span class="prop">model</span><span class="op">:</span> <span class="op">{</span>
     <span class="prop">provider</span><span class="op">:</span> <span class="str">"anthropic"</span><span class="op">,</span>
-    <span class="prop">modelId</span><span class="op">:</span> <span class="str">"claude-opus-4-5"</span><span class="op">,</span>
+    <span class="prop">modelId</span><span class="op">:</span> <span class="str">"claude-sonnet-4-5"</span><span class="op">,</span>
     <span class="prop">apiKey</span><span class="op">:</span> <span class="fn">process</span><span class="op">.</span><span class="prop">env</span><span class="op">.</span><span class="type">ANTHROPIC_API_KEY</span><span class="op">,</span>
   <span class="op">},</span>
-  <span class="prop">systemPrompt</span><span class="op">:</span> <span class="str">"You are a research assistant."</span><span class="op">,</span>
-  <span class="prop">tools</span><span class="op">: [</span><span class="fn">createWebSearchTool</span><span class="op">()],</span>
+  <span class="prop">system</span><span class="op">:</span> <span class="str">"You are a research assistant."</span><span class="op">,</span>
 <span class="op">});</span>
 
 <span class="com">// stream a response</span>
@@ -118,25 +117,36 @@
 
       <div class="at-feature-grid">
         <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/runtime-core</p>
+          <p class="at-feature-pkg">@agentrail/core</p>
           <h3 class="at-feature-title">Agent Runtime</h3>
           <p class="at-feature-desc">
             Define agents with typed tool contracts. The LLM loop, tool dispatch, provider
-            abstractions, and usage tracking — all in one stable core.
+            abstractions, prompt SDK, and usage tracking — all in one stable core.
           </p>
         </div>
 
         <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/host</p>
+          <p class="at-feature-pkg">@agentrail/capabilities</p>
+          <h3 class="at-feature-title">Capabilities</h3>
+          <p class="at-feature-desc">
+            Sandboxed filesystem and browser tools, knowledge-base retrieval, skills registry, and
+            multi-agent orchestration — each independently usable via
+            <code>defineProfile({ capabilities: [...] })</code>.
+          </p>
+        </div>
+
+        <div class="at-feature-card">
+          <p class="at-feature-pkg">@agentrail/app</p>
           <h3 class="at-feature-title">Host Layer</h3>
           <p class="at-feature-desc">
-            Chat and stream request lifecycles, profile resolution, session context assembly, and a
-            plugin system for cross-cutting behavior.
+            <code>createAgentApp</code> mounts chat and stream endpoints in one call.
+            <code>defineProfile</code> wires model, prompt, and capabilities. Includes session
+            management, plugins, slash-commands, and typed config loading.
           </p>
         </div>
 
         <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/orchestration</p>
+          <p class="at-feature-pkg">@agentrail/capabilities · orchestration</p>
           <h3 class="at-feature-title">Multi-Agent Orchestration</h3>
           <p class="at-feature-desc">
             Spawn sub-agents, send typed work, wait on conditions, and recover from failures.
@@ -145,17 +155,8 @@
         </div>
 
         <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/prompts</p>
-          <h3 class="at-feature-title">Prompt SDK</h3>
-          <p class="at-feature-desc">
-            Compose system prompts from versioned fragments and bundles. File-based prompt authoring
-            with hot-reload and variable interpolation.
-          </p>
-        </div>
-
-        <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/memo</p>
-          <h3 class="at-feature-title">Session Memory</h3>
+          <p class="at-feature-pkg">@agentrail/app · SessionManager</p>
+          <h3 class="at-feature-title">Session Management</h3>
           <p class="at-feature-desc">
             Filesystem-backed session storage with append-only JSONL history, automatic context
             compaction, and conversation branching.
@@ -163,7 +164,7 @@
         </div>
 
         <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/sandbox</p>
+          <p class="at-feature-pkg">@agentrail/capabilities · sandbox</p>
           <h3 class="at-feature-title">Sandboxed Execution</h3>
           <p class="at-feature-desc">
             Docker-based isolated execution environment. Browser automation, shell commands, and
@@ -178,7 +179,7 @@
       <div class="at-install-inner">
         <p class="at-install-label">Get started in minutes.</p>
         <div class="at-install-cmd">
-          <code>npm install @agentrail/runtime-core</code>
+          <code>npm create agentrail-app@latest</code>
           <button class="at-copy-btn" @click="copyInstall" :class="{ copied: installCopied }">
             {{ installCopied ? "copied!" : "copy" }}
           </button>
@@ -212,36 +213,39 @@
 
         <div class="at-arch-arrow">↓ depends on</div>
 
-        <div class="at-arch-layer at-arch-plugins">
+        <div class="at-arch-layer at-arch-host">
           <div class="at-arch-header">
             <span class="at-arch-num">3</span>
-            <span class="at-arch-name">Plugins &amp; Workflows</span>
+            <span class="at-arch-name">@agentrail/app</span>
           </div>
           <div class="at-arch-chips">
-            <span class="at-chip">plugin-user-memory</span>
-            <span class="at-chip">slash-commands</span>
-            <span class="at-chip">deep-research</span>
+            <span class="at-chip">createAgentApp</span>
+            <span class="at-chip">defineProfile</span>
+            <span class="at-chip">SessionManager</span>
+            <span class="at-chip">Plugins</span>
+            <span class="at-chip">Slash Commands</span>
+            <span class="at-chip">Config</span>
           </div>
         </div>
 
         <div class="at-arch-arrow">↓ depends on</div>
 
-        <div class="at-arch-layer at-arch-host">
+        <div class="at-arch-layer at-arch-plugins">
           <div class="at-arch-header">
             <span class="at-arch-num">2</span>
-            <span class="at-arch-name">Host &amp; host/defaults</span>
+            <span class="at-arch-name">@agentrail/capabilities</span>
           </div>
           <div class="at-arch-consumed">
-            <span class="at-consumed-label">consumes →</span>
+            <span class="at-consumed-label">includes →</span>
             <div class="at-arch-chips">
-              <span class="at-chip at-chip-accent">@agentrail/prompts</span>
-              <span class="at-chip at-chip-accent">@agentrail/orchestration</span>
-              <span class="at-chip at-chip-accent">@agentrail/memo</span>
-              <span class="at-chip at-chip-accent">@agentrail/knowledge</span>
-              <span class="at-chip at-chip-accent">@agentrail/sandbox</span>
-              <span class="at-chip at-chip-accent">@agentrail/tools</span>
-              <span class="at-chip at-chip-accent">@agentrail/events</span>
-              <span class="at-chip at-chip-accent">@agentrail/skills</span>
+              <span class="at-chip at-chip-accent">filesystem</span>
+              <span class="at-chip at-chip-accent">browser</span>
+              <span class="at-chip at-chip-accent">knowledge</span>
+              <span class="at-chip at-chip-accent">skills</span>
+              <span class="at-chip at-chip-accent">orchestration</span>
+              <span class="at-chip at-chip-accent">tools</span>
+              <span class="at-chip at-chip-accent">sandbox</span>
+              <span class="at-chip at-chip-accent">memoryContext</span>
             </div>
           </div>
         </div>
@@ -251,14 +255,15 @@
         <div class="at-arch-layer at-arch-core">
           <div class="at-arch-header">
             <span class="at-arch-num">1</span>
-            <span class="at-arch-name">runtime-core</span>
+            <span class="at-arch-name">@agentrail/core</span>
             <span class="at-arch-badge">foundation</span>
           </div>
           <div class="at-arch-chips">
             <span class="at-chip">Agent Loop</span>
             <span class="at-chip">Tool Contract</span>
             <span class="at-chip">LLM Provider API</span>
-            <span class="at-chip">Usage Tracking</span>
+            <span class="at-chip">Prompt SDK</span>
+            <span class="at-chip">Session Types</span>
           </div>
         </div>
       </div>
@@ -301,7 +306,7 @@ import { withBase } from "vitepress";
 const installCopied = ref(false);
 
 function copyInstall() {
-  navigator.clipboard.writeText("npm install @agentrail/runtime-core").then(() => {
+  navigator.clipboard.writeText("npm create agentrail-app@latest").then(() => {
     installCopied.value = true;
     setTimeout(() => {
       installCopied.value = false;
