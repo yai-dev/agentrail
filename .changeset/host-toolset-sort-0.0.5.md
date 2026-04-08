@@ -1,5 +1,5 @@
 ---
-"@agentrail/host": patch
+"@agentrail/app": patch
 ---
 
 Sort the assembled tool list alphabetically by name in `createDefaultToolset` to ensure a deterministic tool order across requests.
