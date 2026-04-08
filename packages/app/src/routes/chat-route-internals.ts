@@ -3,19 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { TransformContextFn } from "@agentrail/core";
 import type { Context } from "hono";
-import { createTransformContext } from "@/host/context-pipeline.js";
-import { collectPluginContextProviders } from "@/host/plugins.js";
-import type {
-  AgentrailChatHandledResponse,
-  AgentrailChatRequest,
-  AgentrailPlugin,
-  ContextProvider,
-} from "@/host/types.js";
+import type { AgentrailChatHandledResponse, AgentrailChatRequest } from "@/host/types.js";
+
+export { resolveTransformContext as resolveChatTransformContext } from "@/routes/context-resolver.js";
 
 /** Builds a standardized handled-response payload for chat validation failures. */
-export function makeChatValidationError(message: string): AgentrailChatHandledResponse {
+function makeChatValidationError(message: string): AgentrailChatHandledResponse {
   return {
     status: 400,
     body: { error: message },
@@ -63,40 +57,4 @@ export function validateChatRequest(
   }
 
   return null;
-}
-
-export async function resolveChatTransformContext(
-  options: {
-    getTransformContext?: (context: {
-      tenantId: string;
-      userId: string;
-      sessionId: string;
-    }) => Promise<TransformContextFn> | TransformContextFn;
-    getContextProviders?: (context: {
-      tenantId: string;
-      userId: string;
-      sessionId: string;
-    }) => Promise<ContextProvider[]> | ContextProvider[];
-    contextProviders?: ContextProvider[];
-  },
-  plugins: AgentrailPlugin[],
-  context: {
-    tenantId: string;
-    userId: string;
-    sessionId: string;
-  },
-): Promise<TransformContextFn> {
-  if (options.getTransformContext) {
-    return options.getTransformContext(context);
-  }
-
-  return createTransformContext(
-    collectPluginContextProviders(
-      plugins,
-      options.getContextProviders
-        ? await options.getContextProviders(context)
-        : (options.contextProviders ?? []),
-    ),
-    context,
-  );
 }
