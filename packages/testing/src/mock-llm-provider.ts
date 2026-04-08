@@ -8,7 +8,7 @@ import type {
   AssistantContent,
   ToolCall,
   Usage
-} from "@agentrail/runtime-core";
+} from "@agentrail/core";
 
 export interface MockProviderResponse {
   text?: string;
