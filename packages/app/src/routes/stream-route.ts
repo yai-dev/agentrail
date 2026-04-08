@@ -13,21 +13,18 @@ import {
 } from "@/events/index.js";
 import type { SessionRef } from "@agentrail/core";
 import type { OrchestrationManager } from "@agentrail/capabilities";
-import type { Message, TransformContextFn, Usage } from "@agentrail/core";
+import type { Agent, Message, RuntimeEvent, TransformContextFn, Usage } from "@agentrail/core";
 import { isRuntimeError } from "@agentrail/core";
 import type { SandboxManager } from "@agentrail/capabilities";
 import { Hono } from "hono";
 import { streamText } from "hono/streaming";
-import { runCompactionIfNeeded } from "@/host/compaction.js";
 import { runPluginRequestHook } from "@/host/plugins.js";
-import {
-  buildEffectiveMessage,
-  createSseEventWriter,
-  persistUploadedFiles,
-  resolveStreamTransformContext,
-  validateStreamRequest,
-  type StreamRequest,
-} from "@/routes/stream-route-internals.js";
+import { runCompactionStep } from "@/routes/compaction-runner.js";
+import { awaitSandboxWarmup } from "@/routes/sandbox-warmup.js";
+import { persistUploadedFiles, buildEffectiveMessage } from "@/routes/attachment-pipeline.js";
+import { createSseEventWriter } from "@/routes/sse-writer.js";
+import { resolveTransformContext } from "@/routes/context-resolver.js";
+import { validateStreamRequest, type StreamRequest } from "@/routes/stream-request.js";
 import type {
   AgentrailPlugin,
   AgentrailProfile,
@@ -38,6 +35,8 @@ import type {
   AttachmentHandler,
   ContextProvider,
 } from "@/host/types.js";
+
+// ─── Public types ─────────────────────────────────────────────────────────────
 
 /**
  * Configuration for the streaming SSE chat route factory.
@@ -98,9 +97,13 @@ export interface AgentrailStreamRouteOptions {
   }) => Promise<TransformContextFn> | TransformContextFn;
   /** Optional attachment handler that turns uploaded files into extra context. */
   attachmentHandler?: AttachmentHandler;
+  /** Optional callback invoked once request processing begins. */
   onRequestStart?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  /** Optional callback invoked when request processing ends. */
   onRequestEnd?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  /** Optional callback invoked after the turn has been persisted. */
   onTurnPersisted?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  /** Connects this route to an orchestration manager for multi-agent event forwarding. */
   getOrchestrationManager?: (context: {
     tenantId: string;
     userId: string;
@@ -135,6 +138,8 @@ export interface AgentrailResolvedStreamContext {
   persistTurn: (messages: Message[], usage: Usage) => Promise<void>;
 }
 
+// ─── Route factory ────────────────────────────────────────────────────────────
+
 /**
  * Creates the hosted streaming route that emits SSE-style newline-delimited events.
  *
@@ -146,33 +151,21 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
   const route = new Hono();
 
   route.post("/", async (c) => {
+    // ── 1. Parse & validate ──────────────────────────────────────────────────
     let body: StreamRequest;
     try {
       body = await c.req.json<StreamRequest>();
     } catch {
       return c.json({ error: "Invalid JSON body" }, 400);
     }
-
-    const {
-      message,
-      agentId = options.defaultAgentId,
-      tenantId,
-      userId,
-      sessionId,
-      attachments,
-    } = body;
-
     const validation = validateStreamRequest(body);
-    if (!validation.valid) {
-      return c.json({ error: validation.error }, 400);
-    }
+    if (!validation.valid) return c.json({ error: validation.error }, 400);
 
-    const sessionInfo = await options.sessionStore.getOrCreate(
-      tenantId,
-      userId,
-      agentId,
-      sessionId,
-    );
+    const { message, agentId = options.defaultAgentId, tenantId, userId, sessionId, attachments } =
+      body;
+
+    // ── 2. Session init ──────────────────────────────────────────────────────
+    const sessionInfo = await options.sessionStore.getOrCreate(tenantId, userId, agentId, sessionId);
     const sid = sessionInfo.sessionId;
     const sessionRef = sessionInfo.sessionRef;
     const requestContext: AgentrailRequestLifecycleContext = {
@@ -183,11 +176,8 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
       agentId,
     };
 
-    const uploadedFiles: AttachmentFile[] = await persistUploadedFiles(
-      options.dataDir,
-      sid,
-      attachments,
-    );
+    // ── 3. Process attachments ───────────────────────────────────────────────
+    const uploadedFiles = await persistUploadedFiles(options.dataDir, sid, attachments);
     const effectiveMessage = await buildEffectiveMessage(
       message,
       uploadedFiles,
@@ -195,10 +185,12 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
       options.attachmentHandler,
     );
 
+    // ── 4. Lifecycle hooks + sandbox warmup (fire-and-forget) ────────────────
     await options.onRequestStart?.(requestContext);
     await runPluginRequestHook(plugins, "onRequestStart", requestContext);
     const sandboxReady = options.sandboxManager?.ensureSandbox(sid, tenantId, userId);
 
+    // ── 5. Pre-resolve profile (skipped when a custom handler is registered) ─
     let forwardSubAgentEvent: (event: object) => void = () => {};
     let preloadedProfile: AgentrailProfile | null | undefined;
     if (!options.handleResolvedRequest) {
@@ -207,16 +199,17 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         { tenantId, userId, sessionId: sid, sessionRef, sessionStore: options.sessionStore },
         (event) => forwardSubAgentEvent(event),
       );
-      if (!preloadedProfile) {
-        return c.json({ error: `Agent profile '${agentId}' not found` }, 404);
-      }
+      if (!preloadedProfile) return c.json({ error: `Agent profile '${agentId}' not found` }, 404);
     }
-    const abortController = new AbortController();
-    c.req.raw.signal.addEventListener("abort", () => abortController.abort());
+
     c.header("X-Session-Id", sid);
 
+    const abortController = new AbortController();
+    c.req.raw.signal.addEventListener("abort", () => abortController.abort());
+
+    // ── 6. Open SSE stream ───────────────────────────────────────────────────
     return streamText(c, async (textStream) => {
-      const { forwardSubAgentEvent: forwardEvent, writeEvent } = createSseEventWriter(textStream);
+      const { writeEvent, forwardSubAgentEvent: forwardEvent } = createSseEventWriter(textStream);
       forwardSubAgentEvent = forwardEvent;
 
       let unsubscribeOrchestration: (() => void) | undefined;
@@ -242,29 +235,19 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         await options.onTurnPersisted?.(requestContext);
         await runPluginRequestHook(plugins, "onTurnPersisted", requestContext);
       };
-      try {
-        if (sandboxReady) {
-          try {
-            await sandboxReady;
-          } catch (err) {
-            const errorEvent: AgentrailErrorEvent = {
-              type: "error",
-              error: { message: `Sandbox initialization failed: ${String(err)}` },
-            };
-            await writeEvent(errorEvent);
-            maybeTraceEvent(errorEvent);
-            return;
-          }
-        }
 
+      try {
+        // ── 6a. Await sandbox ──────────────────────────────────────────────
+        const sandboxOk = await awaitSandboxWarmup(sandboxReady, (e) => {
+          maybeTraceEvent(e);
+          return writeEvent(e);
+        });
+        if (!sandboxOk) return;
+
+        // ── 6b. Custom short-circuit ───────────────────────────────────────
         if (options.handleResolvedRequest) {
           const handled = await options.handleResolvedRequest({
-            request: {
-              ...body,
-              message: effectiveMessage,
-              agentId,
-              sessionId: sid,
-            },
+            request: { ...body, message: effectiveMessage, agentId, sessionId: sid },
             agentId,
             tenantId,
             userId,
@@ -276,11 +259,10 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             writeEvent,
             persistTurn,
           });
-          if (handled) {
-            return;
-          }
+          if (handled) return;
         }
 
+        // ── 6c. Resolve profile ────────────────────────────────────────────
         const profile =
           preloadedProfile ??
           (await options.resolveProfile(
@@ -291,9 +273,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         if (!profile) {
           const errorEvent: AgentrailErrorEvent = {
             type: "error",
-            error: {
-              message: `Agent profile '${agentId}' not found`,
-            },
+            error: { message: `Agent profile '${agentId}' not found` },
           };
           await writeEvent(errorEvent);
           return;
@@ -306,12 +286,8 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           sessionRef,
           sessionStore: options.sessionStore,
         };
-        const agent = await profile.createAgent(
-          profileCtx,
-          (event) => forwardSubAgentEvent(event),
-        );
-        const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
 
+        // ── 6d. Subscribe to orchestration events ──────────────────────────
         if (options.getOrchestrationManager) {
           const manager = await options.getOrchestrationManager({
             tenantId,
@@ -321,24 +297,22 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           });
           unsubscribeOrchestration = manager.subscribe(({ event }) => {
             const mapped = mapOrchestrationEvent(event);
-            if (mapped) {
-              void writeEvent(mapped);
-            }
+            if (mapped) void writeEvent(mapped);
           });
         }
 
-        const allMessages = await options.sessionStore.loadAllMessages(tenantId, sid);
-        await runCompactionIfNeeded(
+        // ── 6e. Compact history + load budget slice ────────────────────────
+        const workspaceSnapshot = await options.sandboxManager
+          ?.listWorkspace(sid)
+          .catch(() => undefined);
+        const history = await runCompactionStep(
           options.sessionStore,
           tenantId,
           sid,
-          allMessages,
           options.summarize,
           options.compaction,
           {
-            workspaceSnapshot: await options.sandboxManager
-              ?.listWorkspace(sid)
-              .catch(() => undefined),
+            workspaceSnapshot,
             onBeforeCompact: async () => {
               await writeEvent({ type: "context_compaction_start" });
               maybeTraceEvent({ type: "context_compaction_start" });
@@ -350,63 +324,30 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           },
         );
 
-        const history = await options.sessionStore.loadMessagesWithBudget(tenantId, sid);
-        const transformContext = await resolveStreamTransformContext(
-          {
-            ...options,
-            contextProviders: [...(options.contextProviders ?? []), ...capProviders],
-          },
+        // ── 6f. Build agent + context ──────────────────────────────────────
+        const agent = await profile.createAgent(profileCtx, (event) =>
+          forwardSubAgentEvent(event),
+        );
+        const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
+        const transformContext = await resolveTransformContext(
+          { ...options, contextProviders: [...(options.contextProviders ?? []), ...capProviders] },
           plugins,
           { tenantId, userId, sessionId: sid },
         );
 
-        const agentStream = agent.stream(effectiveMessage, {
-          messages: history,
-          signal: abortController.signal,
-          transformContext,
-        });
-
-        let capturedMessages: Message[] | null = null;
-        let capturedUsage: Usage | null = null;
-
-        for await (const event of agentStream) {
-          if (abortController.signal.aborted) break;
-
-          if (isRuntimeError(event)) {
-            const errorEvent: AgentrailErrorEvent = {
-              type: "error",
-              error: {
-                message: (event.error as Error)?.message ?? "Unknown runtime error",
-              },
-            };
-            await writeEvent(errorEvent);
-            maybeTraceEvent(errorEvent);
-            break;
-          }
-
-          await writeEvent(event);
-          maybeTraceEvent(event);
-
-          if (event.type === "agent_end") {
-            capturedMessages = event.messages;
-            capturedUsage = event.usage;
-
-            const totalInputTokens =
-              (event.usage.inputTokens ?? 0) +
-              (event.usage.cacheReadTokens ?? 0) +
-              (event.usage.cacheWriteTokens ?? 0);
-            const usageEvent: AgentrailContextUsageEvent = {
-              type: "context_usage",
-              inputTokens: totalInputTokens,
-              outputTokens: event.usage.outputTokens ?? 0,
-              budgetUsedPct: Math.round(
-                (totalInputTokens / (profile?.contextWindow ?? 200_000)) * 100,
-              ),
-            };
-            await writeEvent(usageEvent);
-            break;
-          }
-        }
+        // ── 6g. Stream agent events ────────────────────────────────────────
+        const { messages: capturedMessages, usage: capturedUsage } = await drainAgentStream(
+          agent,
+          effectiveMessage,
+          {
+            messages: history,
+            signal: abortController.signal,
+            transformContext,
+            contextWindow: profile.contextWindow,
+            writeEvent,
+            onTraceEvent: maybeTraceEvent,
+          },
+        );
 
         if (capturedMessages && capturedUsage) {
           await persistTurn(capturedMessages, capturedUsage);
@@ -420,4 +361,68 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
   });
 
   return route;
+}
+
+// ─── Internal helpers ─────────────────────────────────────────────────────────
+
+interface DrainAgentStreamOptions {
+  messages: Message[];
+  signal: AbortSignal;
+  transformContext: TransformContextFn;
+  contextWindow?: number;
+  writeEvent: (event: RuntimeEvent | object) => Promise<void>;
+  onTraceEvent: (event: RuntimeEvent | object) => void;
+}
+
+/** Iterates the agent stream, writes each event to SSE, and returns the captured turn. */
+async function drainAgentStream(
+  agent: Agent,
+  message: string,
+  opts: DrainAgentStreamOptions,
+): Promise<{ messages: Message[] | null; usage: Usage | null }> {
+  let capturedMessages: Message[] | null = null;
+  let capturedUsage: Usage | null = null;
+
+  const agentStream = agent.stream(message, {
+    messages: opts.messages,
+    signal: opts.signal,
+    transformContext: opts.transformContext,
+  });
+
+  for await (const event of agentStream) {
+    if (opts.signal.aborted) break;
+
+    if (isRuntimeError(event)) {
+      const errorEvent: AgentrailErrorEvent = {
+        type: "error",
+        error: { message: (event.error as Error)?.message ?? "Unknown runtime error" },
+      };
+      await opts.writeEvent(errorEvent);
+      opts.onTraceEvent(errorEvent);
+      break;
+    }
+
+    await opts.writeEvent(event);
+    opts.onTraceEvent(event);
+
+    if (event.type === "agent_end") {
+      capturedMessages = event.messages;
+      capturedUsage = event.usage;
+
+      const totalInputTokens =
+        (event.usage.inputTokens ?? 0) +
+        (event.usage.cacheReadTokens ?? 0) +
+        (event.usage.cacheWriteTokens ?? 0);
+      const usageEvent: AgentrailContextUsageEvent = {
+        type: "context_usage",
+        inputTokens: totalInputTokens,
+        outputTokens: event.usage.outputTokens ?? 0,
+        budgetUsedPct: Math.round((totalInputTokens / (opts.contextWindow ?? 200_000)) * 100),
+      };
+      await opts.writeEvent(usageEvent);
+      break;
+    }
+  }
+
+  return { messages: capturedMessages, usage: capturedUsage };
 }

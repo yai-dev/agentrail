@@ -11,7 +11,7 @@ import {
   respondHandledJson,
   validateChatRequest,
 } from "@/routes/chat-route-internals.js";
-import { runCompactionIfNeeded } from "@/host/compaction.js";
+import { runCompactionStep } from "@/routes/compaction-runner.js";
 import { runPluginChatRequestInterceptors, runPluginRequestHook } from "@/host/plugins.js";
 import type {
   AgentrailChatHandledResponse,
@@ -193,18 +193,12 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         () => { /* sub-agent events are not forwarded on the JSON /chat route */ },
       );
       const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
-      const allMessages = await options.sessionStore.loadAllMessages(request.tenantId, sessionId);
-      await runCompactionIfNeeded(
+      const history = await runCompactionStep(
         options.sessionStore,
         request.tenantId,
         sessionId,
-        allMessages,
         options.summarize,
         options.compaction,
-      );
-      const history = await options.sessionStore.loadMessagesWithBudget(
-        request.tenantId,
-        sessionId,
       );
       const transformContext = await resolveChatTransformContext(
         {
