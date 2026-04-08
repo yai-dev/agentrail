@@ -109,9 +109,15 @@ export function orchestration(
         });
       }
 
-      const { sessionId } = ctx;
+      const activeRun = Object.values(om.getSnapshot().runs).find((r) => r.status === "running");
+      if (!activeRun) {
+        throw new Error(
+          `orchestration() capability built tools but no active run exists in the manager. ` +
+            `Ensure manager.startRun() has been called before building tools.`,
+        );
+      }
       return [
-        createSpawnAgentTool(om, sessionId),
+        createSpawnAgentTool(om, activeRun.id),
         createSendInputTool(om),
         createWaitAgentTool(om),
         createCloseAgentTool(om),
