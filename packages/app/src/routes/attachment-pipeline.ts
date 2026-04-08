@@ -6,7 +6,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { runAttachmentHandlers } from "@/host/plugins.js";
-import type { AgentrailPlugin, AttachmentFile, AttachmentHandler } from "@/host/types.js";
+import type {
+  AgentrailPlugin,
+  AttachmentFile,
+  AttachmentHandler,
+  PluginErrorHandler,
+} from "@/host/types.js";
 import type { AttachmentInput } from "@/routes/stream-request.js";
 
 /**
@@ -60,13 +65,14 @@ export async function buildEffectiveMessage(
   uploadedFiles: AttachmentFile[],
   plugins: AgentrailPlugin[],
   fallbackHandler?: AttachmentHandler,
+  onPluginError?: PluginErrorHandler,
 ): Promise<string> {
   let effectiveMessage = message ?? "";
   if (uploadedFiles.length === 0) {
     return effectiveMessage;
   }
 
-  const result = await runAttachmentHandlers(uploadedFiles, plugins, fallbackHandler);
+  const result = await runAttachmentHandlers(uploadedFiles, plugins, fallbackHandler, onPluginError);
 
   if (result?.contextText) {
     effectiveMessage = effectiveMessage

@@ -6,7 +6,7 @@
 // Register built-in LLM providers (Anthropic, OpenAI) as side effects
 import "@agentrail/core/providers";
 
-import { runPluginLifecycle } from "@agentrail/app";
+import { runPluginLifecycle, type PluginErrorHandler } from "@agentrail/app";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
@@ -48,12 +48,16 @@ app.route("/api/sessions", deepResearch);
 app.route("/api/sessions", trace);
 app.route("/api/knowledge", knowledge);
 
+const onPluginError: PluginErrorHandler = ({ plugin, hook, error }) => {
+  console.warn(`[plugin] "${plugin}" threw in ${hook}:`, error);
+};
+
 // Pre-pull sandbox image at startup so the first request doesn't wait.
 // Non-blocking: server starts immediately, pull runs in the background.
 void sandboxManager.ensureImage().catch((err: unknown) => {
   console.warn("[sandbox] Image pre-pull failed (will retry on first use):", err);
 });
-void runPluginLifecycle(playgroundPlugins, "start");
+void runPluginLifecycle(playgroundPlugins, "start", onPluginError);
 
 const server = serve(
   {
@@ -68,7 +72,7 @@ const server = serve(
 // Destroy all sandbox containers on graceful shutdown
 async function onShutdown() {
   console.log("[sandbox] Shutting down — destroying all containers...");
-  await runPluginLifecycle(playgroundPlugins, "stop").catch(() => {});
+  await runPluginLifecycle(playgroundPlugins, "stop", onPluginError).catch(() => {});
   await sandboxManager.destroyAll().catch(() => {});
   process.exit(0);
 }

@@ -6,7 +6,7 @@
 import type { Message } from "@agentrail/core";
 import type { AgentrailSessionStore } from "@agentrail/core";
 import type { SandboxManager } from "@agentrail/capabilities";
-import type { AgentrailPlugin, ContextProvider } from "@/host/types.js";
+import type { AgentrailPlugin, ContextProvider, PluginErrorHandler } from "@/host/types.js";
 import type { AgentrailOrchestrationRegistry } from "@/host/orchestration-registry.js";
 import type { ProfileDefinition } from "@/profile/define-profile.js";
 import type { ProfileResolver } from "@/host/profile-registry.js";
@@ -75,6 +75,16 @@ export interface CreateAgentAppOptions {
    */
   plugins?: AgentrailPlugin[];
   /**
+   * Called whenever a plugin hook throws an isolated error.
+   * Defaults to `console.warn`. May be async.
+   *
+   * Pass the same handler to `runPluginLifecycle()` if you call it manually so
+   * that lifecycle errors share the same reporting path as request-time errors.
+   *
+   * @see {@link PluginErrorHandler}
+   */
+  onPluginError?: PluginErrorHandler;
+  /**
    * Static context providers prepended to every request.
    */
   contextProviders?: ContextProvider[];
@@ -141,6 +151,7 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
     contextProviders = [],
     sandboxManager,
     orchestrationRegistry,
+    onPluginError,
   } = options;
 
   if (profiles.length === 0 && !customResolver) {
@@ -209,6 +220,7 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
     resolveProfile,
     plugins,
     contextProviders,
+    ...(onPluginError ? { onPluginError } : {}),
   };
 
   const app = new Hono();

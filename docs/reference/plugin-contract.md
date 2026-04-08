@@ -44,6 +44,20 @@ interface AgentrailPlugin {
   name: string;
   /** Semantic version string (e.g. `"1.0.0"`) — recommended for diagnostics */
   version?: string;
+  /**
+   * Execution order relative to other plugins.
+   * Higher values run first during start() and all request-time hooks.
+   * stop() runs in reverse order (lowest priority first).
+   * Defaults to 0.
+   */
+  priority?: number;
+  /**
+   * When true, an error thrown by interceptChatRequest propagates and aborts
+   * the request (after being reported to onPluginError).
+   * Use for auth/rate-limit plugins where a throw means "deny this request".
+   * Defaults to false.
+   */
+  critical?: boolean;
   /** Runs when the host starts the plugin lifecycle */
   start?(): void | Promise<void>;
   /** Runs when the host shuts plugins down */
@@ -116,6 +130,38 @@ A stable plugin identifier for diagnostics and assembly.
 Optional semantic version string (`MAJOR.MINOR.PATCH`) for the plugin implementation.
 Providing a version is recommended — it appears in host diagnostic logs and makes it
 easier to correlate issues across deployments.
+
+### `priority`
+
+Controls execution order relative to other plugins. Higher values run **first** during
+`start()` and all request-time hooks. `stop()` runs in the **reverse** order (lowest
+priority stops first), mirroring standard dependency teardown semantics.
+
+Defaults to `0`. Plugins with equal priority run in registration order.
+
+```ts
+// Auth plugin must intercept before any feature plugin
+const authPlugin: AgentrailPlugin = { name: "auth", priority: 100, ... };
+const featurePlugin: AgentrailPlugin = { name: "feature", priority: 0, ... };
+```
+
+| Phase | Order | Rationale |
+|-------|-------|-----------|
+| `start()` | Descending (high first) | High-priority plugins may be dependencies of others |
+| `stop()` | Ascending (low first) | Teardown mirrors initialisation |
+| Request hooks | Descending (high first) | Auth/policy plugins run before feature plugins |
+| Context providers | Descending (high first) | High-priority context is injected first |
+
+### `critical`
+
+When `true`, an error thrown by `interceptChatRequest` propagates and aborts the request
+(after being reported to `onPluginError`).
+
+Use this for auth, rate-limit, or policy plugins where a throw means "deny this request".
+Non-critical plugin errors are isolated — the request continues as if the plugin returned
+`null`.
+
+Defaults to `false`.
 
 ### `start` / `stop`
 
@@ -203,6 +249,7 @@ let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
 export const observabilityPlugin: AgentrailPlugin = {
   name: "observability",
   version: "1.0.0",
+  priority: 10,
 
   start() {
     heartbeatTimer = setInterval(() => {
@@ -274,6 +321,51 @@ app.route(
 );
 ```
 
+## Error Isolation
+
+All plugin hooks are wrapped in per-plugin try/catch. An error from one plugin never
+propagates to the calling request unless `critical: true` is set on that plugin.
+
+### Error strategy per hook
+
+| Hook | On error |
+|------|----------|
+| `start()` | Report to `onPluginError`, then rethrow (startup is aborted) |
+| `stop()` | Report to `onPluginError`, continue (all plugins always get to stop) |
+| `onRequestStart/End/onTurnPersisted` | Report, continue |
+| `interceptChatRequest` (non-critical) | Report, skip plugin (treated as `null`) |
+| `interceptChatRequest` (critical) | Report, rethrow (request is aborted) |
+| `attachmentHandler` | Report, skip plugin result, merge others |
+
+### `onPluginError` callback
+
+To receive plugin errors in your own logging or tracing system, pass an `onPluginError`
+callback to `createAgentApp()` and to `runPluginLifecycle()`:
+
+```ts
+import type { PluginErrorHandler } from "@agentrail/app";
+import { createAgentApp, runPluginLifecycle } from "@agentrail/app";
+
+const onPluginError: PluginErrorHandler = async ({ plugin, hook, error }) => {
+  await myLogger.warn({ plugin, hook, err: error }, "plugin hook failed");
+};
+
+// Thread the same handler to lifecycle calls and createAgentApp
+void runPluginLifecycle(plugins, "start", onPluginError);
+
+const app = createAgentApp({
+  // ...
+  plugins,
+  onPluginError,
+});
+```
+
+The callback may be synchronous or asynchronous — the host `await`s its result before
+deciding whether to continue or rethrow. If the callback itself throws, the host falls back
+to `console.error`; the main request flow is never affected by callback instability.
+
+When `onPluginError` is omitted, the default behavior is to log to `console.warn`.
+
 ## Execution Model
 
 The current plugin runtime helpers live in:
@@ -282,12 +374,11 @@ The current plugin runtime helpers live in:
 
 Important characteristics of the current model:
 
-- plugins run in registration order
+- plugins run in `priority` order (descending); equal-priority plugins run in registration order
 - request hooks are awaited sequentially
 - chat interceptors stop at the first plugin that returns a handled response
 - attachment handlers are merged by concatenating returned context text
-
-That model is intentionally simple. It keeps the plugin contract easy to reason about while the framework API is still stabilizing.
+- every hook is error-isolated per plugin; a throwing plugin does not affect others
 
 ## Repository Examples
 

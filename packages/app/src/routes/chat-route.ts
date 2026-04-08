@@ -23,6 +23,7 @@ import type {
   AgentrailRequestLifecycleContext,
   AgentrailSessionStore,
   ContextProvider,
+  PluginErrorHandler,
 } from "@/host/types.js";
 
 /**
@@ -53,6 +54,12 @@ export interface AgentrailChatRouteOptions {
   ): Promise<AgentrailProfile | null>;
   /** Optional plugins that can intercept requests and observe lifecycle events. */
   plugins?: AgentrailPlugin[];
+  /**
+   * Called whenever a plugin hook throws an isolated error.
+   * Defaults to `console.warn`. May be async.
+   * @see {@link PluginErrorHandler}
+   */
+  onPluginError?: PluginErrorHandler;
   /** Static context providers prepended before conversation history. */
   contextProviders?: ContextProvider[];
   /** Dynamic context-provider resolver invoked per request. */
@@ -96,6 +103,7 @@ export interface AgentrailChatRouteOptions {
  */
 export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
   const plugins = options.plugins ?? [];
+  const onPluginError = options.onPluginError;
   const route = new Hono();
 
   route.post("/", async (c) => {
@@ -118,7 +126,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
       request,
       agentId,
       signal,
-    });
+    }, onPluginError);
     if (prehandled) {
       return respondHandledJson(c, prehandled);
     }
@@ -145,7 +153,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
       };
 
       await options.onRequestStart?.(requestContext);
-      await runPluginRequestHook(plugins, "onRequestStart", requestContext);
+      await runPluginRequestHook(plugins, "onRequestStart", requestContext, onPluginError);
       activityStarted = true;
 
       const handled = options.handleResolvedRequest
@@ -163,7 +171,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
 
       if (handled) {
         await options.onTurnPersisted?.(requestContext);
-        await runPluginRequestHook(plugins, "onTurnPersisted", requestContext);
+        await runPluginRequestHook(plugins, "onTurnPersisted", requestContext, onPluginError);
         return respondHandledJson(c, handled);
       }
 
@@ -224,7 +232,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         options.sessionStore.recordTurn(request.tenantId, sessionId, result.usage),
       ]);
       await options.onTurnPersisted?.(requestContext);
-      await runPluginRequestHook(plugins, "onTurnPersisted", requestContext);
+      await runPluginRequestHook(plugins, "onTurnPersisted", requestContext, onPluginError);
 
       const body: AgentrailChatSuccessBody = {
         sessionId,
@@ -239,7 +247,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
     } finally {
       if (activityStarted && requestContext) {
         await options.onRequestEnd?.(requestContext);
-        await runPluginRequestHook(plugins, "onRequestEnd", requestContext);
+        await runPluginRequestHook(plugins, "onRequestEnd", requestContext, onPluginError);
       }
     }
   });
