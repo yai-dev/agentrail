@@ -4,6 +4,7 @@
  */
 
 import { tool, Type } from "@agentrail/core";
+import { parse as parseHtml } from "node-html-parser";
 import type { DeepResearchRuntimeConfig } from "@/runtime.js";
 import { normalizeResearchUrl } from "@/utils.js";
 
@@ -39,22 +40,12 @@ function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-const HTML_ENTITIES: Record<string, string> = {
-  nbsp: " ",
-  amp: "&",
-  lt: "<",
-  gt: ">",
-};
-
 function stripHtml(html: string): string {
-  return normalizeWhitespace(
-    html
-      .replace(/<script[\s\S]*?<\/script\s*>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&(nbsp|amp|lt|gt);/gi, (_, e) => HTML_ENTITIES[e.toLowerCase()] ?? `&${e};`),
-  );
+  const root = parseHtml(html);
+  for (const el of root.querySelectorAll("script, style, noscript")) {
+    el.remove();
+  }
+  return normalizeWhitespace(root.text);
 }
 
 export function createWebSearchTool(runtime: DeepResearchRuntimeConfig) {

@@ -376,26 +376,6 @@ function compressAtomicLines(lines: string[], limit: number): string[] {
   return accepted;
 }
 
-function extractOfficialName(summary: string, query: string): string | null {
-  const patterns = [
-    /正式名称(?:为|：)[ \t]*[“”]?([^“”\n]{1,200}公司)/u,
-    /企业全称[ \t]*[*：:]*[ \t]*([^|\n]{1,200}公司)/u,
-    /^##[ \t]*([^—\n]{1,200}(?:公司|Inc\.|Corp\.|Corporation))[ \t]*[—-]/mu,
-    /统一社会信用代码[\s\S]{0,120}([^|\n]{1,200}公司)/u,
-  ];
-  for (const pattern of patterns) {
-    const match = summary.match(pattern);
-    if (match?.[1]) {
-      return sanitizeDigestLine(match[1].replace(/\*\*/g, ""));
-    }
-  }
-
-  const queryMatch = query.match(
-    /([\u4e00-\u9fa5A-Za-z0-9（）()·\-.]{1,120}(?:公司|集团|企业|Inc\.|Corp\.|Corporation))/u,
-  );
-  return queryMatch?.[1]?.trim() ?? null;
-}
-
 function extractExcludedEntities(summary: string): string[] {
   const patterns = [
     /与["“]?([^"”\n]{2,80}?)["”]?(?:（|\(|的区分|是|相比)/gu,
@@ -582,10 +562,7 @@ export function deriveEntityProfile(
   existing?: DeepResearchEntityProfile | null,
 ): DeepResearchEntityProfile | null {
   const preferredMode = existing?.mode ?? inferProfileModeFromQuery(query);
-  const officialName =
-    preferredMode === "entity_disambiguation"
-      ? (extractOfficialName(summary, query) ?? existing?.officialName)
-      : existing?.officialName;
+  const officialName = existing?.officialName;
   const aliases = extractAliases(query, summary, officialName);
   const scopeTerms = deriveScopeTerms(query, summary);
   const disambiguationNotes = uniqueStrings(
