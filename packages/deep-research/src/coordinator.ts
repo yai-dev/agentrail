@@ -41,7 +41,6 @@ import {
   buildFetchDomainBudget,
   buildStepDigest,
   classifySource,
-  deriveEntityProfile,
   extractJsonObject,
   extractResearcherSummaryFallback,
   formatStepDigest,
@@ -857,13 +856,12 @@ Snippet: ${source.snippet ?? ""}`,
     // evidence clearly shows name ambiguity. We deliberately do not allow the
     // profile to drift back and forth on every step.
     const current = this.state.entityProfile ?? null;
-    const fallbackProfile = deriveEntityProfile(this.options.query, summary, current);
     const researcherProfile = outputProfile
       ? normalizeResearchProfile(this.options.query, outputProfile, current, {
           source: "researcher_upgrade",
         })
       : null;
-    const candidate = researcherProfile ?? fallbackProfile;
+    const candidate = researcherProfile ?? current;
 
     if (!current && candidate) {
       this.state.entityProfile = normalizeResearchProfile(this.options.query, candidate, null, {
@@ -894,7 +892,7 @@ Snippet: ${source.snippet ?? ""}`,
         source: shouldUpgradeToEntity ? "researcher_upgrade" : current.source,
         confidence: shouldUpgradeToEntity
           ? "medium"
-          : (researcherProfile?.confidence ?? fallbackProfile?.confidence ?? current.confidence),
+          : (researcherProfile?.confidence ?? current.confidence),
       },
       current,
       {
