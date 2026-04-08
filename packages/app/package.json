@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/app",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "App-layer hosting, profiles, session management, and createAgentApp for Agentrail.",
   "type": "module",
   "files": [
