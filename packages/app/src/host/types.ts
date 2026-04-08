@@ -16,6 +16,44 @@ import type {
 } from "@agentrail/core";
 export type { AgentrailSessionStore, ContextProvider, ContextProviderContext } from "@agentrail/core";
 
+// ============================================================================
+// Plugin error reporting
+// ============================================================================
+
+/**
+ * Contextual information passed to `onPluginError` when a plugin hook throws.
+ */
+export interface PluginErrorContext {
+  /** The `name` of the plugin that threw. */
+  plugin: string;
+  /** The hook that was executing, e.g. `"interceptChatRequest"` or `"onRequestStart"`. */
+  hook: string;
+  /** The original error thrown by the plugin hook. */
+  error: unknown;
+}
+
+/**
+ * Callback invoked whenever a plugin hook throws an error that has been
+ * isolated by the host runtime.
+ *
+ * The callback may be synchronous or asynchronous — the host `await`s its
+ * result before deciding whether to continue or rethrow. If the callback
+ * itself throws, the host catches and falls back to `console.error`; the
+ * main request flow is never affected by callback instability.
+ *
+ * ### Usage
+ * ```ts
+ * const onPluginError: PluginErrorHandler = async ({ plugin, hook, error }) => {
+ *   await myLogger.warn({ plugin, hook, err: error }, "plugin hook failed");
+ * };
+ *
+ * // Thread the same handler into both lifecycle calls and createAgentApp.
+ * void runPluginLifecycle(plugins, "start", onPluginError);
+ * createAgentApp({ ..., onPluginError });
+ * ```
+ */
+export type PluginErrorHandler = (ctx: PluginErrorContext) => void | Promise<void>;
+
 /**
  * Context passed to a hosted profile when constructing a runtime agent.
  *
@@ -138,6 +176,37 @@ export interface AgentrailPlugin {
    * checks — e.g. `"1.0.0"`.
    */
   version?: string;
+
+  /**
+   * Execution order for this plugin relative to others.
+   *
+   * Higher values run **first** during `start()` and all request-time hooks.
+   * `stop()` runs in the **reverse** order (lowest priority stops first),
+   * mirroring standard dependency teardown semantics.
+   *
+   * Defaults to `0`. Plugins with equal priority run in registration order.
+   *
+   * @example
+   * ```ts
+   * // Auth plugin must intercept before any feature plugin
+   * const authPlugin: AgentrailPlugin = { name: "auth", priority: 100, ... };
+   * const featurePlugin: AgentrailPlugin = { name: "feature", priority: 0, ... };
+   * ```
+   */
+  priority?: number;
+
+  /**
+   * When `true`, an error thrown by `interceptChatRequest` is treated as a
+   * deliberate denial and propagates to abort the request (after being reported
+   * to `onPluginError`).
+   *
+   * Use this for auth, rate-limit, or policy plugins where a throw means
+   * "deny this request". Non-critical plugin errors are isolated — the request
+   * continues as if the plugin returned `null`.
+   *
+   * Defaults to `false`.
+   */
+  critical?: boolean;
 
   /**
    * Initialise the plugin. Called once when the host application starts.

@@ -56,6 +56,8 @@ export type {
   AttachmentHandlerResult,
   ContextProvider,
   ContextProviderContext,
+  PluginErrorContext,
+  PluginErrorHandler,
 } from "@/host/types.js";
 
 // ============================================================================

@@ -34,6 +34,7 @@ import type {
   AttachmentFile,
   AttachmentHandler,
   ContextProvider,
+  PluginErrorHandler,
 } from "@/host/types.js";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
@@ -103,6 +104,12 @@ export interface AgentrailStreamRouteOptions {
   onRequestEnd?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
   /** Optional callback invoked after the turn has been persisted. */
   onTurnPersisted?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  /**
+   * Called whenever a plugin hook throws an isolated error.
+   * Defaults to `console.warn`. May be async.
+   * @see {@link PluginErrorHandler}
+   */
+  onPluginError?: PluginErrorHandler;
   /** Connects this route to an orchestration manager for multi-agent event forwarding. */
   getOrchestrationManager?: (context: {
     tenantId: string;
@@ -148,6 +155,7 @@ export interface AgentrailResolvedStreamContext {
  */
 export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
   const plugins = options.plugins ?? [];
+  const onPluginError = options.onPluginError;
   const route = new Hono();
 
   route.post("/", async (c) => {
@@ -183,11 +191,12 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
       uploadedFiles,
       plugins,
       options.attachmentHandler,
+      onPluginError,
     );
 
     // ── 4. Lifecycle hooks + sandbox warmup (fire-and-forget) ────────────────
     await options.onRequestStart?.(requestContext);
-    await runPluginRequestHook(plugins, "onRequestStart", requestContext);
+    await runPluginRequestHook(plugins, "onRequestStart", requestContext, onPluginError);
     const sandboxReady = options.sandboxManager?.ensureSandbox(sid, tenantId, userId);
 
     // ── 5. Pre-resolve profile (skipped when a custom handler is registered) ─
@@ -233,7 +242,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           options.sessionStore.recordTurn(tenantId, sid, usage),
         ]);
         await options.onTurnPersisted?.(requestContext);
-        await runPluginRequestHook(plugins, "onTurnPersisted", requestContext);
+        await runPluginRequestHook(plugins, "onTurnPersisted", requestContext, onPluginError);
       };
 
       try {
@@ -355,7 +364,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
       } finally {
         unsubscribeOrchestration?.();
         await options.onRequestEnd?.(requestContext);
-        await runPluginRequestHook(plugins, "onRequestEnd", requestContext);
+        await runPluginRequestHook(plugins, "onRequestEnd", requestContext, onPluginError);
       }
     });
   });
