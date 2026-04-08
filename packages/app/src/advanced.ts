@@ -28,3 +28,5 @@ export { runPluginLifecycle } from "@/host/plugins.js";
 
 /** @deprecated Use `createStaticProfileResolver` from `@agentrail/app` instead. */
 export { createProfileResolver } from "@/host/profile-registry.js";
+
+export { createInspectorRoute } from "@/inspector/index.js";

@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { randomUUID } from "node:crypto";
 import {
   mapOrchestrationEvent,
   TRACE_PERSISTED_EVENT_TYPES,
@@ -223,12 +224,19 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
 
       let unsubscribeOrchestration: (() => void) | undefined;
       let traceSeq = 0;
+      // One stable ID shared by all envelopes emitted for this HTTP request.
+      const requestTraceId = randomUUID();
 
       const maybeTraceEvent = (event: object) => {
         if (!options.onTraceEvent) return;
         const type = (event as { type?: string }).type;
         if (!type || !TRACE_PERSISTED_EVENT_TYPES.has(type)) return;
-        const envelope = wrapTraceEvent("runtime", event as Record<string, unknown>, traceSeq++);
+        const envelope = wrapTraceEvent(
+          "runtime",
+          event as Record<string, unknown>,
+          traceSeq++,
+          requestTraceId,
+        );
         try {
           options.onTraceEvent({ tenantId, sessionId: sid, sessionRef }, envelope);
         } catch {
@@ -296,21 +304,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           sessionStore: options.sessionStore,
         };
 
-        // ── 6d. Subscribe to orchestration events ──────────────────────────
-        if (options.getOrchestrationManager) {
-          const manager = await options.getOrchestrationManager({
-            tenantId,
-            userId,
-            sessionId: sid,
-            sessionRef,
-          });
-          unsubscribeOrchestration = manager.subscribe(({ event }) => {
-            const mapped = mapOrchestrationEvent(event);
-            if (mapped) void writeEvent(mapped);
-          });
-        }
-
-        // ── 6e. Compact history + load budget slice ────────────────────────
+        // ── 6d. Compact history + load budget slice ────────────────────────
         const workspaceSnapshot = await options.sandboxManager
           ?.listWorkspace(sid)
           .catch(() => undefined);
@@ -333,7 +327,11 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           },
         );
 
-        // ── 6f. Build agent + context ──────────────────────────────────────
+        // ── 6e. Build agent + context ──────────────────────────────────────
+        // NOTE: createAgent() must be called before subscribing to orchestration
+        // events because capabilities (e.g. orchestration()) register their
+        // createManagedAgent factory into the registry during agent creation.
+        // Subscribing first would cause getManager() to fail for new sessions.
         const agent = await profile.createAgent(profileCtx, (event) =>
           forwardSubAgentEvent(event),
         );
@@ -343,6 +341,22 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           plugins,
           { tenantId, userId, sessionId: sid },
         );
+
+        // ── 6f. Subscribe to orchestration events ──────────────────────────
+        // Must happen after createAgent() so the orchestration() capability
+        // has already registered its factory with the registry.
+        if (options.getOrchestrationManager) {
+          const manager = await options.getOrchestrationManager({
+            tenantId,
+            userId,
+            sessionId: sid,
+            sessionRef,
+          });
+          unsubscribeOrchestration = manager.subscribe(({ event }) => {
+            const mapped = mapOrchestrationEvent(event);
+            if (mapped) void writeEvent(mapped);
+          });
+        }
 
         // ── 6g. Stream agent events ────────────────────────────────────────
         const { messages: capturedMessages, usage: capturedUsage } = await drainAgentStream(
