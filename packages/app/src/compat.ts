@@ -8,7 +8,6 @@
  * or `@agentrail/host`. These exports are retained for backward compatibility only
  * and may be removed in a future major version.
  *
- * Migration guide: https://agentrail.run/guides/migration
  */
 
 /** @deprecated Use `defineProfile()` from `@agentrail/app` instead. */
