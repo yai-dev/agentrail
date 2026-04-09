@@ -1,5 +1,12 @@
 # @agentrail/create-agentrail-app
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`fd9c649`](https://github.com/yai-dev/agentrail/commit/fd9c6492a337a9b50c9c5a7f94f3e6112f2d4ce8)]:
+  - @agentrail/cli@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
