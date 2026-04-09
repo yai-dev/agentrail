@@ -16,7 +16,8 @@
   },
   "files": [
     "dist",
-    "templates"
+    "templates",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc && tsc-alias",
