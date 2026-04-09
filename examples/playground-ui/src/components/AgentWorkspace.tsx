@@ -14,10 +14,8 @@ import {
   fetchWorkspaceFiles,
   type WorkspaceFileResult,
 } from "../api";
-import type { AgentRunTrace, WorkflowTraceEventEnvelope } from "../types/trace";
 import { AgentTeamPanel } from "./AgentTeamPanel";
 import { DeepResearchPanel } from "./DeepResearchPanel";
-import { TraceDAGView } from "./TraceDAGView";
 import { WorkspaceEmptyState } from "./WorkspaceEmptyState";
 // mammoth imported dynamically inside DocxPreview
 
@@ -29,7 +27,6 @@ export type WorkspaceTab =
   | "activity"
   | "workspace"
   | "browser"
-  | "trace"
   | "agent_team"
   | "deep_research";
 
@@ -1019,8 +1016,6 @@ function BrowserTab({
 
 interface Props {
   turns: TurnActions[];
-  traces: AgentRunTrace[];
-  envelopes?: WorkflowTraceEventEnvelope[];
   onClose: () => void;
   sessionId?: string;
   onWidthChange?: (width: number) => void;
@@ -1034,8 +1029,6 @@ interface Props {
 
 function AgentWorkspaceInner({
   turns,
-  traces,
-  envelopes,
   onClose,
   sessionId,
   onWidthChange,
@@ -1124,7 +1117,6 @@ function AgentWorkspaceInner({
     { id: "browser", label: "Browser" },
     { id: "deep_research", label: "Deep Research" },
     { id: "agent_team", label: "Agent Team" },
-    { id: "trace", label: "Trace" },
   ];
 
   return (
@@ -1159,7 +1151,7 @@ function AgentWorkspaceInner({
             className={`ws-tab-btn${activeTab === tab.id ? " active" : ""}`}
             onClick={() => handleTabClick(tab.id)}
           >
-            {tab.label}
+            <span className="ws-tab-btn-label">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -1205,8 +1197,6 @@ function AgentWorkspaceInner({
             isLoading={orchestrationLoading ?? false}
           />
         )}
-
-        {activeTab === "trace" && <TraceDAGView traces={traces} envelopes={envelopes} />}
       </div>
     </div>
   );

@@ -142,8 +142,6 @@ export default function App() {
 
   const { sessions, upsert, remove } = useSessions();
   const {
-    traces,
-    envelopes: traceEnvelopes,
     feedEvent: feedTraceEvent,
     clearTrace,
   } = useWorkflowTrace(currentSessionId);
@@ -792,9 +790,12 @@ export default function App() {
       <div className="chat-pane">
         <header className="header">
           <div className="header-left">
-            <div className="logo">AP</div>
-            <div>
-              <div className="header-title">Agentrail Playground</div>
+            <div className="logo">◆</div>
+            <div className="header-copy">
+              <div className="header-title-row">
+                <div className="header-title">Agentrail</div>
+                <div className="header-product">Playground</div>
+              </div>
               <div className="header-subtitle">
                 {currentSessionId
                   ? `Session ${currentSessionId.slice(0, 8)}…`
@@ -957,8 +958,6 @@ export default function App() {
       {workspaceOpen && (
         <AgentWorkspace
           turns={turns}
-          traces={traces}
-          envelopes={traceEnvelopes}
           onClose={closeWorkspace}
           sessionId={currentSessionId ?? undefined}
           onWidthChange={setWorkspaceWidth}

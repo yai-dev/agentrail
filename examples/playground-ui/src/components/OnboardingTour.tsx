@@ -177,7 +177,7 @@ export function OnboardingTour({ onDone }: { onDone: () => void }) {
 
   const vpW = window.innerWidth;
   const vpH = window.innerHeight;
-  const TOOLTIP_W = 320;
+  const TOOLTIP_W = Math.min(320, Math.max(280, vpW - 24));
   const TOOLTIP_H = 180;
 
   const PADDING = 12;
