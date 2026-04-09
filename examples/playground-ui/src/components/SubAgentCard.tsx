@@ -20,20 +20,20 @@ function formatTimeAgo(timestamp: string): string {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return "刚刚";
-  if (diffMin < 60) return `${diffMin} 分钟前`;
-  if (diffHour < 24) return `${diffHour} 小时前`;
-  if (diffDay < 7) return `${diffDay} 天前`;
+  if (diffSec < 60) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
   return date.toLocaleDateString();
 }
 
 function StatusBadge({ status }: { status: OrchestrationAgent["status"] }) {
   const statusConfig = {
-    idle: { label: "空闲", className: "sub-agent-status-idle" },
-    running: { label: "运行中", className: "sub-agent-status-running" },
-    waiting: { label: "等待中", className: "sub-agent-status-waiting" },
-    closing: { label: "关闭中", className: "sub-agent-status-closing" },
-    closed: { label: "已关闭", className: "sub-agent-status-closed" },
+    idle: { label: "Idle", className: "sub-agent-status-idle" },
+    running: { label: "Running", className: "sub-agent-status-running" },
+    waiting: { label: "Waiting", className: "sub-agent-status-waiting" },
+    closing: { label: "Closing", className: "sub-agent-status-closing" },
+    closed: { label: "Closed", className: "sub-agent-status-closed" },
   };
 
   const config = statusConfig[status];
@@ -57,12 +57,12 @@ export function SubAgentCard({ agent, isActive, compact = false }: SubAgentCardP
   const displayName = agent.displayName ?? agent.role;
 
   const timeParts: string[] = [];
-  timeParts.push(`创建于 ${formatTimeAgo(agent.createdAt)}`);
+  timeParts.push(`Created ${formatTimeAgo(agent.createdAt)}`);
   if (agent.lastJob?.completedAt) {
-    timeParts.push(`完成于 ${formatTimeAgo(agent.lastJob.completedAt)}`);
+    timeParts.push(`Completed ${formatTimeAgo(agent.lastJob.completedAt)}`);
   }
   if (agent.closedAt) {
-    timeParts.push(`关闭于 ${formatTimeAgo(agent.closedAt)}`);
+    timeParts.push(`Closed ${formatTimeAgo(agent.closedAt)}`);
   }
 
   return (
@@ -82,7 +82,7 @@ export function SubAgentCard({ agent, isActive, compact = false }: SubAgentCardP
         <div className="sub-agent-card-details">
           {agent.activeJob && (
             <div className="sub-agent-card-detail">
-              <span className="sub-agent-card-detail-label">当前 Job</span>
+              <span className="sub-agent-card-detail-label">Active Job</span>
               <span className="sub-agent-card-detail-value" title={agent.activeJob.jobId}>
                 {agent.activeJob.jobId.slice(0, 12)}…
               </span>
@@ -90,7 +90,7 @@ export function SubAgentCard({ agent, isActive, compact = false }: SubAgentCardP
           )}
           {agent.lastJob && (
             <div className="sub-agent-card-detail">
-              <span className="sub-agent-card-detail-label">最近结果</span>
+              <span className="sub-agent-card-detail-label">Last Result</span>
               <span className={`sub-agent-card-detail-value job-outcome-${agent.lastJob.outcome}`}>
                 {outcomeIcon[agent.lastJob.outcome] ?? ""} {agent.lastJob.outcome}
               </span>
@@ -100,15 +100,15 @@ export function SubAgentCard({ agent, isActive, compact = false }: SubAgentCardP
             <div className="sub-agent-card-detail">
               <span className="sub-agent-card-detail-label">Mailbox</span>
               <span className="sub-agent-card-detail-value">
-                已消费 {agent.mailbox.processedEventCount}
+                {agent.mailbox.processedEventCount} processed
               </span>
             </div>
           )}
           {agent.mailbox?.closeRequested && (
             <div className="sub-agent-card-detail">
-              <span className="sub-agent-card-detail-label">关闭请求</span>
+              <span className="sub-agent-card-detail-label">Close Request</span>
               <span className="sub-agent-card-detail-value">
-                {agent.mailbox.closeRequested.reason ?? "无原因"}
+                {agent.mailbox.closeRequested.reason ?? "No reason"}
               </span>
             </div>
           )}

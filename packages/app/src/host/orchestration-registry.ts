@@ -34,6 +34,15 @@ export interface AgentrailOrchestrationRegistryRequest {
 /** Registry that returns one orchestration manager per session. */
 export interface AgentrailOrchestrationRegistry {
   getManager(request: AgentrailOrchestrationRegistryRequest): Promise<OrchestrationManager>;
+  /**
+   * Ensures an active run exists for the given session and returns its run id.
+   * If a run is already running, the existing id is returned immediately.
+   * If no run exists yet, a new one is started and its id is returned.
+   * Called lazily from spawn_agent so that simple conversations never write orchestration files.
+   */
+  ensureActiveRunId(
+    request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "userId" | "sessionId">,
+  ): Promise<string>;
   invalidate(tenantId: string, sessionId: string): void;
 }
 
@@ -48,6 +57,15 @@ export interface CreateOrchestrationRegistryOptions {
 class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
   private readonly managers = new Map<string, Promise<OrchestrationManager>>();
   private readonly bindings = new Map<string, CreateSessionManagedAgent>();
+  /**
+   * Per-session mutex for lazy run creation.  When two spawn_agent calls race on the
+   * same session before any run exists, only the first one creates the Promise and stores
+   * it here; subsequent callers find it and await the same Promise, guaranteeing that
+   * manager.startRun() is called exactly once regardless of concurrency.
+   * The entry is removed (via .finally) once the Promise settles so future calls take
+   * the fast path directly against manager.getSnapshot().
+   */
+  private readonly runStartLocks = new Map<string, Promise<string>>();
 
   constructor(private readonly options: CreateOrchestrationRegistryOptions) {}
 
@@ -83,15 +101,14 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
       this.managers.set(key, managerPromise);
     }
 
-    const manager = await managerPromise;
-    await this.ensureRun(manager, request);
-    return manager;
+    return managerPromise;
   }
 
   invalidate(tenantId: string, sessionId: string): void {
     const key = this.getKey(tenantId, sessionId);
     this.bindings.delete(key);
     this.managers.delete(key);
+    this.runStartLocks.delete(key);
   }
 
   private getKey(tenantId: string, sessionId: string): string {
@@ -125,28 +142,62 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
     }
   }
 
-  private async ensureRun(
-    manager: OrchestrationManager,
+  async ensureActiveRunId(
     request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "userId" | "sessionId">,
-  ): Promise<void> {
-    if (Object.keys(manager.getSnapshot().runs).length > 0) {
-      return;
+  ): Promise<string> {
+    const key = this.getKey(request.tenantId, request.sessionId);
+    const managerPromise = this.managers.get(key);
+    if (!managerPromise) {
+      throw new Error(
+        `[OrchestrationRegistry] Cannot ensure a run for session "${request.sessionId}" — ` +
+          `no manager exists. The orchestration() capability must be initialized before calling ensureActiveRunId().`,
+      );
     }
+    const manager = await managerPromise;
 
-    await manager.startRun(
-      this.options.createStartRunInput?.(request) ?? {
-        runId: `orchestration:${request.sessionId}`,
-        initialTask: {
-          id: `task:${request.sessionId}:root`,
-          kind: "agentrail-default-orchestration",
-          input: {
-            tenantId: request.tenantId,
-            userId: request.userId,
-            sessionId: request.sessionId,
+    // Fast path — a run is already active (the common case after the first spawn).
+    const existing = Object.values(manager.getSnapshot().runs).find((r) => r.status === "running");
+    if (existing) return existing.id;
+
+    // Slow path — no run yet.  Serialize concurrent first-spawn callers with a
+    // per-session Promise lock so manager.startRun() is called exactly once.
+    //
+    // The get + set pair is synchronous (no await between them), which means
+    // JavaScript's single-threaded event loop guarantees they execute atomically
+    // after the await above: the first caller creates the Promise and stores it
+    // before any other suspended caller can resume and observe the map.
+    const existingLock = this.runStartLocks.get(key);
+    if (existingLock) return existingLock;
+
+    const startPromise = (async () => {
+      // Double-check inside the lock: a concurrent caller that already held the
+      // lock might have started the run between our fast-path check above and now.
+      const alreadyRunning = Object.values(manager.getSnapshot().runs).find(
+        (r) => r.status === "running",
+      );
+      if (alreadyRunning) return alreadyRunning.id;
+
+      const input =
+        this.options.createStartRunInput?.(request) ?? {
+          runId: `orchestration:${request.sessionId}`,
+          initialTask: {
+            id: `task:${request.sessionId}:root`,
+            kind: "agentrail-default-orchestration",
+            input: {
+              tenantId: request.tenantId,
+              userId: request.userId,
+              sessionId: request.sessionId,
+            },
           },
-        },
-      },
-    );
+        };
+      await manager.startRun(input);
+      return input.runId;
+    })().finally(() => {
+      this.runStartLocks.delete(key);
+    });
+
+    this.runStartLocks.set(key, startPromise);
+    return startPromise;
   }
 }
 

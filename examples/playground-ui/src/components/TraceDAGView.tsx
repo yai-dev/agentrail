@@ -917,8 +917,8 @@ export function TraceDAGView({ traces, envelopes = [] }: TraceDAGViewProps) {
     return (
       <WorkspaceEmptyState
         icon="⬡"
-        title="还没有行为跟踪数据"
-        description="当智能体开始推理、调用工具或派生子流程后，这里会显示完整的行为轨迹。"
+        title="No trace data yet"
+        description="Once the agent starts reasoning, calling tools, or spawning sub-processes, the full execution trace will appear here."
       />
     );
   }

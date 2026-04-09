@@ -55,11 +55,11 @@ export function SettingsModal({ initialTenantId, initialUserId, onSave, onCancel
             </svg>
           </div>
           <div>
-            <div className="settings-title">{isSetup ? "欢迎使用 Agentrail" : "身份设置"}</div>
+            <div className="settings-title">{isSetup ? "Welcome to Agentrail" : "Identity Settings"}</div>
             <div className="settings-subtitle">
               {isSetup
-                ? "输入你的 Tenant ID 和 User ID 开始"
-                : "更新你的 Tenant ID 和 User ID 以继续"}
+                ? "Enter your Tenant ID and User ID to get started"
+                : "Update your Tenant ID and User ID to continue"}
             </div>
           </div>
         </div>
@@ -67,7 +67,7 @@ export function SettingsModal({ initialTenantId, initialUserId, onSave, onCancel
         <div className="settings-fields">
           <div className="settings-field">
             <label className="settings-label" htmlFor="settings-tenant-id">
-              Tenant ID (租户 ID)
+              Tenant ID
             </label>
             <input
               id="settings-tenant-id"
@@ -82,7 +82,7 @@ export function SettingsModal({ initialTenantId, initialUserId, onSave, onCancel
           </div>
           <div className="settings-field">
             <label className="settings-label" htmlFor="settings-user-id">
-              User ID (用户 ID)
+              User ID
             </label>
             <input
               id="settings-user-id"
@@ -101,11 +101,11 @@ export function SettingsModal({ initialTenantId, initialUserId, onSave, onCancel
         <div className="settings-actions">
           {onCancel && (
             <button className="settings-btn-cancel" onClick={onCancel}>
-              取消
+              Cancel
             </button>
           )}
           <button className="settings-btn-save" onClick={handleSave}>
-            {isSetup ? "开始" : "保存"}
+            {isSetup ? "Get started" : "Save"}
           </button>
         </div>
       </div>

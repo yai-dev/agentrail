@@ -26,7 +26,7 @@ export function TokenGate({ onSuccess }: TokenGateProps) {
   const submit = async () => {
     const token = value.trim();
     if (!token) {
-      setError("请输入 Token");
+      setError("Please enter a token.");
       return;
     }
 
@@ -38,12 +38,12 @@ export function TokenGate({ onSuccess }: TokenGateProps) {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
-        setError("Token 错误，请重试");
+        setError("Invalid token, please try again.");
       } else {
         onSuccess(token);
       }
     } catch {
-      setError("无法连接到服务器，请检查网络");
+      setError("Unable to reach the server. Please check your network.");
     } finally {
       setLoading(false);
     }
@@ -69,8 +69,8 @@ export function TokenGate({ onSuccess }: TokenGateProps) {
             </svg>
           </div>
           <div>
-            <div className="settings-title">访问验证</div>
-            <div className="settings-subtitle">请输入访问 Token 以继续</div>
+            <div className="settings-title">Access Required</div>
+            <div className="settings-subtitle">Enter your access token to continue</div>
           </div>
         </div>
 
@@ -81,7 +81,7 @@ export function TokenGate({ onSuccess }: TokenGateProps) {
               ref={inputRef}
               className="settings-input"
               type="password"
-              placeholder="输入访问 Token…"
+              placeholder="Enter access token…"
               value={value}
               onChange={(e) => {
                 setValue(e.target.value);
@@ -105,7 +105,7 @@ export function TokenGate({ onSuccess }: TokenGateProps) {
             disabled={loading || !value.trim()}
             style={{ minWidth: 88 }}
           >
-            {loading ? "验证中…" : "进入"}
+            {loading ? "Verifying…" : "Enter"}
           </button>
         </div>
       </div>

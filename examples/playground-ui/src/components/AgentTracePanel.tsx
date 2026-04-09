@@ -19,26 +19,26 @@ function formatTimestamp(timestamp: string): string {
 
 function getEventTypeLabel(type: string): string {
   const labels: Record<string, string> = {
-    run_started: "Run 开始",
-    orchestration_run_start: "Run 开始",
-    agent_spawned: "Agent 创建",
-    subagent_spawned: "Agent 创建",
-    agent_status_changed: "状态变更",
-    subagent_status: "状态变更",
-    agent_job_started: "Job 开始",
-    subagent_job_started: "Job 开始",
-    agent_job_completed: "Job 完成",
-    subagent_job_completed: "Job 完成",
-    agent_job_failed: "Job 失败",
-    subagent_job_failed: "Job 失败",
-    agent_input_queued: "输入排队",
-    subagent_message: "输入排队",
-    wait_registered: "等待注册",
-    wait_resolved: "等待解决",
-    agent_closed: "Agent 关闭",
-    subagent_closed: "Agent 关闭",
-    run_completed: "Run 完成",
-    orchestration_run_complete: "Run 完成",
+    run_started: "Run Started",
+    orchestration_run_start: "Run Started",
+    agent_spawned: "Agent Spawned",
+    subagent_spawned: "Agent Spawned",
+    agent_status_changed: "Status Changed",
+    subagent_status: "Status Changed",
+    agent_job_started: "Job Started",
+    subagent_job_started: "Job Started",
+    agent_job_completed: "Job Completed",
+    subagent_job_completed: "Job Completed",
+    agent_job_failed: "Job Failed",
+    subagent_job_failed: "Job Failed",
+    agent_input_queued: "Input Queued",
+    subagent_message: "Input Queued",
+    wait_registered: "Wait Registered",
+    wait_resolved: "Wait Resolved",
+    agent_closed: "Agent Closed",
+    subagent_closed: "Agent Closed",
+    run_completed: "Run Completed",
+    orchestration_run_complete: "Run Completed",
   };
   return labels[type] || type;
 }
@@ -95,8 +95,8 @@ export function AgentTracePanel({ state }: AgentTracePanelProps) {
       <div className="agent-trace-panel">
         <div className="agent-trace-empty">
           <div className="agent-trace-empty-icon">📋</div>
-          <p>暂无事件记录</p>
-          <p className="agent-trace-empty-hint">Orchestration 事件将在此显示详细日志。</p>
+          <p>No events recorded</p>
+          <p className="agent-trace-empty-hint">Orchestration events will appear here as detailed logs.</p>
         </div>
       </div>
     );
@@ -137,9 +137,9 @@ export function AgentTracePanel({ state }: AgentTracePanelProps) {
       <div className="agent-trace-toolbar">
         <div className="agent-trace-filters">
           {[
-            { key: "all", label: "全部" },
+            { key: "all", label: "All" },
             { key: "agent", label: "Agent" },
-            { key: "wait", label: "等待" },
+            { key: "wait", label: "Wait" },
             { key: "run", label: "Run" },
           ].map((f) => (
             <button
@@ -153,15 +153,15 @@ export function AgentTracePanel({ state }: AgentTracePanelProps) {
         </div>
         <div className="agent-trace-actions">
           <button className="agent-trace-action-btn" onClick={expandAll}>
-            展开全部
+            Expand all
           </button>
           <button className="agent-trace-action-btn" onClick={collapseAll}>
-            收起全部
+            Collapse all
           </button>
         </div>
       </div>
 
-      <div className="agent-trace-count">共 {filteredEvents.length} 个事件</div>
+      <div className="agent-trace-count">{filteredEvents.length} events</div>
 
       <div className="agent-trace-list">
         {filteredEvents.map((event) => (

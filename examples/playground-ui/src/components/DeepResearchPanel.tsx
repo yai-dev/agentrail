@@ -208,10 +208,10 @@ function buildLocalAssetName(
 }
 
 function flowStatusLabel(status: "pending" | "running" | "completed" | "failed"): string {
-  if (status === "running") return "进行中";
-  if (status === "completed") return "已完成";
-  if (status === "failed") return "失败";
-  return "待开始";
+  if (status === "running") return "In Progress";
+  if (status === "completed") return "Completed";
+  if (status === "failed") return "Failed";
+  return "Pending";
 }
 
 function SourceBadge({
@@ -279,7 +279,7 @@ function SourceSection({
               className="deep-research-source-list-toggle"
               onClick={() => setListExpanded((value) => !value)}
             >
-              {listExpanded ? "收起列表" : `展开完整列表（+${sources.length - 5}）`}
+              {listExpanded ? "Collapse list" : `Show full list (+${sources.length - 5})`}
             </button>
           )}
           <span className="deep-research-stat-pill">{sources.length}</span>
@@ -351,7 +351,7 @@ function SourceSection({
                       target="_blank"
                       rel="noreferrer"
                     >
-                      打开来源
+                      Open source
                     </a>
                   )}
                   {canExpand && (
@@ -366,7 +366,7 @@ function SourceSection({
                         )
                       }
                     >
-                      {expanded ? "收起详情" : "展开详情"}
+                      {expanded ? "Collapse" : "Expand details"}
                     </button>
                   )}
                 </div>
@@ -380,7 +380,7 @@ function SourceSection({
         {sources.length === 0 && <p className="deep-research-empty-inline">{emptyText}</p>}
         {remainingCount > 0 && !listExpanded && (
           <p className="deep-research-empty-inline">
-            还有 {remainingCount} 条来源，点击上方“展开完整列表”查看。
+            {remainingCount} more sources — click “Show full list” above to view them.
           </p>
         )}
       </div>
@@ -416,15 +416,15 @@ function ArtifactPreview({
   }, [sessionId, artifact]);
 
   if (!artifact) {
-    return <div className="deep-research-artifact-empty">选择一个产物以预览。</div>;
+    return <div className="deep-research-artifact-empty">Select an artifact to preview.</div>;
   }
 
   if (loading) {
-    return <div className="deep-research-artifact-empty">加载产物预览…</div>;
+    return <div className="deep-research-artifact-empty">Loading artifact preview…</div>;
   }
 
   if (!result) {
-    return <div className="deep-research-artifact-empty">无法预览该产物。</div>;
+    return <div className="deep-research-artifact-empty">Cannot preview this artifact.</div>;
   }
 
   if (result.encoding === "base64" && result.mimeType?.startsWith("image/")) {
@@ -542,8 +542,8 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
     return (
       <WorkspaceEmptyState
         icon="◌"
-        title="正在加载深度研究"
-        description="正在恢复该会话的研究状态、来源和产物，请稍候。"
+        title="Loading deep research"
+        description="Restoring the research state, sources, and artifacts for this session. Please wait."
       />
     );
   }
@@ -552,8 +552,8 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
     return (
       <WorkspaceEmptyState
         icon="◎"
-        title="还没有深度研究记录"
-        description="当前会话还没有启动深度研究。你可以在输入框切换到“深度研究”模式后发起一次完整研究。"
+        title="No deep research yet"
+        description="No deep research has been started in this session. Switch to Deep Research mode in the input bar to begin a full investigation."
       />
     );
   }
@@ -640,20 +640,20 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
           </div>
           <span className={`deep-research-status ${state.run.status}`}>
             {state.run.status === "running"
-              ? "运行中"
+              ? "Running"
               : state.run.status === "completed"
-                ? "已完成"
-                : "失败"}
+                ? "Completed"
+                : "Failed"}
           </span>
         </div>
         <div className="deep-research-meta">
-          <span>创建于 {formatTime(state.run.createdAt)}</span>
-          <span>更新于 {formatTime(state.run.updatedAt)}</span>
+          <span>Created {formatTime(state.run.createdAt)}</span>
+          <span>Updated {formatTime(state.run.updatedAt)}</span>
         </div>
         <div className="deep-research-run-stats">
-          <span className="deep-research-stat-pill">{state.steps.length} 个步骤</span>
-          <span className="deep-research-stat-pill">{acceptedSources.length} 个有效来源</span>
-          <span className="deep-research-stat-pill">{state.artifacts.length} 个产物</span>
+          <span className="deep-research-stat-pill">{state.steps.length} steps</span>
+          <span className="deep-research-stat-pill">{acceptedSources.length} valid sources</span>
+          <span className="deep-research-stat-pill">{state.artifacts.length} artifacts</span>
         </div>
         {entityProfile && (
           <div className="deep-research-entity">
@@ -662,28 +662,32 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
             </div>
             <div className="deep-research-entity-row">
               <span className="deep-research-stat-pill">
-                模式：{entityProfile.mode === "entity_disambiguation" ? "实体核验" : "主题范围"}
+                Mode: {entityProfile.mode === "entity_disambiguation" ? "Entity Disambiguation" : "Topic Scope"}
               </span>
               {state.entityProfile?.confidence && (
                 <span className="deep-research-stat-pill">
-                  置信度：{state.entityProfile?.confidence}
+                  Confidence: {state.entityProfile?.confidence}
                 </span>
               )}
               {state.entityProfile?.source && (
-                <span className="deep-research-stat-pill">来源：{state.entityProfile?.source}</span>
+                <span className="deep-research-stat-pill">Source: {state.entityProfile?.source}</span>
               )}
             </div>
-            <TagGroup title="别名" items={entityProfile.aliases} />
-            <TagGroup title="范围关键词" items={entityProfile.scopeTerms} tone="info" />
-            <TagGroup title="已排除同名实体" items={entityProfile.excludedEntities} tone="warn" />
-            <TagGroup title="相关实体" items={entityProfile.relatedEntities} />
+            <TagGroup title="Aliases" items={entityProfile.aliases} />
+            <TagGroup title="Scope Terms" items={entityProfile.scopeTerms} tone="info" />
+            <TagGroup
+              title="Excluded Namesakes"
+              items={entityProfile.excludedEntities}
+              tone="warn"
+            />
+            <TagGroup title="Related Entities" items={entityProfile.relatedEntities} />
           </div>
         )}
       </section>
 
       <section className="deep-research-card">
-        <h4>计划</h4>
-        <div className="deep-research-plan-flow" aria-label="研究计划流程">
+        <h4>Plan</h4>
+        <div className="deep-research-plan-flow" aria-label="Research plan flow">
           {state.steps.map((step, index) => (
             <div key={`flow-${step.id}`} className="deep-research-plan-flow-item">
               <button
@@ -697,7 +701,7 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
                 <span className="deep-research-plan-flow-index">{index + 1}</span>
                 <span className="deep-research-plan-flow-content">
                   <span className="deep-research-plan-flow-kicker">
-                    步骤 {index + 1} · {step.type}
+                    Step {index + 1} · {step.type}
                   </span>
                   <span className="deep-research-plan-flow-label">{step.title}</span>
                 </span>
@@ -717,7 +721,7 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
         <div className="deep-research-steps">
           {!selectedStep && (
             <div className="deep-research-step-placeholder">
-              点击上方流程节点，查看对应步骤的详情卡片。
+              Select a plan node above to inspect that step in detail.
             </div>
           )}
           {selectedStep &&
@@ -762,7 +766,7 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
                         )
                       }
                     >
-                      {expanded ? "收起详情" : "查看详情"}
+                      {expanded ? "Hide Details" : "View Details"}
                     </button>
                   )}
                   {expanded && summary && (
@@ -785,15 +789,19 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
       </section>
 
       <section className="deep-research-card">
-        <h4>来源</h4>
+        <h4>Sources</h4>
         <div className="deep-research-source-groups">
-          <SourceSection title="主要来源" sources={primarySources} emptyText="暂无主要来源。" />
-          <SourceSection title="补充来源" sources={supportingSources} emptyText="暂无补充来源。" />
+          <SourceSection title="Primary Sources" sources={primarySources} emptyText="No primary sources yet." />
+          <SourceSection
+            title="Supporting Sources"
+            sources={supportingSources}
+            emptyText="No supporting sources yet."
+          />
           {excludedSources.length > 0 && (
             <SourceSection
-              title="已排除来源"
+              title="Excluded Sources"
               sources={excludedSources}
-              emptyText="暂无排除来源。"
+              emptyText="No excluded sources."
               excluded
             />
           )}
@@ -801,13 +809,13 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
       </section>
 
       <section className="deep-research-card">
-        <h4>产物</h4>
+        <h4>Artifacts</h4>
         <div className="deep-research-artifacts-layout">
           <div className="deep-research-artifact-list">
             <div className="deep-research-artifact-list-header">
-              <span className="deep-research-artifact-count">{state.artifacts.length} 个产物</span>
+              <span className="deep-research-artifact-count">{state.artifacts.length} artifacts</span>
               {selectedArtifact && (
-                <span className="deep-research-artifact-count">当前：{selectedArtifact.title}</span>
+                <span className="deep-research-artifact-count">Current: {selectedArtifact.title}</span>
               )}
             </div>
             {state.artifacts.map((artifact) => (
@@ -828,7 +836,7 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
               </button>
             ))}
             {state.artifacts.length === 0 && (
-              <p className="deep-research-empty-inline">暂无产物。</p>
+              <p className="deep-research-empty-inline">No artifacts yet.</p>
             )}
           </div>
           <ArtifactPreview sessionId={sessionId} artifact={selectedArtifact} />
@@ -837,20 +845,20 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
 
       <section className="deep-research-card">
         <div className="deep-research-section-header">
-          <h4>报告</h4>
+          <h4>Report</h4>
           <div className="deep-research-section-actions">
             <button
               className="deep-research-section-btn"
               onClick={() => setReportExpanded((value) => !value)}
             >
-              {reportExpanded ? "收起" : "展开"}
+              {reportExpanded ? "Collapse" : "Expand"}
             </button>
             <button
               className="deep-research-section-btn primary"
               onClick={handleDownloadReport}
               disabled={!state.reportMarkdown || downloadingReport}
             >
-              {downloadingReport ? "打包中…" : "下载 ZIP"}
+              {downloadingReport ? "Bundling..." : "Download ZIP"}
             </button>
           </div>
         </div>
@@ -862,7 +870,7 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
         {reportExpanded && (
           <div className="deep-research-report">
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={reportMarkdownComponents}>
-              {state.reportMarkdown || "_报告生成中…_"}
+              {state.reportMarkdown || "_Report generating..._"}
             </ReactMarkdown>
           </div>
         )}

@@ -82,7 +82,7 @@ export function WaitingQuestionPrompt({
           <p className="waiting-question-label">{question}</p>
           {hint && !hasOptions && <p className="waiting-question-hint">{hint}</p>}
           {multiple && hasOptions && (
-            <p className="waiting-question-hint">可多选，选完后点击确认</p>
+            <p className="waiting-question-hint">Multiple selections allowed — click Confirm when done</p>
           )}
         </div>
       </div>
@@ -119,7 +119,7 @@ export function WaitingQuestionPrompt({
               <input
                 className="waiting-question-input"
                 type="text"
-                placeholder={multiple ? "或输入自定义选项…" : "或输入自定义答案…"}
+                placeholder={multiple ? "Or type a custom option…" : "Or type a custom answer…"}
                 value={questionInput}
                 onChange={(event) => onQuestionInputChange(event.target.value)}
                 onKeyDown={(event) => {
@@ -143,7 +143,7 @@ export function WaitingQuestionPrompt({
                   disabled={selectedOptions.length === 0 && !questionInput.trim()}
                   onClick={confirmMultiple}
                 >
-                  确认 {selectedOptions.length > 0 ? `(${selectedOptions.length})` : ""}
+                  Confirm {selectedOptions.length > 0 ? `(${selectedOptions.length})` : ""}
                 </button>
               ) : (
                 <button
@@ -151,7 +151,7 @@ export function WaitingQuestionPrompt({
                   disabled={!questionInput.trim()}
                   onClick={() => submitAnswer(questionInput)}
                 >
-                  回复
+                  Reply
                 </button>
               )}
             </div>
@@ -164,7 +164,7 @@ export function WaitingQuestionPrompt({
                 style={{ marginLeft: "auto" }}
                 onClick={confirmMultiple}
               >
-                确认 ({selectedOptions.length})
+                Confirm ({selectedOptions.length})
               </button>
             </div>
           )}
@@ -174,7 +174,7 @@ export function WaitingQuestionPrompt({
           <input
             className="waiting-question-input"
             type="text"
-            placeholder="输入你的答案…"
+            placeholder="Type your answer…"
             value={questionInput}
             onChange={(event) => onQuestionInputChange(event.target.value)}
             onKeyDown={(event) => {
@@ -189,7 +189,7 @@ export function WaitingQuestionPrompt({
             disabled={!questionInput.trim()}
             onClick={() => submitAnswer(questionInput)}
           >
-            回复
+            Reply
           </button>
         </div>
       )}

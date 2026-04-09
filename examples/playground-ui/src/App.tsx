@@ -142,8 +142,6 @@ export default function App() {
 
   const { sessions, upsert, remove } = useSessions();
   const {
-    traces,
-    envelopes: traceEnvelopes,
     feedEvent: feedTraceEvent,
     clearTrace,
   } = useWorkflowTrace(currentSessionId);
@@ -792,13 +790,16 @@ export default function App() {
       <div className="chat-pane">
         <header className="header">
           <div className="header-left">
-            <div className="logo">AP</div>
-            <div>
-              <div className="header-title">Agentrail Playground</div>
+            <div className="logo">◆</div>
+            <div className="header-copy">
+              <div className="header-title-row">
+                <div className="header-title">Agentrail</div>
+                <div className="header-product">Playground</div>
+              </div>
               <div className="header-subtitle">
                 {currentSessionId
                   ? `Session ${currentSessionId.slice(0, 8)}…`
-                  : "基于大语言模型驱动的智能体工作空间"}
+                  : "LLM-powered agent workspace"}
               </div>
             </div>
           </div>
@@ -816,7 +817,7 @@ export default function App() {
             <button
               className="settings-gear-btn"
               onClick={() => setSettingsOpen(true)}
-              title={`身份: ${identity.tenantId} / ${identity.userId}`}
+              title={`Identity: ${identity.tenantId} / ${identity.userId}`}
             >
               <svg
                 width="15"
@@ -835,7 +836,7 @@ export default function App() {
             <button
               className={`workspace-toggle-btn ${workspaceOpen ? "active" : ""}`}
               onClick={() => setWorkspaceOpen((o) => !o)}
-              title={workspaceOpen ? "关闭工作空间" : "打开工作空间"}
+              title={workspaceOpen ? "Close workspace" : "Open workspace"}
             >
               <svg
                 width="15"
@@ -856,7 +857,7 @@ export default function App() {
               onClick={startNewSession}
               disabled={busy && messages.length === 0}
             >
-              新会话
+              New
             </button>
           </div>
         </header>
@@ -867,26 +868,26 @@ export default function App() {
               <div className="empty-glyph" style={{ animation: "spin 1.2s linear infinite" }}>
                 ◈
               </div>
-              <p className="empty-sub">加载历史记录…</p>
+              <p className="empty-sub">Loading history…</p>
             </div>
           ) : messages.length === 0 ? (
             currentSessionId ? (
               <div className="empty-state">
                 <div className="empty-glyph">◈</div>
-                <p className="empty-title">当前会话还没有消息</p>
-                <p className="empty-sub">发送一条消息，我们就从这里开始。</p>
+                <p className="empty-title">No messages yet</p>
+                <p className="empty-sub">Send a message to get started.</p>
               </div>
             ) : (
               <div className="empty-state welcome-state">
                 <div className="welcome-mark">◈</div>
                 <div className="welcome-card">
-                  <p className="welcome-kicker">智能体工作空间</p>
+                  <p className="welcome-kicker">Agent Workspace</p>
                   <p className="welcome-title">Agentrail Playground</p>
                   <p className="welcome-copy">
-                    你可以询问智能体任何问题，也可以让它协助你完成分析、调研和执行任务；
+                    Ask the agent anything, or let it help you with analysis, research, and task
+                    execution.
                     <br />
-                    需要更专业的专题研究时，还可以切换到<b>深度研究模式</b>
-                    ，让智能体帮你完成系统化调研与分析。
+                    Switch to <b>Deep Research</b> mode for systematic, in-depth investigation.
                   </p>
                 </div>
               </div>
@@ -957,8 +958,6 @@ export default function App() {
       {workspaceOpen && (
         <AgentWorkspace
           turns={turns}
-          traces={traces}
-          envelopes={traceEnvelopes}
           onClose={closeWorkspace}
           sessionId={currentSessionId ?? undefined}
           onWidthChange={setWorkspaceWidth}

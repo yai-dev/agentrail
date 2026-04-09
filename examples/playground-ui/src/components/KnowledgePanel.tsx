@@ -21,11 +21,11 @@ const STEPS = ["analyze", "classify", "summarize", "index_update", "register"] a
 type StepName = (typeof STEPS)[number];
 
 const STEP_LABELS: Record<StepName, string> = {
-  analyze: "分析文档结构",
-  classify: "分类到知识树",
-  summarize: "生成摘要",
-  index_update: "更新主题索引",
-  register: "注册文档",
+  analyze: "Analyzing document structure",
+  classify: "Classifying into knowledge tree",
+  summarize: "Generating summary",
+  index_update: "Updating topic index",
+  register: "Registering document",
 };
 
 type StepStatus = "idle" | "running" | "done" | "error";
@@ -85,7 +85,7 @@ function KBSelector({ onSelect }: KBSelectorProps) {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`确定要删除知识库「${id}」及其所有文档吗？`)) return;
+    if (!confirm(`Delete knowledge base "${id}" and all its documents? This cannot be undone.`)) return;
     setDeletingKb(id);
     try {
       await deleteKB(id);
@@ -99,7 +99,7 @@ function KBSelector({ onSelect }: KBSelectorProps) {
     const name = newName.trim();
     if (!name || creating) return;
     if (!/^[a-z0-9_-]+$/.test(name)) {
-      setError("仅允许小写字母、数字、-、_");
+      setError("Only lowercase letters, numbers, - and _ are allowed.");
       return;
     }
     setCreating(true);
@@ -119,14 +119,14 @@ function KBSelector({ onSelect }: KBSelectorProps) {
   return (
     <div className="kb-selector">
       <div className="kb-selector-header">
-        <span className="kb-selector-title">选择知识库</span>
+        <span className="kb-selector-title">Knowledge Bases</span>
         <button
           className="kb-selector-create-btn"
           onClick={() => {
             setShowCreate((v) => !v);
             setError(null);
           }}
-          title="新建知识库"
+          title="New knowledge base"
         >
           <svg
             width="12"
@@ -146,7 +146,7 @@ function KBSelector({ onSelect }: KBSelectorProps) {
         <div className="kb-create-form">
           <input
             className="kb-create-input"
-            placeholder="知识库名称（如 product-docs）"
+            placeholder="Knowledge base name (e.g. product-docs)"
             value={newName}
             onChange={(e) => {
               setNewName(e.target.value);
@@ -163,7 +163,7 @@ function KBSelector({ onSelect }: KBSelectorProps) {
               disabled={creating || !newName.trim()}
               onClick={() => void handleCreate()}
             >
-              {creating ? "创建中..." : "创建"}
+              {creating ? "Creating…" : "Create"}
             </button>
             <button
               className="kb-add-cancel"
@@ -173,7 +173,7 @@ function KBSelector({ onSelect }: KBSelectorProps) {
                 setNewName("");
               }}
             >
-              取消
+              Cancel
             </button>
           </div>
         </div>
@@ -181,7 +181,7 @@ function KBSelector({ onSelect }: KBSelectorProps) {
 
       <div className="kb-list">
         {kbs.length === 0 && !showCreate ? (
-          <div className="kb-empty">暂无知识库，点击 + 新建</div>
+          <div className="kb-empty">No knowledge bases yet — click + to create one</div>
         ) : (
           kbs.map((id) => (
             <div key={id} className="kb-list-item-row">
@@ -216,7 +216,7 @@ function KBSelector({ onSelect }: KBSelectorProps) {
               </button>
               <button
                 className="kb-list-delete-btn"
-                title="删除知识库"
+                title="Delete knowledge base"
                 disabled={deletingKb === id}
                 onClick={(e) => void handleDelete(id, e)}
               >
@@ -384,7 +384,7 @@ function DocList({ kbId, onBack }: DocListProps) {
     <div className="kb-panel">
       {/* KB header with back button */}
       <div className="kb-doc-header">
-        <button className="kb-back-btn" onClick={onBack} title="返回知识库列表">
+        <button className="kb-back-btn" onClick={onBack} title="Back to knowledge base list">
           <svg
             width="12"
             height="12"
@@ -404,7 +404,7 @@ function DocList({ kbId, onBack }: DocListProps) {
       <div className="kb-search-row">
         <input
           className="kb-search"
-          placeholder="搜索文档..."
+          placeholder="Search documents…"
           value={searchQ}
           onChange={(e) => setSearchQ(e.target.value)}
         />
@@ -413,7 +413,7 @@ function DocList({ kbId, onBack }: DocListProps) {
       {/* Add document button */}
       {!showAddForm && !isIngesting && (
         <button className="kb-add-btn" onClick={() => setShowAddForm(true)}>
-          <span className="kb-add-plus">+</span> 添加文档
+          <span className="kb-add-plus">+</span> Add Document
         </button>
       )}
 
@@ -453,7 +453,7 @@ function DocList({ kbId, onBack }: DocListProps) {
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
                 <span className="kb-file-name">{addFileName}</span>
-                <span className="kb-file-change">更换</span>
+                <span className="kb-file-change">Change</span>
               </>
             ) : (
               <>
@@ -471,7 +471,7 @@ function DocList({ kbId, onBack }: DocListProps) {
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                <span>选择 .md 文件</span>
+                <span>Select a .md file</span>
               </>
             )}
           </button>
@@ -479,7 +479,7 @@ function DocList({ kbId, onBack }: DocListProps) {
           {/* Title (auto-filled, editable) */}
           <input
             className="kb-add-input"
-            placeholder="文档标题"
+            placeholder="Document title"
             value={addTitle}
             onChange={(e) => setAddTitle(e.target.value)}
             disabled={isIngesting}
@@ -491,10 +491,10 @@ function DocList({ kbId, onBack }: DocListProps) {
               disabled={isIngesting || !addTitle.trim() || !addContent.trim()}
               onClick={() => void handleIngest()}
             >
-              {isIngesting ? "处理中..." : "提交"}
+              {isIngesting ? "Processing…" : "Submit"}
             </button>
             <button className="kb-add-cancel" onClick={handleCancel}>
-              取消
+              Cancel
             </button>
           </div>
         </div>
@@ -503,7 +503,7 @@ function DocList({ kbId, onBack }: DocListProps) {
       {/* Ingestion progress */}
       {isIngesting && (
         <div className="kb-progress">
-          <div className="kb-progress-title">正在处理：{ingestingTitle}</div>
+          <div className="kb-progress-title">Processing: {ingestingTitle}</div>
           {steps.map((s) => (
             <div key={s.name} className={`kb-step kb-step-${s.status}`}>
               <span className="kb-step-icon">
@@ -530,7 +530,7 @@ function DocList({ kbId, onBack }: DocListProps) {
       {/* Document list */}
       <div className="kb-doc-list">
         {filtered.length === 0 ? (
-          <div className="kb-empty">{docs.length === 0 ? "暂无文档" : "无匹配结果"}</div>
+          <div className="kb-empty">{docs.length === 0 ? "No documents yet" : "No results"}</div>
         ) : (
           filtered.map((doc) => (
             <div key={doc.docId} className="kb-doc-item">
@@ -541,7 +541,7 @@ function DocList({ kbId, onBack }: DocListProps) {
               </div>
               <button
                 className="kb-doc-delete"
-                title="删除"
+                title="Delete"
                 onClick={(e) => void handleDelete(doc.docId, e)}
               >
                 <svg

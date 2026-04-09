@@ -14,7 +14,7 @@ export function CompactionBanner() {
         alignItems: "center",
         gap: "8px",
         padding: "6px 14px",
-        background: "var(--bg-surface, #1e1e2e)",
+        background: "var(--surface, #0f0f0f)",
         borderTop: "1px solid var(--border, #333)",
         fontSize: "12px",
         color: "var(--text-muted, #888)",
@@ -54,13 +54,13 @@ export function CompactionSeparator({
         {item.loading ? (
           <>
             <span className="compaction-spinner" />
-            加载中…
+            Loading…
           </>
         ) : (
           <>
             ···&nbsp;
-            {item.compressedCount > 0 ? `${item.compressedCount} 条消息` : "历史消息"}
-            已压缩&nbsp;·&nbsp;点击展开
+            {item.compressedCount > 0 ? `${item.compressedCount} messages` : "History"}
+            compressed&nbsp;·&nbsp;click to expand
           </>
         )}
       </button>
