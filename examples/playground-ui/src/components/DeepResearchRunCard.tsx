@@ -13,9 +13,9 @@ interface Props {
 }
 
 function statusLabel(status: DeepResearchState["run"]["status"]): string {
-  if (status === "running") return "运行中";
-  if (status === "completed") return "已完成";
-  return "失败";
+  if (status === "running") return "Running";
+  if (status === "completed") return "Completed";
+  return "Failed";
 }
 
 function statusClass(status: DeepResearchState["run"]["status"]): string {
@@ -50,7 +50,7 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
         <button
           className={`deep-research-inline-toggle ${expanded ? "expanded" : ""}`}
           onClick={() => setExpanded((value) => !value)}
-          aria-label={expanded ? "折叠深度研究进度" : "展开深度研究进度"}
+          aria-label={expanded ? "Collapse deep research progress" : "Expand deep research progress"}
         >
           <span className="deep-research-inline-chevron">›</span>
         </button>
@@ -58,7 +58,7 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
         <div className="deep-research-inline-main">
           <div className="deep-research-inline-header">
             <div>
-              <div className="deep-research-inline-kicker">深度研究</div>
+              <div className="deep-research-inline-kicker">Deep Research</div>
               <h3>{state.run.title}</h3>
             </div>
             <span className={`deep-research-inline-status ${statusClass(state.run.status)}`}>
@@ -68,13 +68,13 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
 
           <div className="deep-research-inline-meta">
             <span>
-              {derived.completedStepCount}/{state.steps.length || 0} 步完成
+              {derived.completedStepCount}/{state.steps.length || 0} steps done
             </span>
-            <span>{derived.acceptedSources.length} 个有效来源</span>
+            <span>{derived.acceptedSources.length} valid sources</span>
             {derived.excludedSources.length > 0 && (
-              <span>{derived.excludedSources.length} 个已排除来源</span>
+              <span>{derived.excludedSources.length} excluded sources</span>
             )}
-            {derived.activeStep && <span>当前：{derived.activeStep.title}</span>}
+            {derived.activeStep && <span>Current: {derived.activeStep.title}</span>}
           </div>
 
           <div className="deep-research-inline-progress">
@@ -83,14 +83,14 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
         </div>
 
         <button className="deep-research-inline-open-btn" onClick={onOpenPanel}>
-          打开完整研究面板
+          Open Full Panel
         </button>
       </div>
 
       {expanded && (
         <div className="deep-research-inline-body">
           <div className="deep-research-inline-section">
-            <div className="deep-research-inline-section-title">计划</div>
+              <div className="deep-research-inline-section-title">Plan</div>
             <div className="deep-research-inline-steps">
               {state.steps.map((step) => (
                 <div key={step.id} className={`deep-research-inline-step ${step.status}`}>
@@ -106,7 +106,7 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
           {latestText && (
             <div className="deep-research-inline-section">
               <div className="deep-research-inline-section-title">
-                {derived.reportPreview ? "报告预览" : "最近结论"}
+                {derived.reportPreview ? "Report Preview" : "Latest Finding"}
               </div>
               <p className="deep-research-inline-preview">{latestText}</p>
             </div>
@@ -114,7 +114,7 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
 
           <div className="deep-research-inline-grid">
             <div className="deep-research-inline-section">
-              <div className="deep-research-inline-section-title">最近有效来源</div>
+              <div className="deep-research-inline-section-title">Recent Valid Sources</div>
               {recentAcceptedSources.length > 0 ? (
                 <div className="deep-research-inline-sources">
                   {recentAcceptedSources.map((source) => (
@@ -135,18 +135,18 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
                   ))}
                 </div>
               ) : (
-                <p className="deep-research-inline-empty">来源整理中…</p>
+                <p className="deep-research-inline-empty">Gathering sources…</p>
               )}
             </div>
 
             {derived.excludedSources.length > 0 && (
               <div className="deep-research-inline-section">
-                <div className="deep-research-inline-section-title">已排除来源</div>
+                <div className="deep-research-inline-section-title">Excluded Sources</div>
                 <div className="deep-research-inline-excluded">
                   {derived.excludedSources.slice(0, 3).map((source) => (
                     <div key={source.id} className="deep-research-inline-excluded-item">
                       <span>{source.title}</span>
-                      <span>{source.excludeReason ?? source.note ?? "同名或低相关来源"}</span>
+                      <span>{source.excludeReason ?? source.note ?? "Duplicate or low-relevance source"}</span>
                     </div>
                   ))}
                 </div>

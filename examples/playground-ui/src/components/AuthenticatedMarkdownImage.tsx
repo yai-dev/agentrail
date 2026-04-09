@@ -55,10 +55,10 @@ export function AuthenticatedMarkdownImage({ src, alt, className }: Props) {
 
   if (!src) return null;
   if (status === "loading" || (!resolvedSrc && status !== "failed")) {
-    return <span className="deep-research-image-loading">加载图片中…</span>;
+    return <span className="deep-research-image-loading">Loading image…</span>;
   }
   if (status === "failed" || !resolvedSrc) {
-    return <span className="deep-research-image-loading">图片加载失败</span>;
+    return <span className="deep-research-image-loading">Failed to load image</span>;
   }
 
   return (

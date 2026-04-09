@@ -62,64 +62,64 @@ function humanizeAction(toolName: string, args: unknown): string {
   switch (toolName) {
     case "Bash": {
       const cmd = String(a.command ?? "");
-      if (cmd.includes("run_pipeline.sh")) return "查询数据库";
-      if (cmd.includes("pip install") || cmd.includes("pip3 install")) return "安装依赖包";
-      if (cmd.includes("python") || cmd.includes("python3")) return "运行脚本";
-      if (cmd.includes("npm") || cmd.includes("pnpm")) return "运行构建命令";
-      if (cmd.includes("git")) return "执行 Git 操作";
-      return "执行命令";
+      if (cmd.includes("run_pipeline.sh")) return "Query database";
+      if (cmd.includes("pip install") || cmd.includes("pip3 install")) return "Install dependencies";
+      if (cmd.includes("python") || cmd.includes("python3")) return "Run script";
+      if (cmd.includes("npm") || cmd.includes("pnpm")) return "Run build command";
+      if (cmd.includes("git")) return "Run git operation";
+      return "Run command";
     }
     case "Read": {
       const p = String(a.path ?? "");
       const fname = basename(p).toLowerCase();
       if (fname.includes("reference") || fname.includes("business-knowledge"))
-        return "读取业务知识库";
-      if (fname.includes("skill.md") || fname.startsWith("skill")) return "读取技能说明";
-      if (fname.includes("user.md")) return "读取用户偏好";
-      if (fname.includes("agentrail.yaml")) return "读取 YAML 配置";
-      if (fname.includes("todo")) return "查看任务列表";
-      if (fname.endsWith(".sql")) return "读取 SQL 查询";
-      if (fname.endsWith(".md")) return `读取 ${basename(p)}`;
-      if (fname.endsWith(".json")) return `读取配置文件`;
-      return `读取文件`;
+        return "Read business knowledge base";
+      if (fname.includes("skill.md") || fname.startsWith("skill")) return "Read skill definition";
+      if (fname.includes("user.md")) return "Read user preferences";
+      if (fname.includes("agentrail.yaml")) return "Read YAML config";
+      if (fname.includes("todo")) return "View task list";
+      if (fname.endsWith(".sql")) return "Read SQL query";
+      if (fname.endsWith(".md")) return `Read ${basename(p)}`;
+      if (fname.endsWith(".json")) return `Read config file`;
+      return `Read file`;
     }
     case "Write": {
       const p = String(a.file_path ?? a.path ?? "");
       const fname = basename(p).toLowerCase();
-      if (fname.endsWith(".sql")) return "生成 SQL 查询语句";
-      if (fname.includes("todo")) return "更新任务列表";
-      if (fname.endsWith(".md")) return `写入 ${basename(p)}`;
-      return `写入文件`;
+      if (fname.endsWith(".sql")) return "Generate SQL query";
+      if (fname.includes("todo")) return "Update task list";
+      if (fname.endsWith(".md")) return `Write ${basename(p)}`;
+      return `Write file`;
     }
     case "Edit": {
       const p = String(a.path ?? "");
       const fname = basename(p);
-      return fname ? `编辑 ${fname}` : "编辑文件";
+      return fname ? `Edit ${fname}` : "Edit file";
     }
     case "Grep":
-      return "搜索内容";
+      return "Search content";
     case "Skill": {
       const name = String(a.skillName ?? "");
-      return name ? `调用技能：${name}` : "调用技能";
+      return name ? `Call skill: ${name}` : "Call skill";
     }
     case "KbList":
-      return "浏览知识库目录";
+      return "Browse knowledge base";
     case "KbRead":
-      return "查阅知识库";
+      return "Read knowledge base";
     case "KbSearch":
-      return "搜索知识库";
+      return "Search knowledge base";
     case "TodoWrite":
-      return "记录任务进度";
+      return "Record task progress";
     case "AskUserQuestion":
-      return "询问用户";
+      return "Ask user";
     case "BrowserNavigate":
-      return `打开网页：${String(a.url ?? "")}`;
+      return `Navigate to: ${String(a.url ?? "")}`;
     case "BrowserScroll":
-      return "滚动页面";
+      return "Scroll page";
     case "BrowserAction":
-      return `页面操作：${String(a.type ?? "")}`;
+      return `Page action: ${String(a.type ?? "")}`;
     case "BrowserContent":
-      return "读取页面内容";
+      return "Read page content";
     default:
       return toolName;
   }
@@ -284,7 +284,7 @@ function SpreadsheetTable({ rows }: { rows: string[][] }) {
       </table>
       {truncated && (
         <p className="ws-preview-truncated">
-          已截断：仅显示前 {MAX_TABLE_ROWS} 行，共 {rows.length - 1} 行。
+          Truncated: showing first {MAX_TABLE_ROWS} of {rows.length - 1} rows.
         </p>
       )}
     </div>
@@ -324,9 +324,9 @@ function XlsxPreview({ base64 }: { base64: string }) {
       .catch((e) => setError(String(e)));
   }, [base64]);
 
-  if (error) return <p className="ws-preview-error">解析失败：{error}</p>;
-  if (!rows) return <p className="ws-preview-loading">解析中…</p>;
-  if (rows.length === 0) return <p className="ws-preview-empty">（空工作表）</p>;
+  if (error) return <p className="ws-preview-error">Parse error: {error}</p>;
+  if (!rows) return <p className="ws-preview-loading">Parsing…</p>;
+  if (rows.length === 0) return <p className="ws-preview-empty">(empty sheet)</p>;
   return <SpreadsheetTable rows={rows} />;
 }
 
@@ -349,9 +349,9 @@ function DocxPreview({ base64 }: { base64: string }) {
     };
   }, [base64]);
 
-  if (error) return <p className="ws-preview-error">解析失败：{error}</p>;
-  if (text === null) return <p className="ws-preview-loading">解析中…</p>;
-  return <pre className="ws-file-code ws-preview-docx-text">{text || "(空文档)"}</pre>;
+  if (error) return <p className="ws-preview-error">Parse error: {error}</p>;
+  if (text === null) return <p className="ws-preview-loading">Parsing…</p>;
+  return <pre className="ws-file-code ws-preview-docx-text">{text || "(empty document)"}</pre>;
 }
 
 function FilePreview({ filePath, result }: { filePath: string; result: WorkspaceFileResult }) {
@@ -374,20 +374,20 @@ function FilePreview({ filePath, result }: { filePath: string; result: Workspace
     if (ext === "pdf") {
       return (
         <div className="ws-preview-unavailable">
-          <span>PDF 预览暂不支持，可让 Agent 提取文本内容。</span>
+          <span>PDF preview is not supported. Ask the agent to extract the text content.</span>
         </div>
       );
     }
     return (
       <div className="ws-preview-unavailable">
-        <span>二进制文件，无法预览。</span>
+        <span>Binary file — preview unavailable.</span>
       </div>
     );
   }
 
   if (ext === "md") return <MarkdownPreview content={result.content} />;
   if (ext === "csv") return <CsvPreview content={result.content} />;
-  return <pre className="ws-file-code">{result.content || "(空文件)"}</pre>;
+  return <pre className="ws-file-code">{result.content || "(empty file)"}</pre>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -453,8 +453,8 @@ function CodeBlock({ text, isError }: { text: string; isError?: boolean }) {
       {needsTruncation && (
         <button className="ws-code-expand-btn" onClick={() => setExpanded((e) => !e)}>
           {expanded
-            ? "▲ 收起"
-            : `▼ 展开剩余 ${(text.length - DETAIL_CHAR_LIMIT).toLocaleString()} 字符`}
+            ? "▲ Collapse"
+            : `▼ Expand ${(text.length - DETAIL_CHAR_LIMIT).toLocaleString()} more chars`}
         </button>
       )}
     </>
@@ -487,18 +487,18 @@ function ActivityItem({ tool, nested = false, isLast = false, children }: Activi
       >
         <StatusIcon done={tool.done} isError={tool.isError} running={running} />
         <span className="ws-ai-item-label">{label}</span>
-        {running && <span className="ws-ai-badge running">进行中</span>}
-        {tool.done && tool.isError && <span className="ws-ai-badge error">失败</span>}
+        {running && <span className="ws-ai-badge running">Running</span>}
+        {tool.done && tool.isError && <span className="ws-ai-badge error">Failed</span>}
         <span className={`ws-ai-chevron${open ? " open" : ""}`}>›</span>
       </div>
 
       {open && (
         <div className="ws-ai-detail">
-          <div className="ws-code-label">输入</div>
+          <div className="ws-code-label">Input</div>
           <CodeBlock text={argsText} />
           {tool.done && (
             <>
-              <div className="ws-code-label">输出</div>
+              <div className="ws-code-label">Output</div>
               <CodeBlock text={resultText} isError={tool.isError} />
             </>
           )}
@@ -592,7 +592,7 @@ function LiveHeader({ turns }: { turns: TurnActions[] }) {
   const activeTurns = turns.filter((t) => t.active);
   if (activeTurns.length === 0) return null;
 
-  let currentLabel = "思考中…";
+  let currentLabel = "Thinking…";
   for (let i = activeTurns.length - 1; i >= 0; i--) {
     const turn = activeTurns[i]!;
     const running = turn.toolCalls.find((tc) => !tc.done);
@@ -601,7 +601,7 @@ function LiveHeader({ turns }: { turns: TurnActions[] }) {
       break;
     }
     if (turn.toolCalls.length === 0) {
-      currentLabel = "思考中…";
+      currentLabel = "Thinking…";
       break;
     }
   }
@@ -700,13 +700,13 @@ function FileContentView({ view }: { view: ActiveFileView }) {
         <div className="ws-file-diff">
           {view.oldStr && (
             <div className="ws-diff-section ws-diff-remove">
-              <div className="ws-diff-label">删除</div>
+              <div className="ws-diff-label">Removed</div>
               <pre className="ws-diff-code ws-diff-old">{view.oldStr}</pre>
             </div>
           )}
           {view.newStr && (
             <div className="ws-diff-section ws-diff-add">
-              <div className="ws-diff-label">新增</div>
+              <div className="ws-diff-label">Added</div>
               <pre className="ws-diff-code ws-diff-new">{view.newStr}</pre>
             </div>
           )}
@@ -717,7 +717,7 @@ function FileContentView({ view }: { view: ActiveFileView }) {
 
   return (
     <div className="ws-file-content">
-      <pre className="ws-file-code">{view.content || "(空文件)"}</pre>
+      <pre className="ws-file-code">{view.content || "(empty file)"}</pre>
     </div>
   );
 }
@@ -791,7 +791,7 @@ function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: Tu
       const result = await fetchWorkspaceFile(sessionId, filePath);
       setLoadedResult(result);
     } catch {
-      setLoadedResult({ content: "(读取失败)" });
+      setLoadedResult({ content: "(failed to read)" });
     } finally {
       setFileLoading(false);
     }
@@ -815,8 +815,8 @@ function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: Tu
     return (
       <WorkspaceEmptyState
         icon="◌"
-        title="工作区尚未启动"
-        description="当前还没有可读取的工作区内容。发起一次会话后，文件和中间产物会显示在这里。"
+        title="Workspace not started"
+        description="No workspace content is available yet. Start a session and files and artifacts will appear here."
       />
     );
   }
@@ -825,8 +825,8 @@ function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: Tu
     return (
       <WorkspaceEmptyState
         icon="◎"
-        title="正在加载工作区"
-        description="正在恢复当前会话的文件树和可预览内容，请稍候。"
+        title="Loading workspace"
+        description="Restoring the file tree and preview content for the current session. Please wait."
       />
     );
   }
@@ -835,8 +835,8 @@ function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: Tu
     return (
       <WorkspaceEmptyState
         icon="◇"
-        title="工作区暂时为空"
-        description="当前会话还没有生成可展示的文件。等智能体读取、写入或产出文件后，这里会自动出现。"
+        title="Workspace is empty"
+        description="No files have been generated yet. Once the agent reads, writes, or produces files, they will appear here automatically."
       />
     );
   }
@@ -846,17 +846,17 @@ function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: Tu
       <div className="ws-file-tree">
         <div className="ws-tree-header">
           <span className="ws-tree-title">/workspace</span>
-          <button className="ws-tree-refresh" onClick={() => fetchFiles()} title="刷新文件列表">
+          <button className="ws-tree-refresh" onClick={() => fetchFiles()} title="Refresh file list">
             {loading ? "⟳" : "↻"}
           </button>
         </div>
         <div className="ws-tree-body">
           {!sessionId ? (
-            <div className="ws-tree-empty">等待会话启动…</div>
+            <div className="ws-tree-empty">Waiting for session to start…</div>
           ) : loading && files.length === 0 ? (
-            <div className="ws-tree-empty">加载中…</div>
+            <div className="ws-tree-empty">Loading…</div>
           ) : tree.length === 0 ? (
-            <div className="ws-tree-empty">工作区暂无文件</div>
+            <div className="ws-tree-empty">No files in workspace</div>
           ) : (
             tree.map((node) => (
               <FileTreeNode
@@ -880,8 +880,8 @@ function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: Tu
             <span className="ws-file-viewer-path" title={selectedPath!}>
               {basename(selectedPath!)}
             </span>
-            <span className="ws-file-viewer-type">预览</span>
-            {fileLoading && <span className="ws-file-viewer-loading">加载中…</span>}
+            <span className="ws-file-viewer-type">Preview</span>
+            {fileLoading && <span className="ws-file-viewer-loading">Loading…</span>}
           </div>
           <div className="ws-file-content ws-file-content-preview">
             {loadedResult && <FilePreview filePath={selectedPath!} result={loadedResult} />}
@@ -897,10 +897,10 @@ function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: Tu
             </span>
             <span className="ws-file-viewer-type">
               {activeFileView!.type === "read"
-                ? "读取"
+                ? "Read"
                 : activeFileView!.type === "write"
-                  ? "写入"
-                  : "编辑"}
+                  ? "Write"
+                  : "Edit"}
             </span>
           </div>
           <FileContentView view={activeFileView!} />
@@ -965,8 +965,8 @@ function BrowserTab({
     return (
       <WorkspaceEmptyState
         icon="◍"
-        title="浏览器尚未打开"
-        description="当智能体使用浏览器访问网页时，截图和当前地址会显示在这里。"
+        title="Browser not opened"
+        description="When the agent uses the browser to visit a webpage, screenshots and the current URL will appear here."
       />
     );
   }
@@ -979,9 +979,9 @@ function BrowserTab({
             {browserUrl}
           </span>
         ) : (
-          <span className="ws-browser-url ws-browser-url-empty">未导航</span>
+          <span className="ws-browser-url ws-browser-url-empty">Not navigated</span>
         )}
-        <button className="ws-browser-refresh" onClick={onRefresh} title="刷新截图">
+        <button className="ws-browser-refresh" onClick={onRefresh} title="Refresh screenshot">
           ↻
         </button>
       </div>
@@ -990,21 +990,21 @@ function BrowserTab({
         {imgLoading && !imgError && (
           <div className="ws-browser-loading">
             <span className="ws-browser-spinner" />
-            <span>加载截图…</span>
+            <span>Loading screenshot…</span>
           </div>
         )}
         {imgError ? (
           <div className="ws-browser-error">
-            <span>截图加载失败</span>
+            <span>Failed to load screenshot</span>
             <button className="ws-browser-retry" onClick={onRefresh}>
-              重试
+              Retry
             </button>
           </div>
         ) : (
           <img
             className="ws-browser-screenshot"
             src={blobUrl ?? undefined}
-            alt="AI 浏览器截图"
+            alt="Agent browser screenshot"
             style={{ display: imgLoading || !blobUrl ? "none" : "block" }}
           />
         )}
@@ -1119,12 +1119,12 @@ function AgentWorkspaceInner({
   );
 
   const tabs: Array<{ id: WorkspaceTab; label: string }> = [
-    { id: "activity", label: "活动" },
-    { id: "workspace", label: "工作空间" },
-    { id: "browser", label: "浏览器" },
-    { id: "deep_research", label: "深度研究" },
-    { id: "agent_team", label: "智能体团队" },
-    { id: "trace", label: "行为跟踪" },
+    { id: "activity", label: "Activity" },
+    { id: "workspace", label: "Workspace" },
+    { id: "browser", label: "Browser" },
+    { id: "deep_research", label: "Deep Research" },
+    { id: "agent_team", label: "Agent Team" },
+    { id: "trace", label: "Trace" },
   ];
 
   return (
@@ -1132,10 +1132,10 @@ function AgentWorkspaceInner({
       <div className="workspace-resize-handle" onMouseDown={handleResizeMouseDown} />
       <div className="workspace-header">
         <span className="workspace-title">
-          {isActive ? "Agent 正在为您工作…" : "Agent Computer"}
+          {isActive ? "Agent is working…" : "Agent Computer"}
           {totalTools > 0 && !isActive && <span className="workspace-count">{totalTools}</span>}
         </span>
-        <button className="workspace-close-btn" onClick={onClose} title="关闭">
+        <button className="workspace-close-btn" onClick={onClose} title="Close">
           <svg
             width="14"
             height="14"
@@ -1169,8 +1169,8 @@ function AgentWorkspaceInner({
           (groups.length === 0 || totalTools === 0 ? (
             <WorkspaceEmptyState
               icon="⬡"
-              title="还没有活动记录"
-              description="智能体开始工作后，操作步骤和工具调用会按时间顺序显示在这里。"
+              title="No activity yet"
+              description="Once the agent starts working, steps and tool calls will appear here in chronological order."
             />
           ) : (
             <div className="ws-ai-list">

@@ -17,50 +17,50 @@ interface TourStep {
 const STEPS: TourStep[] = [
   {
     selector: null,
-    title: "欢迎使用 Agentrail Playground",
+    title: "Welcome to Agentrail Playground",
     description:
-      "这是一个基于 Agentrail 的示例应用，演示流式对话、工具调用、记忆、技能与多 Agent 编排。点击「下一步」开始功能引导。",
+      "This is a demo app built on Agentrail, showcasing streaming conversations, tool calls, memory, skills, and multi-agent orchestration. Click Next to start the tour.",
     placement: "center",
   },
   {
     selector: ".session-sidebar",
-    title: "会话列表",
+    title: "Session List",
     description:
-      "左侧边栏管理你的所有对话。点击顶部 + 按钮创建新会话，点击已有会话切换，悬停后可删除。",
+      "The left sidebar manages all your conversations. Click the + button at the top to create a new session, click an existing one to switch, and hover to reveal the delete button.",
     placement: "right",
   },
   {
     selector: ".clear-btn",
-    title: "新建对话",
-    description: "点击「New」按钮快速开始一次全新对话，当前会话会保留在左侧列表中。",
+    title: "New Chat",
+    description: "Click the New button to quickly start a fresh conversation. Your current session stays in the left sidebar.",
     placement: "bottom",
   },
   {
     selector: ".input-bar",
-    title: "消息输入区",
+    title: "Message Input",
     description:
-      "在此输入你的问题或指令。支持拖拽或点击附件按钮上传文件（Excel、Word、图片等），按 Enter 或点击发送。",
+      "Type your question or instruction here. You can drag and drop or click the attachment button to upload files (Excel, Word, images, etc.). Press Enter or click Send.",
     placement: "bottom",
   },
   {
     selector: ".workspace-toggle-btn",
-    title: "工作区面板",
+    title: "Workspace Panel",
     description:
-      "点击此按钮切换右侧「Agent 工作区」面板，可实时查看 AI 调用的工具步骤、文件变更和浏览器截图。",
+      "Toggle the Agent Workspace panel on the right to watch tool steps, file changes, and browser screenshots in real time.",
     placement: "bottom",
   },
   {
     selector: ".workspace-panel",
-    title: "Agent 工作区",
+    title: "Agent Workspace",
     description:
-      "这里展示 AI 每次回答时调用的所有工具操作。点击每一行可展开查看详细的输入与输出，包含文件树和浏览器预览。",
+      "This panel shows every tool call the AI makes while answering. Click any row to expand it and inspect the full inputs and outputs, including file trees and browser previews.",
     placement: "left",
   },
   {
     selector: ".settings-gear-btn",
-    title: "身份设置",
+    title: "Identity Settings",
     description:
-      "点击此齿轮图标打开设置，可修改当前的 Tenant ID 和 User ID，切换不同的数据租户或用户身份。",
+      "Click this gear icon to open settings and change your Tenant ID or User ID to switch between different data tenants or user identities.",
     placement: "bottom",
   },
 ];
@@ -200,7 +200,7 @@ export function OnboardingTour({ onDone }: { onDone: () => void }) {
   );
 
   return (
-    <div className="onboarding-root" aria-modal="true" role="dialog" aria-label="功能引导">
+    <div className="onboarding-root" aria-modal="true" role="dialog" aria-label="Feature tour">
       {/* Dark overlay — only shows solid background when no spotlight (center step) */}
       <div
         className={`onboarding-overlay${!spotRect ? " no-target" : ""}`}
@@ -233,16 +233,16 @@ export function OnboardingTour({ onDone }: { onDone: () => void }) {
         <p className="onboarding-desc">{currentStep.description}</p>
         <div className="onboarding-actions">
           <button className="onboarding-skip" onClick={finish}>
-            跳过
+            Skip
           </button>
           <div className="onboarding-nav">
             {step > 0 && (
               <button className="onboarding-btn-prev" onClick={prev}>
-                上一步
+                Back
               </button>
             )}
             <button className="onboarding-btn-next" onClick={next}>
-              {step === total - 1 ? "完成" : "下一步"}
+              {step === total - 1 ? "Done" : "Next"}
             </button>
           </div>
         </div>
@@ -253,7 +253,7 @@ export function OnboardingTour({ onDone }: { onDone: () => void }) {
               key={i}
               className={`onboarding-dot${i === step ? " active" : ""}`}
               onClick={() => setStep(i)}
-              aria-label={`跳转到第 ${i + 1} 步`}
+              aria-label={`Go to step ${i + 1}`}
             />
           ))}
         </div>

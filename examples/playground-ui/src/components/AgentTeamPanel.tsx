@@ -56,9 +56,9 @@ function RunSummaryCard({
   if (!run) return null;
 
   const statusLabels: Record<string, string> = {
-    running: "运行中",
-    completed: "已完成",
-    failed: "失败",
+    running: "Running",
+    completed: "Completed",
+    failed: "Failed",
   };
 
   const shortId = run.id.slice(-4).toUpperCase();
@@ -77,15 +77,15 @@ function RunSummaryCard({
         </span>
       </div>
       <div className="run-card-duration">
-        {displayedStatus === "running" ? "已运行 " : "耗时 "}
+        {displayedStatus === "running" ? "Running for " : "Duration: "}
         <strong>{duration}</strong>
       </div>
       <div className="agent-team-run-stats">
-        <span className="agent-team-stat-pill">◉ 活跃 {activeCount}</span>
-        <span className="agent-team-stat-pill">✓ 已关闭 {closedCount}</span>
+        <span className="agent-team-stat-pill">◉ Active {activeCount}</span>
+        <span className="agent-team-stat-pill">✓ Closed {closedCount}</span>
         {waitCount > 0 && (
           <span className="agent-team-stat-pill agent-team-stat-pill-wait">
-            ⏳ 等待 {waitCount}
+            ⏳ Waiting {waitCount}
           </span>
         )}
       </div>
@@ -100,8 +100,8 @@ export function AgentTeamPanel({ state, isLoading }: AgentTeamPanelProps) {
     return (
       <WorkspaceEmptyState
         icon="◌"
-        title="正在加载智能体团队"
-        description="正在恢复主智能体、子智能体以及等待条件的状态，请稍候。"
+        title="Loading agent team"
+        description="Restoring the state of the main agent, sub-agents, and wait conditions. Please wait."
       />
     );
   }
@@ -110,8 +110,8 @@ export function AgentTeamPanel({ state, isLoading }: AgentTeamPanelProps) {
     return (
       <WorkspaceEmptyState
         icon="⬢"
-        title="还没有智能体团队活动"
-        description="当主智能体派生子智能体、分配任务或等待子流程完成时，这里会显示完整的协作情况。"
+        title="No agent team activity yet"
+        description="When the main agent spawns sub-agents, assigns tasks, or waits for sub-processes to complete, the full collaboration will be shown here."
       />
     );
   }
@@ -152,7 +152,7 @@ export function AgentTeamPanel({ state, isLoading }: AgentTeamPanelProps) {
 
       {activeAgents.length > 0 && (
         <div className="agent-team-section">
-          <h4 className="agent-team-section-title">活跃 Agent ({activeAgents.length})</h4>
+          <h4 className="agent-team-section-title">Active Agents ({activeAgents.length})</h4>
           <div className="agent-team-grid">
             {activeAgents.map((agent) => (
               <SubAgentCard key={agent.id} agent={agent} isActive />
@@ -168,7 +168,7 @@ export function AgentTeamPanel({ state, isLoading }: AgentTeamPanelProps) {
             onClick={() => setClosedExpanded((v) => !v)}
             aria-expanded={closedExpanded}
           >
-            <span>已关闭的子智能体 ({closedAgents.length})</span>
+            <span>Closed sub-agents ({closedAgents.length})</span>
             <span className="agent-team-chevron">{closedExpanded ? "▾" : "▸"}</span>
           </button>
           {roleSummary.length > 0 && (
@@ -192,19 +192,19 @@ export function AgentTeamPanel({ state, isLoading }: AgentTeamPanelProps) {
 
       {state.waits.length > 0 && (
         <div className="agent-team-section">
-          <h4 className="agent-team-section-title">等待条件 ({state.waits.length})</h4>
+          <h4 className="agent-team-section-title">Wait Conditions ({state.waits.length})</h4>
           <div className="agent-team-waits">
             {state.waits.map((wait) => (
               <div key={wait.id} className={`wait-item wait-status-${wait.status}`}>
                 <span className="wait-icon">{waitIcons[wait.status] ?? "·"}</span>
-                <span className="wait-mode-badge">{wait.mode === "any" ? "任意" : "全部"}</span>
-                <span className="wait-agents-count">{wait.agentIds.length} 个 Agent</span>
+                <span className="wait-mode-badge">{wait.mode === "any" ? "Any" : "All"}</span>
+                <span className="wait-agents-count">{wait.agentIds.length} agents</span>
                 <span className={`wait-status-label ${waitColors[wait.status] ?? ""}`}>
                   {wait.status === "pending"
-                    ? "等待中"
+                    ? "Waiting"
                     : wait.status === "resolved"
-                      ? "已解决"
-                      : "超时"}
+                      ? "Resolved"
+                      : "Timed out"}
                 </span>
               </div>
             ))}

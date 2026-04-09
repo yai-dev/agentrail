@@ -39,20 +39,20 @@ export function SessionSidebar({ sessions, currentSessionId, onSelect, onNew, on
           className={`sidebar-tab ${activeTab === "chats" ? "active" : ""}`}
           onClick={() => setActiveTab("chats")}
         >
-          会话
+          Sessions
         </button>
         <button
           className={`sidebar-tab ${activeTab === "knowledge" ? "active" : ""}`}
           onClick={() => setActiveTab("knowledge")}
         >
-          知识库
+          Knowledge
         </button>
       </div>
 
       {activeTab === "chats" ? (
         <>
           <div className="sidebar-header">
-            <span className="sidebar-title">会话</span>
+            <span className="sidebar-title">Sessions</span>
             <button className="new-session-btn" onClick={onNew} title="New session">
               <svg
                 width="14"
@@ -70,7 +70,7 @@ export function SessionSidebar({ sessions, currentSessionId, onSelect, onNew, on
 
           <div className="session-list">
             {sessions.length === 0 ? (
-              <div className="session-empty">暂无会话</div>
+              <div className="session-empty">No sessions yet</div>
             ) : (
               sessions.map((s) => (
                 <div
@@ -80,7 +80,7 @@ export function SessionSidebar({ sessions, currentSessionId, onSelect, onNew, on
                 >
                   <div className="session-item-inner">
                     <div className="session-item-title">
-                      {s.title ?? (s.lastMessage.slice(0, 32) || "新会话")}
+                      {s.title ?? (s.lastMessage.slice(0, 32) || "New chat")}
                     </div>
                     <div className="session-item-meta">{formatRelativeTime(s.updatedAt)}</div>
                   </div>
@@ -90,7 +90,7 @@ export function SessionSidebar({ sessions, currentSessionId, onSelect, onNew, on
                       e.stopPropagation();
                       onDelete(s.sessionId);
                     }}
-                    title="删除会话"
+                    title="Delete session"
                   >
                     <svg
                       width="12"

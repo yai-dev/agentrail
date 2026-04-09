@@ -208,10 +208,10 @@ function buildLocalAssetName(
 }
 
 function flowStatusLabel(status: "pending" | "running" | "completed" | "failed"): string {
-  if (status === "running") return "进行中";
-  if (status === "completed") return "已完成";
-  if (status === "failed") return "失败";
-  return "待开始";
+  if (status === "running") return "In Progress";
+  if (status === "completed") return "Completed";
+  if (status === "failed") return "Failed";
+  return "Pending";
 }
 
 function SourceBadge({
@@ -279,7 +279,7 @@ function SourceSection({
               className="deep-research-source-list-toggle"
               onClick={() => setListExpanded((value) => !value)}
             >
-              {listExpanded ? "收起列表" : `展开完整列表（+${sources.length - 5}）`}
+              {listExpanded ? "Collapse list" : `Show full list (+${sources.length - 5})`}
             </button>
           )}
           <span className="deep-research-stat-pill">{sources.length}</span>
@@ -351,7 +351,7 @@ function SourceSection({
                       target="_blank"
                       rel="noreferrer"
                     >
-                      打开来源
+                      Open source
                     </a>
                   )}
                   {canExpand && (
@@ -366,7 +366,7 @@ function SourceSection({
                         )
                       }
                     >
-                      {expanded ? "收起详情" : "展开详情"}
+                      {expanded ? "Collapse" : "Expand details"}
                     </button>
                   )}
                 </div>
@@ -380,7 +380,7 @@ function SourceSection({
         {sources.length === 0 && <p className="deep-research-empty-inline">{emptyText}</p>}
         {remainingCount > 0 && !listExpanded && (
           <p className="deep-research-empty-inline">
-            还有 {remainingCount} 条来源，点击上方“展开完整列表”查看。
+            {remainingCount} more sources — click “Show full list” above to view them.
           </p>
         )}
       </div>
@@ -416,15 +416,15 @@ function ArtifactPreview({
   }, [sessionId, artifact]);
 
   if (!artifact) {
-    return <div className="deep-research-artifact-empty">选择一个产物以预览。</div>;
+    return <div className="deep-research-artifact-empty">Select an artifact to preview.</div>;
   }
 
   if (loading) {
-    return <div className="deep-research-artifact-empty">加载产物预览…</div>;
+    return <div className="deep-research-artifact-empty">Loading artifact preview…</div>;
   }
 
   if (!result) {
-    return <div className="deep-research-artifact-empty">无法预览该产物。</div>;
+    return <div className="deep-research-artifact-empty">Cannot preview this artifact.</div>;
   }
 
   if (result.encoding === "base64" && result.mimeType?.startsWith("image/")) {
@@ -542,8 +542,8 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
     return (
       <WorkspaceEmptyState
         icon="◌"
-        title="正在加载深度研究"
-        description="正在恢复该会话的研究状态、来源和产物，请稍候。"
+        title="Loading deep research"
+        description="Restoring the research state, sources, and artifacts for this session. Please wait."
       />
     );
   }
@@ -552,8 +552,8 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
     return (
       <WorkspaceEmptyState
         icon="◎"
-        title="还没有深度研究记录"
-        description="当前会话还没有启动深度研究。你可以在输入框切换到“深度研究”模式后发起一次完整研究。"
+        title="No deep research yet"
+        description="No deep research has been started in this session. Switch to Deep Research mode in the input bar to begin a full investigation."
       />
     );
   }
@@ -640,20 +640,20 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
           </div>
           <span className={`deep-research-status ${state.run.status}`}>
             {state.run.status === "running"
-              ? "运行中"
+              ? "Running"
               : state.run.status === "completed"
-                ? "已完成"
-                : "失败"}
+                ? "Completed"
+                : "Failed"}
           </span>
         </div>
         <div className="deep-research-meta">
-          <span>创建于 {formatTime(state.run.createdAt)}</span>
-          <span>更新于 {formatTime(state.run.updatedAt)}</span>
+          <span>Created {formatTime(state.run.createdAt)}</span>
+          <span>Updated {formatTime(state.run.updatedAt)}</span>
         </div>
         <div className="deep-research-run-stats">
-          <span className="deep-research-stat-pill">{state.steps.length} 个步骤</span>
-          <span className="deep-research-stat-pill">{acceptedSources.length} 个有效来源</span>
-          <span className="deep-research-stat-pill">{state.artifacts.length} 个产物</span>
+          <span className="deep-research-stat-pill">{state.steps.length} steps</span>
+          <span className="deep-research-stat-pill">{acceptedSources.length} valid sources</span>
+          <span className="deep-research-stat-pill">{state.artifacts.length} artifacts</span>
         </div>
         {entityProfile && (
           <div className="deep-research-entity">
@@ -662,7 +662,7 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
             </div>
             <div className="deep-research-entity-row">
               <span className="deep-research-stat-pill">
-                模式：{entityProfile.mode === "entity_disambiguation" ? "实体核验" : "主题范围"}
+                Mode: {entityProfile.mode === "entity_disambiguation" ? "Entity Disambiguation" : "Topic Scope"}
               </span>
               {state.entityProfile?.confidence && (
                 <span className="deep-research-stat-pill">

@@ -4,6 +4,16 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  life: number;
+  maxLife: number;
+}
 import type { SlashCommandMeta } from "../api";
 
 export interface PendingAttachment {
@@ -48,6 +58,7 @@ export function InputBar({
 }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   useEffect(() => {
@@ -56,6 +67,69 @@ export function InputBar({
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
   }, [value]);
+
+  useEffect(() => {
+    if (mode !== "deep_research") return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+
+    const particles: Particle[] = [];
+    let frame = 0;
+    let animId: number;
+
+    const spawn = () => {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: canvas.height + 4,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: -(Math.random() * 0.7 + 0.25),
+        radius: Math.random() * 1.8 + 0.4,
+        life: 0,
+        maxLife: 70 + Math.random() * 70,
+      });
+    };
+
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (frame % 5 === 0) spawn();
+      frame++;
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]!;
+        p.life++;
+        p.x += p.vx;
+        p.y += p.vy;
+
+        const t = p.life / p.maxLife;
+        const alpha = t < 0.2 ? t / 0.2 : t > 0.75 ? (1 - t) / 0.25 : 1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(14,165,233,${(alpha * 0.55).toFixed(3)})`;
+        ctx.fill();
+
+        if (p.life >= p.maxLife) particles.splice(i, 1);
+      }
+      animId = requestAnimationFrame(tick);
+    };
+
+    tick();
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+    };
+  }, [mode]);
 
   const canSend = value.trim().length > 0 || attachments.length > 0;
   const trimmedValue = value.trim();
@@ -160,20 +234,23 @@ export function InputBar({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      {mode === "deep_research" && (
+        <canvas ref={canvasRef} className="input-bar-particles" aria-hidden="true" />
+      )}
       <div className={`input-mode-switch ${mode === "deep_research" ? "deep-research" : "chat"}`}>
         <button
           className={`input-mode-btn ${mode === "chat" ? "active" : ""}`}
           type="button"
           onClick={() => onModeChange("chat")}
         >
-          聊天
+          Chat
         </button>
         <button
           className={`input-mode-btn ${mode === "deep_research" ? "active" : ""}`}
           type="button"
           onClick={() => onModeChange("deep_research")}
         >
-          深度研究
+          Deep Research
         </button>
       </div>
 
@@ -256,10 +333,10 @@ export function InputBar({
           className={`input-textarea ${mode === "deep_research" ? "deep-research-textarea" : ""}`}
           placeholder={
             notConfigured
-              ? "请先点击右上角⚙️设置 Tenant ID 和 User ID…"
+              ? "Click the ⚙️ settings icon in the top-right to set your Tenant ID and User ID…"
               : mode === "deep_research"
-                ? "输入研究主题、问题或分析任务... (Shift+Enter 进行换行)"
-                : "输入问题向智能体提问... (Shift+Enter 进行换行)"
+                ? "Enter a research topic, question, or analysis task… (Shift+Enter for new line)"
+                : "Ask the agent anything… (Shift+Enter for new line)"
           }
           value={value}
           rows={1}
