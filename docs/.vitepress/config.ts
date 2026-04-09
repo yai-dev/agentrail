@@ -89,6 +89,7 @@ export default defineConfig({
       {
         text: "Reference",
         items: [
+          { text: "createAgentApp", link: "/reference/create-agent-app" },
           { text: "Host Defaults", link: "/reference/host-defaults" },
           { text: "Host Primitives", link: "/reference/host-primitives" },
           { text: "Profile Contract", link: "/reference/profile-contract" },
@@ -96,6 +97,8 @@ export default defineConfig({
           { text: "Prompt SDK", link: "/reference/prompt-sdk" },
           { text: "Session Store", link: "/reference/session-store" },
           { text: "Events", link: "/reference/events" },
+          { text: "Inspector Route", link: "/reference/inspector-route" },
+          { text: "Telemetry Sink", link: "/reference/telemetry-sink" },
         ],
       },
       {

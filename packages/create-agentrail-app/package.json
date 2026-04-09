@@ -1,14 +1,13 @@
 {
   "name": "@agentrail/create-agentrail-app",
   "version": "0.1.1",
-  "description": "Create a new Agentrail application from a template",
+  "description": "Create a new Agentrail application from a template (delegates to @agentrail/cli)",
   "type": "module",
   "bin": {
     "create-agentrail-app": "./dist/index.js"
   },
   "files": [
-    "dist",
-    "templates"
+    "dist"
   ],
   "scripts": {
     "build": "tsc",
@@ -16,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clack/prompts": "^0.9.1"
+    "@agentrail/cli": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0"

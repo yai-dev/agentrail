@@ -86,6 +86,14 @@ export interface AgentrailSessionStore {
   ): Promise<boolean>;
 
   /**
+   * Health probe for readiness checks.
+   * Implementations should attempt a lightweight operation (e.g. a filesystem
+   * stat or a DB ping) and resolve when healthy, or reject when not.
+   * Optional — when absent, the built-in readiness check skips this store.
+   */
+  ping?(): Promise<void>;
+
+  /**
    * Return a `TodoStorage` scoped to this session.
    * Optional — omit if your store does not support structured task lists.
    */

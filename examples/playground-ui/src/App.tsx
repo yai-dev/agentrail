@@ -433,8 +433,8 @@ export default function App() {
           } else if (event.type === "skill_end") {
             activeSkillRef.current = null;
             setLiveSkillActivity(null);
-          } else if (event.type === "message_update") {
-            const mu = event as { type: "message_update"; event: { type: string; delta?: string } };
+          } else if (event.type === "message.update" || event.type === "message_update") {
+            const mu = event as { type: string; event: { type: string; delta?: string } };
             if (mu.event.type === "text_delta" && typeof mu.event.delta === "string") {
               pendingTextRef.current += mu.event.delta;
               scheduleDeltaFlush();
@@ -442,7 +442,7 @@ export default function App() {
               pendingThinkingRef.current += mu.event.delta;
               scheduleDeltaFlush();
             }
-          } else if (event.type === "tool_execution_start") {
+          } else if (event.type === "tool.before" || event.type === "tool_execution_start") {
             const tes = event as {
               type: string;
               toolCallId: string;
@@ -568,7 +568,7 @@ export default function App() {
             });
             setQuestionInput("");
             setSelectedOptions([]);
-          } else if (event.type === "tool_execution_end") {
+          } else if (event.type === "tool.after" || event.type === "tool_execution_end") {
             const tee = event as {
               type: string;
               toolCallId: string;

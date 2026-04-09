@@ -3,13 +3,19 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message } from "@agentrail/core";
+import type { Message, SessionRef } from "@agentrail/core";
 import type { AgentrailSessionStore } from "@agentrail/core";
 import type { SandboxManager } from "@agentrail/capabilities";
 import type { AgentrailPlugin, ContextProvider, PluginErrorHandler } from "@/host/types.js";
 import type { AgentrailOrchestrationRegistry } from "@/host/orchestration-registry.js";
 import type { ProfileDefinition } from "@/profile/define-profile.js";
 import type { ProfileResolver } from "@/host/profile-registry.js";
+import type { TelemetrySink } from "@/telemetry/sink.js";
+import type { WorkflowTraceEventEnvelope } from "@/events/index.js";
+import type { ReadinessCheck } from "@/health/index.js";
+import { createHealthRoute } from "@/health/index.js";
+import { createInspectorRoute } from "@/inspector/index.js";
+import { runCapabilityCompatibilityChecks } from "@/compat/capability-check.js";
 import { SessionManager } from "@/session/session-manager.js";
 import { createChatRoute } from "@/routes/chat-route.js";
 import { createStreamRoute } from "@/routes/stream-route.js";
@@ -104,6 +110,63 @@ export interface CreateAgentAppOptions {
    * When omitted, orchestration SSE events are not forwarded to the client.
    */
   orchestrationRegistry?: AgentrailOrchestrationRegistry;
+  /**
+   * Set to `true` to mount the Inspector API at `/__inspector`.
+   *
+   * When enabled, `createAgentApp` exposes a read-only HTTP API that the
+   * Agentrail Inspector Docker image consumes to display sessions, traces, and
+   * orchestration data.
+   *
+   * **Requires** `dataDir` — a custom `sessionStore` is not supported. An error
+   * is thrown at startup when this invariant is violated.
+   *
+   * The mount path is fixed at `/__inspector` in v1 to stay in sync with the
+   * Inspector Docker image, whose nginx proxy hardcodes that prefix.
+   *
+   * @example
+   * ```ts
+   * createAgentApp({ dataDir: "./data", profiles: [...], inspector: true });
+   * ```
+   *
+   * @see {@link https://agentrail.run/reference/inspector-route}
+   */
+  inspector?: true | Record<string, never>;
+  /**
+   * Health route configuration.
+   *
+   * When not disabled, `createAgentApp` automatically mounts:
+   * - `GET /health` — liveness probe (always 200 while the process is alive)
+   * - `GET /ready`  — readiness probe; runs built-in session store check plus
+   *   any `readinessChecks` provided here. Returns 503 if any check fails.
+   *
+   * The response format is compatible with Kubernetes liveness/readiness probes.
+   */
+  health?: {
+    /**
+     * Additional readiness checks run alongside the built-in session store check.
+     * Use this to verify provider API keys or other external dependencies.
+     */
+    readinessChecks?: ReadinessCheck[];
+    /**
+     * Set to `true` to skip mounting `/health` and `/ready` entirely.
+     * Useful when the host application manages health routes itself.
+     */
+    disableBuiltinHealthRoutes?: boolean;
+  };
+  /**
+   * Telemetry sink that receives structured events from both the `/chat` and
+   * `/stream` routes.
+   *
+   * Built-in sinks: `createConsoleTelemetrySink()` (development) and
+   * `createFileTelemetrySink(dataDir)` (production, writes JSONL trace files).
+   *
+   * Note: events emitted via `/chat` are coarser than `/stream` — only
+   * synthetic `agent_start`, `agent_end`, and `error` events are produced,
+   * because `agent.invoke()` does not expose granular turn/tool events.
+   *
+   * @see {@link https://agentrail.run/reference/telemetry-sink}
+   */
+  telemetrySink?: TelemetrySink;
 }
 
 /**
@@ -152,7 +215,47 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
     sandboxManager,
     orchestrationRegistry,
     onPluginError,
+    telemetrySink,
+    health: healthOptions,
+    inspector: inspectorOptions,
   } = options;
+
+  /**
+   * Adapts a TelemetrySink into the `onTraceEvent` callback shape expected by
+   * both chat-route and stream-route. Fire-and-forget; errors from the sink are
+   * swallowed so they never break the request pipeline.
+   */
+  const makeSinkTraceHandler = telemetrySink
+    ? (
+        ctx: { tenantId: string; sessionId: string; sessionRef: SessionRef },
+        envelope: WorkflowTraceEventEnvelope,
+      ): void => {
+        const sinkEvent = {
+          // envelope.traceId is now always set by wrapTraceEvent() callers; the
+          // fallback to envelope.id is retained only for external envelopes
+          // constructed without the traceId argument.
+          traceId: envelope.traceId ?? envelope.id,
+          sessionId: ctx.sessionId,
+          tenantId: ctx.tenantId,
+          timestamp: envelope.timestamp,
+          sequence: envelope.sequence,
+          source: envelope.source as "runtime" | "orchestration" | "host",
+          event: envelope.event,
+        };
+        void Promise.resolve(telemetrySink.emit(sinkEvent)).catch(() => {
+          // sink errors must not surface to callers
+        });
+      }
+    : undefined;
+
+  // Per-request flush called at the end of every chat/stream request so that
+  // sinks with internal write buffers (e.g. custom batch sinks) never
+  // accumulate unbounded state between requests.
+  const onRequestEnd = telemetrySink?.flush
+    ? async () => {
+        await telemetrySink.flush!().catch(() => {});
+      }
+    : undefined;
 
   if (profiles.length === 0 && !customResolver) {
     throw new Error(
@@ -221,9 +324,42 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
     plugins,
     contextProviders,
     ...(onPluginError ? { onPluginError } : {}),
+    ...(makeSinkTraceHandler ? { onTraceEvent: makeSinkTraceHandler } : {}),
+    ...(onRequestEnd ? { onRequestEnd } : {}),
   };
 
+  // ── Capability compatibility checks ───────────────────────────────────────
+  runCapabilityCompatibilityChecks(profiles, Boolean(sandboxManager));
+
+  // ── Inspector validation ───────────────────────────────────────────────────
+  if (inspectorOptions) {
+    if (!dataDir) {
+      throw new Error(
+        "createAgentApp: `inspector` requires `dataDir` to be set. " +
+          "Custom sessionStore implementations are not supported by the built-in Inspector API.",
+      );
+    }
+    if (options.sessionStore) {
+      throw new Error(
+        "createAgentApp: `inspector` is incompatible with a custom `sessionStore`. " +
+          "The Inspector API reads directly from the filesystem layout produced by the default " +
+          "SessionManager. Remove `sessionStore` from your options, or disable `inspector`.",
+      );
+    }
+  }
+
   const app = new Hono();
+
+  // ── Health routes ──────────────────────────────────────────────────────────
+  if (!healthOptions?.disableBuiltinHealthRoutes) {
+    app.route("/", createHealthRoute(sessionStore, healthOptions?.readinessChecks ?? []));
+  }
+
+  // ── Inspector API ──────────────────────────────────────────────────────────
+  if (inspectorOptions && dataDir) {
+    app.route("/__inspector", createInspectorRoute(dataDir));
+  }
+
   app.route("/chat", createChatRoute(chatRouteOptions));
 
   // Always mount /stream. sandboxManager is optional — when absent, file-upload

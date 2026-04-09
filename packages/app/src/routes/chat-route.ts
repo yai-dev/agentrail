@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { randomUUID } from "node:crypto";
 import type { SessionRef } from "@agentrail/core";
 import type { Message, TransformContextFn } from "@agentrail/core";
 import { Hono } from "hono";
@@ -11,6 +12,7 @@ import {
   respondHandledJson,
   validateChatRequest,
 } from "@/routes/chat-route-internals.js";
+import { TRACE_PERSISTED_EVENT_TYPES, wrapTraceEvent, type WorkflowTraceEventEnvelope } from "@/events/index.js";
 import { runCompactionStep } from "@/routes/compaction-runner.js";
 import { runPluginChatRequestInterceptors, runPluginRequestHook } from "@/host/plugins.js";
 import type {
@@ -91,6 +93,20 @@ export interface AgentrailChatRouteOptions {
   onRequestEnd?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
   /** Optional callback invoked after the turn has been persisted. */
   onTurnPersisted?: (context: AgentrailRequestLifecycleContext) => void | Promise<void>;
+  /**
+   * Optional observer called for trace-worthy events on the `/chat` route.
+   *
+   * Because `/chat` uses `agent.invoke()` (non-streaming), granularity is
+   * coarser than the `/stream` route: only synthetic `agent_start` and
+   * `agent_end` events (plus errors) are emitted, not individual turn/tool
+   * events. Use `/stream` when fine-grained telemetry is required.
+   *
+   * Fire-and-forget; must not throw.
+   */
+  onTraceEvent?: (
+    context: { tenantId: string; sessionId: string; sessionRef: SessionRef },
+    envelope: WorkflowTraceEventEnvelope,
+  ) => void;
 }
 
 /**
@@ -105,6 +121,23 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
   const plugins = options.plugins ?? [];
   const onPluginError = options.onPluginError;
   const route = new Hono();
+
+  function emitTraceEvent(
+    ctx: { tenantId: string; sessionId: string; sessionRef: SessionRef },
+    event: Record<string, unknown>,
+    seq: number,
+    requestTraceId?: string,
+  ): void {
+    if (!options.onTraceEvent) return;
+    const type = String(event["type"] ?? "");
+    if (!TRACE_PERSISTED_EVENT_TYPES.has(type)) return;
+    const envelope = wrapTraceEvent("runtime", event, seq, requestTraceId);
+    try {
+      options.onTraceEvent(ctx, envelope);
+    } catch {
+      // observer must not break the request
+    }
+  }
 
   route.post("/", async (c) => {
     let request: AgentrailChatRequest;
@@ -221,11 +254,45 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         },
       );
 
-      const result = await agent.invoke(request.message, {
-        messages: history,
-        signal,
-        transformContext,
-      });
+      const traceCtx = { tenantId: request.tenantId, sessionId, sessionRef };
+      const traceId = randomUUID();
+      let traceSeq = 0;
+
+      emitTraceEvent(traceCtx, { type: "agent_start", agentId, traceId }, traceSeq++, traceId);
+
+      let result: Awaited<ReturnType<typeof agent.invoke>>;
+      try {
+        result = await agent.invoke(request.message, {
+          messages: history,
+          signal,
+          transformContext,
+        });
+      } catch (invokeError) {
+        emitTraceEvent(
+          traceCtx,
+          {
+            type: "error",
+            traceId,
+            error: { message: invokeError instanceof Error ? invokeError.message : String(invokeError) },
+          },
+          traceSeq++,
+          traceId,
+        );
+        throw invokeError;
+      }
+
+      emitTraceEvent(
+        traceCtx,
+        {
+          type: "agent_end",
+          agentId,
+          traceId,
+          stopReason: result.stopReason,
+          usage: result.usage,
+        },
+        traceSeq++,
+        traceId,
+      );
 
       await Promise.all([
         options.sessionStore.appendMessages(request.tenantId, sessionId, result.messages),

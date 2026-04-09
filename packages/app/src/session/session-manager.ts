@@ -6,7 +6,7 @@
 import type { Message, Usage } from "@agentrail/core";
 import { randomUUID } from "node:crypto";
 import type { Dirent } from "node:fs";
-import { appendFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, appendFile, constants, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import * as path from "node:path";
 import {
   buildCompactionMetadata,
@@ -59,6 +59,18 @@ export function parseCompactionMetadata(content: string): CompactionMetadata {
  */
 export class SessionManager {
   constructor(private readonly dataDir: string) {}
+
+  /**
+   * Health probe: verifies that `dataDir` is writable.
+   * Resolves when healthy; rejects with a descriptive error when not.
+   */
+  async ping(): Promise<void> {
+    try {
+      await access(this.dataDir, constants.W_OK);
+    } catch {
+      throw new Error(`Session data directory is not writable: ${this.dataDir}`);
+    }
+  }
 
   /** Returns the opaque session reference for a session. */
   getSessionRef(tenantId: string, sessionId: string): SessionRef {

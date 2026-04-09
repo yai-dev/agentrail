@@ -141,6 +141,9 @@ export type AgentrailEvent = RuntimeEvent | ExtendedSseEvent | AgentrailHostEven
  * are intentionally excluded to avoid noise and log bloat.
  */
 export const TRACE_PERSISTED_EVENT_TYPES = new Set([
+  // Synthetic /chat lifecycle events (emitted by chat-route, not the runtime)
+  "agent_start",
+  "agent_end",
   // Runtime / skill events
   "session.start",
   "session.end",
@@ -175,6 +178,15 @@ export interface WorkflowTraceEventEnvelope {
   sequence: number;
   source: "runtime" | "orchestration";
   event: Record<string, unknown>;
+  /**
+   * Correlation identifiers added by the TelemetrySink layer.
+   * Optional for backwards compatibility with existing trace files and tests
+   * that construct envelopes without these fields.
+   * Future versions will make these required.
+   */
+  traceId?: string;
+  sessionId?: string;
+  tenantId?: string;
 }
 
 let _wrapSeq = 0;
@@ -184,6 +196,8 @@ export function wrapTraceEvent(
   source: "runtime" | "orchestration",
   event: Record<string, unknown>,
   sequence?: number,
+  /** Request-level correlation ID; shared by all envelopes within one request. */
+  traceId?: string,
 ): WorkflowTraceEventEnvelope {
   const seq = sequence ?? _wrapSeq++;
   return {
@@ -192,6 +206,7 @@ export function wrapTraceEvent(
     sequence: seq,
     source,
     event,
+    ...(traceId !== undefined ? { traceId } : {}),
   };
 }
 

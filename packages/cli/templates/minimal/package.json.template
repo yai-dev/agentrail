@@ -1,0 +1,23 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --import=tsx/esm --watch src/main.ts",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agentrail/core": "{{VERSION_AGENTRAIL_CORE}}",
+    "@agentrail/app": "{{VERSION_AGENTRAIL_APP}}",
+    "hono": "{{VERSION_HONO}}",
+    "@hono/node-server": "{{VERSION_HONO_NODE_SERVER}}"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

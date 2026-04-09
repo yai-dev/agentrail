@@ -85,6 +85,26 @@ export type {
 export { mapOrchestrationEvent } from "@/events/index.js";
 
 // ============================================================================
+// Health
+// ============================================================================
+
+export type {
+  ReadinessCheck,
+  ReadinessCheckResult,
+  ReadinessResponse,
+} from "@/health/index.js";
+
+// ============================================================================
+// Telemetry
+// ============================================================================
+
+export type { TelemetrySink, TelemetrySinkEvent } from "@/telemetry/sink.js";
+export {
+  createConsoleTelemetrySink,
+  createFileTelemetrySink,
+} from "@/telemetry/sink.js";
+
+// ============================================================================
 // Config
 // ============================================================================
 
