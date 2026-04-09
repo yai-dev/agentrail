@@ -34,7 +34,7 @@ docker run -d \
   ghcr.io/yai-dev/agentrail-inspector:latest
 ```
 
-Then open [http://localhost:8080](http://localhost:8080).
+Then open `http://localhost:8080`.
 
 Or use the reference Docker Compose file from the [agentrail-inspector](https://github.com/yai-dev/agentrail-inspector) repository.
 
