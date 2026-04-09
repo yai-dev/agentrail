@@ -1,5 +1,12 @@
 # @agentrail/testing
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`a1b916c`](https://github.com/yai-dev/agentrail/commit/a1b916c258cb05dff8880dd5abf2f23318e4d1ca)]:
+  - @agentrail/core@0.3.1
+
 ## 0.0.4
 
 ### Patch Changes
