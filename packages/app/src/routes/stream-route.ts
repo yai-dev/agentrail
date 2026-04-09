@@ -368,7 +368,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         }
 
         // ── 6g. Stream agent events ────────────────────────────────────────
-        const { usage: capturedUsage } = await drainAgentStream(
+        const { usage: capturedUsage, persistenceOk } = await drainAgentStream(
           agent,
           effectiveMessage,
           {
@@ -385,7 +385,15 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         );
 
         if (capturedUsage) {
-          await finalizeUsage(capturedUsage);
+          if (persistenceOk) {
+            // All per-turn flushes succeeded — record usage and fire lifecycle hooks.
+            await finalizeUsage(capturedUsage);
+          } else {
+            // At least one per-turn flush failed; the conversation state on disk is
+            // incomplete. Record usage for billing/rate-limiting but skip
+            // onTurnPersisted so plugins do not observe a partial write as durable.
+            await options.sessionStore.recordTurn(tenantId, sid, capturedUsage);
+          }
         }
       } finally {
         unsubscribeOrchestration?.();
@@ -415,13 +423,18 @@ interface DrainAgentStreamOptions {
   onTurnMessagesReady?: (messages: Message[]) => Promise<void>;
 }
 
-/** Iterates the agent stream, writes each event to SSE, and returns the captured usage. */
+/**
+ * Iterates the agent stream, writes each event to SSE, and returns the captured usage.
+ * `persistenceOk` is false if any per-turn `onTurnMessagesReady` flush threw an error;
+ * callers must not fire `onTurnPersisted` in that case.
+ */
 async function drainAgentStream(
   agent: Agent,
   message: string,
   opts: DrainAgentStreamOptions,
-): Promise<{ usage: Usage | null }> {
+): Promise<{ usage: Usage | null; persistenceOk: boolean }> {
   let capturedUsage: Usage | null = null;
+  let persistenceOk = true;
 
   // Accumulate messages via message.end; flush atomically on each turn.complete.
   const pendingPersistMessages: Message[] = [];
@@ -464,6 +477,9 @@ async function drainAgentStream(
           await opts.onTurnMessagesReady(batch);
         } catch {
           // Persist failure is non-fatal; stream continues unaffected.
+          // Mark the flag so the caller can skip onTurnPersisted — the conversation
+          // state on disk is now incomplete.
+          persistenceOk = false;
         }
       }
     }
@@ -491,5 +507,5 @@ async function drainAgentStream(
     if (opts.signal.aborted) break;
   }
 
-  return { usage: capturedUsage };
+  return { usage: capturedUsage, persistenceOk };
 }

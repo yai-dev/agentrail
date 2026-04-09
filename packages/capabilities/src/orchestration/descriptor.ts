@@ -27,6 +27,17 @@ export interface OrchestrationRegistryLike {
     sessionRef: SessionRef;
     createManagedAgent: (input: CreateManagedAgentInput) => Promise<ManagedAgentInstance>;
   }): Promise<OrchestrationManager>;
+  /**
+   * Ensures an active run exists for the given session and returns its run id.
+   * Called lazily by spawn_agent so that conversations that never spawn a sub-agent
+   * do not produce orchestration files on disk.
+   */
+  ensureActiveRunId(request: {
+    tenantId: string;
+    userId: string;
+    sessionId: string;
+    sessionRef: SessionRef;
+  }): Promise<string>;
 }
 
 /**
@@ -109,15 +120,29 @@ export function orchestration(
         });
       }
 
-      const activeRun = Object.values(om.getSnapshot().runs).find((r) => r.status === "running");
-      if (!activeRun) {
-        throw new Error(
-          `orchestration() capability built tools but no active run exists in the manager. ` +
-            `Ensure manager.startRun() has been called before building tools.`,
-        );
-      }
+      const getRunId = "manager" in registryOrOpts
+        ? async () => {
+            const activeRun = Object.values(om.getSnapshot().runs).find(
+              (r) => r.status === "running",
+            );
+            if (!activeRun) {
+              throw new Error(
+                `orchestration() capability: spawn_agent was called but no active run exists in the manager. ` +
+                  `Ensure manager.startRun() has been called before spawning agents.`,
+              );
+            }
+            return activeRun.id;
+          }
+        : () =>
+            (registryOrOpts as OrchestrationRegistryLike).ensureActiveRunId({
+              tenantId: ctx.tenantId,
+              userId: ctx.userId,
+              sessionId: ctx.sessionId,
+              sessionRef: ctx.sessionRef,
+            });
+
       return [
-        createSpawnAgentTool(om, activeRun.id),
+        createSpawnAgentTool(om, getRunId),
         createSendInputTool(om),
         createWaitAgentTool(om),
         createCloseAgentTool(om),

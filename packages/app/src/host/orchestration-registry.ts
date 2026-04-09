@@ -34,6 +34,15 @@ export interface AgentrailOrchestrationRegistryRequest {
 /** Registry that returns one orchestration manager per session. */
 export interface AgentrailOrchestrationRegistry {
   getManager(request: AgentrailOrchestrationRegistryRequest): Promise<OrchestrationManager>;
+  /**
+   * Ensures an active run exists for the given session and returns its run id.
+   * If a run is already running, the existing id is returned immediately.
+   * If no run exists yet, a new one is started and its id is returned.
+   * Called lazily from spawn_agent so that simple conversations never write orchestration files.
+   */
+  ensureActiveRunId(
+    request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "userId" | "sessionId">,
+  ): Promise<string>;
   invalidate(tenantId: string, sessionId: string): void;
 }
 
@@ -83,9 +92,7 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
       this.managers.set(key, managerPromise);
     }
 
-    const manager = await managerPromise;
-    await this.ensureRun(manager, request);
-    return manager;
+    return managerPromise;
   }
 
   invalidate(tenantId: string, sessionId: string): void {
@@ -125,15 +132,22 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
     }
   }
 
-  private async ensureRun(
-    manager: OrchestrationManager,
+  async ensureActiveRunId(
     request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "userId" | "sessionId">,
-  ): Promise<void> {
-    if (Object.keys(manager.getSnapshot().runs).length > 0) {
-      return;
+  ): Promise<string> {
+    const key = this.getKey(request.tenantId, request.sessionId);
+    const managerPromise = this.managers.get(key);
+    if (!managerPromise) {
+      throw new Error(
+        `[OrchestrationRegistry] Cannot ensure a run for session "${request.sessionId}" — ` +
+          `no manager exists. The orchestration() capability must be initialized before calling ensureActiveRunId().`,
+      );
     }
+    const manager = await managerPromise;
+    const existing = Object.values(manager.getSnapshot().runs).find((r) => r.status === "running");
+    if (existing) return existing.id;
 
-    await manager.startRun(
+    const input =
       this.options.createStartRunInput?.(request) ?? {
         runId: `orchestration:${request.sessionId}`,
         initialTask: {
@@ -145,8 +159,9 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
             sessionId: request.sessionId,
           },
         },
-      },
-    );
+      };
+    await manager.startRun(input);
+    return input.runId;
   }
 }
 

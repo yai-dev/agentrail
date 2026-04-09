@@ -213,6 +213,22 @@ describe("stream-route – incremental persistence", () => {
     expect(batches[1]![0]!.role).toBe("assistant");
   });
 
+  it("onTurnPersisted is called after all flushes succeed", async () => {
+    const onTurnPersisted = vi.fn().mockResolvedValue(undefined);
+    const route = createStreamRoute({
+      defaultAgentId: AGENT_ID,
+      sessionStore: makeSessionStore(),
+      summarize: async () => "",
+      compaction: { triggerTokens: 999_999, minMessages: 9999 },
+      resolveProfile: vi.fn().mockResolvedValue(makeProfile(makeTwoTurnStream())),
+      onTurnPersisted,
+    });
+
+    await makeRequest(route);
+
+    expect(onTurnPersisted).toHaveBeenCalledOnce();
+  });
+
   it("recordTurn is NOT called when session.end is never received (stream ends early)", async () => {
     const sessionStore = makeSessionStore();
 
@@ -245,6 +261,7 @@ describe("stream-route – flush failure drop semantics", () => {
   it("a failed flush is permanently dropped; the next turn only gets its own messages", async () => {
     const batches: Message[][] = [];
     let callCount = 0;
+    const onTurnPersisted = vi.fn();
 
     const sessionStore = makeSessionStore({
       appendMessages: vi.fn().mockImplementation(async (_tid, _sid, msgs: Message[]) => {
@@ -263,6 +280,7 @@ describe("stream-route – flush failure drop semantics", () => {
       summarize: async () => "",
       compaction: { triggerTokens: 999_999, minMessages: 9999 },
       resolveProfile: vi.fn().mockResolvedValue(makeProfile(makeTwoTurnStream())),
+      onTurnPersisted,
     });
 
     await makeRequest(route);
@@ -272,8 +290,11 @@ describe("stream-route – flush failure drop semantics", () => {
     expect(batches[0]).toHaveLength(1);
     expect(batches[0]![0]!.role).toBe("assistant");
 
-    // recordTurn should still be called (stream completed normally)
+    // recordTurn still called for billing — but conversation state is incomplete.
     expect(sessionStore.recordTurn).toHaveBeenCalledOnce();
+    // onTurnPersisted must NOT fire: at least one flush failed, so the on-disk
+    // state does not reflect the full conversation.
+    expect(onTurnPersisted).not.toHaveBeenCalled();
   });
 
   it("a failed flush does not break the SSE stream", async () => {
@@ -300,5 +321,129 @@ describe("stream-route – flush failure drop semantics", () => {
 
     // Drain the body — should not throw even with storage failures
     await drainResponse(res);
+  });
+});
+
+// ─── Abort race-condition coverage ────────────────────────────────────────────
+//
+// These tests drive a real AbortSignal through the route to verify the
+// bottom-of-loop abort check (stream-route.ts:491) behaves correctly.
+//
+//  Case A — abort fires inside the turn.complete flush (after the event has
+//            been dequeued and processed): the flush must complete, but
+//            session.end is skipped so capturedUsage stays null.
+//
+//  Case B — abort fires while turn.complete is still "queued" (i.e. the
+//            generator hasn't been resumed to produce it yet): the flush must
+//            never run and no messages are persisted.
+
+describe("stream-route – abort race condition", () => {
+  function makeReqWithSignal(signal: AbortSignal): Request {
+    return new Request("http://localhost/", {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tenantId: TENANT_ID, userId: USER_ID, agentId: AGENT_ID, message: "hello" }),
+    });
+  }
+
+  it("Case A: abort fires inside flush — turn is persisted, session.end skipped, onTurnPersisted not called", async () => {
+    const reqAbortCtrl = new AbortController();
+    const onTurnPersisted = vi.fn();
+
+    const sessionStore = makeSessionStore({
+      // Abort the request synchronously inside the flush callback.  The
+      // route's internal AbortController listens to c.req.raw.signal so it
+      // will be aborted before the bottom-of-loop check runs.
+      appendMessages: vi.fn().mockImplementation(async () => {
+        reqAbortCtrl.abort();
+      }),
+    });
+
+    const assistantMsg = makeAssistantMsg(false);
+
+    async function* streamWithSessionEnd(): AsyncGenerator<RuntimeEvent> {
+      yield { type: "session.start" };
+      yield { type: "turn.start" };
+      yield { type: "message.end", message: assistantMsg };
+      yield { type: "turn.complete", message: assistantMsg, toolResults: [] };
+      // This event should never be consumed — the bottom-of-loop abort check
+      // fires after the flush above and breaks out before reaching here.
+      yield {
+        type: "session.end",
+        messages: [assistantMsg],
+        usage: ZERO_USAGE,
+      };
+    }
+
+    const agentStream: AgentStream = {
+      [Symbol.asyncIterator]: () => streamWithSessionEnd(),
+      result: () =>
+        Promise.resolve({ text: "done", messages: [], usage: ZERO_USAGE, stopReason: "stop" } as any),
+    };
+
+    const route = createStreamRoute({
+      defaultAgentId: AGENT_ID,
+      sessionStore,
+      summarize: async () => "",
+      compaction: { triggerTokens: 999_999, minMessages: 9999 },
+      resolveProfile: vi.fn().mockResolvedValue(makeProfile(agentStream)),
+      onTurnPersisted,
+    });
+
+    const res = await route.fetch(makeReqWithSignal(reqAbortCtrl.signal));
+    await drainResponse(res);
+
+    // The flush ran exactly once for the one turn.complete
+    expect(sessionStore.appendMessages).toHaveBeenCalledOnce();
+    // session.end was never seen → capturedUsage null → recordTurn not called
+    expect(sessionStore.recordTurn).not.toHaveBeenCalled();
+    // onTurnPersisted must not fire — session never completed
+    expect(onTurnPersisted).not.toHaveBeenCalled();
+  });
+
+  it("Case B: abort fires before turn.complete — no flush, no recordTurn", async () => {
+    const reqAbortCtrl = new AbortController();
+    const sessionStore = makeSessionStore();
+
+    const assistantMsg = makeAssistantMsg(false);
+
+    // The abort is called synchronously inside the generator before yielding
+    // turn.start.  When the consumer receives turn.start and the bottom-of-loop
+    // check runs, signal.aborted is already true — so the loop breaks before
+    // ever requesting turn.complete from the generator.
+    async function* streamWithEarlyAbort(): AsyncGenerator<RuntimeEvent> {
+      yield { type: "session.start" };
+      reqAbortCtrl.abort(); // fires before the next yield is consumed
+      yield { type: "turn.start" };
+      yield { type: "message.end", message: assistantMsg };
+      yield { type: "turn.complete", message: assistantMsg, toolResults: [] };
+      yield {
+        type: "session.end",
+        messages: [assistantMsg],
+        usage: ZERO_USAGE,
+      };
+    }
+
+    const agentStream: AgentStream = {
+      [Symbol.asyncIterator]: () => streamWithEarlyAbort(),
+      result: () =>
+        Promise.resolve({ text: "", messages: [], usage: ZERO_USAGE, stopReason: "stop" } as any),
+    };
+
+    const route = createStreamRoute({
+      defaultAgentId: AGENT_ID,
+      sessionStore,
+      summarize: async () => "",
+      compaction: { triggerTokens: 999_999, minMessages: 9999 },
+      resolveProfile: vi.fn().mockResolvedValue(makeProfile(agentStream)),
+    });
+
+    const res = await route.fetch(makeReqWithSignal(reqAbortCtrl.signal));
+    await drainResponse(res);
+
+    // turn.complete was never reached → no flush
+    expect(sessionStore.appendMessages).not.toHaveBeenCalled();
+    expect(sessionStore.recordTurn).not.toHaveBeenCalled();
   });
 });
