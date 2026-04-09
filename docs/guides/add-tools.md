@@ -38,19 +38,22 @@ Examples include:
 
 - ask-user style interactions
 - todo/task progress writing
-- filesystem, browser, and knowledge tools
+- filesystem, browser, knowledge, and orchestration tools
 
 This is the lowest-friction path when you want a working host quickly. Add capabilities to a profile via:
 
 ```ts
 import { defineProfile } from "@agentrail/app";
-import { filesystem, webSearch } from "@agentrail/capabilities";
+import { filesystem } from "@agentrail/capabilities";
 
 export const defaultProfile = defineProfile({
   id: "default",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are a helpful assistant.",
-  capabilities: [filesystem(), webSearch()],
+  name: "Default Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a helpful assistant.",
+  },
+  capabilities: [filesystem({ sandboxManager })],
 });
 ```
 
@@ -79,10 +82,13 @@ import { customerLookupTool } from "./tools/customer-lookup.js";
 
 export const supportProfile = defineProfile({
   id: "support",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are a support assistant.",
-  tools: [customerLookupTool],
-  capabilities: [filesystem()],
+  name: "Support Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are a support assistant.",
+    tools: [customerLookupTool],
+  },
+  capabilities: [filesystem({ sandboxManager })],
 });
 ```
 
@@ -99,13 +105,12 @@ import { Type } from "@sinclair/typebox";
 import { defineTool } from "@agentrail/core";
 
 export const customerLookupTool = defineTool({
-  name: "CustomerLookup",
-  label: "Customer Lookup",
+  name: "customer_lookup",
   description: "Look up customer details by account id.",
   parameters: Type.Object({
     accountId: Type.String(),
   }),
-  async execute(_toolCallId, params) {
+  async execute(params) {
     return {
       content: [
         {
@@ -129,7 +134,7 @@ A common pattern is:
 
 1. define reusable tools in a package or app-local runtime module
 2. build a tool list in one place
-3. pass that list into your profile’s `createAgent`
+3. pass that list into your profile’s `agent.tools` or dynamic `createAgent`
 
 This keeps route files small and avoids duplicated tool lists.
 

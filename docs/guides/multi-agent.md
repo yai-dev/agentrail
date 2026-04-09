@@ -119,9 +119,12 @@ import { orchestration } from "@agentrail/capabilities";
 
 export const orchestratorProfile = defineProfile({
   id: "orchestrator",
-  model: "anthropic/claude-sonnet-4-5",
-  system: "You are an orchestrator that coordinates sub-agents.",
-  capabilities: [orchestration(waitHandleRegistry)],
+  name: "Orchestrator",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: "You are an orchestrator that coordinates sub-agents.",
+  },
+  capabilities: [orchestration(orchestrationRegistry, subAgentFactory)],
 });
 ```
 

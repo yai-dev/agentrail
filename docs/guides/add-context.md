@@ -76,7 +76,7 @@ That path is especially useful when you want to compose:
 
 The current implementation lives in:
 
-- [packages/app/src/host/capability-context.ts](../../packages/app/src/host/capability-context.ts)
+- [packages/capabilities/src/memory/context.ts](../../packages/capabilities/src/memory/context.ts)
 
 ## Repository Example
 
@@ -134,7 +134,7 @@ If the defaults layer is too opinionated, use these primitives directly:
 - `createTransformContext`
 - `createContextProviderFromTransform`
 
-These live in `@agentrail/app` and let you build a custom context pipeline without adopting the default capability stack.
+These live in `@agentrail/app/advanced` and `@agentrail/capabilities` and let you build a custom context pipeline without adopting the default capability stack.
 
 ## Related Docs
 

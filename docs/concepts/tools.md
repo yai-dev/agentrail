@@ -4,7 +4,7 @@ Tools are functions that an agent can invoke during its execution loop. They bri
 
 ## What a Tool Is
 
-A `RuntimeTool` from `@agentrail/core` has four required parts:
+A `RuntimeTool` from `@agentrail/core` has five core parts:
 
 | Part          | Purpose                                                                   |
 | ------------- | ------------------------------------------------------------------------- |
@@ -18,29 +18,27 @@ The LLM does not execute tools directly. It produces a structured tool call requ
 
 ## Defining a Tool
 
-Use the `defineTool()` builder from `@agentrail/core`:
+Use object-style `defineTool()` from `@agentrail/core` for most tools:
 
 ```ts
 import { Type } from "@sinclair/typebox";
 import { defineTool } from "@agentrail/core";
 
-export const customerLookupTool = defineTool()
-  .name("customer-lookup")
-  .label("Customer Lookup")
-  .description("Look up a customer by account ID.")
-  .parameters(
-    Type.Object({
-      accountId: Type.String({ description: "The account identifier" }),
-    }),
-  )
-  .execute(async (params, ctx) => {
+export const customerLookupTool = defineTool({
+  name: "customer-lookup",
+  label: "Customer Lookup",
+  description: "Look up a customer by account ID.",
+  parameters: Type.Object({
+    accountId: Type.String({ description: "The account identifier" }),
+  }),
+  async execute(params, ctx) {
     const record = await db.customers.findById(params.accountId);
     return {
       content: [{ type: "text", text: JSON.stringify(record) }],
       details: record,
     };
-  })
-  .build();
+  },
+});
 ```
 
 For tools with no parameters, use `defineSimpleTool`:
@@ -75,11 +73,18 @@ Every `execute` function must return a `ToolResult`:
 For long-running tools, use `ctx.onUpdate` to emit intermediate results while the tool is still executing. The host forwards these as `tool.update` events over SSE:
 
 ```ts
-.execute(async (params, ctx) => {
+const searchTool = defineTool({
+  name: "search_docs",
+  description: "Search the internal docs index.",
+  parameters: Type.Object({
+    query: Type.String(),
+  }),
+  async execute(params, ctx) {
   ctx.onUpdate({ content: [{ type: "text", text: "Starting..." }], details: null });
   const result = await longRunningTask(params.query);
   return { content: [{ type: "text", text: result }], details: result };
-})
+  },
+});
 ```
 
 ## Waiting for User Input
@@ -87,14 +92,19 @@ For long-running tools, use `ctx.onUpdate` to emit intermediate results while th
 A tool can pause the agent loop and request input from the user:
 
 ```ts
-.execute(async (params, ctx) => {
+const approvalTool = defineTool({
+  name: "request_approval",
+  description: "Ask the user to confirm a choice before continuing.",
+  async execute(params, ctx) {
   ctx.onSignal?.({
     type: "waiting_for_input",
     question: "Which option do you prefer?",
     options: ["Option A", "Option B"],
   });
   // ...
-})
+    return { content: [{ type: "text", text: "Waiting for input." }], details: null };
+  },
+});
 ```
 
 The host emits a `waiting_for_user_input` event and the UI can surface the question to the user.
@@ -105,7 +115,7 @@ Tools in a hosted Agentrail app come from several sources:
 
 ### 1. Custom runtime tools
 
-Domain-specific tools you define yourself using `tool()` or `defineSimpleTool`. These live in your app's packages or source files and are passed to a profile's `createAgent`.
+Domain-specific tools you define yourself using `defineTool`, `tool()`, or `defineSimpleTool`. These live in your app's packages or source files and are passed to a profile's `agent.tools` or `createAgent`.
 
 ### 2. `@agentrail/capabilities` built-in tools
 
@@ -120,12 +130,12 @@ Capability tools are added to a profile via `defineProfile({ capabilities: [...]
 
 | Capability         | Example tools                                    |
 | ------------------ | ------------------------------------------------ |
-| `knowledge(km)`    | knowledge-search, knowledge-index                |
-| `filesystem(sbm)`  | bash, read, write, edit, glob, grep, sleep, todo-write |
+| `knowledge(km)`    | kb-list, kb-read, kb-search                      |
+| `filesystem(...)`  | bash, read, write, edit, glob, grep, sleep, todo-write |
 | `skills(sm)`       | skill-list, skill-invoke                         |
 | `orchestration(r)` | spawn-agent, send-input, wait-agent, close-agent |
 
-### 4. Orchestration tools
+### 3. Orchestration tools
 
 When a hosted profile uses the orchestration layer, the parent agent gets `spawn-agent`, `send-input`, `wait-agent`, and `close-agent` tools. These let it delegate work to sub-agents and wait for results.
 
@@ -139,10 +149,13 @@ import { filesystem } from "@agentrail/capabilities";
 
 export const defaultProfile = defineProfile({
   id: "default",
-  model: "anthropic/claude-sonnet-4-5",
-  system: systemPrompt,
-  tools: [customerLookupTool, pingTool],
-  capabilities: [filesystem(sandboxManager)],
+  name: "Default Assistant",
+  agent: {
+    model: "anthropic:claude-sonnet-4-5",
+    prompt: systemPrompt,
+    tools: [customerLookupTool, pingTool],
+  },
+  capabilities: [filesystem({ sandboxManager })],
 });
 ```
 

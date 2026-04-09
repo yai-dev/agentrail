@@ -69,11 +69,12 @@ export const tenantProfile = defineProfile({
 | --------------- | ----------------------------------------------------------------------------------------- |
 | `id`            | Stable identifier used by the host to resolve this profile                                |
 | `name`          | Human-readable label for logs and diagnostics                                             |
-| `contextWindow` | LLM context window size in tokens (used for token budget calculations, default `200_000`) |
 | `agent`         | Static agent config (static shape only)                                                   |
 | `createAgent`   | Per-request factory function (dynamic shape only)                                         |
 | `capabilities`  | Capability descriptors to compose into the agent                                          |
 | `modelConfig`   | Model metadata for capabilities that spawn sub-agents (e.g. `skills()`)                  |
+
+The low-level `AgentrailProfile` contract also supports `contextWindow` for token-budget calculations, but `defineProfile` does not currently expose it as a first-class helper field. If you do not provide it through a lower-level custom profile, the host defaults to `200_000`.
 
 ## Profile Registration
 
