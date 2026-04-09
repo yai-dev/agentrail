@@ -28,14 +28,20 @@
   },
   "dependencies": {
     "@agentrail/core": "workspace:*",
+    "@mozilla/readability": "^0.6.0",
     "@sinclair/typebox": "^0.34.0",
     "dockerode": "^4.0.4",
-    "tar-stream": "^3.1.8"
+    "fast-glob": "^3.3.3",
+    "jsdom": "^26.1.0",
+    "tar-stream": "^3.1.8",
+    "turndown": "^7.2.1"
   },
   "devDependencies": {
     "@types/dockerode": "^3.3.38",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.0.0",
     "@types/tar-stream": "^3.1.4",
+    "@types/turndown": "^5.0.5",
     "tsc-alias": "^1.8.16",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^2.0.0"

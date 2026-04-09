@@ -36,6 +36,14 @@ async function checkEnvVars(
   config: Awaited<ReturnType<typeof loadAgentrailConfig>>,
 ): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
+  const searchConfig = config.search as
+    | {
+        provider?: string;
+        tavilyApiKey?: string;
+        braveApiKey?: string;
+        jinaApiKey?: string;
+      }
+    | undefined;
 
   // LLM provider key — only check env var when the config field itself is empty
   const llmProvider = config.llm?.provider ?? "";
@@ -58,9 +66,31 @@ async function checkEnvVars(
   }
 
   // Search provider key — skip when tavilyApiKey is already set in config
-  const tavilyInConfig = Boolean(config.search?.tavilyApiKey);
-  if (!tavilyInConfig && config.search?.provider === "tavily") {
+  const tavilyInConfig = Boolean(searchConfig?.tavilyApiKey);
+  if (!tavilyInConfig && searchConfig?.provider === "tavily") {
     const key = "TAVILY_API_KEY";
+    const present = Boolean(process.env[key]);
+    results.push({
+      name: `env.${key}`,
+      status: present ? "ok" : "fail",
+      message: present ? `${key} found` : `${key} missing — set it in env or config`,
+    });
+  }
+
+  const braveInConfig = Boolean(searchConfig?.braveApiKey);
+  if (!braveInConfig && searchConfig?.provider === "brave") {
+    const key = "BRAVE_SEARCH_API_KEY";
+    const present = Boolean(process.env[key]);
+    results.push({
+      name: `env.${key}`,
+      status: present ? "ok" : "fail",
+      message: present ? `${key} found` : `${key} missing — set it in env or config`,
+    });
+  }
+
+  const jinaInConfig = Boolean(searchConfig?.jinaApiKey);
+  if (!jinaInConfig && searchConfig?.provider === "jina") {
+    const key = "JINA_API_KEY";
     const present = Boolean(process.env[key]);
     results.push({
       name: `env.${key}`,

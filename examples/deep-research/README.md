@@ -33,6 +33,8 @@ Set secrets via environment variables:
 
 - `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
 - `TAVILY_API_KEY`
+- `BRAVE_SEARCH_API_KEY`
+- `JINA_API_KEY`
 
 ## Endpoints
 

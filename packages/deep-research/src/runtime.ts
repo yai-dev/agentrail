@@ -15,6 +15,8 @@ export interface DeepResearchRuntimeConfig {
   model: DeepResearchModelConfig;
   searchProvider?: string;
   tavilyApiKey?: string;
+  braveApiKey?: string;
+  jinaApiKey?: string;
   sandbox?: {
     image?: string;
     idleTimeoutMs?: number;

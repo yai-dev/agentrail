@@ -8,6 +8,7 @@ import type { SandboxManager } from "@/sandbox/index.js";
 import {
   createSandboxedBash,
   createSandboxedEdit,
+  createSandboxedGlob,
   createSandboxedGrep,
   createSandboxedRead,
   createSandboxedWrite,
@@ -21,7 +22,7 @@ export interface FilesystemOptions {
 
 /**
  * Capability that provides sandboxed filesystem tools:
- * bash, read, write, edit, grep, sleep, and todo-write.
+ * bash, read, write, edit, glob, grep, sleep, and todo-write.
  *
  * @see {@link https://agentrail.run/capabilities/filesystem}
  */
@@ -45,6 +46,7 @@ export function filesystem(opts?: FilesystemOptions): CapabilityDescriptor {
         createSandboxedRead(sm, sessionId, tenantId, userId),
         createSandboxedWrite(sm, sessionId, tenantId, userId),
         createSandboxedEdit(sm, sessionId, tenantId, userId),
+        createSandboxedGlob(sm, sessionId, tenantId, userId),
         createSandboxedGrep(sm, sessionId, tenantId, userId),
         createSleepTool(),
       ];

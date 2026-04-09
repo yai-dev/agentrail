@@ -11,6 +11,8 @@ Never put secrets in config files. Use environment variables for all credentials
 | `ANTHROPIC_API_KEY`     | If using Anthropic  | LLM provider API key                         |
 | `OPENAI_API_KEY`        | If using OpenAI     | LLM provider API key                         |
 | `TAVILY_API_KEY`        | If using web search | Tavily search integration                    |
+| `BRAVE_SEARCH_API_KEY`  | If using web search | Brave Search integration                     |
+| `JINA_API_KEY`          | If using web search | Jina Search integration                      |
 | `AGENTRAIL_DATA_DIR`    | Recommended         | Root data directory for sessions, KB, skills |
 | `AGENTRAIL_CONFIG_PATH` | Optional            | Override config file location                |
 | `UI_SECRET_TOKEN`       | If UI is public     | Bearer token for `/api/*` routes             |

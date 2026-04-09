@@ -41,7 +41,7 @@ describe("filesystem() capability descriptor", () => {
     expect(cap.type).toBe("filesystem");
   });
 
-  it("includes the Sleep tool in the default filesystem toolset", async () => {
+  it("includes Sleep and Glob in the default filesystem toolset", async () => {
     const mockSm = {
       ensureSandbox: () => Promise.resolve(),
       ensureImage: () => Promise.resolve(),
@@ -49,6 +49,7 @@ describe("filesystem() capability descriptor", () => {
     } as never;
     const cap = filesystem({ sandboxManager: mockSm });
     const tools = await cap.buildTools(stubCtx(undefined));
+    expect(tools.map((tool) => tool.name)).toContain("Glob");
     expect(tools.map((tool) => tool.name)).toContain("Sleep");
   });
 });

@@ -3,15 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runDoctorChecks } from "../src/commands/doctor.js";
 
 // ── Mock @agentrail/app so we don't need a real config file on disk ────────────
 
 vi.mock("@agentrail/app", async () => {
-  const actual = await vi.importActual<typeof import("@agentrail/app")>("@agentrail/app");
   return {
-    ...actual,
     loadAgentrailConfig: vi.fn(),
   };
 });
@@ -29,6 +27,10 @@ const minimalConfig = {
 describe("runDoctorChecks – config loading", () => {
   beforeEach(() => {
     mockLoad.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("returns a config:ok result when loadAgentrailConfig succeeds", async () => {
@@ -72,5 +74,33 @@ describe("runDoctorChecks – config loading", () => {
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe("fail");
     expect(results[0].message).toMatch(/file not found/);
+  });
+
+  it("checks BRAVE_SEARCH_API_KEY when brave is configured without a key", async () => {
+    mockLoad.mockReturnValue({
+      ...minimalConfig,
+      search: { provider: "brave", braveApiKey: "" },
+    } as never);
+    vi.stubEnv("BRAVE_SEARCH_API_KEY", "brave-key");
+
+    const results = await runDoctorChecks({});
+
+    expect(results.find((result) => result.name === "env.BRAVE_SEARCH_API_KEY")).toMatchObject({
+      status: "ok",
+    });
+  });
+
+  it("checks JINA_API_KEY when jina is configured without a key", async () => {
+    mockLoad.mockReturnValue({
+      ...minimalConfig,
+      search: { provider: "jina", jinaApiKey: "" },
+    } as never);
+    vi.stubEnv("JINA_API_KEY", "jina-key");
+
+    const results = await runDoctorChecks({});
+
+    expect(results.find((result) => result.name === "env.JINA_API_KEY")).toMatchObject({
+      status: "ok",
+    });
   });
 });

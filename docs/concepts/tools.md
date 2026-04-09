@@ -121,7 +121,7 @@ Capability tools are added to a profile via `defineProfile({ capabilities: [...]
 | Capability         | Example tools                                    |
 | ------------------ | ------------------------------------------------ |
 | `knowledge(km)`    | knowledge-search, knowledge-index                |
-| `filesystem(sbm)`  | bash, read, write, edit, grep, sleep, todo-write |
+| `filesystem(sbm)`  | bash, read, write, edit, glob, grep, sleep, todo-write |
 | `skills(sm)`       | skill-list, skill-invoke                         |
 | `orchestration(r)` | spawn-agent, send-input, wait-agent, close-agent |
 
