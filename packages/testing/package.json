@@ -4,7 +4,8 @@
   "description": "Testing utilities and mocks for Agentrail.",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

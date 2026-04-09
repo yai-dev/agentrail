@@ -4,7 +4,8 @@
   "description": "App-layer capability descriptors: filesystem, browser, knowledge, skills, orchestration, and memory for Agentrail.",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

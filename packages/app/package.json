@@ -4,7 +4,8 @@
   "description": "App-layer hosting, profiles, session management, and createAgentApp for Agentrail.",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

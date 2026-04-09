@@ -4,7 +4,8 @@
   "description": "Core runtime primitives, agent loop, and session contracts for Agentrail.",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
