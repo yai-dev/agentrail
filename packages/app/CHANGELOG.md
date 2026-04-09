@@ -1,5 +1,15 @@
 # @agentrail/app
 
+## 0.3.2
+
+### Patch Changes
+
+- [#128](https://github.com/yai-dev/agentrail/pull/128) [`cbf6935`](https://github.com/yai-dev/agentrail/commit/cbf6935ef041b455717a6fea0d96a472ec858f3d) Thanks [@yai-dev](https://github.com/yai-dev)! - Add package READMEs for all published Agentrail packages and include them in npm publishes. Also add `llms.txt` to the documentation site so AI tools can discover the current docs structure more reliably.
+
+- Updated dependencies [[`cbf6935`](https://github.com/yai-dev/agentrail/commit/cbf6935ef041b455717a6fea0d96a472ec858f3d)]:
+  - @agentrail/capabilities@0.1.5
+  - @agentrail/core@0.3.2
+
 ## 0.3.1
 
 ### Patch Changes
