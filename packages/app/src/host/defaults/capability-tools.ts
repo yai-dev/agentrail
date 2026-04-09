@@ -14,6 +14,7 @@ import {
   createSandboxedGrep,
   createSandboxedRead,
   createSandboxedWrite,
+  createSleepTool,
 } from "@agentrail/capabilities";
 import { buildSkillTool } from "@agentrail/capabilities";
 import { createAskUserQuestionTool, createTodoWriteTool } from "@agentrail/capabilities";
@@ -92,6 +93,7 @@ export async function buildDefaultCapabilityTools(
 
   const executionTools = [
     ...sandboxFileTools,
+    createSleepTool(),
     createTodoWriteTool(todoStorage),
     createAskUserQuestionTool(sessionId, waitHandleRegistry),
     ...kbTools,

@@ -9,5 +9,7 @@ export { bashTool } from "@/tools/bash.js";
 export { editTool } from "@/tools/edit.js";
 export { grepTool } from "@/tools/grep.js";
 export { readTool } from "@/tools/read.js";
+export { createSleepTool } from "@/tools/sleep.js";
+export type { SleepToolOptions } from "@/tools/sleep.js";
 export { createTodoWriteTool } from "@/tools/todo-write.js";
 export { writeTool } from "@/tools/write.js";
