@@ -13,7 +13,7 @@ export type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 // Capability factory functions — the public API for composing capabilities
 // ============================================================================
 
-/** Sandboxed filesystem tools: bash, read, write, edit, grep, todo-write */
+/** Sandboxed filesystem tools: bash, read, write, edit, grep, sleep, todo-write */
 export { filesystem } from "@/filesystem/index.js";
 export type { FilesystemOptions } from "@/filesystem/index.js";
 
@@ -149,6 +149,7 @@ export {
 
 export {
   bashTool,
+  createSleepTool,
   editTool,
   grepTool,
   readTool,
@@ -156,7 +157,7 @@ export {
   createAskUserQuestionTool,
   createTodoWriteTool,
 } from "@/tools/index.js";
-export type { WaitHandleRegistry } from "@/tools/index.js";
+export type { SleepToolOptions, WaitHandleRegistry } from "@/tools/index.js";
 
 // ============================================================================
 // Memory context utilities (advanced)

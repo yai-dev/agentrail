@@ -40,6 +40,17 @@ describe("filesystem() capability descriptor", () => {
     const cap = filesystem({ sandboxManager: mockSm });
     expect(cap.type).toBe("filesystem");
   });
+
+  it("includes the Sleep tool in the default filesystem toolset", async () => {
+    const mockSm = {
+      ensureSandbox: () => Promise.resolve(),
+      ensureImage: () => Promise.resolve(),
+      listWorkspace: () => Promise.resolve(""),
+    } as never;
+    const cap = filesystem({ sandboxManager: mockSm });
+    const tools = await cap.buildTools(stubCtx(undefined));
+    expect(tools.map((tool) => tool.name)).toContain("Sleep");
+  });
 });
 
 describe("browser() capability descriptor", () => {

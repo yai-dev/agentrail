@@ -64,7 +64,7 @@ At request time, the agent receives KB metadata summaries as context and gains a
 
 ## Sandbox (Code Execution)
 
-The sandbox capability provides Docker-backed isolated execution per session. It is required for code execution, file operations, and browser tools.
+The sandbox capability provides Docker-backed isolated execution per session. It is required for code execution, file operations, bounded sleep/wait behavior, and browser tools.
 
 ### Instantiate SandboxManager
 

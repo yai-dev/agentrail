@@ -12,7 +12,7 @@ import {
   createSandboxedRead,
   createSandboxedWrite,
 } from "@/sandbox/index.js";
-import { createTodoWriteTool } from "@/tools/index.js";
+import { createSleepTool, createTodoWriteTool } from "@/tools/index.js";
 
 export interface FilesystemOptions {
   /** Override the sandbox manager (e.g. from a custom image). */
@@ -21,7 +21,7 @@ export interface FilesystemOptions {
 
 /**
  * Capability that provides sandboxed filesystem tools:
- * bash, read, write, edit, grep, and todo-write.
+ * bash, read, write, edit, grep, sleep, and todo-write.
  *
  * @see {@link https://agentrail.run/capabilities/filesystem}
  */
@@ -46,6 +46,7 @@ export function filesystem(opts?: FilesystemOptions): CapabilityDescriptor {
         createSandboxedWrite(sm, sessionId, tenantId, userId),
         createSandboxedEdit(sm, sessionId, tenantId, userId),
         createSandboxedGrep(sm, sessionId, tenantId, userId),
+        createSleepTool(),
       ];
 
       if (todoStorage) {
