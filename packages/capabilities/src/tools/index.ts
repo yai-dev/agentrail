@@ -7,9 +7,34 @@ export { createAskUserQuestionTool } from "@/tools/ask-user-question.js";
 export type { WaitHandleRegistry } from "@/tools/ask-user-question.js";
 export { bashTool } from "@/tools/bash.js";
 export { editTool } from "@/tools/edit.js";
+export { createGlobTool } from "@/tools/glob.js";
 export { grepTool } from "@/tools/grep.js";
 export { readTool } from "@/tools/read.js";
 export { createSleepTool } from "@/tools/sleep.js";
 export type { SleepToolOptions } from "@/tools/sleep.js";
 export { createTodoWriteTool } from "@/tools/todo-write.js";
+export { createWebFetchTool } from "@/tools/web-fetch.js";
+export type {
+  WebFetchDetails,
+  WebFetchExtractionClient,
+  WebFetchExtractionRequest,
+  WebFetchExtractionResponse,
+  WebFetchStatus,
+  WebFetchToolOptions,
+} from "@/tools/web-fetch.js";
+export {
+  createBraveSearchProvider,
+  createJinaSearchProvider,
+  createTavilySearchProvider,
+  createWebSearchTool,
+} from "@/tools/web-search.js";
+export type {
+  BraveSearchProviderOptions,
+  JinaSearchProviderOptions,
+  TavilySearchProviderOptions,
+  WebSearchOptions,
+  WebSearchProvider,
+  WebSearchResult,
+  WebSearchToolOptions,
+} from "@/tools/web-search.js";
 export { writeTool } from "@/tools/write.js";

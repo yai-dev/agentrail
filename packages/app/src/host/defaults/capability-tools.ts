@@ -11,6 +11,7 @@ import {
   createBrowserScroll,
   createSandboxedBash,
   createSandboxedEdit,
+  createSandboxedGlob,
   createSandboxedGrep,
   createSandboxedRead,
   createSandboxedWrite,
@@ -81,6 +82,7 @@ export async function buildDefaultCapabilityTools(
     createSandboxedRead(sandboxManager, sessionId, tenantId, userId),
     createSandboxedWrite(sandboxManager, sessionId, tenantId, userId),
     createSandboxedEdit(sandboxManager, sessionId, tenantId, userId),
+    createSandboxedGlob(sandboxManager, sessionId, tenantId, userId),
     createSandboxedGrep(sandboxManager, sessionId, tenantId, userId),
   ];
 

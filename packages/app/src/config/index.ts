@@ -32,6 +32,8 @@ export interface AgentrailConfig {
   search: {
     provider: string;
     tavilyApiKey: string;
+    braveApiKey: string;
+    jinaApiKey: string;
   };
   paths: {
     dataDir: string;
@@ -112,6 +114,8 @@ export interface SharedResolvedAppConfig {
   baseUrl?: string;
   searchProvider: string;
   tavilyApiKey?: string;
+  braveApiKey?: string;
+  jinaApiKey?: string;
   dataDir: string;
   uiSecretToken?: string;
   sandbox: SandboxRuntimeConfig;
@@ -151,6 +155,8 @@ export const DEFAULT_AGENTRAIL_CONFIG: AgentrailConfig = {
   search: {
     provider: "tavily",
     tavilyApiKey: "",
+    braveApiKey: "",
+    jinaApiKey: "",
   },
   paths: {
     dataDir: DEFAULT_DATA_DIR,
@@ -351,7 +357,7 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   assertNoUnknownKeys(llm, ["provider", "modelId", "baseUrl"], ["llm"]);
 
   const search = getObject(root, "search", [], DEFAULT_AGENTRAIL_CONFIG.search as UnknownRecord);
-  assertNoUnknownKeys(search, ["provider", "tavilyApiKey"], ["search"]);
+  assertNoUnknownKeys(search, ["provider", "tavilyApiKey", "braveApiKey", "jinaApiKey"], ["search"]);
 
   const pathsValue = getObject(root, "paths", [], DEFAULT_AGENTRAIL_CONFIG.paths as UnknownRecord);
   assertNoUnknownKeys(pathsValue, ["dataDir"], ["paths"]);
@@ -472,6 +478,18 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
         "tavilyApiKey",
         ["search"],
         DEFAULT_AGENTRAIL_CONFIG.search.tavilyApiKey,
+      ),
+      braveApiKey: getString(
+        search,
+        "braveApiKey",
+        ["search"],
+        DEFAULT_AGENTRAIL_CONFIG.search.braveApiKey,
+      ),
+      jinaApiKey: getString(
+        search,
+        "jinaApiKey",
+        ["search"],
+        DEFAULT_AGENTRAIL_CONFIG.search.jinaApiKey,
       ),
     },
     paths: {
@@ -671,6 +689,8 @@ export function loadAgentrailConfig(options: LoadAgentrailConfigOptions = {}): A
 function resolveSharedFields(config: AgentrailConfig): SharedResolvedAppConfig {
   const baseUrl = normalizeOptionalString(config.llm.baseUrl);
   const tavilyApiKey = normalizeOptionalString(config.search.tavilyApiKey);
+  const braveApiKey = normalizeOptionalString(config.search.braveApiKey);
+  const jinaApiKey = normalizeOptionalString(config.search.jinaApiKey);
   const uiSecretToken = normalizeOptionalString(config.auth.uiSecretToken);
 
   return {
@@ -679,6 +699,8 @@ function resolveSharedFields(config: AgentrailConfig): SharedResolvedAppConfig {
     ...(baseUrl ? { baseUrl } : {}),
     searchProvider: config.search.provider,
     ...(tavilyApiKey ? { tavilyApiKey } : {}),
+    ...(braveApiKey ? { braveApiKey } : {}),
+    ...(jinaApiKey ? { jinaApiKey } : {}),
     dataDir: config.paths.dataDir,
     ...(uiSecretToken ? { uiSecretToken } : {}),
     sandbox: {

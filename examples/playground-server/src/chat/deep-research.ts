@@ -26,6 +26,8 @@ function buildDeepResearchRuntime() {
     },
     searchProvider: config.searchProvider,
     tavilyApiKey: config.tavilyApiKey,
+    braveApiKey: config.braveApiKey,
+    jinaApiKey: config.jinaApiKey,
     sandbox: config.sandbox,
     orchestration: config.orchestration,
   };

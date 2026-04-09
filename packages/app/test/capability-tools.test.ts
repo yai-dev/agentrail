@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { buildDefaultCapabilityTools } from "../src/host/defaults/capability-tools.js";
 
 describe("buildDefaultCapabilityTools", () => {
-  it("includes Sleep in the default execution tools", async () => {
+  it("includes Sleep and Glob in the default execution tools", async () => {
     const result = await buildDefaultCapabilityTools({
       tenantId: "t1",
       userId: "u1",
@@ -23,6 +23,7 @@ describe("buildDefaultCapabilityTools", () => {
       includeSkillTool: false,
     });
 
+    expect(result.executionTools.map((tool) => tool.name)).toContain("Glob");
     expect(result.executionTools.map((tool) => tool.name)).toContain("Sleep");
   });
 });

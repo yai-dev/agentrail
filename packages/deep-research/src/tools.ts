@@ -3,17 +3,18 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import {
+  createBraveSearchProvider,
+  createJinaSearchProvider,
+  createTavilySearchProvider,
+  createWebFetchTool as createGenericWebFetchTool,
+  createWebSearchTool as createGenericWebSearchTool,
+  type WebFetchDetails,
+  type WebSearchProvider,
+} from "@agentrail/capabilities";
 import { tool, Type } from "@agentrail/core";
-import { parse as parseHtml } from "node-html-parser";
 import type { DeepResearchRuntimeConfig } from "@/runtime.js";
 import { normalizeResearchUrl } from "@/utils.js";
-
-interface TavilySearchResult {
-  title?: string;
-  url?: string;
-  content?: string;
-  published_date?: string;
-}
 
 interface WebSearchItem {
   title: string;
@@ -40,19 +41,44 @@ function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function stripHtml(html: string): string {
-  const root = parseHtml(html);
-  for (const el of root.querySelectorAll("script, style, noscript")) {
-    el.remove();
+function resolveSearchProvider(runtime: DeepResearchRuntimeConfig): WebSearchProvider {
+  if (runtime.searchProvider === "tavily" && runtime.tavilyApiKey) {
+    return createTavilySearchProvider({ apiKey: runtime.tavilyApiKey });
   }
-  return normalizeWhitespace(root.text);
+
+  if (runtime.searchProvider === "brave" && runtime.braveApiKey) {
+    return createBraveSearchProvider({ apiKey: runtime.braveApiKey });
+  }
+
+  if (runtime.searchProvider === "jina" && runtime.jinaApiKey) {
+    return createJinaSearchProvider({ apiKey: runtime.jinaApiKey });
+  }
+
+  throw new Error(
+    "Deep Research search is not configured. Set search.provider and its matching API key in config/agentrail.yaml.",
+  );
+}
+
+function mapFetchStatus(
+  details: WebFetchDetails,
+): "success" | "401" | "403" | "timeout" | "empty_content" | "error" {
+  if (details.status === "success") return "success";
+  if (details.status === "timeout") return "timeout";
+  if (details.status === "empty_content") return "empty_content";
+  if (details.status === "http_error") {
+    if (details.httpStatus === 401) return "401";
+    if (details.httpStatus === 403) return "403";
+  }
+  return "error";
 }
 
 export function createWebSearchTool(runtime: DeepResearchRuntimeConfig) {
+  const baseTool = createGenericWebSearchTool(resolveSearchProvider(runtime));
+
   return tool()
     .name("WebSearch")
     .label("WebSearch")
-    .description("Search the web using Tavily and return normalized source candidates.")
+    .description("Search the web and return normalized source candidates.")
     .parameters(
       Type.Object({
         query: Type.String({ description: "Search query." }),
@@ -66,50 +92,40 @@ export function createWebSearchTool(runtime: DeepResearchRuntimeConfig) {
         ),
       }),
     )
-    .execute(async ({ query, max_results }) => {
-      if (runtime.searchProvider !== "tavily" || !runtime.tavilyApiKey) {
-        throw new Error(
-          "Deep Research search is not configured. Set search.provider=tavily and search.tavilyApiKey in config/agentrail.yaml.",
-        );
-      }
+    .execute(async ({ query, max_results }, ctx) => {
+      const baseResult = await baseTool.execute(
+        ctx.toolCallId,
+        { query, max_results },
+        ctx.signal,
+        ctx.onUpdate,
+        ctx.onSignal,
+      );
 
-      const response = await fetch("https://api.tavily.com/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: runtime.tavilyApiKey,
-          query,
-          max_results: max_results ?? 5,
-          search_depth: "advanced",
-          include_answer: false,
-          include_raw_content: false,
-          include_images: false,
-        }),
-        signal: AbortSignal.timeout(20_000),
-      });
+      const rawResults = (
+        baseResult.details as {
+          results?: Array<{
+            title?: string;
+            url?: string;
+            snippet?: string;
+            publishedAt?: string;
+          }>;
+        }
+      ).results ?? [];
 
-      if (!response.ok) {
-        throw new Error(`Tavily search failed with status ${response.status}`);
-      }
-
-      const data = (await response.json()) as { results?: TavilySearchResult[] };
-      const items: WebSearchItem[] = (data.results ?? [])
-        .filter(
-          (
-            item,
-          ): item is Required<Pick<TavilySearchResult, "title" | "url">> & TavilySearchResult =>
-            !!item.url && !!item.title,
-        )
-        .map((item) => ({
-          title: item.title ?? item.url ?? "Untitled",
-          url: normalizeResearchUrl(item.url ?? ""),
-          normalizedUrl: normalizeResearchUrl(item.url ?? ""),
-          snippet: normalizeWhitespace(item.content ?? "").slice(0, 500),
-          domain: getDomain(normalizeResearchUrl(item.url ?? "")),
-          publishedAt: item.published_date,
-          evidenceLevel: "snippet_only" as const,
-          fetchStatus: "skipped" as const,
-        }))
+      const items: WebSearchItem[] = rawResults
+        .map((item) => {
+          const normalizedUrl = normalizeResearchUrl(item.url ?? "");
+          return {
+            title: item.title ?? item.url ?? "Untitled",
+            url: normalizedUrl,
+            normalizedUrl,
+            snippet: normalizeWhitespace(item.snippet ?? "").slice(0, 500),
+            domain: getDomain(normalizedUrl),
+            publishedAt: item.publishedAt,
+            evidenceLevel: "snippet_only" as const,
+            fetchStatus: "skipped" as const,
+          };
+        })
         .filter((item) => item.url);
 
       return {
@@ -121,6 +137,8 @@ export function createWebSearchTool(runtime: DeepResearchRuntimeConfig) {
 }
 
 export function createFetchUrlTool() {
+  const baseTool = createGenericWebFetchTool();
+
   return tool()
     .name("FetchUrl")
     .label("FetchUrl")
@@ -130,16 +148,18 @@ export function createFetchUrlTool() {
         url: Type.String({ description: "HTTP or HTTPS URL to fetch." }),
       }),
     )
-    .execute(async ({ url }) => {
-      // FetchUrl returns structured failures instead of throwing for common HTTP
-      // outcomes. That gives the researcher enough information to decide
-      // whether to retry, downgrade evidence, or stop hitting a blocked domain.
+    .execute(async ({ url }, ctx) => {
       const normalizedUrl = normalizeResearchUrl(url);
-      if (!/^https?:\/\//i.test(normalizedUrl)) {
-        throw new Error("FetchUrl only supports http/https URLs");
-      }
+      const baseResult = await baseTool.execute(
+        ctx.toolCallId,
+        { url: normalizedUrl },
+        ctx.signal,
+        ctx.onUpdate,
+        ctx.onSignal,
+      );
+      const details = baseResult.details as WebFetchDetails;
 
-      let payload: {
+      const payload: {
         url: string;
         normalizedUrl: string;
         title: string;
@@ -147,56 +167,18 @@ export function createFetchUrlTool() {
         evidenceLevel: "body_verified" | "unverified";
         fetchStatus: "success" | "401" | "403" | "timeout" | "empty_content" | "error";
         error?: string;
+      } = {
+        url: normalizedUrl,
+        normalizedUrl,
+        title: details.status === "success" ? details.title : details.title || normalizedUrl,
+        content: details.status === "success" ? details.content : "",
+        evidenceLevel:
+          details.status === "success" && details.content ? "body_verified" : "unverified",
+        fetchStatus: mapFetchStatus(details),
+        ...(details.status === "success"
+          ? {}
+          : { error: details.error }),
       };
-
-      try {
-        const response = await fetch(normalizedUrl, {
-          headers: {
-            "User-Agent": "Agentrail-DeepResearch/1.0",
-            Accept: "text/html,application/xhtml+xml,application/xml,text/plain;q=0.9,*/*;q=0.8",
-          },
-          signal: AbortSignal.timeout(20_000),
-        });
-
-        if (!response.ok) {
-          const fetchStatus =
-            response.status === 401 ? "401" : response.status === 403 ? "403" : "error";
-          payload = {
-            url: normalizedUrl,
-            normalizedUrl,
-            title: normalizedUrl,
-            content: "",
-            evidenceLevel: "unverified",
-            fetchStatus,
-            error: `FetchUrl failed with status ${response.status}`,
-          };
-        } else {
-          const html = await response.text();
-          const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-          const title = titleMatch?.[1] ? normalizeWhitespace(titleMatch[1]) : normalizedUrl;
-          const content = stripHtml(html).slice(0, 8000);
-          payload = {
-            url: normalizedUrl,
-            normalizedUrl,
-            title,
-            content,
-            evidenceLevel: content ? "body_verified" : "unverified",
-            fetchStatus: content ? "success" : "empty_content",
-            ...(content ? {} : { error: "Fetched page but extracted content was empty" }),
-          };
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        payload = {
-          url: normalizedUrl,
-          normalizedUrl,
-          title: normalizedUrl,
-          content: "",
-          evidenceLevel: "unverified",
-          fetchStatus: /timed out/i.test(message) ? "timeout" : "error",
-          error: message,
-        };
-      }
 
       return {
         content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],

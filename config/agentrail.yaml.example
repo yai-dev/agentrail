@@ -15,6 +15,12 @@ llm:
 search:
   # Search provider name. Default: tavily.
   provider: tavily
+  # Optional Tavily API key. Default: "".
+  tavilyApiKey: ""
+  # Optional Brave Search API key. Default: "".
+  braveApiKey: ""
+  # Optional Jina Search API key. Default: "".
+  jinaApiKey: ""
 
 # Shared filesystem paths for local development data.
 paths:

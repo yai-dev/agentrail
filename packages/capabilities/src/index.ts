@@ -13,7 +13,7 @@ export type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 // Capability factory functions — the public API for composing capabilities
 // ============================================================================
 
-/** Sandboxed filesystem tools: bash, read, write, edit, grep, sleep, todo-write */
+/** Sandboxed filesystem tools: bash, read, write, edit, glob, grep, sleep, todo-write */
 export { filesystem } from "@/filesystem/index.js";
 export type { FilesystemOptions } from "@/filesystem/index.js";
 
@@ -71,6 +71,7 @@ export {
   createBrowserScroll,
   createSandboxedBash,
   createSandboxedEdit,
+  createSandboxedGlob,
   createSandboxedGrep,
   createSandboxedPython,
   createSandboxedRead,
@@ -149,7 +150,13 @@ export {
 
 export {
   bashTool,
+  createBraveSearchProvider,
+  createGlobTool,
+  createJinaSearchProvider,
   createSleepTool,
+  createTavilySearchProvider,
+  createWebFetchTool,
+  createWebSearchTool,
   editTool,
   grepTool,
   readTool,
@@ -157,7 +164,23 @@ export {
   createAskUserQuestionTool,
   createTodoWriteTool,
 } from "@/tools/index.js";
-export type { SleepToolOptions, WaitHandleRegistry } from "@/tools/index.js";
+export type {
+  BraveSearchProviderOptions,
+  JinaSearchProviderOptions,
+  SleepToolOptions,
+  TavilySearchProviderOptions,
+  WaitHandleRegistry,
+  WebFetchDetails,
+  WebFetchExtractionClient,
+  WebFetchExtractionRequest,
+  WebFetchExtractionResponse,
+  WebFetchStatus,
+  WebFetchToolOptions,
+  WebSearchOptions,
+  WebSearchProvider,
+  WebSearchResult,
+  WebSearchToolOptions,
+} from "@/tools/index.js";
 
 // ============================================================================
 // Memory context utilities (advanced)

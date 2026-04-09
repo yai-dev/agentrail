@@ -15,6 +15,7 @@ export type {
 
 export { createSandboxedBash } from "@/sandbox/tools/sandboxed-bash.js";
 export { createSandboxedEdit } from "@/sandbox/tools/sandboxed-edit.js";
+export { createSandboxedGlob } from "@/sandbox/tools/sandboxed-glob.js";
 export { createSandboxedGrep } from "@/sandbox/tools/sandboxed-grep.js";
 export { createSandboxedPython } from "@/sandbox/tools/sandboxed-python.js";
 export { createSandboxedRead } from "@/sandbox/tools/sandboxed-read.js";
