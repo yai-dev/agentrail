@@ -44,10 +44,10 @@ Context providers are **not** the right place for:
 
 When a request arrives, the host runs all registered context providers in order and assembles their output into a list of messages. This list is prepended to the session history before the agent sees it.
 
-The pipeline is built with `createTransformContext` from `@agentrail/app`:
+The pipeline is built with `createTransformContext` from `@agentrail/app/advanced`:
 
 ```ts
-import { createTransformContext } from "@agentrail/app";
+import { createTransformContext } from "@agentrail/app/advanced";
 
 const transformContext = createTransformContext([
   identityProvider,
@@ -61,10 +61,10 @@ Order matters. Identity and date headers should come first; memory and knowledge
 
 ## Defaults Layer
 
-Use `createDefaultCapabilityContextProviders` from `@agentrail/app` to assemble the standard capability context stack:
+Use `createDefaultCapabilityContextProviders` from `@agentrail/capabilities` to assemble the standard capability context stack:
 
 ```ts
-import { createDefaultCapabilityContextProviders } from "@agentrail/app";
+import { createDefaultCapabilityContextProviders } from "@agentrail/capabilities";
 
 const contextProviders = createDefaultCapabilityContextProviders({
   memory: memoryManager,
@@ -78,21 +78,12 @@ This covers the typical provider set — memory summaries, knowledge summaries, 
 
 ## Context Window Budget
 
-Each profile declares a `contextWindow` — the maximum number of tokens the model can handle in a single call. The host uses this value to:
+The low-level profile contract supports a `contextWindow` field — the maximum number of tokens the model can handle in a single call. The host uses this value to:
 
 - trim session history via `loadMessagesWithBudget` (keeping the most recent messages that fit)
 - compute `budgetUsedPct` in SSE events so the client can show a context usage indicator
 
-```ts
-defineProfile({
-  id: "default",
-  model: "anthropic/claude-sonnet-4-5",
-  contextWindow: 200_000, // actual limit of the model used by this profile
-  system: "You are a helpful assistant.",
-});
-```
-
-If `contextWindow` is not set, it defaults to `200_000`. Set it accurately so the token budget percentage shown to clients is correct.
+If you do not set it through a lower-level custom profile, the host defaults to `200_000`. Set it accurately when you implement `AgentrailProfile` directly so the token budget percentage shown to clients is correct.
 
 ## Compaction
 

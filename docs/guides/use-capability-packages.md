@@ -58,7 +58,7 @@ export const researchProfile = defineProfile({
 });
 ```
 
-At request time, the agent receives KB metadata summaries as context and gains access to `knowledge-search` and `knowledge-index` tools.
+At request time, the agent receives KB metadata summaries as context and gains access to `kb-list`, `kb-read`, and `kb-search`.
 
 ---
 
@@ -116,7 +116,7 @@ export const coderProfile = defineProfile({
     model: "anthropic:claude-sonnet-4-5",
     prompt: "You are a coding assistant. You can run code in a sandbox.",
   },
-  capabilities: [filesystem(sandboxManager)],
+  capabilities: [filesystem({ sandboxManager })],
 });
 ```
 
@@ -170,7 +170,7 @@ export const assistantProfile = defineProfile({
 });
 ```
 
-When `delegateToSubAgent` is `true`, skill execution is isolated inside a sub-agent. This is the recommended setting for production use.
+When `mode: "delegate"` is enabled, skill execution is isolated inside a sub-agent. This is the recommended setting for production use.
 
 ---
 
@@ -188,7 +188,7 @@ export const powerProfile = defineProfile({
     prompt: "You are a powerful assistant.",
   },
   capabilities: [
-    filesystem(sandboxManager),
+    filesystem({ sandboxManager }),
     knowledge(knowledgeManager),
     skills(skillManager, { mode: "delegate" }),
   ],

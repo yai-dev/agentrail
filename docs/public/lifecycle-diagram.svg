@@ -16,7 +16,7 @@
   <circle cx="52" cy="110" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
   <text x="52" y="110" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">1</text>
   <text x="82" y="105" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">getOrCreate session</text>
-  <text x="82" y="123" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">creates or resumes session, returns sessionId &#8212; @agentrail/memo</text>
+  <text x="82" y="123" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">creates or resumes session through the configured session store</text>
   <circle cx="52" cy="166" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
   <text x="52" y="166" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">2</text>
   <text x="82" y="161" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">resolveProfile &#8594; profile.createAgent()</text>
@@ -32,7 +32,7 @@
   <circle cx="52" cy="334" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
   <text x="52" y="334" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">5</text>
   <text x="82" y="329" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">assemble context messages</text>
-  <text x="82" y="347" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">capability messages, workspace snapshot, knowledge results</text>
+  <text x="82" y="347" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">context providers inject memory, knowledge, skills, and workspace state</text>
   <circle cx="52" cy="390" r="14" fill="rgba(196,255,46,0.12)" stroke="rgba(196,255,46,0.5)" stroke-width="1.5"/>
   <text x="52" y="390" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#c4ff2e">6</text>
   <text x="82" y="385" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c4ff2e">agent.stream(message, context)</text>
@@ -40,7 +40,7 @@
   <circle cx="52" cy="446" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
   <text x="52" y="446" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">7</text>
   <text x="82" y="441" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">appendMessages + recordTurn</text>
-  <text x="82" y="459" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">persists new messages and token usage to session store</text>
+  <text x="82" y="459" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="11" fill="#555550">persists new messages, turn usage, and session metadata updates</text>
   <circle cx="52" cy="490" r="14" fill="#1a1a18" stroke="#2e2e2c" stroke-width="1.5"/>
   <text x="52" y="490" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New',Courier,monospace" font-size="10" fill="#888880">8</text>
   <text x="82" y="485" dominant-baseline="middle" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#c8c6c0">SSE done event</text>

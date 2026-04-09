@@ -68,8 +68,8 @@ The mapping is done by `mapOrchestrationEvent` in `@agentrail/app`, so UIs do no
 ## Event Flow
 
 ```
-runtime-core          host             SSE stream             UI
-────────────          ────             ──────────             ──
+@agentrail/core      host             SSE stream             UI
+───────────────      ────             ──────────             ──
 session.start    ──►  forward     ──►  JSON line         ──►  start indicator
 turn.start       ──►  forward     ──►                    ──►
 message.update   ──►  forward     ──►                    ──►  text delta

@@ -23,6 +23,7 @@
           >
             View on GitHub
           </a>
+          <a href="/llms.txt" class="at-btn at-btn-secondary"> llms.txt </a>
         </div>
       </div>
 

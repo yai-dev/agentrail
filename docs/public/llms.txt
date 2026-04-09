@@ -40,7 +40,7 @@
 
 - [createAgentApp](https://agentrail.run/reference/create-agent-app): High-level hosted app entrypoint
 - [Host Primitives](https://agentrail.run/reference/host-primitives): Lower-level chat/stream/orchestration building blocks
-- [Host Defaults](https://agentrail.run/reference/host-defaults): Recommended app-layer defaults and helpers
+- [Compatibility APIs](https://agentrail.run/reference/host-defaults): Migration-only compat helpers retained for older hosts
 - [Profile Contract](https://agentrail.run/reference/profile-contract): `AgentrailProfile` and profile context types
 - [Plugin Contract](https://agentrail.run/reference/plugin-contract): `AgentrailPlugin` lifecycle hook contract
 - [Session Store](https://agentrail.run/reference/session-store): `AgentrailSessionStore` interface

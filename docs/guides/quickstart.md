@@ -91,6 +91,8 @@ const agentApp = createAgentApp({
 app.route("/api", agentApp);
 ```
 
+`src/main.ts` also imports `@agentrail/core/providers` once at startup so the built-in Anthropic and OpenAI providers are registered before requests arrive.
+
 `createAgentApp` handles the full request lifecycle: session lookup or creation, context assembly, LLM streaming, tool dispatch, compaction, and SSE event forwarding. It returns a Hono app with both `/chat` (JSON) and `/stream` (SSE) endpoints.
 
 ## Manual Setup (Without Scaffold)

@@ -62,9 +62,12 @@ The default profile lives in `profiles/default-profile.ts`. It shows the recomme
 
 ```ts
 // examples/playground-server/src/profiles/default-profile.ts (simplified)
-import { defineProfile, createStaticProfileResolver } from "@agentrail/app";
-import { filesystem, browser, knowledge, skills, orchestration, memoryContext } from "@agentrail/capabilities";
+import { compactToolResults, createStaticProfileResolver, defineProfile } from "@agentrail/app";
+import { askUser, browser, createSubAgentProcess, filesystem, knowledge, memoryContext, orchestration, skills } from "@agentrail/capabilities";
+import { config } from "../config.js";
 import { knowledgeManager, sandboxManager, skillManager, orchestrationRegistry, sessionManager } from "../context/index.js";
+import { waitHandleRegistry } from "../wait-handle-registry.js";
+import { getWorkerPath } from "../agents/worker-path.js";
 
 export const defaultProfile = defineProfile({
   id: "agentrail-default-agent",
@@ -78,9 +81,38 @@ export const defaultProfile = defineProfile({
     filesystem({ sandboxManager }),
     browser({ sandboxManager }),
     knowledge(knowledgeManager),
-    skills(skillManager, { mode: "delegate" }),
-    orchestration(orchestrationRegistry, subAgentFactory),
-    memoryContext({ buildMemoryIndex, listKnowledgeMetadatas, listSkills }, { cacheTtlMs: 5_000 }),
+    skills(skillManager, {
+      mode: config.skillDelegateToSubAgent ? "delegate" : "inline",
+    }),
+    askUser(waitHandleRegistry),
+    orchestration(orchestrationRegistry, (input, ctx) =>
+      createSubAgentProcess({
+        tenantId: ctx.tenantId,
+        userId: ctx.userId,
+        sessionId: ctx.sessionId,
+        sessionRef: ctx.sessionRef,
+        dataDir: config.dataDir,
+        input,
+        workerPath: getWorkerPath(),
+        runtimeConfig: { input },
+        workerConfig: config.orchestration.subagent,
+      }),
+    ),
+    memoryContext(
+      {
+        buildMemoryIndex: (ctx) =>
+          sessionManager.buildMemoryIndex(ctx.tenantId, ctx.userId, ctx.sessionId),
+        listKnowledgeMetadatas: async (ctx) => {
+          const kbList = await knowledgeManager.listKbs(ctx.tenantId);
+          return Promise.all(kbList.map((id) => knowledgeManager.getMetadata(ctx.tenantId, id)));
+        },
+        listSkills: () => skillManager.listSkills(),
+        listWorkspaceSnapshot: (ctx) => sandboxManager.listWorkspace(ctx.sessionId),
+        compactMessages: compactToolResults,
+        delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
+      },
+      { cacheTtlMs: 5_000 },
+    ),
   ],
 });
 
@@ -93,19 +125,19 @@ Plugins live in `plugins/index.ts`. Each plugin owns one horizontal concern:
 
 ```ts
 // examples/playground-server/src/plugins/index.ts (simplified)
-import type { AgentrailPlugin } from "@agentrail/app";
-import { slashCommandsPlugin } from "./slash-commands.js";
-import { attachmentHintsPlugin } from "./attachment-hints.js";
-import { userMemoryPlugin } from "./user-memory.js";
+import { createUserMemoryPlugin } from "@agentrail/app";
+import { userMemoryConsolidationService } from "../context/index.js";
+import { createAttachmentHintsPlugin } from "./attachment-hints.js";
+import { createSlashCommandsPlugin } from "./slash-commands.js";
 
-export const plugins: AgentrailPlugin[] = [
-  slashCommandsPlugin, // intercepts /commands before the agent runs
-  attachmentHintsPlugin, // injects file context for uploaded attachments
-  userMemoryPlugin, // adds user memory notes to context
+export const playgroundPlugins = [
+  createUserMemoryPlugin(userMemoryConsolidationService),
+  createAttachmentHintsPlugin(),
+  createSlashCommandsPlugin(),
 ];
 ```
 
-The `slashCommandsPlugin` uses `interceptChatRequest` to handle `/help`, `/reset`, and similar commands without invoking the LLM.
+The slash-commands plugin uses `interceptChatRequest` to handle `/help`, `/reset`, and similar commands without invoking the LLM. The user-memory plugin runs as a host concern rather than a profile concern.
 
 ---
 

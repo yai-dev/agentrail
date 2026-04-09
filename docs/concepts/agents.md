@@ -56,7 +56,7 @@ The `model` field accepts either a registered provider string or a `ModelConfig`
 
 ```ts
 // Short form — uses a registered provider alias
-model: "anthropic/claude-sonnet-4-5"
+model: "anthropic:claude-sonnet-4-5"
 
 // Full form — explicit credentials
 model: {

@@ -38,7 +38,6 @@ import { defineAgent } from "@agentrail/core";
 export const analyticsProfile = defineProfile({
   id: "analytics",
   name: "Analytics Agent",
-  contextWindow: 128_000,
   agent: {
     model: "openai:gpt-4o",
     prompt: async (ctx) => loadSystemPrompt(ctx.tenantId),
@@ -103,6 +102,8 @@ At the primitive level, a profile must provide `id`, `name`, and `createAgent`. 
 Optional. The model's context window size in tokens. Defaults to `200_000`.
 
 The stream route uses this value to compute `budgetUsedPct` in SSE events. Set it to the actual limit of the model used by this profile.
+
+This field belongs to the low-level `AgentrailProfile` contract. `defineProfile` does not currently expose `contextWindow` as a helper option, so you only set it when implementing a custom profile object directly.
 
 ## `ProfileDefinition`
 

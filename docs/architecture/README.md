@@ -56,6 +56,8 @@ Profiles, routes, UI, and business logic. This is the code you write. It uses `@
 | `@agentrail/core`                 | 1       | Agent loop, tool contracts, LLM providers, prompts, session types |
 | `@agentrail/capabilities`         | 2       | Sandbox, knowledge, skills, orchestration, built-in tools         |
 | `@agentrail/app`                  | 3       | `createAgentApp`, `defineProfile`, sessions, plugins, config      |
+| `@agentrail/cli`                  | tooling | Local developer CLI (`agentrail doctor`, config checks, helpers)  |
+| `@agentrail/testing`              | tooling | Test helpers for hosted apps and runtime behavior                 |
 | `@agentrail/deep-research`        | addon   | Multi-agent deep research workflow                                |
 | `@agentrail/create-agentrail-app` | tooling | Project scaffold CLI                                              |
 
@@ -82,10 +84,7 @@ Lower-level escape hatches from `@agentrail/app/advanced` (use when you need fin
 - `createStreamRoute(...)` — mount only the `/stream` primitive
 - `createOrchestrationRegistry(...)` — per-session orchestration manager
 
-Pre-Proposal-106 helpers available from `@agentrail/app/compat` for migration purposes:
-
-- `defineHostedProfile(...)` — use `defineProfile` instead
-- `createHostedProfileResolver(...)` — use `createStaticProfileResolver` or `ProfileResolver` instead
+Compatibility helpers still exist in `@agentrail/app/compat`, but they are migration-only APIs. Keep them out of new application code and refer to [Compatibility APIs](../reference/host-defaults.md) only when updating older hosts.
 
 Start with `createAgentApp` + `defineProfile`. They are not black boxes — they are a recommended assembly of primitives that you can unwrap and replace piece by piece as your app grows.
 

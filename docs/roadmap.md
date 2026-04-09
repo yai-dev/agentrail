@@ -42,10 +42,10 @@ onMounted(() => {
   <div class="rm-group">
     <p class="rm-group-title">Core Stability</p>
     <div class="rm-items">
-      <div class="rm-item"><span class="rm-icon rm-icon-todo">○</span><span>Finalize public API surface for <code>runtime-core</code>, <code>host</code>, and <code>orchestration</code></span></div>
+      <div class="rm-item"><span class="rm-icon rm-icon-todo">○</span><span>Finalize public API surface for <code>@agentrail/core</code>, <code>@agentrail/app</code>, and orchestration capabilities</span></div>
       <div class="rm-item"><span class="rm-icon rm-icon-todo">○</span><span>Lock the <code>AgentrailPlugin</code> contract</span></div>
       <div class="rm-item"><span class="rm-icon rm-icon-todo">○</span><span>Lock the <code>AgentrailSessionStore</code> interface</span></div>
-      <div class="rm-item"><span class="rm-icon rm-icon-todo">○</span><span>Lock the <code>AgentrailProfile</code> / <code>HostedProfileDefinition</code> contracts</span></div>
+      <div class="rm-item"><span class="rm-icon rm-icon-todo">○</span><span>Lock the <code>AgentrailProfile</code> / <code>ProfileDefinition</code> contracts</span></div>
       <div class="rm-item"><span class="rm-icon rm-icon-todo">○</span><span>Stabilize the event type taxonomy (<code>RuntimeEvent</code>, <code>AgentrailHostEvent</code>)</span></div>
     </div>
   </div>

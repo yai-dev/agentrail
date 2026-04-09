@@ -99,15 +99,9 @@ Available from `@agentrail/app/advanced` when you need direct control:
 
 Use these when you need a custom request lifecycle or are integrating into an existing server architecture.
 
-### Compatibility Layer — `@agentrail/app/compat`
+### Migration Helpers
 
-Pre-Proposal-106 helpers remain available from `@agentrail/app/compat` for migration purposes:
-
-- `defineHostedProfile`
-- `createHostedProfileResolver`
-- `buildDefaultCapabilityTools`
-
-These are retained for backward compatibility only. Prefer `defineProfile` from `@agentrail/app`.
+Compatibility helpers still exist in `@agentrail/app/compat`, but they are migration-only APIs. Keep new applications on `createAgentApp` + `defineProfile` and only reach for compat helpers when upgrading an older codebase. See [Compatibility APIs](../reference/host-defaults.md) for the legacy surface.
 
 ## Choosing a Path
 
