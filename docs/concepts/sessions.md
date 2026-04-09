@@ -65,7 +65,14 @@ After each turn, the host:
 1. Calls `appendMessages` to write the new user and assistant messages
 2. Calls `recordTurn` to record token usage for billing or observability
 
-Turn persistence happens after the agent has finished and the SSE stream has closed. Plugins can react to this via the `onTurnPersisted` hook.
+During streaming, `appendMessages` is called incrementally after each internal reasoning turn
+(one LLM call plus any tool executions it triggers), rather than once at the end of the full
+interaction. This means messages are durable on disk as soon as each reasoning step completes,
+not only after the SSE stream closes. `recordTurn` is still called once when the entire
+interaction finishes. Plugins can react to this via the `onTurnPersisted` hook.
+
+> **Note:** "internal reasoning turn" here refers to the runtime's `turn.complete` event,
+> which is distinct from the public session concept of a "turn" (one full user interaction).
 
 ## History Loading with Token Budget
 

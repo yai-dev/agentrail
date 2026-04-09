@@ -274,8 +274,6 @@ async function streamAssistantResponse(
   let partialMessage: AssistantMessage | null = null;
   let addedPartial = false;
 
-  const bufferedTextEvents: RuntimeEvent[] = [];
-
   for await (const event of llmStream) {
     switch (event.type) {
       case "start":
@@ -288,17 +286,6 @@ async function streamAssistantResponse(
       case "text_start":
       case "text_delta":
       case "text_end":
-        if (partialMessage) {
-          partialMessage = event.partial;
-          messages[messages.length - 1] = partialMessage;
-          bufferedTextEvents.push({
-            type: "message.update",
-            message: { ...partialMessage },
-            event,
-          });
-        }
-        break;
-
       case "thinking_start":
       case "thinking_delta":
       case "thinking_end":
@@ -326,11 +313,6 @@ async function streamAssistantResponse(
         }
         if (!addedPartial) {
           stream.push({ type: "message.start", message: { ...finalMessage } });
-        }
-        if (finalMessage.stopReason !== "toolUse") {
-          for (const buffered of bufferedTextEvents) {
-            stream.push(buffered);
-          }
         }
         stream.push({ type: "message.end", message: finalMessage });
         return finalMessage;

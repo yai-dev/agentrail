@@ -244,11 +244,20 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         }
       };
 
+      // Used by handleResolvedRequest custom handlers — semantics unchanged.
       const persistTurn = async (messages: Message[], usage: Usage) => {
         await Promise.all([
           options.sessionStore.appendMessages(tenantId, sid, messages),
           options.sessionStore.recordTurn(tenantId, sid, usage),
         ]);
+        await options.onTurnPersisted?.(requestContext);
+        await runPluginRequestHook(plugins, "onTurnPersisted", requestContext, onPluginError);
+      };
+
+      // Standard streaming path: messages already persisted incrementally per turn.complete;
+      // this finalizer only records usage and fires lifecycle hooks.
+      const finalizeUsage = async (usage: Usage) => {
+        await options.sessionStore.recordTurn(tenantId, sid, usage);
         await options.onTurnPersisted?.(requestContext);
         await runPluginRequestHook(plugins, "onTurnPersisted", requestContext, onPluginError);
       };
@@ -359,7 +368,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         }
 
         // ── 6g. Stream agent events ────────────────────────────────────────
-        const { messages: capturedMessages, usage: capturedUsage } = await drainAgentStream(
+        const { usage: capturedUsage } = await drainAgentStream(
           agent,
           effectiveMessage,
           {
@@ -369,11 +378,14 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             contextWindow: profile.contextWindow,
             writeEvent,
             onTraceEvent: maybeTraceEvent,
+            onTurnMessagesReady: async (msgs) => {
+              await options.sessionStore.appendMessages(tenantId, sid, msgs);
+            },
           },
         );
 
-        if (capturedMessages && capturedUsage) {
-          await persistTurn(capturedMessages, capturedUsage);
+        if (capturedUsage) {
+          await finalizeUsage(capturedUsage);
         }
       } finally {
         unsubscribeOrchestration?.();
@@ -395,16 +407,25 @@ interface DrainAgentStreamOptions {
   contextWindow?: number;
   writeEvent: (event: RuntimeEvent | object) => Promise<void>;
   onTraceEvent: (event: RuntimeEvent | object) => void;
+  /**
+   * Called after each internal reasoning turn (turn.complete) with the batch of new messages
+   * produced during that turn. SSE is written first; this runs immediately after.
+   * Errors are swallowed — a failed flush permanently drops that batch (no retry).
+   */
+  onTurnMessagesReady?: (messages: Message[]) => Promise<void>;
 }
 
-/** Iterates the agent stream, writes each event to SSE, and returns the captured turn. */
+/** Iterates the agent stream, writes each event to SSE, and returns the captured usage. */
 async function drainAgentStream(
   agent: Agent,
   message: string,
   opts: DrainAgentStreamOptions,
-): Promise<{ messages: Message[] | null; usage: Usage | null }> {
-  let capturedMessages: Message[] | null = null;
+): Promise<{ usage: Usage | null }> {
   let capturedUsage: Usage | null = null;
+
+  // Accumulate messages via message.end; flush atomically on each turn.complete.
+  const pendingPersistMessages: Message[] = [];
+  let persistedCount = 0;
 
   const agentStream = agent.stream(message, {
     messages: opts.messages,
@@ -413,8 +434,6 @@ async function drainAgentStream(
   });
 
   for await (const event of agentStream) {
-    if (opts.signal.aborted) break;
-
     if (isRuntimeError(event)) {
       const errorEvent: AgentrailErrorEvent = {
         type: "error",
@@ -425,11 +444,31 @@ async function drainAgentStream(
       break;
     }
 
+    // Accumulate fully-assembled messages for incremental persistence.
+    if (event.type === "message.end") {
+      pendingPersistMessages.push(event.message);
+    }
+
+    // SSE-first: write to client before persisting.
     await opts.writeEvent(event);
     opts.onTraceEvent(event);
 
+    // After each internal reasoning turn, flush the accumulated batch atomically.
+    // persistedCount advances before the flush attempt so a failure permanently
+    // drops the batch rather than risking duplicate writes on the next turn.
+    if (event.type === "turn.complete" && opts.onTurnMessagesReady) {
+      const batch = pendingPersistMessages.slice(persistedCount);
+      persistedCount = pendingPersistMessages.length;
+      if (batch.length > 0) {
+        try {
+          await opts.onTurnMessagesReady(batch);
+        } catch {
+          // Persist failure is non-fatal; stream continues unaffected.
+        }
+      }
+    }
+
     if (event.type === "session.end") {
-      capturedMessages = event.messages;
       capturedUsage = event.usage;
 
       const totalInputTokens =
@@ -445,7 +484,12 @@ async function drainAgentStream(
       await opts.writeEvent(usageEvent);
       break;
     }
+
+    // Abort check is at the bottom of the loop so that an event already dequeued
+    // from the EventStream (including a turn.complete) is fully processed before
+    // we stop. Events still in the queue are not guaranteed.
+    if (opts.signal.aborted) break;
   }
 
-  return { messages: capturedMessages, usage: capturedUsage };
+  return { usage: capturedUsage };
 }
