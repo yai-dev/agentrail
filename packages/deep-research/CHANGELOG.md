@@ -1,5 +1,13 @@
 # @agentrail/deep-research
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [[`f33c7e6`](https://github.com/yai-dev/agentrail/commit/f33c7e6804e7c33bde8f91b4d8c68c9bc623fbbd)]:
+  - @agentrail/core@0.4.0
+  - @agentrail/capabilities@0.2.0
+
 ## 0.0.10
 
 ### Patch Changes
