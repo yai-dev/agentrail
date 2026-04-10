@@ -38,6 +38,7 @@ export type StreamEvent =
   | { type: "session_id"; sessionId: string }
   | { type: "session.start" }
   | { type: "session.end"; usage: UsageStat }
+  | { type: "compaction"; messagesBefore: number; messagesAfter: number }
   | { type: "context_usage"; inputTokens: number; outputTokens: number; budgetUsedPct: number }
   | { type: "context_compaction_start" }
   | { type: "context_compaction_end" }

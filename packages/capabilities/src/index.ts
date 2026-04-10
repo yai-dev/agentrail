@@ -47,6 +47,7 @@ export type { MemoryContextOptions } from "@/memory/index.js";
 // ============================================================================
 
 export {
+  composeTransformContexts,
   createContextProviderFromTransform,
   createTransformContext,
 } from "@/context-pipeline.js";

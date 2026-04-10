@@ -6,7 +6,11 @@
 import { executeToolCalls } from "@/executor/tool-executor.js";
 import type { LlmClient, LlmRequest } from "@/interfaces/llm-client.js";
 import { EventStream } from "@/llm/event-stream.js";
-import type { TransformContextFn } from "@/types/agent.types.js";
+import type {
+  ReactiveCompactionController,
+  ReactiveCompactionRecord,
+  TransformContextFn,
+} from "@/types/agent.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
 import type { RuntimeEvent } from "@/types/result.types.js";
 import type { RuntimeTool } from "@/types/tool.types.js";
@@ -50,6 +54,7 @@ export interface AgentLoopConfig {
   getSteeringMessages?: () => Promise<Message[]>;
   getFollowUpMessages?: () => Promise<Message[]>;
   transformContext?: TransformContextFn;
+  reactiveCompaction?: ReactiveCompactionController;
 }
 
 /** Runs the core agent loop from the first user turn until completion. */
@@ -72,7 +77,7 @@ export function agentLoop(
       stream.push({ type: "message.end", message: prompt });
     }
 
-    await runLoop(currentMessages, newMessages, config, context.signal, stream);
+    await runLoop(currentMessages, newMessages, prompts, config, context.signal, stream);
   })();
 
   return stream;
@@ -100,7 +105,7 @@ export function agentLoopContinue(
     stream.push({ type: "session.start" });
     stream.push({ type: "turn.start" });
 
-    await runLoop(currentMessages, newMessages, config, context.signal, stream);
+    await runLoop(currentMessages, newMessages, [], config, context.signal, stream);
   })();
 
   return stream;
@@ -119,6 +124,7 @@ const DEFAULT_MAX_TURNS_FINAL_HINT =
 async function runLoop(
   currentMessages: Message[],
   newMessages: Message[],
+  protectedMessages: Message[],
   config: AgentLoopConfig,
   signal: AbortSignal | undefined,
   stream: EventStream<RuntimeEvent, Message[]>,
@@ -136,6 +142,7 @@ async function runLoop(
     totalTokens: 0,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
   };
+  const compactionRecords: ReactiveCompactionRecord[] = [];
 
   while (true) {
     let hasMoreToolCalls = true;
@@ -165,15 +172,36 @@ async function runLoop(
         stream.push({ type: "max_turns_reached", turnCount });
       }
 
-      const message = await streamAssistantResponse(
+      const assistantResult = await streamAssistantResponse(
         currentMessages,
         config,
         signal,
         stream,
         config.spec.maxTurns !== undefined ? { turnCount, isLastTurn } : undefined,
       );
-      newMessages.push(message);
+      const message = assistantResult.message;
 
+      if (assistantResult.recoverablePromptTooLong && config.reactiveCompaction) {
+        const compactedMessages = await maybeApplyReactiveCompaction(
+          currentMessages,
+          config.reactiveCompaction,
+          stream,
+          {
+            turnCount,
+            latestMessage: message,
+            protectedMessages,
+            records: compactionRecords,
+            trigger: "prompt_too_long",
+          },
+        );
+        if (compactedMessages) {
+          currentMessages.splice(0, currentMessages.length, ...compactedMessages);
+          continue;
+        }
+        emitFinalAssistantMessage(currentMessages, stream, message);
+      }
+
+      newMessages.push(message);
       totalUsage = accumulateUsage(totalUsage, message.usage);
 
       if (message.stopReason === "error" || message.stopReason === "aborted") {
@@ -205,6 +233,25 @@ async function runLoop(
       }
 
       stream.push({ type: "turn.complete", message, toolResults });
+
+      const compactedMessages = config.reactiveCompaction
+        ? await maybeApplyReactiveCompaction(
+            currentMessages,
+            config.reactiveCompaction,
+            stream,
+            {
+              turnCount,
+              usage: message.usage,
+              latestMessage: message,
+              protectedMessages,
+              records: compactionRecords,
+              trigger: "proactive",
+            },
+          )
+        : null;
+      if (compactedMessages) {
+        currentMessages.splice(0, currentMessages.length, ...compactedMessages);
+      }
 
       if (isLastTurn) {
         maxTurnsReached = true;
@@ -240,7 +287,7 @@ async function streamAssistantResponse(
   signal: AbortSignal | undefined,
   stream: EventStream<RuntimeEvent, Message[]>,
   turnContext?: { turnCount: number; isLastTurn: boolean },
-): Promise<AssistantMessage> {
+): Promise<{ message: AssistantMessage; recoverablePromptTooLong: boolean }> {
   let transformedMessages = messages;
   if (config.transformContext) {
     transformedMessages = await config.transformContext(messages, signal);
@@ -306,6 +353,15 @@ async function streamAssistantResponse(
       case "done":
       case "error": {
         const finalMessage = await llmStream.result();
+        const recoverablePromptTooLong =
+          event.type === "error" &&
+          Boolean(config.reactiveCompaction?.isPromptTooLongError?.(finalMessage));
+        if (recoverablePromptTooLong) {
+          if (addedPartial) {
+            messages.pop();
+          }
+          return { message: finalMessage, recoverablePromptTooLong: true };
+        }
         if (addedPartial) {
           messages[messages.length - 1] = finalMessage;
         } else {
@@ -315,12 +371,60 @@ async function streamAssistantResponse(
           stream.push({ type: "message.start", message: { ...finalMessage } });
         }
         stream.push({ type: "message.end", message: finalMessage });
-        return finalMessage;
+        return { message: finalMessage, recoverablePromptTooLong: false };
       }
     }
   }
 
-  return await llmStream.result();
+  return { message: await llmStream.result(), recoverablePromptTooLong: false };
+}
+
+async function maybeApplyReactiveCompaction(
+  messages: Message[],
+  controller: ReactiveCompactionController,
+  stream: EventStream<RuntimeEvent, Message[]>,
+  input: {
+    turnCount: number;
+    usage?: Usage;
+    latestMessage?: AssistantMessage;
+    protectedMessages: Message[];
+    records: ReactiveCompactionRecord[];
+    trigger: "proactive" | "prompt_too_long";
+  },
+): Promise<Message[] | null> {
+  const decision = await controller.maybeCompact({
+    messages,
+    turnCount: input.turnCount,
+    usage: input.usage,
+    latestMessage: input.latestMessage,
+    protectedMessages: input.protectedMessages,
+    records: input.records,
+  });
+  if (!decision || decision.trigger !== input.trigger) {
+    return null;
+  }
+
+  input.records.push({
+    strategy: decision.strategy,
+    trigger: decision.trigger,
+    turnCount: input.turnCount,
+  });
+  stream.push({
+    type: "compaction",
+    messagesBefore: messages.length,
+    messagesAfter: decision.messages.length,
+  });
+  return decision.messages;
+}
+
+function emitFinalAssistantMessage(
+  messages: Message[],
+  stream: EventStream<RuntimeEvent, Message[]>,
+  message: AssistantMessage,
+): void {
+  messages.push(message);
+  stream.push({ type: "message.start", message: { ...message } });
+  stream.push({ type: "message.end", message });
 }
 
 function accumulateUsage(total: Usage, current: Usage): Usage {

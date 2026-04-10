@@ -61,4 +61,7 @@ export async function listKnowledgeMetadatas(tenantId: string) {
 
 export const listSkills = () => skillManager.listSkills();
 export const listWorkspaceSnapshot = (sessionId: string) => () => sandboxManager.listWorkspace(sessionId);
-export { compactToolResults as compactMessages };
+export const compactMessages = (
+  messages: Parameters<typeof compactToolResults>[0],
+  ctx?: { sessionDir?: string },
+) => compactToolResults(messages, { sessionDir: ctx?.sessionDir });

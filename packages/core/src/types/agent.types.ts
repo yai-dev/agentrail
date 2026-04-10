@@ -24,6 +24,34 @@ export type AgentInput = string | UserContent[] | Message[];
  */
 export type TransformContextFn = (messages: Message[], signal?: AbortSignal) => Promise<Message[]>;
 
+export interface ReactiveCompactionRecord {
+  strategy: "micro" | "full";
+  trigger: "proactive" | "prompt_too_long";
+  turnCount: number;
+}
+
+export interface ReactiveCompactionContext {
+  messages: Message[];
+  turnCount: number;
+  usage?: Usage;
+  latestMessage?: AssistantMessage;
+  protectedMessages?: Message[];
+  records: ReactiveCompactionRecord[];
+}
+
+export interface ReactiveCompactionDecision {
+  messages: Message[];
+  strategy: "micro" | "full";
+  trigger: "proactive" | "prompt_too_long";
+}
+
+export interface ReactiveCompactionController {
+  maybeCompact(
+    context: ReactiveCompactionContext,
+  ): Promise<ReactiveCompactionDecision | null> | ReactiveCompactionDecision | null;
+  isPromptTooLongError?(message: AssistantMessage): boolean;
+}
+
 /** Loads extra steering messages lazily at invocation time. */
 export type GetSteeringMessagesFn = () => Promise<Message[]>;
 
@@ -46,6 +74,9 @@ export interface AgentRunOptions {
 
   /** Request-time message transformer applied just before execution. */
   readonly transformContext?: TransformContextFn;
+
+  /** Optional in-loop compaction controller used to recover from context pressure. */
+  readonly reactiveCompaction?: ReactiveCompactionController;
 
   /** Lazily loaded steering messages appended ahead of model execution. */
   readonly getSteeringMessages?: GetSteeringMessagesFn;

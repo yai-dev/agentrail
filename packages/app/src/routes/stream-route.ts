@@ -20,6 +20,7 @@ import type { SandboxManager } from "@agentrail/capabilities";
 import { Hono } from "hono";
 import { streamText } from "hono/streaming";
 import { runPluginRequestHook } from "@/host/plugins.js";
+import { createReactiveCompactionController, type SummarizeMessagesFn } from "@/host/reactive-compaction.js";
 import { runCompactionStep } from "@/routes/compaction-runner.js";
 import { awaitSandboxWarmup } from "@/routes/sandbox-warmup.js";
 import { persistUploadedFiles, buildEffectiveMessage } from "@/routes/attachment-pipeline.js";
@@ -75,11 +76,19 @@ export interface AgentrailStreamRouteOptions {
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
   /** Summarizer used when streaming history needs compaction. */
-  summarize(messages: Message[]): Promise<string>;
+  summarize: SummarizeMessagesFn;
   /** Token thresholds that decide when to compact history. */
   compaction: {
     triggerTokens: number;
     minMessages: number;
+    reactive?: {
+      enabled?: boolean;
+      microTriggerPct?: number;
+      fullTriggerPct?: number;
+      preserveRecentApiRounds?: number;
+      microBatchGroups?: number;
+      maxReactiveCompactionsPerRequest?: number;
+    };
   };
   /** Optional plugins that can observe lifecycle events. */
   plugins?: AgentrailPlugin[];
@@ -345,11 +354,21 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           forwardSubAgentEvent(event),
         );
         const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
+        const profileTransform = await profile.getTransformContext?.(profileCtx);
         const transformContext = await resolveTransformContext(
-          { ...options, contextProviders: [...(options.contextProviders ?? []), ...capProviders] },
+          {
+            ...options,
+            baseTransformContext: profileTransform,
+            contextProviders: [...(options.contextProviders ?? []), ...capProviders],
+          },
           plugins,
           { tenantId, userId, sessionId: sid },
         );
+        const reactiveCompaction = createReactiveCompactionController({
+          summarize: options.summarize,
+          contextWindow: profile.contextWindow,
+          config: options.compaction.reactive,
+        });
 
         // ── 6f. Subscribe to orchestration events ──────────────────────────
         // Must happen after createAgent() so the orchestration() capability
@@ -375,6 +394,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             messages: history,
             signal: abortController.signal,
             transformContext,
+            reactiveCompaction,
             contextWindow: profile.contextWindow,
             writeEvent,
             onTraceEvent: maybeTraceEvent,
@@ -412,6 +432,7 @@ interface DrainAgentStreamOptions {
   messages: Message[];
   signal: AbortSignal;
   transformContext: TransformContextFn;
+  reactiveCompaction: ReturnType<typeof createReactiveCompactionController>;
   contextWindow?: number;
   writeEvent: (event: RuntimeEvent | object) => Promise<void>;
   onTraceEvent: (event: RuntimeEvent | object) => void;
@@ -436,6 +457,11 @@ async function drainAgentStream(
   let capturedUsage: Usage | null = null;
   let persistenceOk = true;
 
+  // Track the last completed turn's usage to compute an accurate context-window
+  // budget percentage. Each turn's inputTokens reflects the actual context size
+  // sent to the model for that call; summing all turns would inflate the figure.
+  let lastTurnUsage: Usage | null = null;
+
   // Accumulate messages via message.end; flush atomically on each turn.complete.
   const pendingPersistMessages: Message[] = [];
   let persistedCount = 0;
@@ -444,6 +470,7 @@ async function drainAgentStream(
     messages: opts.messages,
     signal: opts.signal,
     transformContext: opts.transformContext,
+    reactiveCompaction: opts.reactiveCompaction,
   });
 
   for await (const event of agentStream) {
@@ -466,6 +493,11 @@ async function drainAgentStream(
     await opts.writeEvent(event);
     opts.onTraceEvent(event);
 
+    // Capture the per-turn usage so we can derive an accurate budgetUsedPct later.
+    if (event.type === "turn.complete") {
+      lastTurnUsage = event.message.usage;
+    }
+
     // After each internal reasoning turn, flush the accumulated batch atomically.
     // persistedCount advances before the flush attempt so a failure permanently
     // drops the batch rather than risking duplicate writes on the next turn.
@@ -487,17 +519,22 @@ async function drainAgentStream(
     if (event.type === "session.end") {
       capturedUsage = event.usage;
 
-      const totalInputTokens =
-        (event.usage.inputTokens ?? 0) +
-        (event.usage.cacheReadTokens ?? 0) +
-        (event.usage.cacheWriteTokens ?? 0);
+      // Use the last turn's inputTokens as the current context size.
+      // The session-level totalUsage.inputTokens is a billing aggregate (sum of all
+      // turns), which inflates budgetUsedPct for multi-turn agentic sessions.
+      const lastTurnInput = lastTurnUsage ?? event.usage;
+      const contextInputTokens =
+        (lastTurnInput.inputTokens ?? 0) +
+        (lastTurnInput.cacheReadTokens ?? 0) +
+        (lastTurnInput.cacheWriteTokens ?? 0);
       const usageEvent: AgentrailContextUsageEvent = {
         type: "context_usage",
-        inputTokens: totalInputTokens,
+        inputTokens: contextInputTokens,
         outputTokens: event.usage.outputTokens ?? 0,
-        budgetUsedPct: Math.round((totalInputTokens / (opts.contextWindow ?? 200_000)) * 100),
+        budgetUsedPct: Math.round((contextInputTokens / (opts.contextWindow ?? 200_000)) * 100),
       };
       await opts.writeEvent(usageEvent);
+      opts.onTraceEvent(usageEvent);
       break;
     }
 

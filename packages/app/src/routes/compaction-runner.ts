@@ -5,6 +5,7 @@
 
 import type { Message } from "@agentrail/core";
 import { runCompactionIfNeeded, type CompactionConfig } from "@/host/compaction.js";
+import type { SummarizeMessagesFn } from "@/host/reactive-compaction.js";
 import type { AgentrailSessionStore } from "@/host/types.js";
 
 /**
@@ -18,7 +19,7 @@ export async function runCompactionStep(
   sessionStore: AgentrailSessionStore,
   tenantId: string,
   sessionId: string,
-  summarize: (messages: Message[]) => Promise<string>,
+  summarize: SummarizeMessagesFn,
   compaction: CompactionConfig,
   opts?: {
     workspaceSnapshot?: string;

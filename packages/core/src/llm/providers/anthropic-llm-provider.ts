@@ -194,7 +194,7 @@ export class AnthropicLlmProvider implements LlmProvider {
     const params: Anthropic.Messages.MessageCreateParamsStreaming = {
       model: request.model.modelId,
       messages: convertedMessages,
-      max_tokens: request.maxTokens || 4096,
+      max_tokens: request.maxTokens || 8192,
       stream: true,
     };
 

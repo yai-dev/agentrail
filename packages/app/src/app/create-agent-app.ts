@@ -6,6 +6,7 @@
 import type { Message, SessionRef } from "@agentrail/core";
 import type { AgentrailSessionStore } from "@agentrail/core";
 import type { SandboxManager } from "@agentrail/capabilities";
+import type { ReactiveCompactionConfig, SummarizeMessagesFn } from "@/host/reactive-compaction.js";
 import type { AgentrailPlugin, ContextProvider, PluginErrorHandler } from "@/host/types.js";
 import type { AgentrailOrchestrationRegistry } from "@/host/orchestration-registry.js";
 import type { ProfileDefinition } from "@/profile/define-profile.js";
@@ -67,7 +68,7 @@ export interface CreateAgentAppOptions {
    * lose context rather than receiving a condensed recap. For production use
    * always provide a real summarizer backed by an LLM call.
    */
-  summarize?: (messages: Message[]) => Promise<string>;
+  summarize?: SummarizeMessagesFn;
   /**
    * Compaction trigger thresholds.
    * Defaults to `{ triggerTokens: 150_000, minMessages: 20 }`.
@@ -75,6 +76,7 @@ export interface CreateAgentAppOptions {
   compaction?: {
     triggerTokens: number;
     minMessages: number;
+    reactive?: ReactiveCompactionConfig;
   };
   /**
    * App-level plugins for request interception and lifecycle hooks.
@@ -209,7 +211,18 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
     resolveProfile: customResolver,
     defaultAgentId: explicitDefaultAgentId,
     summarize,
-    compaction = { triggerTokens: 150_000, minMessages: 20 },
+    compaction = {
+      triggerTokens: 150_000,
+      minMessages: 20,
+      reactive: {
+        enabled: true,
+        microTriggerPct: 85,
+        fullTriggerPct: 92,
+        preserveRecentApiRounds: 2,
+        microBatchGroups: 2,
+        maxReactiveCompactionsPerRequest: 3,
+      },
+    },
     plugins = [],
     contextProviders = [],
     sandboxManager,

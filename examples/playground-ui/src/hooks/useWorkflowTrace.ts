@@ -135,6 +135,7 @@ const TRACE_EVENT_TYPES = new Set([
   "session.end",
   "turn.start",
   "turn.complete",
+  "compaction",
   "tool.before",
   "tool.after",
   "skill_start",

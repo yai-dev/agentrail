@@ -7,6 +7,7 @@
 // so that consumers who import from @agentrail/app get the exact same functions
 // and avoid any structural type mismatch.
 export {
+  composeTransformContexts,
   createTransformContext,
   createContextProviderFromTransform,
 } from "@agentrail/capabilities";

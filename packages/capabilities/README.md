@@ -39,10 +39,11 @@ export const codingProfile = defineProfile({
 - `knowledge()` — knowledge-base tools and metadata context.
 - `skills(options?)` — skill discovery and execution capability.
 - `orchestration(options?)` — sub-agent orchestration tools.
-- `memoryContext(options)` — capability that injects memory, identity, knowledge, and workspace context.
+- `memoryContext(options)` — capability that injects memory, identity, knowledge, and workspace context, and can also contribute request-time history rewrites such as tool-result compaction.
 - `SandboxManager`, `KnowledgeManager`, `SkillManager`, `OrchestrationManager` — advanced managers for direct integration.
 
 Reference:
+
 - `https://agentrail.run/guides/use-capability-packages`
 - `https://agentrail.run/reference/host-defaults`
 

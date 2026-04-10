@@ -38,9 +38,13 @@ export type {
 // Session contracts — shared interfaces used by app and capabilities layers
 // ============================================================================
 
-export type { AgentrailSessionStore, ContextProvider, ContextProviderContext } from "@/session/contracts.js";
-export type { SessionRef, SessionRefInfo } from "@/session/session-ref.js";
+export type {
+  AgentrailSessionStore,
+  ContextProvider,
+  ContextProviderContext,
+} from "@/session/contracts.js";
 export { createSessionRef, resolveSessionRef } from "@/session/session-ref.js";
+export type { SessionRef, SessionRefInfo } from "@/session/session-ref.js";
 export type { TodoStorage } from "@/session/todo-storage.js";
 export type {
   CompactionMetadata,
@@ -62,17 +66,17 @@ export type {
 // ============================================================================
 
 export {
+  PromptLoader,
   createPromptBuilder,
   definePromptBundle,
   definePromptFragment,
   loadPromptFile,
-  PromptLoader,
   renderPrompt,
   stripPromptMetadata,
 } from "@/prompts/index.js";
 export type {
-  PromptBundle,
   PromptBuilder,
+  PromptBundle,
   PromptFragment,
   PromptLayer,
   PromptLayerName,
@@ -85,18 +89,18 @@ export type {
 // Agent invocation types
 // ============================================================================
 
+export { createEmptyAssistantMessage, extractText, extractToolCalls } from "@/types/agent.types.js";
 export type {
   AgentInput,
   AgentResult,
   AgentRunOptions,
   AgentStream,
   GetSteeringMessagesFn,
+  ReactiveCompactionContext,
+  ReactiveCompactionController,
+  ReactiveCompactionDecision,
+  ReactiveCompactionRecord,
   TransformContextFn,
-} from "@/types/agent.types.js";
-export {
-  createEmptyAssistantMessage,
-  extractText,
-  extractToolCalls,
 } from "@/types/agent.types.js";
 
 export type {
@@ -111,6 +115,7 @@ export type {
 
 export type { Cost, Usage } from "@/types/usage.types.js";
 
+export { isAssistantMessage, isToolResultMessage, isUserMessage } from "@/types/message.types.js";
 export type {
   ApiType,
   AssistantMessage,
@@ -120,13 +125,7 @@ export type {
   ToolResultMessage,
   UserMessage,
 } from "@/types/message.types.js";
-export {
-  isAssistantMessage,
-  isToolResultMessage,
-  isUserMessage,
-} from "@/types/message.types.js";
 
-export type { LlmStreamEvent, RuntimeEvent } from "@/types/result.types.js";
 export {
   isAgentEnd,
   isLlmStreamDone,
@@ -134,6 +133,7 @@ export {
   isLlmStreamTerminal,
   isRuntimeError,
 } from "@/types/result.types.js";
+export type { LlmStreamEvent, RuntimeEvent } from "@/types/result.types.js";
 
 // ============================================================================
 // LLM client — low-level provider access

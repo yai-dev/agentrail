@@ -13,7 +13,9 @@ import { createAgentApp } from "@agentrail/app";
 ```ts
 import { createAgentApp, defineProfile } from "@agentrail/app";
 
-const myProfile = defineProfile({ /* ... */ });
+const myProfile = defineProfile({
+  /* ... */
+});
 
 const app = createAgentApp({
   dataDir: "./data",
@@ -26,13 +28,13 @@ export default app;
 
 ## Mounted routes
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/chat` | Non-streaming agent invocation |
-| `POST` | `/stream` | Streaming agent invocation (SSE) |
-| `GET` | `/health` | Liveness probe _(unless `health.disableBuiltinHealthRoutes` is set)_ |
-| `GET` | `/ready` | Readiness probe _(same condition)_ |
-| `GET` | `/__inspector/*` | Inspector API _(only when `inspector: true`)_ |
+| Method | Path             | Description                                                          |
+| ------ | ---------------- | -------------------------------------------------------------------- |
+| `POST` | `/chat`          | Non-streaming agent invocation                                       |
+| `POST` | `/stream`        | Streaming agent invocation (SSE)                                     |
+| `GET`  | `/health`        | Liveness probe _(unless `health.disableBuiltinHealthRoutes` is set)_ |
+| `GET`  | `/ready`         | Readiness probe _(same condition)_                                   |
+| `GET`  | `/__inspector/*` | Inspector API _(only when `inspector: true`)_                        |
 
 ---
 
@@ -107,7 +109,10 @@ Profile ID used when a request body omits `agentId`. Falls back to the first ent
 ### `summarize`
 
 ```ts
-summarize?: (messages: Message[]) => Promise<string>
+summarize?: (
+  messages: Message[],
+  ctx?: { reason: "session_compaction" | "reactive_micro" | "reactive_full" },
+) => Promise<string>
 ```
 
 Summarizer function called by the compaction system when context grows beyond `compaction.triggerTokens`. Should call an LLM and return a condensed string.
@@ -122,10 +127,20 @@ When omitted, a no-op fallback concatenates message content without summarizing 
 compaction?: {
   triggerTokens: number;
   minMessages: number;
+  reactive?: {
+    enabled?: boolean;
+    microTriggerPct?: number;
+    fullTriggerPct?: number;
+    preserveRecentApiRounds?: number;
+    microBatchGroups?: number;
+    maxReactiveCompactionsPerRequest?: number;
+  };
 }
 ```
 
 Thresholds for automatic context compaction. Defaults to `{ triggerTokens: 150_000, minMessages: 20 }`.
+
+`compaction.reactive` controls in-loop reactive compaction for long-running turns. `microTriggerPct` starts local API-round summarization, `fullTriggerPct` triggers a more aggressive in-memory summary, and `maxReactiveCompactionsPerRequest` limits retries after prompt-too-long failures.
 
 See [Context & Compaction](/concepts/context-and-compaction) for how compaction works.
 
@@ -240,6 +255,7 @@ telemetrySink?: TelemetrySink
 Pluggable sink that receives structured `TelemetrySinkEvent` objects from both the `/chat` and `/stream` routes. Use this to forward events to OpenTelemetry, Datadog, or a custom backend.
 
 Built-in sinks shipped with `@agentrail/app`:
+
 - `createConsoleTelemetrySink()` — pretty-prints events to stdout; for local development only.
 - `createFileTelemetrySink(dataDir)` — appends events as JSONL trace files under `dataDir`; used by the Inspector.
 
@@ -255,7 +271,9 @@ Returns a `Hono` instance. Mount it in any Node.js HTTP server:
 import { serve } from "@hono/node-server";
 import { createAgentApp } from "@agentrail/app";
 
-const app = createAgentApp({ /* ... */ });
+const app = createAgentApp({
+  /* ... */
+});
 serve({ fetch: app.fetch, port: 3000 });
 ```
 

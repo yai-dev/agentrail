@@ -43,7 +43,17 @@ export const streamRoute = createStreamRoute({
   sandboxManager,
   resolveProfile: resolvePlaygroundProfile,
   summarize,
-  compaction: { triggerTokens: 80_000, minMessages: 20 },
+  compaction: {
+    triggerTokens: 80_000,
+    minMessages: 20,
+    reactive: {
+      microTriggerPct: 85,
+      fullTriggerPct: 92,
+      preserveRecentApiRounds: 2,
+      microBatchGroups: 2,
+      maxReactiveCompactionsPerRequest: 3,
+    },
+  },
   plugins,
   getOrchestrationManager: ({ tenantId, userId, sessionId, sessionRef }) =>
     orchestrationRegistry.getManager({ tenantId, userId, sessionId, sessionRef }),
@@ -63,9 +73,24 @@ The default profile lives in `profiles/default-profile.ts`. It shows the recomme
 ```ts
 // examples/playground-server/src/profiles/default-profile.ts (simplified)
 import { compactToolResults, createStaticProfileResolver, defineProfile } from "@agentrail/app";
-import { askUser, browser, createSubAgentProcess, filesystem, knowledge, memoryContext, orchestration, skills } from "@agentrail/capabilities";
+import {
+  askUser,
+  browser,
+  createSubAgentProcess,
+  filesystem,
+  knowledge,
+  memoryContext,
+  orchestration,
+  skills,
+} from "@agentrail/capabilities";
 import { config } from "../config.js";
-import { knowledgeManager, sandboxManager, skillManager, orchestrationRegistry, sessionManager } from "../context/index.js";
+import {
+  knowledgeManager,
+  sandboxManager,
+  skillManager,
+  orchestrationRegistry,
+  sessionManager,
+} from "../context/index.js";
 import { waitHandleRegistry } from "../wait-handle-registry.js";
 import { getWorkerPath } from "../agents/worker-path.js";
 
@@ -108,7 +133,10 @@ export const defaultProfile = defineProfile({
         },
         listSkills: () => skillManager.listSkills(),
         listWorkspaceSnapshot: (ctx) => sandboxManager.listWorkspace(ctx.sessionId),
-        compactMessages: compactToolResults,
+        compactMessages: (msgs, ctx) =>
+          compactToolResults(msgs, {
+            sessionDir: ctx?.sessionDir,
+          }),
         delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
       },
       { cacheTtlMs: 5_000 },
@@ -146,10 +174,10 @@ The slash-commands plugin uses `interceptChatRequest` to handle `/help`, `/reset
 1. Incoming request hits `POST /api/stream`
 2. Host route resolves session and profile via `resolvePlaygroundProfile`
 3. Plugins contribute interception (`interceptChatRequest`), lifecycle hooks, or attachment behavior
-4. Capabilities build per-request context providers: memory index, KB summaries, skills list, workspace snapshot
+4. Capabilities build per-request context providers and transforms: memory index, KB summaries, skills list, workspace snapshot, and tool-result compaction
 5. The profile's `createAgent` constructs the runtime agent with capability tools
 6. `agent.stream()` is called; runtime events are forwarded as SSE
-7. Compaction runs if session history exceeds `triggerTokens`
+7. Request-boundary compaction runs if session history exceeds `triggerTokens`; in-loop reactive compaction can also fire during a long turn
 8. Turn is persisted; `onTurnPersisted` hooks fire
 
 ## Chat vs Stream
@@ -163,13 +191,13 @@ Both routes share the same surrounding infrastructure. The stream route adds:
 
 ## Source Files To Read
 
-| File                                                                                              | What it shows                           |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| [routes/stream.ts](../../examples/playground-server/src/routes/stream.ts)                        | Full `createStreamRoute` options        |
+| File                                                                                            | What it shows                            |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| [routes/stream.ts](../../examples/playground-server/src/routes/stream.ts)                       | Full `createStreamRoute` options         |
 | [profiles/default-profile.ts](../../examples/playground-server/src/profiles/default-profile.ts) | `defineProfile` + capability descriptors |
-| [prompts/index.ts](../../examples/playground-server/src/prompts/index.ts)                        | Fragment + bundle composition           |
-| [plugins/index.ts](../../examples/playground-server/src/plugins/index.ts)                        | Plugin registration                     |
-| [context/index.ts](../../examples/playground-server/src/context/index.ts)                        | Singleton managers                      |
+| [prompts/index.ts](../../examples/playground-server/src/prompts/index.ts)                       | Fragment + bundle composition            |
+| [plugins/index.ts](../../examples/playground-server/src/plugins/index.ts)                       | Plugin registration                      |
+| [context/index.ts](../../examples/playground-server/src/context/index.ts)                       | Singleton managers                       |
 
 ## What Is Framework-Level vs Example-Level
 

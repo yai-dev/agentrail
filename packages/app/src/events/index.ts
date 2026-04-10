@@ -147,8 +147,10 @@ export const TRACE_PERSISTED_EVENT_TYPES = new Set([
   // Runtime / skill events
   "session.start",
   "session.end",
+  "context_usage",
   "turn.start",
   "turn.complete",
+  "compaction",
   "tool.before",
   "tool.after",
   "skill_start",

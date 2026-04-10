@@ -28,9 +28,15 @@ const app = createAgentApp({
   dataDir: "/data/agentrail",
   profiles: [defaultProfile],
   summarize,
-  compaction: { triggerTokens: 80_000, minMessages: 20 },
+  compaction: {
+    triggerTokens: 80_000,
+    minMessages: 20,
+    reactive: { enabled: true },
+  },
 });
 ```
+
+Request-boundary compaction persists summaries back to session storage. Reactive compaction for long-running turns is configured alongside it under `compaction.reactive`, but only rewrites the current in-memory request history.
 
 When you need direct access to `SessionManager` utilities (e.g. to list sessions or build a memory index), instantiate it separately:
 

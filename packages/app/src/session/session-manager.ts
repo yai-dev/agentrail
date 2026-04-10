@@ -625,6 +625,27 @@ export class SessionManager {
     tenantId: string,
     sessionId: string,
   ): Promise<SessionContextUsage | null> {
+    const messages = await this.loadAllMessages(tenantId, sessionId);
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message?.role !== "assistant") continue;
+
+      const usage = (
+        message as Message & {
+          usage?: Usage;
+        }
+      ).usage;
+      if (!usage) continue;
+
+      const totalInput =
+        (usage.inputTokens ?? 0) + (usage.cacheReadTokens ?? 0) + (usage.cacheWriteTokens ?? 0);
+      return {
+        inputTokens: totalInput,
+        outputTokens: usage.outputTokens ?? 0,
+        budgetUsedPct: Math.round((totalInput / 200_000) * 100),
+      };
+    }
+
     const sessionFile = path.join(this.getSessionDir(tenantId, sessionId), "session.jsonl");
     try {
       const raw = await readFile(sessionFile, "utf8");

@@ -12,6 +12,7 @@ import type {
   ContextProvider,
   ContextProviderContext,
   SessionRef,
+  TransformContextFn,
   Usage,
 } from "@agentrail/core";
 export type { AgentrailSessionStore, ContextProvider, ContextProviderContext } from "@agentrail/core";
@@ -92,6 +93,13 @@ export interface AgentrailProfile {
    * `createAgent` and merge the result with the static `contextProviders`.
    */
   getContextProviders?(context: AgentrailProfileContext): Promise<ContextProvider[]> | ContextProvider[];
+  /**
+   * Returns a request-scoped full-message transform for rewrite-style context logic.
+   * This runs before context providers so injected messages see the rewritten history.
+   */
+  getTransformContext?(
+    context: AgentrailProfileContext,
+  ): Promise<TransformContextFn> | TransformContextFn;
 }
 
 /** JSON request body accepted by the non-streaming chat route. */
