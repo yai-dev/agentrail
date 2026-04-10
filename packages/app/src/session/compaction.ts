@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import type {
   ImageContent,
   Message,
@@ -20,21 +22,34 @@ export interface ToolResultCompactionOptions {
    * These are the results the LLM is currently acting on. Default: 2
    */
   keepRecentToolResults?: number;
+  /**
+   * Safety ceiling for recent tool results. Recent results are normally preserved,
+   * but once a single result grows past this limit it is compacted immediately to
+   * avoid blowing up the next model request. Default: max(maxTokensPerToolResult * 4, 6000)
+   */
+  maxTokensPerRecentToolResult?: number;
+  /** Session directory used to persist compacted tool results for later retrieval. */
+  sessionDir?: string;
 }
 
 /**
  * Layer 1 compaction: view-only transformation (does NOT modify messages.jsonl).
  *
  * Replaces large ToolResultMessage bodies with a short placeholder that
- * tells the LLM the result was truncated and it can re-call the tool to
- * retrieve the full content.  The N most-recent tool results are always kept
- * intact so the LLM's current reasoning is not degraded.
+ * tells the LLM the result was truncated and, when available, where the full
+ * text was persisted. The N most-recent tool results are always kept intact so
+ * the LLM's current reasoning is not degraded.
  */
-export function compactToolResults(
+export async function compactToolResults(
   messages: Message[],
   options: ToolResultCompactionOptions = {},
-): Message[] {
-  const { maxTokensPerToolResult = 1500, keepRecentToolResults = 2 } = options;
+): Promise<Message[]> {
+  const {
+    maxTokensPerToolResult = 1500,
+    keepRecentToolResults = 2,
+    maxTokensPerRecentToolResult = Math.max(maxTokensPerToolResult * 4, 6000),
+    sessionDir,
+  } = options;
 
   // Collect indices of the most recent tool-result messages so we can preserve them.
   const recentToolResultIndices = new Set<number>();
@@ -46,12 +61,16 @@ export function compactToolResults(
     }
   }
 
-  return messages.map((m, i): Message => {
+  return Promise.all(messages.map(async (m, i): Promise<Message> => {
     if (m.role !== "toolResult") return m;
-    if (recentToolResultIndices.has(i)) return m;
 
     const estimate = estimateMessageTokens([m]);
-    if (estimate <= maxTokensPerToolResult) return m;
+    const isRecentToolResult = recentToolResultIndices.has(i);
+    const shouldCompactRecent = isRecentToolResult && estimate > maxTokensPerRecentToolResult;
+    const exceedsGeneralLimit = estimate > maxTokensPerToolResult;
+
+    if (isRecentToolResult && !shouldCompactRecent) return m;
+    if (!shouldCompactRecent && !exceedsGeneralLimit) return m;
 
     const trm = m as ToolResultMessage;
 
@@ -61,13 +80,22 @@ export function compactToolResults(
 
     const fullText = textBlocks.map((b) => b.text).join("");
     const preview = fullText.slice(0, 200).replace(/\n+/g, " ").trim();
+    const persistedPath = sessionDir
+      ? `/workspace/memo/session/tool-results/${trm.toolCallId}.txt`
+      : null;
 
-    const compactedContent: ToolResultMessage["content"] = [
-      {
-        type: "text",
-        text: `[tool result truncated: ~${estimate} tok — re-call the tool to get full content]\n${preview}…`,
-      },
-    ];
+    if (sessionDir && fullText.length > 0) {
+      const toolResultsDir = path.join(sessionDir, "tool-results");
+      await mkdir(toolResultsDir, { recursive: true });
+      await writeFile(path.join(toolResultsDir, `${trm.toolCallId}.txt`), fullText, "utf8");
+    }
+
+    const compactedText =
+      persistedPath && fullText.length > 0
+        ? `[Tool result compacted — text saved to session storage (~${estimate} tok).\nPreview: ${preview}…\nTo access: Read ${persistedPath}\nNote: For single-line outputs (e.g. minified JSON), Read may truncate; if available, use Grep or another file-search tool to locate relevant content.]`
+        : `[tool result truncated: ~${estimate} tok — re-call the tool to get full content]\n${preview}…`;
+
+    const compactedContent: ToolResultMessage["content"] = [{ type: "text", text: compactedText }];
 
     // Replace image blocks with path-reference placeholders so the LLM knows
     // they exist and can request them again, without storing base64 in context.
@@ -83,5 +111,5 @@ export function compactToolResults(
       content: compactedContent,
     };
     return compactedResult;
-  });
+  }));
 }

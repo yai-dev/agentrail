@@ -94,7 +94,10 @@ export interface DefaultCapabilityContextOptions {
   listKnowledgeMetadatas(): Promise<(KBMetadata | null)[]>;
   listSkills(): Promise<SkillMeta[]>;
   listWorkspaceSnapshot?(): Promise<string | undefined>;
-  compactMessages?(messages: Message[]): Message[];
+  compactMessages?(
+    messages: Message[],
+    ctx?: { sessionDir?: string },
+  ): Message[] | Promise<Message[]>;
 }
 
 /** Subset of default capability tools returned by helper builders. */

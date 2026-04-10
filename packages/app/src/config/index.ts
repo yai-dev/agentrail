@@ -57,6 +57,14 @@ export interface AgentrailConfig {
       compaction: {
         triggerTokens: number;
         minMessages: number;
+        reactive: {
+          enabled: boolean;
+          microTriggerPct: number;
+          fullTriggerPct: number;
+          preserveRecentApiRounds: number;
+          microBatchGroups: number;
+          maxReactiveCompactionsPerRequest: number;
+        };
       };
       userMemory: {
         enabled: boolean;
@@ -180,6 +188,14 @@ export const DEFAULT_AGENTRAIL_CONFIG: AgentrailConfig = {
       compaction: {
         triggerTokens: 60_000,
         minMessages: 6,
+        reactive: {
+          enabled: true,
+          microTriggerPct: 85,
+          fullTriggerPct: 92,
+          preserveRecentApiRounds: 2,
+          microBatchGroups: 2,
+          maxReactiveCompactionsPerRequest: 3,
+        },
       },
       userMemory: {
         enabled: true,
@@ -405,8 +421,26 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   );
   assertNoUnknownKeys(
     compaction,
-    ["triggerTokens", "minMessages"],
+    ["triggerTokens", "minMessages", "reactive"],
     ["apps", "playgroundServer", "compaction"],
+  );
+  const reactiveCompaction = getObject(
+    compaction,
+    "reactive",
+    ["apps", "playgroundServer", "compaction"],
+    DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction.reactive as UnknownRecord,
+  );
+  assertNoUnknownKeys(
+    reactiveCompaction,
+    [
+      "enabled",
+      "microTriggerPct",
+      "fullTriggerPct",
+      "preserveRecentApiRounds",
+      "microBatchGroups",
+      "maxReactiveCompactionsPerRequest",
+    ],
+    ["apps", "playgroundServer", "compaction", "reactive"],
   );
   const userMemory = getObject(
     playgroundServer,
@@ -554,6 +588,53 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
             DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction.minMessages,
             0,
           ),
+          reactive: {
+            enabled: getBoolean(
+              reactiveCompaction,
+              "enabled",
+              ["apps", "playgroundServer", "compaction", "reactive"],
+              DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction.reactive.enabled,
+            ),
+            microTriggerPct: getInteger(
+              reactiveCompaction,
+              "microTriggerPct",
+              ["apps", "playgroundServer", "compaction", "reactive"],
+              DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction.reactive.microTriggerPct,
+              1,
+              100,
+            ),
+            fullTriggerPct: getInteger(
+              reactiveCompaction,
+              "fullTriggerPct",
+              ["apps", "playgroundServer", "compaction", "reactive"],
+              DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction.reactive.fullTriggerPct,
+              1,
+              100,
+            ),
+            preserveRecentApiRounds: getInteger(
+              reactiveCompaction,
+              "preserveRecentApiRounds",
+              ["apps", "playgroundServer", "compaction", "reactive"],
+              DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction.reactive
+                .preserveRecentApiRounds,
+              1,
+            ),
+            microBatchGroups: getInteger(
+              reactiveCompaction,
+              "microBatchGroups",
+              ["apps", "playgroundServer", "compaction", "reactive"],
+              DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction.reactive.microBatchGroups,
+              1,
+            ),
+            maxReactiveCompactionsPerRequest: getInteger(
+              reactiveCompaction,
+              "maxReactiveCompactionsPerRequest",
+              ["apps", "playgroundServer", "compaction", "reactive"],
+              DEFAULT_AGENTRAIL_CONFIG.apps.playgroundServer.compaction.reactive
+                .maxReactiveCompactionsPerRequest,
+              1,
+            ),
+          },
         },
         userMemory: {
           enabled: getBoolean(

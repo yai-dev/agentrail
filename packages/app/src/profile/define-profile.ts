@@ -3,8 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Agent, ModelConfig, RuntimeTool } from "@agentrail/core";
+import type { Agent, ModelConfig, RuntimeTool, TransformContextFn } from "@agentrail/core";
 import type { CapabilityBuildContext, CapabilityDescriptor } from "@agentrail/capabilities";
+import { composeTransformContexts } from "@/host/context-pipeline.js";
 import type { AgentrailProfile, AgentrailProfileContext } from "@/host/types.js";
 
 /**
@@ -117,6 +118,18 @@ function buildBaseCapCtx(
   };
 }
 
+async function buildCapabilityTransformContext(
+  capabilities: CapabilityDescriptor[] | undefined,
+  capCtx: CapabilityBuildContext,
+): Promise<TransformContextFn | undefined> {
+  if (!capabilities?.length) return undefined;
+  const transforms = await Promise.all(
+    capabilities.map((c) => c.buildTransformContext?.(capCtx)),
+  );
+  const activeTransforms = transforms.filter((t): t is TransformContextFn => Boolean(t));
+  return activeTransforms.length > 0 ? composeTransformContexts(activeTransforms) : undefined;
+}
+
 /**
  * Defines an agent profile in either static or dynamic form.
  *
@@ -202,6 +215,14 @@ export function defineProfile(def: StaticProfileShape | DynamicProfileShape): Pr
         const capCtx = buildBaseCapCtx(context, resolvedModelConfig);
         return def.capabilities.flatMap((c) => c.buildContextProviders?.(capCtx) ?? []);
       },
+
+      async getTransformContext(context: AgentrailProfileContext) {
+        const capCtx = buildBaseCapCtx(context, resolvedModelConfig);
+        return (
+          (await buildCapabilityTransformContext(def.capabilities, capCtx)) ??
+          (async (messages) => messages)
+        );
+      },
     };
   }
 
@@ -235,6 +256,14 @@ export function defineProfile(def: StaticProfileShape | DynamicProfileShape): Pr
       // getContextProviders has no access to the runtime return value — use the deprecated field.
       const capCtx = buildBaseCapCtx(context, def.modelConfig);
       return def.capabilities.flatMap((c) => c.buildContextProviders?.(capCtx) ?? []);
+    },
+
+    async getTransformContext(context: AgentrailProfileContext) {
+      const capCtx = buildBaseCapCtx(context, def.modelConfig);
+      return (
+        (await buildCapabilityTransformContext(def.capabilities, capCtx)) ??
+        (async (messages) => messages)
+      );
     },
   };
 }

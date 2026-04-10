@@ -3,14 +3,21 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ReactiveCompactionConfig, SummarizeMessagesFn } from "@/host/reactive-compaction.js";
+import type { AgentrailSessionStore } from "@/host/types.js";
 import { estimateMessageTokens } from "@/session/token-estimator.js";
 import type { Message } from "@agentrail/core";
-import type { AgentrailSessionStore } from "@/host/types.js";
+export type {
+  CompactionSummaryContext,
+  ReactiveCompactionConfig,
+  SummarizeMessagesFn,
+} from "@/host/reactive-compaction.js";
 
 /** Token thresholds that control when host-side history compaction runs. */
 export interface CompactionConfig {
   triggerTokens: number;
   minMessages: number;
+  reactive?: ReactiveCompactionConfig;
 }
 
 /**
@@ -26,7 +33,7 @@ export async function runCompactionIfNeeded(
   tenantId: string,
   sessionId: string,
   allMessages: Message[],
-  summarize: (messages: Message[]) => Promise<string>,
+  summarize: SummarizeMessagesFn,
   compaction: CompactionConfig,
   opts?: {
     workspaceSnapshot?: string;
@@ -42,11 +49,16 @@ export async function runCompactionIfNeeded(
   }
 
   await opts?.onBeforeCompact?.();
-  const result = await sessionStore.compactIfNeeded(tenantId, sessionId, summarize, {
-    preloadedMessages: allMessages,
-    triggerTokens: compaction.triggerTokens,
-    workspaceSnapshot: opts?.workspaceSnapshot,
-  });
+  const result = await sessionStore.compactIfNeeded(
+    tenantId,
+    sessionId,
+    (messages) => summarize(messages, { reason: "session_compaction" }),
+    {
+      preloadedMessages: allMessages,
+      triggerTokens: compaction.triggerTokens,
+      workspaceSnapshot: opts?.workspaceSnapshot,
+    },
+  );
   await opts?.onAfterCompact?.();
 
   return result;

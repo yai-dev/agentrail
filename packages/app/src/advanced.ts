@@ -14,15 +14,24 @@ export type { AgentrailChatRouteOptions } from "@/routes/chat-route.js";
 
 export { createStreamRoute } from "@/routes/stream-route.js";
 export type {
-  AgentrailStreamRouteOptions,
   AgentrailResolvedStreamContext,
+  AgentrailStreamRouteOptions,
 } from "@/routes/stream-route.js";
 
 export { createOrchestrationRegistry } from "@/host/orchestration-registry.js";
 export type { CreateSessionManagedAgent } from "@/host/orchestration-registry.js";
 
-export { createTransformContext, createContextProviderFromTransform } from "@/host/context-pipeline.js";
-export type { CompactionConfig } from "@/host/compaction.js";
+export type {
+  CompactionConfig,
+  CompactionSummaryContext,
+  ReactiveCompactionConfig,
+  SummarizeMessagesFn,
+} from "@/host/compaction.js";
+export {
+  composeTransformContexts,
+  createContextProviderFromTransform,
+  createTransformContext,
+} from "@/host/context-pipeline.js";
 
 export { runPluginLifecycle } from "@/host/plugins.js";
 

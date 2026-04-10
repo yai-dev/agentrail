@@ -80,6 +80,8 @@ The host does not load unlimited history. On each request, it calls `loadMessage
 
 This ensures the context window is never overflowed by long sessions. The `contextWindow` field on the profile controls the token limit used for this calculation.
 
+For long-running single requests, Agentrail can also apply in-loop reactive compaction before the next model call. That path rewrites only the in-memory request history; persisted session files are still managed by request-boundary compaction.
+
 ## Implementing a Custom Store
 
 Any object that satisfies the `AgentrailSessionStore` interface can be used as a session store. Common reasons to build a custom one:

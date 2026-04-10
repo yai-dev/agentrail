@@ -12,6 +12,7 @@ import type {
   AgentResult,
   AgentRunOptions,
   AgentStream,
+  ReactiveCompactionController,
   TransformContextFn,
 } from "@/types/agent.types.js";
 import {
@@ -49,6 +50,7 @@ interface InternalContext {
   messages: Message[];
   signal?: AbortSignal;
   transformContext?: TransformContextFn;
+  reactiveCompaction?: ReactiveCompactionController;
   metadata?: Record<string, unknown>;
 }
 
@@ -109,6 +111,7 @@ export class AgentImpl implements Agent {
       spec: mergedSpec,
       llmClient,
       transformContext: options?.transformContext,
+      reactiveCompaction: options?.reactiveCompaction,
       getSteeringMessages: options?.getSteeringMessages,
     });
 
@@ -166,6 +169,7 @@ export class AgentImpl implements Agent {
       messages: options?.messages ?? [],
       signal: options?.signal,
       transformContext: options?.transformContext,
+      reactiveCompaction: options?.reactiveCompaction,
     };
   }
 

@@ -1,6 +1,6 @@
 # Context & Compaction
 
-Context providers inject request-time information into the agent's message list. Compaction manages the token budget by summarizing old history when it gets too long.
+Context providers inject request-time information into the agent's message list. Transform contexts rewrite the request-time history. Compaction manages the token budget by combining tool-result compaction, request-boundary session compaction, and in-loop reactive compaction.
 
 ## Context Providers
 
@@ -24,6 +24,16 @@ const identityProvider: ContextProvider = async (context) => {
 
 The messages returned by providers are inserted before the session's historical messages. They are not persisted — they are freshly computed on every request.
 
+## Transform Contexts
+
+A `TransformContextFn` rewrites the message history immediately before a model call. Unlike a `ContextProvider`, it can replace, summarize, or remove existing messages.
+
+Typical transform use cases:
+
+- compacting oversized tool results
+- normalizing or redacting persisted history
+- composing multiple history rewrites before provider injection
+
 ## What Goes in Context Providers
 
 Context providers are the right place for:
@@ -42,7 +52,7 @@ Context providers are **not** the right place for:
 
 ## Context Pipeline
 
-When a request arrives, the host runs all registered context providers in order and assembles their output into a list of messages. This list is prepended to the session history before the agent sees it.
+When a request arrives, the host first runs registered transform contexts in order, then runs all registered context providers against the rewritten history, and finally prepends the injected provider messages.
 
 The pipeline is built with `createTransformContext` from `@agentrail/app/advanced`:
 
@@ -59,22 +69,23 @@ const transformContext = createTransformContext([
 
 Order matters. Identity and date headers should come first; memory and knowledge summaries should precede history; workspace snapshots should reflect the most current state.
 
+If you have multiple rewrite functions, use `composeTransformContexts(...)` to run them left-to-right before provider injection.
+
 ## Defaults Layer
 
-Use `createDefaultCapabilityContextProviders` from `@agentrail/capabilities` to assemble the standard capability context stack:
+Use `memoryContext(...)` for the recommended high-level path. For lower-level composition, `createDefaultCapabilityContextProviders(...)` assembles the standard injected context stack and `createDefaultCapabilityTransformContext(...)` adds the companion rewrite transform:
 
 ```ts
-import { createDefaultCapabilityContextProviders } from "@agentrail/capabilities";
+import {
+  createDefaultCapabilityContextProviders,
+  createDefaultCapabilityTransformContext,
+} from "@agentrail/capabilities";
 
-const contextProviders = createDefaultCapabilityContextProviders({
-  memory: memoryManager,
-  knowledge: knowledgeManager,
-  skills: skillsManager,
-  sandbox: sandboxManager,
-});
+const providers = createDefaultCapabilityContextProviders(options);
+const transform = createDefaultCapabilityTransformContext(options);
 ```
 
-This covers the typical provider set — memory summaries, knowledge summaries, skills index, and workspace snapshots — in the recommended order.
+This covers the typical provider set — memory summaries, knowledge summaries, skills index, and workspace snapshots — in the recommended order. The `memoryContext(...)` capability now contributes both injected context providers and a transform that can compact history before those providers run.
 
 ## Context Window Budget
 
@@ -87,9 +98,13 @@ If you do not set it through a lower-level custom profile, the host defaults to 
 
 ## Compaction
 
-Even with budget-based history loading, very long sessions accumulate more history than fits in the context window. Compaction addresses this by summarizing old turns into a compact summary message.
+Agentrail now uses three compaction layers:
 
-### How It Works
+- `compactToolResults(...)`: rewrites oversized `toolResult` messages and optionally persists their raw text to `tool-results/{toolCallId}.txt`
+- request-boundary persisted compaction: summarizes old history at request start and archives the removed messages to `messages.compactions/*.jsonl`
+- in-loop reactive compaction: summarizes old API rounds during a long-running turn, before the next model call would exceed the context window
+
+### Request-Boundary Persisted Compaction
 
 The host calls `compactIfNeeded` on the session store at the start of each request. If the accumulated history exceeds `triggerTokens`, it:
 
@@ -99,6 +114,15 @@ The host calls `compactIfNeeded` on the session store at the start of each reque
 4. Persists the compacted history
 
 From the agent's perspective, the summary message appears as part of the conversation history. Future requests load the summary instead of the raw old turns.
+
+### Reactive Compaction
+
+Reactive compaction runs inside `agentLoop` and is driven by the profile `contextWindow` plus the previous turn's real prompt usage. It uses two strategies:
+
+- `micro`: summarize only the oldest few API rounds while preserving the current user prompt and recent working set
+- `full`: summarize the entire compactable prefix, used when prompt usage is very high or after a prompt-too-long error
+
+The stream/runtime event for this path is `compaction`, while the host SSE events `context_compaction_start` and `context_compaction_end` remain exclusive to request-boundary persisted compaction.
 
 ### Configuration
 
@@ -119,18 +143,30 @@ const app = createAgentApp({
   compaction: {
     triggerTokens: 80_000, // compact when history exceeds this many tokens
     minMessages: 20, // only compact if there are at least this many messages
+    reactive: {
+      microTriggerPct: 85,
+      fullTriggerPct: 92,
+      preserveRecentApiRounds: 2,
+      microBatchGroups: 2,
+      maxReactiveCompactionsPerRequest: 3,
+    },
   },
 });
 ```
 
 ### The Summarize Function
 
-The `summarize` function receives the old messages and should return a concise text summary. In production this is usually an LLM call using a small, fast model:
+The `summarize` function receives the old messages plus an optional reason and should return a concise text summary. In production this is usually an LLM call using a small, fast model:
 
 ```ts
-const summarize = async (messages: Message[]) => {
+const summarize = async (
+  messages: Message[],
+  ctx?: { reason: "session_compaction" | "reactive_micro" | "reactive_full" },
+) => {
   const response = await llm.complete({
-    system: "Summarize the following conversation history concisely.",
+    system: `Summarize the following conversation history concisely. Reason: ${
+      ctx?.reason ?? "session_compaction"
+    }`,
     messages,
   });
   return response.text;
@@ -139,7 +175,7 @@ const summarize = async (messages: Message[]) => {
 
 ### Compaction Events
 
-When compaction runs, the stream route emits `context_compaction_start` and `context_compaction_end` events over SSE so the client can display a compaction indicator to the user.
+When request-boundary compaction runs, the stream route emits `context_compaction_start` and `context_compaction_end` over SSE. When in-loop reactive compaction runs, the runtime emits `compaction` with `messagesBefore` and `messagesAfter`.
 
 ## Related Concepts
 

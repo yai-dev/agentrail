@@ -1,6 +1,6 @@
 # Add Context
 
-Context providers are the primary way to inject runtime context into hosted requests.
+Context providers are the primary way to inject runtime context into hosted requests. When you need to rewrite existing history, use a transform context instead of forcing that logic through a provider.
 
 ## Prerequisites
 
@@ -53,19 +53,19 @@ const identityProvider: ContextProvider = async (context) => {
 
 This is the cleanest path when the logic is already easy to express as “return some messages”.
 
-### 2. Adapt a `transformContext` function
+### 2. Add a `TransformContextFn`
 
-Use `createTransformContext` or `createContextProviderFromTransform` when:
+Use a transform when you need to rewrite the existing message array before the model sees it:
 
-- you already have transform-style context logic
-- you want to reuse older runtime-style context code
-- you need one composition point that works over the full message array
+- compacting large `toolResult` messages
+- redacting or normalizing history
+- composing multiple request-time rewrites
 
-This is useful when migrating from a less structured setup into Agentrail’s provider model.
+Use `createTransformContext(...)` to combine rewrite transforms with providers. `createContextProviderFromTransform(...)` still exists as a legacy prepend-only adapter, but it is no longer the recommended way to express rewrite logic.
 
 ## Recommended Path
 
-Use `createDefaultCapabilityContextProviders` if your host follows the default capability model.
+Use `createDefaultCapabilityContextProviders` and `createDefaultCapabilityTransformContext` if your host follows the default capability model.
 
 That path is especially useful when you want to compose:
 
@@ -131,6 +131,8 @@ Avoid these patterns:
 If the defaults layer is too opinionated, use these primitives directly:
 
 - `ContextProvider`
+- `TransformContextFn`
+- `composeTransformContexts`
 - `createTransformContext`
 - `createContextProviderFromTransform`
 

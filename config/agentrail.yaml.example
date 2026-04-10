@@ -58,6 +58,19 @@ apps:
       triggerTokens: 60000
       # Minimum message count required before compaction is allowed. Default: 6.
       minMessages: 6
+      reactive:
+        # Enable in-loop reactive compaction for long-running turns. Default: true.
+        enabled: true
+        # Trigger a micro-compact when prompt usage reaches this percent of the context window. Default: 85.
+        microTriggerPct: 85
+        # Trigger a full reactive compact at this percent, or after prompt-too-long recovery. Default: 92.
+        fullTriggerPct: 92
+        # Preserve this many most-recent API rounds when reactive compaction runs. Default: 2.
+        preserveRecentApiRounds: 2
+        # Number of old API rounds summarized by one micro-compact pass. Default: 2.
+        microBatchGroups: 2
+        # Maximum reactive compaction attempts in a single request. Default: 3.
+        maxReactiveCompactionsPerRequest: 3
     userMemory:
       # Enable background user-memory consolidation. Default: true.
       enabled: true

@@ -4,7 +4,7 @@
  */
 
 import type { TransformContextFn } from "@agentrail/core";
-import { createTransformContext } from "@/host/context-pipeline.js";
+import { composeTransformContexts, createTransformContext } from "@/host/context-pipeline.js";
 import { collectPluginContextProviders } from "@/host/plugins.js";
 import type { AgentrailPlugin, ContextProvider } from "@/host/types.js";
 
@@ -14,6 +14,7 @@ interface ResolveTransformContextOptions {
     userId: string;
     sessionId: string;
   }) => Promise<TransformContextFn> | TransformContextFn;
+  baseTransformContext?: Promise<TransformContextFn | undefined> | TransformContextFn | undefined;
   getContextProviders?: (context: {
     tenantId: string;
     userId: string;
@@ -32,9 +33,18 @@ export async function resolveTransformContext(
   plugins: AgentrailPlugin[],
   context: { tenantId: string; userId: string; sessionId: string },
 ): Promise<TransformContextFn> {
+  const transforms: TransformContextFn[] = [];
   if (options.getTransformContext) {
-    return options.getTransformContext(context);
+    transforms.push(await options.getTransformContext(context));
   }
+  if (options.baseTransformContext) {
+    const baseTransform = await options.baseTransformContext;
+    if (baseTransform) {
+      transforms.push(baseTransform);
+    }
+  }
+
+  const mergedTransform = transforms.length > 0 ? composeTransformContexts(transforms) : undefined;
 
   return createTransformContext(
     collectPluginContextProviders(
@@ -44,5 +54,6 @@ export async function resolveTransformContext(
         : (options.contextProviders ?? []),
     ),
     context,
+    mergedTransform,
   );
 }

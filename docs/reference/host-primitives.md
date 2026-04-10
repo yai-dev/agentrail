@@ -35,6 +35,7 @@ import { createChatRoute, createStreamRoute } from "@agentrail/app/advanced";
 - `createChatRoute`
 - `createStreamRoute`
 - `createOrchestrationRegistry`
+- `composeTransformContexts`
 - `createTransformContext`
 - `createContextProviderFromTransform`
 - `runPluginLifecycle`
@@ -70,13 +71,33 @@ interface AgentrailChatRouteOptions {
   /** Session persistence implementation */
   sessionStore: AgentrailSessionStore;
   /** LLM call used to summarize old messages during compaction */
-  summarize: (messages: Message[]) => Promise<string>;
+  summarize: (
+    messages: Message[],
+    ctx?: { reason: "session_compaction" | "reactive_micro" | "reactive_full" },
+  ) => Promise<string>;
   /** Compaction trigger configuration */
-  compaction: { triggerTokens: number; minMessages: number };
+  compaction: {
+    triggerTokens: number;
+    minMessages: number;
+    reactive?: {
+      enabled?: boolean;
+      microTriggerPct?: number;
+      fullTriggerPct?: number;
+      preserveRecentApiRounds?: number;
+      microBatchGroups?: number;
+      maxReactiveCompactionsPerRequest?: number;
+    };
+  };
   /** Resolve a profile by agentId for the current request */
   resolveProfile(
     agentId: string,
-    context: { tenantId: string; userId: string; sessionId: string; sessionRef: SessionRef; sessionStore: AgentrailSessionStore },
+    context: {
+      tenantId: string;
+      userId: string;
+      sessionId: string;
+      sessionRef: SessionRef;
+      sessionStore: AgentrailSessionStore;
+    },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
   /** Registered plugins */
@@ -89,7 +110,7 @@ interface AgentrailChatRouteOptions {
     userId: string;
     sessionId: string;
   }) => Promise<ContextProvider[]> | ContextProvider[];
-  /** Alternative to getContextProviders: supply a full transformContext function */
+  /** Request-time message rewrite hook */
   getTransformContext?: (context: {
     tenantId: string;
     userId: string;
@@ -162,11 +183,31 @@ interface AgentrailStreamRouteOptions {
   sandboxManager: SandboxManager;
   resolveProfile(
     agentId: string,
-    context: { tenantId: string; userId: string; sessionId: string; sessionRef: SessionRef; sessionStore: AgentrailSessionStore },
+    context: {
+      tenantId: string;
+      userId: string;
+      sessionId: string;
+      sessionRef: SessionRef;
+      sessionStore: AgentrailSessionStore;
+    },
     onSubAgentEvent?: (event: object) => void,
   ): Promise<AgentrailProfile | null>;
-  summarize(messages: Message[]): Promise<string>;
-  compaction: { triggerTokens: number; minMessages: number };
+  summarize(
+    messages: Message[],
+    ctx?: { reason: "session_compaction" | "reactive_micro" | "reactive_full" },
+  ): Promise<string>;
+  compaction: {
+    triggerTokens: number;
+    minMessages: number;
+    reactive?: {
+      enabled?: boolean;
+      microTriggerPct?: number;
+      fullTriggerPct?: number;
+      preserveRecentApiRounds?: number;
+      microBatchGroups?: number;
+      maxReactiveCompactionsPerRequest?: number;
+    };
+  };
   plugins?: AgentrailPlugin[];
   contextProviders?: ContextProvider[];
   getContextProviders?: (context: {
@@ -239,13 +280,17 @@ Pass the result to `createChatRoute` / `createStreamRoute` as `resolveProfile`.
 
 ## Context Pipeline Helpers
 
+### `composeTransformContexts`
+
+Composes multiple rewrite transforms left-to-right before provider injection. Use this when different capabilities or host layers each need to rewrite history.
+
 ### `createTransformContext`
 
 Defined in:
 
 - [packages/app/src/host/context-pipeline.ts](../../packages/app/src/host/context-pipeline.ts)
 
-Converts an ordered list of `ContextProvider`s into the runtime `transformContext` function shape.
+Converts an ordered list of `ContextProvider`s into the runtime `transformContext` function shape. It can also accept a base rewrite transform; in that case, providers run against the rewritten history and their messages are prepended afterward.
 
 ### `createContextProviderFromTransform`
 
@@ -254,6 +299,8 @@ Also defined in:
 - [packages/app/src/host/context-pipeline.ts](../../packages/app/src/host/context-pipeline.ts)
 
 Adapts legacy or runtime-style transform logic back into provider form.
+
+This helper is now legacy-only. It should be used only for prepend-only adapters. If your logic rewrites or removes existing messages, implement `getTransformContext` or use capability `buildTransformContext` instead.
 
 ## Orchestration Integration
 

@@ -8,6 +8,8 @@ import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 import type { KBMetadata } from "@/knowledge/types.js";
 import type { SkillMeta } from "@/skills/types.js";
 import {
+  createDefaultCapabilityContextState,
+  createDefaultCapabilityTransformContext,
   createDefaultCapabilityContextProviders,
 } from "@/memory/context.js";
 
@@ -35,7 +37,10 @@ export interface MemoryContextBuilders {
   /** Returns the current workspace snapshot from the sandbox, if available. */
   listWorkspaceSnapshot?(ctx: MemorySessionContext): Promise<string | undefined>;
   /** Compacts message history to reduce context window usage. */
-  compactMessages?(messages: Message[]): Message[];
+  compactMessages?(
+    messages: Message[],
+    ctx?: { sessionDir?: string },
+  ): Message[] | Promise<Message[]>;
   /** When true, skills are delegated to a managed sub-agent. Defaults to false. */
   delegateSkillsToSubAgent?: boolean;
 }
@@ -68,6 +73,18 @@ export function memoryContext(
   builders: MemoryContextBuilders,
   opts?: MemoryContextOptions,
 ): CapabilityDescriptor {
+  const stateBySession = new Map<string, ReturnType<typeof createDefaultCapabilityContextState>>();
+
+  function getState(ctx: CapabilityBuildContext) {
+    const key = `${ctx.tenantId}:${ctx.userId}:${ctx.sessionId}`;
+    let state = stateBySession.get(key);
+    if (!state) {
+      state = createDefaultCapabilityContextState();
+      stateBySession.set(key, state);
+    }
+    return state;
+  }
+
   return {
     type: "memory-context",
 
@@ -81,7 +98,7 @@ export function memoryContext(
         userId: ctx.userId,
         sessionId: ctx.sessionId,
       };
-
+      const state = getState(ctx);
       return createDefaultCapabilityContextProviders({
         tenantId: ctx.tenantId,
         userId: ctx.userId,
@@ -100,7 +117,36 @@ export function memoryContext(
           ? () => builders.listWorkspaceSnapshot!(sessionCtx)
           : undefined,
         compactMessages: builders.compactMessages,
-      });
+      }, state);
+    },
+
+    buildTransformContext(ctx: CapabilityBuildContext) {
+      const sessionCtx: MemorySessionContext = {
+        tenantId: ctx.tenantId,
+        userId: ctx.userId,
+        sessionId: ctx.sessionId,
+      };
+      const state = getState(ctx);
+
+      return createDefaultCapabilityTransformContext({
+        tenantId: ctx.tenantId,
+        userId: ctx.userId,
+        sessionId: ctx.sessionId,
+        includeSkillsContext: opts?.includeSkillsContext ?? true,
+        delegateSkillsToSubAgent: builders.delegateSkillsToSubAgent ?? false,
+        cacheTtlMs: opts?.cacheTtlMs,
+        buildMemoryIndex: () => builders.buildMemoryIndex(sessionCtx),
+        listKnowledgeMetadatas: builders.listKnowledgeMetadatas
+          ? () => builders.listKnowledgeMetadatas!(sessionCtx)
+          : () => Promise.resolve([]),
+        listSkills: builders.listSkills
+          ? () => builders.listSkills!(sessionCtx)
+          : () => Promise.resolve([]),
+        listWorkspaceSnapshot: builders.listWorkspaceSnapshot
+          ? () => builders.listWorkspaceSnapshot!(sessionCtx)
+          : undefined,
+        compactMessages: builders.compactMessages,
+      }, state);
     },
   };
 }

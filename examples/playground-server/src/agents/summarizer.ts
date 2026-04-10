@@ -3,10 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { config } from "@/config.js";
+import type { CompactionSummaryContext } from "@agentrail/app";
 import type { Message } from "@agentrail/core";
 import { defineAgent, isRuntimeError } from "@agentrail/core";
 import "@agentrail/core/providers";
-import { config } from "@/config.js";
 
 function trunc(s: string, max: number): string {
   return s.length > max ? s.slice(0, max) + "…" : s;
@@ -99,7 +100,10 @@ Rules:
  * instance (no tools).  Called lazily only when Layer 3 compaction triggers,
  * so there is no overhead on normal turns.
  */
-export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
+export function buildSummarizeFn(): (
+  messages: Message[],
+  ctx?: CompactionSummaryContext,
+) => Promise<string> {
   const summarizer = defineAgent({
     id: "conversation-summarizer",
     model: {
@@ -111,13 +115,14 @@ export function buildSummarizeFn(): (messages: Message[]) => Promise<string> {
     temperature: 0,
   });
 
-  return async (messages: Message[]): Promise<string> => {
+  return async (messages: Message[], ctx?: CompactionSummaryContext): Promise<string> => {
     const formatted = formatForSummarization(messages);
     if (!formatted.trim()) return "(no conversation content to summarize)";
+    const reasonLine = ctx?.reason ? `Compaction reason: ${ctx.reason}\n\n` : "";
 
     let summary = "";
     for await (const event of summarizer.stream(
-      `Summarize this conversation excerpt:\n\n${formatted}`,
+      `${reasonLine}Summarize this conversation excerpt:\n\n${formatted}`,
     )) {
       if (isRuntimeError(event)) {
         const msg = (event.error as Error)?.message ?? "unknown error";

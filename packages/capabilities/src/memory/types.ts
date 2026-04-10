@@ -19,7 +19,10 @@ export interface DefaultCapabilityContextOptions {
   listKnowledgeMetadatas(): Promise<(KBMetadata | null)[]>;
   listSkills(): Promise<SkillMeta[]>;
   listWorkspaceSnapshot?(): Promise<string | undefined>;
-  compactMessages?(messages: Message[]): Message[];
+  compactMessages?(
+    messages: Message[],
+    ctx?: { sessionDir?: string },
+  ): Message[] | Promise<Message[]>;
 }
 
 /** Merges base and optional context providers into a single ordered list. */

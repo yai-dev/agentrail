@@ -9,6 +9,7 @@ import type {
   ModelConfig,
   RuntimeTool,
   SessionRef,
+  TransformContextFn,
 } from "@agentrail/core";
 import type { KnowledgeManager } from "@/knowledge/index.js";
 import type { SandboxManager } from "@/sandbox/index.js";
@@ -59,4 +60,8 @@ export interface CapabilityDescriptor {
   buildTools(ctx: CapabilityBuildContext): Promise<RuntimeTool[]>;
   /** Optionally builds context providers for message injection. */
   buildContextProviders?(ctx: CapabilityBuildContext): ContextProvider[];
+  /** Optionally builds a full-message transform for request-time rewrites. */
+  buildTransformContext?(
+    ctx: CapabilityBuildContext,
+  ): Promise<TransformContextFn | undefined> | TransformContextFn | undefined;
 }

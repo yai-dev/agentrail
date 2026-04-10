@@ -13,6 +13,7 @@ import {
   validateChatRequest,
 } from "@/routes/chat-route-internals.js";
 import { TRACE_PERSISTED_EVENT_TYPES, wrapTraceEvent, type WorkflowTraceEventEnvelope } from "@/events/index.js";
+import { createReactiveCompactionController, type SummarizeMessagesFn } from "@/host/reactive-compaction.js";
 import { runCompactionStep } from "@/routes/compaction-runner.js";
 import { runPluginChatRequestInterceptors, runPluginRequestHook } from "@/host/plugins.js";
 import type {
@@ -39,9 +40,20 @@ export interface AgentrailChatRouteOptions {
   /** Session store implementation used for history persistence and compaction. */
   sessionStore: AgentrailSessionStore;
   /** Summarizer used when chat history needs compaction. */
-  summarize: (messages: Message[]) => Promise<string>;
+  summarize: SummarizeMessagesFn;
   /** Token thresholds that decide when to compact history. */
-  compaction: { triggerTokens: number; minMessages: number };
+  compaction: {
+    triggerTokens: number;
+    minMessages: number;
+    reactive?: {
+      enabled?: boolean;
+      microTriggerPct?: number;
+      fullTriggerPct?: number;
+      preserveRecentApiRounds?: number;
+      microBatchGroups?: number;
+      maxReactiveCompactionsPerRequest?: number;
+    };
+  };
   /** Resolves a hosted profile for the given request context. */
   resolveProfile(
     agentId: string,
@@ -234,6 +246,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         () => { /* sub-agent events are not forwarded on the JSON /chat route */ },
       );
       const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
+      const profileTransform = await profile.getTransformContext?.(profileCtx);
       const history = await runCompactionStep(
         options.sessionStore,
         request.tenantId,
@@ -244,6 +257,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
       const transformContext = await resolveChatTransformContext(
         {
           ...options,
+          baseTransformContext: profileTransform,
           contextProviders: [...(options.contextProviders ?? []), ...capProviders],
         },
         plugins,
@@ -262,10 +276,16 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
 
       let result: Awaited<ReturnType<typeof agent.invoke>>;
       try {
+        const reactiveCompaction = createReactiveCompactionController({
+          summarize: options.summarize,
+          contextWindow: profile.contextWindow,
+          config: options.compaction.reactive,
+        });
         result = await agent.invoke(request.message, {
           messages: history,
           signal,
           transformContext,
+          reactiveCompaction,
         });
       } catch (invokeError) {
         emitTraceEvent(

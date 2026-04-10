@@ -91,7 +91,12 @@ interface AgentrailProfile {
     context: AgentrailProfileContext,
     onSubAgentEvent?: (event: object) => void,
   ): Promise<Agent>;
-  getContextProviders?(context: AgentrailProfileContext): Promise<ContextProvider[]> | ContextProvider[];
+  getContextProviders?(
+    context: AgentrailProfileContext,
+  ): Promise<ContextProvider[]> | ContextProvider[];
+  getTransformContext?(
+    context: AgentrailProfileContext,
+  ): Promise<TransformContextFn> | TransformContextFn;
 }
 ```
 
@@ -116,7 +121,7 @@ interface ProfileDefinition extends AgentrailProfile {
 }
 ```
 
-The `capabilities` field is used by `createAgentApp` when constructing context providers.
+The `capabilities` field is used by `createAgentApp` when constructing context providers and capability-level request transforms.
 
 ## Profile Resolver
 

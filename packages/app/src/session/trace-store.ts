@@ -19,6 +19,12 @@ function getTraceDir(dataDir: string, sessionRef: SessionRef): string {
   return path.join(dataDir, "tenants", tenantId, "sessions", sessionId, "trace");
 }
 
+// Module-level state shared across all instances writing to the same file.
+// Ensures serialized writes and a one-time mkdir per file path regardless of
+// how many store instances are created (e.g. one per event in playground-server).
+const writeQueues = new Map<string, Promise<void>>();
+const dirEnsuredPaths = new Set<string>();
+
 /**
  * Creates the default filesystem-backed trace store for a session.
  * The underlying trace file layout remains an internal detail of the memo package.
@@ -31,9 +37,24 @@ export function createFileSystemSessionTraceStore<TEnvelope = Record<string, unk
   const traceFilePath = path.join(traceDir, "events.jsonl");
 
   return {
-    async appendEnvelope(envelope: TEnvelope): Promise<void> {
-      await mkdir(traceDir, { recursive: true });
-      await appendFile(traceFilePath, `${JSON.stringify(envelope)}\n`, "utf8");
+    appendEnvelope(envelope: TEnvelope): Promise<void> {
+      const prev = writeQueues.get(traceFilePath) ?? Promise.resolve();
+      const next = prev
+        .then(async () => {
+          if (!dirEnsuredPaths.has(traceFilePath)) {
+            await mkdir(traceDir, { recursive: true });
+            dirEnsuredPaths.add(traceFilePath);
+          }
+          await appendFile(traceFilePath, `${JSON.stringify(envelope)}\n`, "utf8");
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (writeQueues.get(traceFilePath) === next) {
+            writeQueues.delete(traceFilePath);
+          }
+        });
+      writeQueues.set(traceFilePath, next);
+      return next;
     },
     async loadEnvelopes(): Promise<TEnvelope[]> {
       try {

@@ -67,7 +67,8 @@ export const defaultProfile = defineProfile({
         },
         listSkills: () => skillManager.listSkills(),
         listWorkspaceSnapshot: (ctx) => sandboxManager.listWorkspace(ctx.sessionId),
-        compactMessages: compactToolResults,
+        compactMessages: (msgs, ctx) =>
+          compactToolResults(msgs, { sessionDir: ctx?.sessionDir }),
         delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
       },
       { cacheTtlMs: 5_000 },
