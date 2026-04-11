@@ -4,7 +4,13 @@
  */
 
 import { Type, type Static, type TSchema } from "@sinclair/typebox";
-import type { RuntimeTool, ToolResult, ToolSignalEvent } from "@/types/tool.types.js";
+import type {
+  RuntimeTool,
+  ToolResult,
+  ToolSignalEvent,
+  ToolValidationContext,
+  ValidationResult,
+} from "@/types/tool.types.js";
 
 // ============================================================================
 // ============================================================================
@@ -37,6 +43,7 @@ interface ToolConfig<TParams, TDetails> {
   label?: string;
   description?: string;
   parameters?: TSchema;
+  validate?: (params: TParams, ctx: ToolValidationContext) => Promise<ValidationResult> | ValidationResult;
   execute?: (params: TParams, ctx: ToolExecutionContext) => Promise<ToolResult<TDetails>>;
 }
 
@@ -76,6 +83,20 @@ export class ToolBuilder<TParams = undefined, TDetails = unknown> {
     return builder;
   }
 
+  /**
+   * Registers an optional business-logic precondition check.
+   *
+   * The function is called after schema validation and after any
+   * `onBeforeToolCall` interceptor has rewritten the arguments, but before
+   * `execute`. Returning `{ valid: false }` or throwing prevents execution.
+   */
+  validate(
+    fn: (params: TParams, ctx: ToolValidationContext) => Promise<ValidationResult> | ValidationResult,
+  ): this {
+    this.config.validate = fn;
+    return this;
+  }
+
   /** Registers the async implementation invoked when the tool is executed. */
   execute(fn: (params: TParams, ctx: ToolExecutionContext) => Promise<ToolResult<TDetails>>): this {
     this.config.execute = fn;
@@ -96,8 +117,9 @@ export class ToolBuilder<TParams = undefined, TDetails = unknown> {
 
     const parameters = this.config.parameters ?? Type.Object({});
     const executeFn = this.config.execute;
+    const validateFn = this.config.validate;
 
-    return {
+    const runtimeTool: RuntimeTool<TSchema, TDetails> = {
       name: this.config.name,
       label: this.config.label ?? this.config.name,
       description: this.config.description,
@@ -118,6 +140,15 @@ export class ToolBuilder<TParams = undefined, TDetails = unknown> {
         return executeFn(params as TParams, ctx);
       },
     };
+
+    if (validateFn) {
+      runtimeTool.validate = (
+        params: Static<typeof parameters>,
+        ctx: ToolValidationContext,
+      ): Promise<ValidationResult> | ValidationResult => validateFn(params as TParams, ctx);
+    }
+
+    return runtimeTool;
   }
 }
 
@@ -169,14 +200,25 @@ export function defineSimpleTool<TDetails = unknown>(options: {
   label?: string;
   /** Description shown to the model for tool selection. */
   description: string;
+  /**
+   * Optional business-logic precondition check.
+   * Receives only context (no parameters) because this tool has no schema.
+   */
+  validate?: (ctx: ToolValidationContext) => Promise<ValidationResult> | ValidationResult;
   /** Async implementation invoked when the tool is called. */
   execute: (ctx: ToolExecutionContext) => Promise<ToolResult<TDetails>>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }): RuntimeTool<TSchema, any> {
-  return tool()
+  let builder = tool()
     .name(options.name)
     .label(options.label ?? options.name)
     .description(options.description)
-    .execute(async (_params, ctx) => options.execute(ctx))
-    .build();
+    .execute(async (_params, ctx) => options.execute(ctx));
+
+  if (options.validate) {
+    const validateFn = options.validate;
+    builder = builder.validate((_params, ctx) => validateFn(ctx));
+  }
+
+  return builder.build();
 }

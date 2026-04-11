@@ -36,6 +36,8 @@ export type {
   ToolResult,
   ToolSignalEvent,
   ToolUpdateCallback,
+  ToolValidationContext,
+  ValidationResult,
 } from "@/types/tool.types.js";
 
 // ============================================================================

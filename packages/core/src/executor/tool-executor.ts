@@ -5,11 +5,18 @@
 
 import { ToolNotFoundError } from "@/errors.js";
 import { EventStream } from "@/llm/event-stream.js";
-import { validateToolArguments } from "@/llm/utils/validation.js";
+import { validateToolArguments, validateToolInput } from "@/llm/utils/validation.js";
 import type { TextContent, ToolCall } from "@/types/content.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
 import type { RuntimeEvent } from "@/types/result.types.js";
-import type { RuntimeTool, ToolInterceptor, ToolResult, ToolSignalEvent } from "@/types/tool.types.js";
+import type { Static, TSchema } from "@sinclair/typebox";
+import type {
+  RuntimeTool,
+  ToolInterceptor,
+  ToolResult,
+  ToolSignalEvent,
+  ValidationResult,
+} from "@/types/tool.types.js";
 
 /** Result produced by executing a single tool call against the runtime registry. */
 export interface ToolExecutionResult {
@@ -36,17 +43,14 @@ export async function executeToolCalls(
 
     // ── Tool not found — emit events and move on ──────────────────────────────
     if (!tool) {
-      const errorText = new ToolNotFoundError(toolCall.name).message;
-      const errorResult: ToolResult = {
-        content: [{ type: "text", text: errorText } as TextContent],
-        details: {},
-      };
-      stream.push({ type: "tool.before", toolCallId: toolCall.id, toolName: toolCall.name, args: rawArgs, rawArgs });
-      stream.push({ type: "tool.after", toolCallId: toolCall.id, toolName: toolCall.name, result: errorResult, isError: true });
-      const msg = buildToolResultMessage(toolCall, errorResult, true);
-      results.push(msg);
-      stream.push({ type: "message.start", message: msg });
-      stream.push({ type: "message.end", message: msg });
+      rejectToolCall(
+        toolCall,
+        new ToolNotFoundError(toolCall.name).message,
+        rawArgs,
+        rawArgs,
+        stream,
+        results,
+      );
       continue;
     }
 
@@ -63,17 +67,14 @@ export async function executeToolCalls(
     }
 
     if (validationError !== null) {
-      const errorText = validationError instanceof Error ? validationError.message : String(validationError);
-      const errorResult: ToolResult = {
-        content: [{ type: "text", text: errorText } as TextContent],
-        details: {},
-      };
-      stream.push({ type: "tool.before", toolCallId: toolCall.id, toolName: toolCall.name, args: rawArgs, rawArgs });
-      stream.push({ type: "tool.after", toolCallId: toolCall.id, toolName: toolCall.name, result: errorResult, isError: true });
-      const msg = buildToolResultMessage(toolCall, errorResult, true);
-      results.push(msg);
-      stream.push({ type: "message.start", message: msg });
-      stream.push({ type: "message.end", message: msg });
+      rejectToolCall(
+        toolCall,
+        validationError instanceof Error ? validationError.message : String(validationError),
+        rawArgs,
+        rawArgs,
+        stream,
+        results,
+      );
       continue;
     }
 
@@ -93,24 +94,65 @@ export async function executeToolCalls(
       });
 
       if (beforeResult.action === "deny") {
-        const denyResult: ToolResult = {
-          content: [{ type: "text", text: beforeResult.reason } as TextContent],
-          details: {},
-        };
         // tool.before is emitted even for denied calls so stream consumers always
         // see a matching before/after pair.
-        stream.push({ type: "tool.before", toolCallId: toolCall.id, toolName: toolCall.name, args: rawArgs, rawArgs });
-        stream.push({ type: "tool.after", toolCallId: toolCall.id, toolName: toolCall.name, result: denyResult, isError: true });
-        const msg = buildToolResultMessage(toolCall, denyResult, true);
-        results.push(msg);
-        stream.push({ type: "message.start", message: msg });
-        stream.push({ type: "message.end", message: msg });
+        rejectToolCall(toolCall, beforeResult.reason, rawArgs, rawArgs, stream, results);
         // onAfterToolCall is NOT called for denied executions.
         continue;
       }
 
       if (beforeResult.action === "allow" && "input" in beforeResult) {
         effectiveArgs = beforeResult.input;
+        // Re-validate schema after interceptor rewrite: the before-hook contract
+        // allows returning an arbitrary unknown, so the shape may no longer match
+        // the tool's TypeBox schema. Uses the same ToolValidationError format as
+        // the initial validation above.
+        let rewriteValidationError: unknown = null;
+        try {
+          validateToolInput(tool, effectiveArgs);
+        } catch (e) {
+          rewriteValidationError = e;
+        }
+        if (rewriteValidationError !== null) {
+          // Use effectiveArgs (rewritten value) as args so the event reflects
+          // the actual input that failed re-validation.
+          rejectToolCall(
+            toolCall,
+            rewriteValidationError instanceof Error
+              ? rewriteValidationError.message
+              : String(rewriteValidationError),
+            effectiveArgs,
+            rawArgs,
+            stream,
+            results,
+          );
+          // onAfterToolCall is NOT called for schema re-validation failures.
+          continue;
+        }
+      }
+    }
+
+    // ── Business-logic validation (tool.validate) ─────────────────────────────
+    // Runs on the final effectiveArgs (post-interceptor) so tool-level
+    // preconditions cannot be bypassed by a before-hook rewrite.
+    if (tool.validate) {
+      let vr: ValidationResult;
+      try {
+        vr = await tool.validate(effectiveArgs as Static<TSchema>, { toolCallId: toolCall.id, signal });
+      } catch (e) {
+        vr = { valid: false, reason: e instanceof Error ? e.message : String(e) };
+      }
+      if (!vr.valid) {
+        rejectToolCall(
+          toolCall,
+          `Tool precondition failed: ${vr.reason}`,
+          effectiveArgs,
+          rawArgs,
+          stream,
+          results,
+        );
+        // onAfterToolCall is NOT called for validate() failures.
+        continue;
       }
     }
 
@@ -209,6 +251,34 @@ export async function executeToolCalls(
   }
 
   return { toolResults: results, steeringMessages };
+}
+
+/**
+ * Emits a tool.before/tool.after error pair, pushes a ToolResultMessage, and
+ * appends it to `results`. Used for all early-exit failure paths (tool not
+ * found, schema validation, deny, re-validation, validate()).
+ *
+ * Callers must `continue` (or `return`) after calling this to skip execution.
+ * `onAfterToolCall` is intentionally NOT called here.
+ */
+function rejectToolCall(
+  toolCall: ToolCall,
+  errorText: string,
+  args: unknown,
+  rawArgs: unknown,
+  stream: EventStream<RuntimeEvent, Message[]>,
+  results: ToolResultMessage[],
+): void {
+  const errorResult: ToolResult = {
+    content: [{ type: "text", text: errorText } as TextContent],
+    details: {},
+  };
+  stream.push({ type: "tool.before", toolCallId: toolCall.id, toolName: toolCall.name, args, rawArgs });
+  stream.push({ type: "tool.after", toolCallId: toolCall.id, toolName: toolCall.name, result: errorResult, isError: true });
+  const msg = buildToolResultMessage(toolCall, errorResult, true);
+  results.push(msg);
+  stream.push({ type: "message.start", message: msg });
+  stream.push({ type: "message.end", message: msg });
 }
 
 function buildToolResultMessage(
