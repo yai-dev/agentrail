@@ -1,5 +1,12 @@
 # @agentrail/cli
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [[`3dbbf44`](https://github.com/yai-dev/agentrail/commit/3dbbf4495906baac00b6b3f0b12341eaf127381f)]:
+  - @agentrail/app@0.5.0
+
 ## 0.2.3
 
 ### Patch Changes

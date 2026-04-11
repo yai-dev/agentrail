@@ -1,5 +1,32 @@
 # @agentrail/app
 
+## 0.5.0
+
+### Minor Changes
+
+- [#133](https://github.com/yai-dev/agentrail/pull/133) [`3dbbf44`](https://github.com/yai-dev/agentrail/commit/3dbbf4495906baac00b6b3f0b12341eaf127381f) Thanks [@yai-dev](https://github.com/yai-dev)! - Add `onBeforeToolCall` / `onAfterToolCall` plugin hooks and `ToolInterceptor` core interface.
+
+  **`@agentrail/core`**
+  - New `ToolInterceptor` interface with `onBeforeToolCall` and `onAfterToolCall` methods, exported from the package root.
+  - New related types: `BeforeToolCallResult`, `ToolInterceptorBeforeContext`, `ToolInterceptorAfterContext`.
+  - `AgentRunOptions` gains an optional `toolInterceptor` field that threads the interceptor into every tool execution.
+  - `tool.before` stream event gains a `rawArgs` field that always carries the original model-generated arguments. `args` now reflects the effective (post-interceptor) input that was actually passed to the tool.
+
+  **`@agentrail/app`**
+  - `AgentrailPlugin` gains two new optional hooks:
+    - `onBeforeToolCall(event)` — called before each tool executes; can allow, modify, or deny the call.
+    - `onAfterToolCall(event)` — called after each tool completes (success or error, not deny).
+  - New exported types: `BeforeToolCallEvent`, `AfterToolCallEvent`, `AppBeforeToolCallResult`.
+  - New `buildToolInterceptor(plugins, profileCtx, onError)` helper that composes plugin hooks in priority order with `safeNotify` error isolation.
+  - Hooks are only dispatched for tools whose validated input is a plain object; array- and primitive-typed tools skip both hooks.
+  - Corrected plugin lifecycle order in JSDoc: `onTurnPersisted` fires before `onRequestEnd`.
+
+### Patch Changes
+
+- Updated dependencies [[`3dbbf44`](https://github.com/yai-dev/agentrail/commit/3dbbf4495906baac00b6b3f0b12341eaf127381f), [`72c911f`](https://github.com/yai-dev/agentrail/commit/72c911feea31934dcf1561e71d6a94b8518f0b16)]:
+  - @agentrail/core@0.5.0
+  - @agentrail/capabilities@0.2.1
+
 ## 0.4.0
 
 ### Minor Changes
