@@ -126,6 +126,41 @@ export const customerLookupTool = defineTool({
 
 The important part is not the exact helper name. The important part is that the tool stays framework/runtime-facing and does not depend on route glue.
 
+## Adding Business-Logic Validation
+
+Use the optional `validate` field to add precondition checks that run after schema validation and any plugin-level argument rewrites, but before `execute`. Return `{ valid: false, reason }` to abort execution with a model-visible error message:
+
+```ts
+import { Type } from "@sinclair/typebox";
+import { defineTool } from "@agentrail/core";
+
+export const transferTool = defineTool({
+  name: "transfer_funds",
+  description: "Transfer an amount between two accounts.",
+  parameters: Type.Object({
+    fromAccountId: Type.String(),
+    toAccountId: Type.String(),
+    amount: Type.Number({ minimum: 0.01 }),
+  }),
+  async validate(params) {
+    const balance = await getBalance(params.fromAccountId);
+    if (balance < params.amount) {
+      return { valid: false, reason: "Insufficient funds" };
+    }
+    return { valid: true };
+  },
+  async execute(params) {
+    await doTransfer(params.fromAccountId, params.toAccountId, params.amount);
+    return {
+      content: [{ type: "text", text: "Transfer complete." }],
+      details: null,
+    };
+  },
+});
+```
+
+When validation fails the agent receives `"Tool precondition failed: <reason>"`. If `validate` throws, the thrown message is used as the reason. `execute` and `onAfterToolCall` are not called in either case.
+
 ## Recommended Assembly Pattern
 
 Once you have one or more tools, assemble them in the host/profile layer rather than directly inside routes.

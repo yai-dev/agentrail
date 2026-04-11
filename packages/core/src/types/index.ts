@@ -42,6 +42,8 @@ export type {
   ToolInterceptorBeforeContext,
   ToolResult,
   ToolUpdateCallback,
+  ToolValidationContext,
+  ValidationResult,
 } from "@/types/tool.types.js";
 
 /** Agent invocation input/output types exported from the runtime core type surface. */

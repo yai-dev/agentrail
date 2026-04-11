@@ -55,6 +55,67 @@ export const pingTool = defineSimpleTool({
 });
 ```
 
+## Business-Logic Validation
+
+Use the optional `validate` field to add precondition checks that run after schema validation but before `execute`. This is useful when the input is structurally valid but violates a business rule that cannot be expressed as a TypeBox schema.
+
+```ts
+import { Type } from "@sinclair/typebox";
+import { defineTool } from "@agentrail/core";
+import type { ValidationResult } from "@agentrail/core";
+
+export const transferTool = defineTool({
+  name: "transfer_funds",
+  description: "Transfer an amount between two accounts.",
+  parameters: Type.Object({
+    fromAccountId: Type.String(),
+    toAccountId: Type.String(),
+    amount: Type.Number({ minimum: 0.01 }),
+  }),
+  async validate(params, ctx): Promise<ValidationResult> {
+    const balance = await getBalance(params.fromAccountId);
+    if (balance < params.amount) {
+      return { valid: false, reason: "Insufficient funds" };
+    }
+    return { valid: true };
+  },
+  async execute(params, ctx) {
+    // Only runs when validate() returns { valid: true }
+    await doTransfer(params.fromAccountId, params.toAccountId, params.amount);
+    return { content: [{ type: "text", text: "Transfer complete." }], details: null };
+  },
+});
+```
+
+When `validate` returns `{ valid: false, reason }` or throws, the agent receives the error `"Tool precondition failed: <reason>"` and `execute` is not called. The same applies to `defineSimpleTool`:
+
+```ts
+import { defineSimpleTool } from "@agentrail/core";
+
+export const maintenanceTool = defineSimpleTool({
+  name: "run-maintenance",
+  description: "Run scheduled maintenance.",
+  async validate(ctx) {
+    if (isMaintenanceWindowOpen()) return { valid: true };
+    return { valid: false, reason: "Outside maintenance window" };
+  },
+  async execute(ctx) {
+    await runMaintenance();
+    return { content: [{ type: "text", text: "Done." }], details: null };
+  },
+});
+```
+
+### Execution order
+
+1. TypeBox schema validation (structural)
+2. `onBeforeToolCall` interceptor (plugin layer — may rewrite args)
+3. Schema re-validation on the rewritten args
+4. `validate()` (business logic — runs on final effective args)
+5. `execute()`
+
+`onAfterToolCall` is **not** called when `validate` fails.
+
 ## Tool Result Shape
 
 Every `execute` function must return a `ToolResult`:
