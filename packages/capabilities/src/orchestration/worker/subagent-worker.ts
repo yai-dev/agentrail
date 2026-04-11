@@ -286,7 +286,7 @@ async function runTurn(requestId?: string): Promise<ManagedAgentDeliveryResult |
   }
 }
 
-function extractToolCallRecords(messages: Message[]): AgentToolCallRecord[] {
+function extractToolCallRecords(messages: Message[]): AgentToolCallRecord[] | undefined {
   const outputs = new Map<string, NonNullable<AgentToolCallRecord["output"]>>();
   for (const msg of messages) {
     if (isToolResultMessage(msg)) {
@@ -308,7 +308,7 @@ function extractToolCallRecords(messages: Message[]): AgentToolCallRecord[] {
       }
     }
   }
-  return records;
+  return records.length > 0 ? records : undefined;
 }
 
 async function executeTurn(
@@ -316,12 +316,12 @@ async function executeTurn(
   inputs: AgentInputEnvelope[],
   agent: ReturnType<typeof defineAgent>,
   runtime: SubAgentRuntime,
-): Promise<{ outputText: string; messages: Message[]; toolCalls: AgentToolCallRecord[] }> {
+): Promise<{ outputText: string; messages: Message[]; toolCalls?: AgentToolCallRecord[] }> {
   if (currentState.workerConfig.fakeExecution === "echo") {
     return {
       outputText: inputs.map((input) => String(input.payload.prompt ?? input.id)).join("\n"),
       messages: [],
-      toolCalls: [],
+      toolCalls: undefined,
     };
   }
 
