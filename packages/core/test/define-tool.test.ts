@@ -3,9 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { Type } from "@sinclair/typebox";
 import { defineTool } from "../src/tools/define-tool.js";
+import { defineSimpleTool } from "../src/tools/tool-builder.js";
+import type { ToolValidationContext } from "../src/types/tool.types.js";
 
 describe("defineTool", () => {
   it("creates a RuntimeTool with the correct name and description", () => {
@@ -82,5 +84,78 @@ describe("defineTool", () => {
     const result = await t.execute("test-call-id", { msg: "hello" }, undefined, () => {});
     expect(result.content[0]).toMatchObject({ type: "text", text: "hello" });
     expect((result as { details: { msg: string } }).details.msg).toBe("hello");
+  });
+
+  it("validate option is wired to RuntimeTool.validate", async () => {
+    const validateFn = vi.fn().mockResolvedValue({ valid: true });
+    const t = defineTool({
+      name: "checked",
+      description: "Checked tool",
+      parameters: Type.Object({ value: Type.String() }),
+      validate: validateFn,
+      async execute() {
+        return { content: [] };
+      },
+    });
+
+    expect(typeof t.validate).toBe("function");
+    const ctx: ToolValidationContext = { toolCallId: "id-1" };
+    await t.validate!({ value: "x" }, ctx);
+    expect(validateFn).toHaveBeenCalledOnce();
+    expect(validateFn).toHaveBeenCalledWith({ value: "x" }, ctx);
+  });
+
+  it("validate option absent: RuntimeTool.validate is undefined", () => {
+    const t = defineTool({
+      name: "plain",
+      description: "Plain tool",
+      async execute() {
+        return { content: [] };
+      },
+    });
+    expect(t.validate).toBeUndefined();
+  });
+});
+
+describe("defineSimpleTool", () => {
+  it("creates a RuntimeTool with the correct name and description", () => {
+    const t = defineSimpleTool({
+      name: "ping",
+      description: "Pings",
+      async execute() {
+        return { content: [{ type: "text" as const, text: "pong" }], details: null };
+      },
+    });
+    expect(t.name).toBe("ping");
+    expect(t.description).toBe("Pings");
+  });
+
+  it("validate option is wired to RuntimeTool.validate", async () => {
+    const validateFn = vi.fn().mockResolvedValue({ valid: true });
+    const t = defineSimpleTool({
+      name: "safe-ping",
+      description: "Safe ping",
+      validate: validateFn,
+      async execute() {
+        return { content: [], details: null };
+      },
+    });
+
+    expect(typeof t.validate).toBe("function");
+    const ctx: ToolValidationContext = { toolCallId: "id-2" };
+    await t.validate!({}, ctx);
+    expect(validateFn).toHaveBeenCalledOnce();
+    expect(validateFn).toHaveBeenCalledWith(ctx);
+  });
+
+  it("validate option absent: RuntimeTool.validate is undefined", () => {
+    const t = defineSimpleTool({
+      name: "simple",
+      description: "Simple",
+      async execute() {
+        return { content: [], details: null };
+      },
+    });
+    expect(t.validate).toBeUndefined();
   });
 });

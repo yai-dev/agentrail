@@ -9,7 +9,7 @@ import { executeToolCalls } from "../src/executor/tool-executor.js";
 import { EventStream } from "../src/llm/event-stream.js";
 import type { AssistantMessage, Message } from "../src/types/message.types.js";
 import type { RuntimeEvent } from "../src/types/result.types.js";
-import type { RuntimeTool, ToolInterceptor } from "../src/types/tool.types.js";
+import type { RuntimeTool, ToolInterceptor, ToolValidationContext } from "../src/types/tool.types.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -250,5 +250,138 @@ describe("executeToolCalls — ToolInterceptor", () => {
     expect(result.toolResults[0].isError).toBe(false);
     const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<RuntimeEvent, { type: "tool.before" }>;
     expect(beforeEvent.rawArgs).toEqual({ value: "x" });
+  });
+
+  it("interceptor rewrites args to schema-invalid shape: re-validation fails, execute and onAfterToolCall NOT called", async () => {
+    const tool = makeTool("echo");
+    const afterSpy = vi.fn();
+    const interceptor: ToolInterceptor = {
+      onBeforeToolCall: vi.fn().mockResolvedValue({
+        action: "allow",
+        input: { value: 42 }, // number instead of required string
+      }),
+      onAfterToolCall: afterSpy,
+    };
+
+    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "ok" } }]);
+    const result = await executeToolCalls([tool], msg, undefined, stream, undefined, interceptor);
+
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(afterSpy).not.toHaveBeenCalled();
+    expect(result.toolResults[0].isError).toBe(true);
+    expect(result.toolResults[0].content[0]).toMatchObject({ type: "text", text: expect.stringContaining('Invalid arguments for tool') });
+    // tool.before.args should reflect the interceptor-rewritten value
+    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<RuntimeEvent, { type: "tool.before" }>;
+    expect((beforeEvent.args as Record<string, unknown>).value).toBe(42);
+  });
+});
+
+describe("executeToolCalls — tool.validate()", () => {
+  let stream!: EventStream<RuntimeEvent, Message[]>;
+  let collectedEvents!: RuntimeEvent[];
+
+  beforeEach(() => {
+    ({ stream, events: collectedEvents } = makeStream());
+  });
+
+  it("validate returns { valid: true }: execute is called, onAfterToolCall is called", async () => {
+    const tool = makeTool("echo");
+    const validateFn = vi.fn().mockResolvedValue({ valid: true });
+    (tool as RuntimeTool & { validate: unknown }).validate = validateFn;
+    const afterSpy = vi.fn().mockResolvedValue(undefined);
+    const interceptor: ToolInterceptor = { onAfterToolCall: afterSpy };
+
+    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
+    const result = await executeToolCalls([tool], msg, undefined, stream, undefined, interceptor);
+
+    expect(validateFn).toHaveBeenCalledOnce();
+    expect(tool.execute).toHaveBeenCalledOnce();
+    expect(afterSpy).toHaveBeenCalledOnce();
+    expect(result.toolResults[0].isError).toBe(false);
+  });
+
+  it("validate returns { valid: false, reason }: error result with prefix, execute NOT called, onAfterToolCall NOT called", async () => {
+    const tool = makeTool("echo");
+    (tool as RuntimeTool & { validate: unknown }).validate = vi
+      .fn()
+      .mockResolvedValue({ valid: false, reason: "quota exceeded" });
+    const afterSpy = vi.fn();
+    const interceptor: ToolInterceptor = { onAfterToolCall: afterSpy };
+
+    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
+    const result = await executeToolCalls([tool], msg, undefined, stream, undefined, interceptor);
+
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(afterSpy).not.toHaveBeenCalled();
+    expect(result.toolResults[0].isError).toBe(true);
+    expect(result.toolResults[0].content[0]).toMatchObject({
+      type: "text",
+      text: "Tool precondition failed: quota exceeded",
+    });
+  });
+
+  it("validate throws: error is caught and surfaced as precondition failure, execute NOT called", async () => {
+    const tool = makeTool("echo");
+    (tool as RuntimeTool & { validate: unknown }).validate = vi
+      .fn()
+      .mockRejectedValue(new Error("unexpected boom"));
+    const afterSpy = vi.fn();
+    const interceptor: ToolInterceptor = { onAfterToolCall: afterSpy };
+
+    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
+    const result = await executeToolCalls([tool], msg, undefined, stream, undefined, interceptor);
+
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(afterSpy).not.toHaveBeenCalled();
+    expect(result.toolResults[0].isError).toBe(true);
+    expect(result.toolResults[0].content[0]).toMatchObject({
+      type: "text",
+      text: "Tool precondition failed: unexpected boom",
+    });
+  });
+
+  it("validate failure: tool.before and tool.after are still emitted as a pair", async () => {
+    const tool = makeTool("echo");
+    (tool as RuntimeTool & { validate: unknown }).validate = vi
+      .fn()
+      .mockResolvedValue({ valid: false, reason: "blocked" });
+
+    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
+    await executeToolCalls([tool], msg, undefined, stream);
+
+    expect(collectedEvents.some((e) => e.type === "tool.before")).toBe(true);
+    expect(collectedEvents.some((e) => e.type === "tool.after")).toBe(true);
+    const afterEvent = collectedEvents.find((e) => e.type === "tool.after") as Extract<RuntimeEvent, { type: "tool.after" }>;
+    expect(afterEvent.isError).toBe(true);
+  });
+
+  it("validate is undefined: behavior unchanged — execute is called normally", async () => {
+    const tool = makeTool("echo");
+    expect(tool.validate).toBeUndefined();
+
+    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
+    const result = await executeToolCalls([tool], msg, undefined, stream);
+
+    expect(tool.execute).toHaveBeenCalledOnce();
+    expect(result.toolResults[0].isError).toBe(false);
+  });
+
+  it("validate runs on effectiveArgs (post-interceptor), not original args", async () => {
+    const tool = makeTool("echo");
+    const receivedParams: unknown[] = [];
+    (tool as RuntimeTool & { validate: (p: unknown, ctx: ToolValidationContext) => { valid: true } }).validate = vi
+      .fn()
+      .mockImplementation((params: unknown) => {
+        receivedParams.push(params);
+        return { valid: true as const };
+      });
+    const interceptor: ToolInterceptor = {
+      onBeforeToolCall: vi.fn().mockResolvedValue({ action: "allow", input: { value: "MODIFIED" } }),
+    };
+
+    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "original" } }]);
+    await executeToolCalls([tool], msg, undefined, stream, undefined, interceptor);
+
+    expect(receivedParams[0]).toEqual({ value: "MODIFIED" });
   });
 });

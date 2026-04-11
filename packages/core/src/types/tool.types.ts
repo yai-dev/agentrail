@@ -51,6 +51,20 @@ export interface RuntimeTool<
   /** Human-readable label used in logs and developer tooling. */
   label: string;
 
+  /**
+   * Optional business-logic precondition check.
+   *
+   * Called after TypeBox schema validation and after any `onBeforeToolCall`
+   * interceptor has potentially rewritten the arguments, but before `execute`.
+   * If this method returns `{ valid: false }` or throws, `execute` is not
+   * called and the model receives a `"Tool precondition failed: <reason>"`
+   * error result. `onAfterToolCall` is also not called in that case.
+   */
+  validate?(
+    params: Static<TParameters>,
+    ctx: ToolValidationContext,
+  ): Promise<ValidationResult> | ValidationResult;
+
   /** Executes the tool for a single model-generated tool call. */
   execute(
     toolCallId: string,
@@ -60,6 +74,32 @@ export interface RuntimeTool<
     onSignal?: (event: ToolSignalEvent) => void,
   ): Promise<ToolResult<TDetails>>;
 }
+
+// ============================================================================
+// Validation types — two-phase validation support
+// ============================================================================
+
+/**
+ * Minimal context available to a tool's `validate` method.
+ *
+ * Intentionally narrower than `ToolExecutionContext`: validation is a pure
+ * precondition check and does not need streaming callbacks.
+ */
+export interface ToolValidationContext {
+  readonly toolCallId: string;
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * Return value of a `validate` method.
+ *
+ * - `{ valid: true }` — precondition satisfied, proceed to execution.
+ * - `{ valid: false; reason: string }` — precondition failed; the executor
+ *   surfaces the reason as a `"Tool precondition failed: <reason>"` error result.
+ */
+export type ValidationResult =
+  | { readonly valid: true }
+  | { readonly valid: false; readonly reason: string };
 
 /** Extracts the static parameter type from a runtime tool definition. */
 export type ExtractToolParams<T> = T extends RuntimeTool<infer P, unknown> ? Static<P> : never;

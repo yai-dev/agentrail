@@ -4,7 +4,7 @@
  */
 
 import { Type, type Static, type TSchema } from "@sinclair/typebox";
-import type { RuntimeTool, ToolResult } from "@/types/tool.types.js";
+import type { RuntimeTool, ToolResult, ToolValidationContext, ValidationResult } from "@/types/tool.types.js";
 import { type ToolExecutionContext, tool } from "@/tools/tool-builder.js";
 
 /**
@@ -39,15 +39,39 @@ export function defineTool<TSchema_ extends TSchema, TDetails>(options: {
   description: string;
   /** TypeBox schema describing the accepted parameters. */
   parameters?: TSchema_;
+  /**
+   * Optional business-logic precondition check.
+   *
+   * Called after schema validation and after any `onBeforeToolCall` interceptor
+   * has rewritten the arguments, but before `execute`. Returning
+   * `{ valid: false }` or throwing prevents execution.
+   */
+  validate?: (
+    params: Static<TSchema_>,
+    ctx: ToolValidationContext,
+  ) => Promise<ValidationResult> | ValidationResult;
   /** Async implementation invoked when the tool is called. */
   execute: (params: Static<TSchema_>, ctx: ToolExecutionContext) => Promise<ToolResult<TDetails>>;
 }): RuntimeTool {
   const schema = options.parameters ?? Type.Object({});
-  return tool()
+  let builder = tool()
     .name(options.name)
     .label(options.label ?? options.name)
     .description(options.description)
     .parameters(schema)
-    .execute(options.execute as (params: Static<typeof schema>, ctx: ToolExecutionContext) => Promise<ToolResult<TDetails>>)
-    .build();
+    .execute(
+      options.execute as (
+        params: Static<typeof schema>,
+        ctx: ToolExecutionContext,
+      ) => Promise<ToolResult<TDetails>>,
+    );
+
+  if (options.validate) {
+    const validateFn = options.validate;
+    builder = builder.validate(
+      validateFn as (params: Static<typeof schema>, ctx: ToolValidationContext) => Promise<ValidationResult> | ValidationResult,
+    );
+  }
+
+  return builder.build();
 }
