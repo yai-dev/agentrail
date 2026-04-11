@@ -40,6 +40,28 @@ This file controls non-sensitive runtime settings such as:
 
 Store secrets in environment variables only. Do not add real credentials to `config/agentrail.yaml`.
 
+## Developer Certificate of Origin (DCO)
+
+All commits must be signed off to certify that you have the right to submit the contribution under this project's license (see [`DCO`](./DCO)).
+
+Sign off every commit with `-s` / `--signoff`:
+
+```bash
+git commit -s -m "feat: my change"
+```
+
+This appends a `Signed-off-by: Your Name <email@example.com>` line to the commit message using your Git `user.name` and `user.email`. The DCO check runs automatically on every PR and will block merging if any commit is missing the sign-off.
+
+If you forgot to sign off on previous commits, amend or rebase them:
+
+```bash
+# Single commit
+git commit --amend --signoff
+
+# Multiple commits (last N)
+git rebase HEAD~N --signoff
+```
+
 ## Daily Development Flow
 
 1. Create a feature branch from `master`.
@@ -47,7 +69,7 @@ Store secrets in environment variables only. Do not add real credentials to `con
 3. Make your code changes.
 4. Run the local checks relevant to your changes.
 5. Add a changeset if your change affects any published package.
-6. Open a pull request.
+6. Open a pull request (all commits must be signed off — see DCO section above).
 7. After merge, let the release workflow create or update the Release PR.
 8. Merge the Release PR to publish packages and, when applicable, the sandbox image.
 
@@ -133,6 +155,7 @@ The sandbox container image is published to `ghcr.io/yai-dev/agentrail-sandbox`.
 
 Every PR runs GitHub Actions CI:
 
+- DCO sign-off check (all commits must have `Signed-off-by`)
 - install dependencies
 - build published packages
 - run package tests
@@ -200,6 +223,7 @@ AI tools are welcome for writing code, tests, and documentation. Contributors ar
 
 Before requesting review:
 
+- all commits are signed off (`git commit -s`)
 - `pnpm format` has been run and any formatting-only changes were reviewed
 - local configuration is represented in `config/agentrail.yaml`
 - code builds locally
