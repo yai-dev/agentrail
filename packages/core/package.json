@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/core",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Core runtime primitives, agent loop, and session contracts for Agentrail.",
   "type": "module",
   "files": [

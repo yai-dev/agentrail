@@ -1,5 +1,12 @@
 # @agentrail/capabilities
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`3dbbf44`](https://github.com/yai-dev/agentrail/commit/3dbbf4495906baac00b6b3f0b12341eaf127381f), [`72c911f`](https://github.com/yai-dev/agentrail/commit/72c911feea31934dcf1561e71d6a94b8518f0b16)]:
+  - @agentrail/core@0.5.0
+
 ## 0.2.0
 
 ### Minor Changes

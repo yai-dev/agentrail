@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/testing",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Testing utilities and mocks for Agentrail.",
   "type": "module",
   "files": [
