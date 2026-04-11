@@ -141,10 +141,7 @@ export default function App() {
   const skipHistoryLoadRef = useRef(false);
 
   const { sessions, upsert, remove } = useSessions();
-  const {
-    feedEvent: feedTraceEvent,
-    clearTrace,
-  } = useWorkflowTrace(currentSessionId);
+  const { feedEvent: feedTraceEvent, clearTrace } = useWorkflowTrace(currentSessionId);
   const {
     state: orchestrationState,
     isLoading: orchestrationLoading,

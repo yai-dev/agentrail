@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AgentrailPlugin } from "@agentrail/app";
 import { executeSlashCommand, parseRegisteredSlashCommand } from "@/commands/registry.js";
+import type { AgentrailPlugin } from "@agentrail/app";
 
 export function createSlashCommandsPlugin(): AgentrailPlugin {
   return {

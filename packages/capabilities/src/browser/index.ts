@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 import type { SandboxManager } from "@/sandbox/index.js";
 import {
   createBrowserAction,
@@ -11,6 +10,7 @@ import {
   createBrowserNavigate,
   createBrowserScroll,
 } from "@/sandbox/index.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 
 export interface BrowserOptions {
   /** Override the sandbox manager (e.g. from a custom image). */
@@ -31,8 +31,8 @@ export function browser(opts?: BrowserOptions): CapabilityDescriptor {
       const sm = opts?.sandboxManager ?? ctx.sandboxManager;
       if (!sm) {
         throw new Error(
-          'browser() capability requires a SandboxManager. ' +
-          'Pass one via browser({ sandboxManager }) or ensure the host provides it.',
+          "browser() capability requires a SandboxManager. " +
+            "Pass one via browser({ sandboxManager }) or ensure the host provides it.",
         );
       }
       const { tenantId, userId, sessionId } = ctx;

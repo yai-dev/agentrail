@@ -72,10 +72,7 @@ export function createHealthRoute(
 
   // ── Readiness ─────────────────────────────────────────────────────────────
   route.get("/ready", async (c) => {
-    const allChecks: ReadinessCheck[] = [
-      createSessionStoreCheck(sessionStore),
-      ...extraChecks,
-    ];
+    const allChecks: ReadinessCheck[] = [createSessionStoreCheck(sessionStore), ...extraChecks];
 
     const results = await Promise.all(
       allChecks.map(async (check): Promise<ReadinessCheckResult> => {

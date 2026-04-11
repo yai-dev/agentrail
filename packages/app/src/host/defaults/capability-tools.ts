@@ -3,12 +3,20 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createKbListTool, createKbReadTool, createKbSearchTool } from "@agentrail/capabilities";
+import type {
+  DefaultCapabilityToolOptions,
+  DefaultCapabilityTools,
+} from "@/host/defaults/shared-types.js";
 import {
+  buildSkillTool,
+  createAskUserQuestionTool,
   createBrowserAction,
   createBrowserContent,
   createBrowserNavigate,
   createBrowserScroll,
+  createKbListTool,
+  createKbReadTool,
+  createKbSearchTool,
   createSandboxedBash,
   createSandboxedEdit,
   createSandboxedGlob,
@@ -16,10 +24,8 @@ import {
   createSandboxedRead,
   createSandboxedWrite,
   createSleepTool,
+  createTodoWriteTool,
 } from "@agentrail/capabilities";
-import { buildSkillTool } from "@agentrail/capabilities";
-import { createAskUserQuestionTool, createTodoWriteTool } from "@agentrail/capabilities";
-import type { DefaultCapabilityToolOptions, DefaultCapabilityTools } from "@/host/defaults/shared-types.js";
 
 /**
  * Builds the default capability toolset used by the reference host and examples.

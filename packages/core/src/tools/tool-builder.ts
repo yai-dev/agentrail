@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Type, type Static, type TSchema } from "@sinclair/typebox";
 import type {
   RuntimeTool,
   ToolResult,
@@ -11,6 +10,7 @@ import type {
   ToolValidationContext,
   ValidationResult,
 } from "@/types/tool.types.js";
+import { Type, type Static, type TSchema } from "@sinclair/typebox";
 
 // ============================================================================
 // ============================================================================
@@ -43,7 +43,10 @@ interface ToolConfig<TParams, TDetails> {
   label?: string;
   description?: string;
   parameters?: TSchema;
-  validate?: (params: TParams, ctx: ToolValidationContext) => Promise<ValidationResult> | ValidationResult;
+  validate?: (
+    params: TParams,
+    ctx: ToolValidationContext,
+  ) => Promise<ValidationResult> | ValidationResult;
   execute?: (params: TParams, ctx: ToolExecutionContext) => Promise<ToolResult<TDetails>>;
 }
 
@@ -91,7 +94,10 @@ export class ToolBuilder<TParams = undefined, TDetails = unknown> {
    * `execute`. Returning `{ valid: false }` or throwing prevents execution.
    */
   validate(
-    fn: (params: TParams, ctx: ToolValidationContext) => Promise<ValidationResult> | ValidationResult,
+    fn: (
+      params: TParams,
+      ctx: ToolValidationContext,
+    ) => Promise<ValidationResult> | ValidationResult,
   ): this {
     this.config.validate = fn;
     return this;

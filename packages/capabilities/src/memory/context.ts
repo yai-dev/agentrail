@@ -3,8 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { TransformContextFn, UserMessage } from "@agentrail/core";
-import type { ContextProvider } from "@agentrail/core";
 import {
   makeDateContextMessage,
   makeKnowledgeContextMessage,
@@ -15,6 +13,7 @@ import {
 } from "@/memory/messages.js";
 import type { DefaultCapabilityContextOptions } from "@/memory/types.js";
 import { createDefaultContextProviders } from "@/memory/types.js";
+import type { ContextProvider, TransformContextFn, UserMessage } from "@agentrail/core";
 
 export interface DefaultCapabilityContextState {
   cachedContextMsgs: UserMessage[] | null;
@@ -120,8 +119,6 @@ export function createDefaultCapabilityContextProviders(
   state: DefaultCapabilityContextState = createDefaultCapabilityContextState(),
 ): ContextProvider[] {
   return createDefaultContextProviders({
-    baseProviders: [
-      async () => ensureCachedContextMessages(options, state),
-    ],
+    baseProviders: [async () => ensureCachedContextMessages(options, state)],
   });
 }

@@ -47,6 +47,7 @@ const agent = defineAgent({
 - `Type` — TypeBox export for schemas used by tools and typed data.
 
 Reference:
+
 - `https://agentrail.run/concepts/agents`
 - `https://agentrail.run/reference/prompt-sdk`
 

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
-import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 
 const BROWSER_TIMEOUT_MS = 15_000;
 

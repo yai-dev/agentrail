@@ -36,20 +36,21 @@ describe("createWebSearchTool", () => {
   });
 
   it("maps Tavily responses into generic search results", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          results: [
-            {
-              title: "OpenAI",
-              url: "https://openai.com",
-              content: "AI research and products",
-              published_date: "2026-04-09",
-            },
-          ],
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            results: [
+              {
+                title: "OpenAI",
+                url: "https://openai.com",
+                content: "AI research and products",
+                published_date: "2026-04-09",
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -69,22 +70,23 @@ describe("createWebSearchTool", () => {
   });
 
   it("maps Brave responses into generic search results", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          web: {
-            results: [
-              {
-                title: "OpenAI",
-                url: "https://openai.com",
-                description: "AI research and deployment company",
-                page_age: "2026-04-09",
-              },
-            ],
-          },
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            web: {
+              results: [
+                {
+                  title: "OpenAI",
+                  url: "https://openai.com",
+                  description: "AI research and deployment company",
+                  page_age: "2026-04-09",
+                },
+              ],
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -108,20 +110,21 @@ describe("createWebSearchTool", () => {
   });
 
   it("maps Jina responses into generic search results", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          data: [
-            {
-              title: "OpenAI",
-              url: "https://openai.com",
-              content: "Search snippet",
-              publishedAt: "2026-04-09",
-            },
-          ],
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                title: "OpenAI",
+                url: "https://openai.com",
+                content: "Search snippet",
+                publishedAt: "2026-04-09",
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 

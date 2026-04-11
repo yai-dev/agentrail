@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { handleCompactCommand } from "@/commands/handlers/compact.js";
+import { handleMemoryConsolidateCommand } from "@/commands/handlers/memory-consolidate.js";
 import {
   createSlashCommandRegistry,
   type ParsedSlashCommand,
@@ -10,8 +12,6 @@ import {
   type SlashCommandDefinition,
   type SlashCommandResult,
 } from "@agentrail/app";
-import { handleCompactCommand } from "@/commands/handlers/compact.js";
-import { handleMemoryConsolidateCommand } from "@/commands/handlers/memory-consolidate.js";
 
 const commandDefinitions: SlashCommandDefinition[] = [
   {

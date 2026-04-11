@@ -3,15 +3,19 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/core";
-import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
-import type { CreateManagedAgentInput, ManagedAgentInstance, OrchestrationManager } from "@/orchestration/orchestration-manager.js";
+import type {
+  CreateManagedAgentInput,
+  ManagedAgentInstance,
+  OrchestrationManager,
+} from "@/orchestration/orchestration-manager.js";
 import {
   createCloseAgentTool,
   createSendInputTool,
   createSpawnAgentTool,
   createWaitAgentTool,
 } from "@/orchestration/tools/index.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
+import type { SessionRef } from "@agentrail/core";
 
 /**
  * Minimal registry interface for resolving session-scoped orchestration managers.
@@ -120,26 +124,27 @@ export function orchestration(
         });
       }
 
-      const getRunId = "manager" in registryOrOpts
-        ? async () => {
-            const activeRun = Object.values(om.getSnapshot().runs).find(
-              (r) => r.status === "running",
-            );
-            if (!activeRun) {
-              throw new Error(
-                `orchestration() capability: spawn_agent was called but no active run exists in the manager. ` +
-                  `Ensure manager.startRun() has been called before spawning agents.`,
+      const getRunId =
+        "manager" in registryOrOpts
+          ? async () => {
+              const activeRun = Object.values(om.getSnapshot().runs).find(
+                (r) => r.status === "running",
               );
+              if (!activeRun) {
+                throw new Error(
+                  `orchestration() capability: spawn_agent was called but no active run exists in the manager. ` +
+                    `Ensure manager.startRun() has been called before spawning agents.`,
+                );
+              }
+              return activeRun.id;
             }
-            return activeRun.id;
-          }
-        : () =>
-            (registryOrOpts as OrchestrationRegistryLike).ensureActiveRunId({
-              tenantId: ctx.tenantId,
-              userId: ctx.userId,
-              sessionId: ctx.sessionId,
-              sessionRef: ctx.sessionRef,
-            });
+          : () =>
+              (registryOrOpts as OrchestrationRegistryLike).ensureActiveRunId({
+                tenantId: ctx.tenantId,
+                userId: ctx.userId,
+                sessionId: ctx.sessionId,
+                sessionRef: ctx.sessionRef,
+              });
 
       return [
         createSpawnAgentTool(om, getRunId),

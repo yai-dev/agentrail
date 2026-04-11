@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createCommandsRoute, createSlashCommandRegistry } from "@agentrail/app";
 import { getSlashCommandDefinitions } from "@/commands/registry.js";
+import { createCommandsRoute, createSlashCommandRegistry } from "@agentrail/app";
 
 const commands = createCommandsRoute(createSlashCommandRegistry(getSlashCommandDefinitions()));
 

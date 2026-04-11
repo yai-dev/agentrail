@@ -3,11 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/core";
+import { config } from "@/config.js";
 import type { OrchestrationAgent, OrchestrationEvent } from "@agentrail/capabilities";
 import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
+import { createSessionRef } from "@agentrail/core";
 import { Hono } from "hono";
-import { config } from "@/config.js";
 
 const orchestration = new Hono();
 

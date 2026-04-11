@@ -3,13 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { mapOrchestrationEvent, type WorkflowTraceEventEnvelope } from "@/events/index.js";
+import { createFileSystemSessionTraceStore } from "@/session/trace-store.js";
+import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
+import { createSessionRef } from "@agentrail/core";
+import { Hono } from "hono";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { createSessionRef } from "@agentrail/core";
-import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
-import { Hono } from "hono";
-import { createFileSystemSessionTraceStore } from "@/session/trace-store.js";
-import { mapOrchestrationEvent, type WorkflowTraceEventEnvelope } from "@/events/index.js";
 
 // ─── Session listing ──────────────────────────────────────────────────────────
 
@@ -158,14 +158,7 @@ async function loadSessionMessages(
   tenantId: string,
   sessionId: string,
 ): Promise<unknown[]> {
-  const file = path.join(
-    dataDir,
-    "tenants",
-    tenantId,
-    "sessions",
-    sessionId,
-    "messages.jsonl",
-  );
+  const file = path.join(dataDir, "tenants", tenantId, "sessions", sessionId, "messages.jsonl");
   let raw: string;
   try {
     raw = await readFile(file, "utf8");

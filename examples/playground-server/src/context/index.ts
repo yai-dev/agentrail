@@ -3,11 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { SessionManager, compactToolResults } from "@agentrail/app";
+import { config } from "@/config.js";
+import { SessionManager, UserMemoryConsolidationService, compactToolResults } from "@agentrail/app";
 import { createOrchestrationRegistry } from "@agentrail/app/advanced";
 import { KnowledgeManager, SandboxManager, SkillManager } from "@agentrail/capabilities";
-import { UserMemoryConsolidationService } from "@agentrail/app";
-import { config } from "@/config.js";
 
 // Module-level singletons — one instance per process, shared across all
 // request handlers. State is per-tenant/session, not per-instance.
@@ -35,7 +34,9 @@ export const orchestrationRegistry = createOrchestrationRegistry({
 });
 
 /** @deprecated Use orchestrationRegistry.getManager() directly */
-export function getOrchestrationManager(request: Parameters<typeof orchestrationRegistry.getManager>[0]) {
+export function getOrchestrationManager(
+  request: Parameters<typeof orchestrationRegistry.getManager>[0],
+) {
   return orchestrationRegistry.getManager(request);
 }
 
@@ -46,11 +47,7 @@ export function invalidateOrchestrationManager(tenantId: string, sessionId: stri
 // Context-building helpers (legacy helpers kept for compatibility with other
 // parts of the server; the default profile now uses self-contained builders).
 
-export function buildMemoryIndex(
-  tenantId: string,
-  userId: string,
-  sessionId: string,
-) {
+export function buildMemoryIndex(tenantId: string, userId: string, sessionId: string) {
   return () => sessionManager.buildMemoryIndex(tenantId, userId, sessionId);
 }
 
@@ -60,7 +57,8 @@ export async function listKnowledgeMetadatas(tenantId: string) {
 }
 
 export const listSkills = () => skillManager.listSkills();
-export const listWorkspaceSnapshot = (sessionId: string) => () => sandboxManager.listWorkspace(sessionId);
+export const listWorkspaceSnapshot = (sessionId: string) => () =>
+  sandboxManager.listWorkspace(sessionId);
 export const compactMessages = (
   messages: Parameters<typeof compactToolResults>[0],
   ctx?: { sessionDir?: string },

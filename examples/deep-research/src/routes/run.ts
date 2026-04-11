@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createDeepResearchRunRoute } from "@agentrail/deep-research";
 import { config } from "@/config.js";
 import { sessionManager } from "@/context/index.js";
+import { createDeepResearchRunRoute } from "@agentrail/deep-research";
 
 const run = createDeepResearchRunRoute({
   sessionStore: sessionManager,

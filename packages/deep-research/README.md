@@ -39,6 +39,7 @@ const route = createDeepResearchRunRoute({
 - `createFileSystemDeepResearchStore(dataDir, sessionRef)` — persisted state/event store for deep-research runs.
 
 Reference:
+
 - `https://agentrail.run/examples/deep-research`
 
 ## Related packages

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { KBDocMeta, KBMetadata, Taxonomy } from "@/knowledge/types.js";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { KBDocMeta, KBMetadata, Taxonomy } from "@/knowledge/types.js";
 
 export async function ensureJsonFile<T>(filePath: string, defaultValue: T): Promise<void> {
   try {

@@ -3,16 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/core";
-import {
-  OrchestrationManager,
-  createFilesystemOrchestrationPersistence,
-} from "@agentrail/capabilities";
-import { defineAgent, type Message, type RuntimeEvent } from "@agentrail/core";
-import { SandboxManager } from "@agentrail/capabilities";
-import { randomUUID } from "node:crypto";
-import { copyFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
 import {
   createManagedDeepResearchAgent,
   createRun,
@@ -60,6 +50,16 @@ import {
   selectSourcesForResearchContext,
   slugifyTitle,
 } from "@/utils.js";
+import {
+  OrchestrationManager,
+  SandboxManager,
+  createFilesystemOrchestrationPersistence,
+} from "@agentrail/capabilities";
+import type { SessionRef } from "@agentrail/core";
+import { defineAgent, type Message, type RuntimeEvent } from "@agentrail/core";
+import { randomUUID } from "node:crypto";
+import { copyFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
 
 export interface DeepResearchCoordinatorOptions {
   tenantId: string;

@@ -12,10 +12,10 @@
  * synthetic lifecycle events are delivered correctly.
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { createChatRoute } from "../src/routes/chat-route.js";
+import { describe, expect, it, vi } from "vitest";
 import type { WorkflowTraceEventEnvelope } from "../src/events/index.js";
-import type { AgentrailSessionStore, AgentrailProfile } from "../src/host/types.js";
+import type { AgentrailProfile, AgentrailSessionStore } from "../src/host/types.js";
+import { createChatRoute } from "../src/routes/chat-route.js";
 
 // ─── Minimal stubs ────────────────────────────────────────────────────────────
 

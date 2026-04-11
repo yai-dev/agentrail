@@ -3,14 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { config } from "@/config.js";
+import { invalidateOrchestrationManager, sandboxManager } from "@/context/index.js";
+import { waitHandleRegistry } from "@/wait-handle-registry.js";
 import { isCompactionMessage, parseCompactionMetadata, SessionManager } from "@agentrail/app";
 import type { Message } from "@agentrail/core";
 import { Hono } from "hono";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { config } from "@/config.js";
-import { invalidateOrchestrationManager, sandboxManager } from "@/context/index.js";
-import { waitHandleRegistry } from "@/wait-handle-registry.js";
 
 const sessionManager = new SessionManager(config.dataDir);
 

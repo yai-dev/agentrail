@@ -51,6 +51,7 @@ export default app;
 - `loadAgentrailConfig()` — load and validate `agentrail.yaml`.
 
 Reference:
+
 - `https://agentrail.run/reference/create-agent-app`
 - `https://agentrail.run/reference/profile-contract`
 - `https://agentrail.run/reference/host-primitives`

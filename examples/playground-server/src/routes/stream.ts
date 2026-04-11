@@ -3,20 +3,16 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { WorkflowTraceEventEnvelope } from "@agentrail/app";
-import { createFileSystemSessionTraceStore } from "@agentrail/app";
-import { createStreamRoute } from "@agentrail/app/advanced";
 import { DEFAULT_AGENT_ID } from "@/agents/index.js";
 import { buildSummarizeFn } from "@/agents/summarizer.js";
 import { handlePlaygroundDeepResearchModeStream } from "@/chat/deep-research.js";
 import { config } from "@/config.js";
-import {
-  orchestrationRegistry,
-  sandboxManager,
-  sessionManager,
-} from "@/context/index.js";
+import { orchestrationRegistry, sandboxManager, sessionManager } from "@/context/index.js";
 import { playgroundPlugins } from "@/plugins/index.js";
 import { resolvePlaygroundProfile } from "@/profiles/default-profile.js";
+import type { WorkflowTraceEventEnvelope } from "@agentrail/app";
+import { createFileSystemSessionTraceStore } from "@agentrail/app";
+import { createStreamRoute } from "@agentrail/app/advanced";
 
 const summarize = buildSummarizeFn();
 

@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 import type { SandboxManager } from "@/sandbox/index.js";
 import {
   createSandboxedBash,
@@ -14,6 +13,7 @@ import {
   createSandboxedWrite,
 } from "@/sandbox/index.js";
 import { createSleepTool, createTodoWriteTool } from "@/tools/index.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 
 export interface FilesystemOptions {
   /** Override the sandbox manager (e.g. from a custom image). */
@@ -34,8 +34,8 @@ export function filesystem(opts?: FilesystemOptions): CapabilityDescriptor {
       const sm = opts?.sandboxManager ?? ctx.sandboxManager;
       if (!sm) {
         throw new Error(
-          'filesystem() capability requires a SandboxManager. ' +
-          'Pass one via filesystem({ sandboxManager }) or ensure the host provides it.',
+          "filesystem() capability requires a SandboxManager. " +
+            "Pass one via filesystem({ sandboxManager }) or ensure the host provides it.",
         );
       }
       const { tenantId, userId, sessionId, sessionRef, sessionStore } = ctx;

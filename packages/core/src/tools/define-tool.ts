@@ -3,9 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { tool, type ToolExecutionContext } from "@/tools/tool-builder.js";
+import type {
+  RuntimeTool,
+  ToolResult,
+  ToolValidationContext,
+  ValidationResult,
+} from "@/types/tool.types.js";
 import { Type, type Static, type TSchema } from "@sinclair/typebox";
-import type { RuntimeTool, ToolResult, ToolValidationContext, ValidationResult } from "@/types/tool.types.js";
-import { type ToolExecutionContext, tool } from "@/tools/tool-builder.js";
 
 /**
  * Defines a runtime tool using an object-style declaration.
@@ -69,7 +74,10 @@ export function defineTool<TSchema_ extends TSchema, TDetails>(options: {
   if (options.validate) {
     const validateFn = options.validate;
     builder = builder.validate(
-      validateFn as (params: Static<typeof schema>, ctx: ToolValidationContext) => Promise<ValidationResult> | ValidationResult,
+      validateFn as (
+        params: Static<typeof schema>,
+        ctx: ToolValidationContext,
+      ) => Promise<ValidationResult> | ValidationResult,
     );
   }
 

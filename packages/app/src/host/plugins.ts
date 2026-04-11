@@ -4,11 +4,6 @@
  */
 
 import type {
-  ToolInterceptor,
-  ToolInterceptorAfterContext,
-  ToolInterceptorBeforeContext,
-} from "@agentrail/core";
-import type {
   AgentrailChatHandledResponse,
   AgentrailChatRequestContext,
   AgentrailPlugin,
@@ -21,6 +16,11 @@ import type {
   PluginErrorContext,
   PluginErrorHandler,
 } from "@/host/types.js";
+import type {
+  ToolInterceptor,
+  ToolInterceptorAfterContext,
+  ToolInterceptorBeforeContext,
+} from "@agentrail/core";
 
 // ============================================================================
 // Internal helpers
@@ -35,10 +35,7 @@ const defaultErrorHandler: PluginErrorHandler = ({ plugin, hook, error }) => {
  * falling back to `console.error`. This ensures the callback can never
  * interfere with the main request flow.
  */
-async function safeNotify(
-  onError: PluginErrorHandler,
-  ctx: PluginErrorContext,
-): Promise<void> {
+async function safeNotify(onError: PluginErrorHandler, ctx: PluginErrorContext): Promise<void> {
   try {
     await onError(ctx);
   } catch (notifyErr) {

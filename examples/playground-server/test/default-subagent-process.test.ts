@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/core";
 import type {
   AgentInputEnvelope,
   CreateManagedAgentInput,
@@ -16,6 +15,7 @@ import {
   resolveWorkerCwd,
   resolveWorkerExecArgv,
 } from "@agentrail/capabilities/orchestration/worker";
+import { createSessionRef } from "@agentrail/core";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";

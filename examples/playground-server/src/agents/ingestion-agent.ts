@@ -9,10 +9,9 @@ import type {
   KnowledgeManager,
   Taxonomy,
 } from "@agentrail/capabilities";
-import { createKbReadTool } from "@agentrail/capabilities";
+import { createKbReadTool, writeTool } from "@agentrail/capabilities";
 import type { ModelConfig } from "@agentrail/core";
 import { defineAgent, isRuntimeError } from "@agentrail/core";
-import { writeTool } from "@agentrail/capabilities";
 import fs from "node:fs/promises";
 import path from "node:path";
 

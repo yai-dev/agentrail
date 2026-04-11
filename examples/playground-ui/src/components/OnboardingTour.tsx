@@ -32,7 +32,8 @@ const STEPS: TourStep[] = [
   {
     selector: ".clear-btn",
     title: "New Chat",
-    description: "Click the New button to quickly start a fresh conversation. Your current session stays in the left sidebar.",
+    description:
+      "Click the New button to quickly start a fresh conversation. Your current session stays in the left sidebar.",
     placement: "bottom",
   },
   {

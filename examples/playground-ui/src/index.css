@@ -131,8 +131,7 @@ body {
   font-family: var(--font);
   background:
     radial-gradient(circle at top left, rgba(196, 255, 46, 0.025), transparent 28%),
-    radial-gradient(circle at right top, rgba(255, 255, 255, 0.025), transparent 24%),
-    var(--bg);
+    radial-gradient(circle at right top, rgba(255, 255, 255, 0.025), transparent 24%), var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -1032,8 +1031,7 @@ body {
 
 .input-bar.deep-research-mode {
   border-top-color: rgba(14, 165, 233, 0.18);
-  background:
-    linear-gradient(180deg, rgba(14, 165, 233, 0.06), transparent), var(--surface);
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.06), transparent), var(--surface);
   box-shadow: inset 0 1px 0 rgba(14, 165, 233, 0.08);
 }
 

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { createAgentApp } from "../src/app/create-agent-app.js";
 import type { AgentrailSessionStore } from "@agentrail/core";
+import { describe, expect, it, vi } from "vitest";
+import { createAgentApp } from "../src/app/create-agent-app.js";
 
 // Minimal profile definition that satisfies createAgentApp type checks.
 const minimalProfile = {

@@ -3,16 +3,16 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message } from "@agentrail/core";
-import { mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { estimateFileTokens } from "@/session/token-estimator.js";
 import type {
   CompactionMetadata,
   MemoryIndexEntry,
+  Message,
   SessionInfo,
   SessionInitEvent,
   SessionTurnEvent,
 } from "@agentrail/core";
+import { mkdir, readFile, readdir, stat } from "node:fs/promises";
 
 const SUMMARY_RE = /<!--\s*summary:\s*(.+?)\s*-->/;
 const COMPACTION_ARCHIVE_RE = /Archive ID:\s*([0-9]{4,})/i;

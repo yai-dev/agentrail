@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import fg from "fast-glob";
+import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
-import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
+import fg from "fast-glob";
 
 const toolDescription = `Find files in the sandbox workspace by glob pattern.
 

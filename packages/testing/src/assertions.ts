@@ -1,5 +1,5 @@
-import assert from "node:assert";
 import type { AgentResult, ToolCall } from "@agentrail/core";
+import assert from "node:assert";
 
 /** Collects all tool calls across every assistant turn in the result. */
 function collectAllToolCalls(result: AgentResult): ToolCall[] {

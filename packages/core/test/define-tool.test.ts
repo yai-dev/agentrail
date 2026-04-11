@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi } from "vitest";
 import { Type } from "@sinclair/typebox";
+import { describe, expect, it, vi } from "vitest";
 import { defineTool } from "../src/tools/define-tool.js";
 import { defineSimpleTool } from "../src/tools/tool-builder.js";
 import type { ToolValidationContext } from "../src/types/tool.types.js";

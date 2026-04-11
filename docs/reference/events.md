@@ -190,18 +190,18 @@ Runtime events come from `@agentrail/core` and are emitted during agent executio
 Types use a dotted-namespace convention (`session.*`, `turn.*`, `message.*`, `tool.*`).
 The most important ones for UI consumers:
 
-| Event type                  | When emitted                                 |
-| --------------------------- | -------------------------------------------- |
-| `session.start`             | Agent begins processing a request            |
-| `session.end`               | Agent finishes (all turns complete)          |
-| `turn.start`                | A new LLM turn starts                        |
-| `turn.complete`             | A turn finishes                              |
-| `compaction`                | In-loop reactive compaction rewrites history |
-| `message.update`            | Streaming text delta from the LLM            |
+| Event type                  | When emitted                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------ |
+| `session.start`             | Agent begins processing a request                                                          |
+| `session.end`               | Agent finishes (all turns complete)                                                        |
+| `turn.start`                | A new LLM turn starts                                                                      |
+| `turn.complete`             | A turn finishes                                                                            |
+| `compaction`                | In-loop reactive compaction rewrites history                                               |
+| `message.update`            | Streaming text delta from the LLM                                                          |
 | `tool.before`               | A tool call is about to be dispatched (after any `onBeforeToolCall` plugin hooks have run) |
-| `tool.after`                | A tool invocation completes                  |
-| `waiting_for_user_input`    | The agent is paused waiting for user input   |
-| `skill_start` / `skill_end` | A skill sub-agent is invoked                 |
+| `tool.after`                | A tool invocation completes                                                                |
+| `waiting_for_user_input`    | The agent is paused waiting for user input                                                 |
+| `skill_start` / `skill_end` | A skill sub-agent is invoked                                                               |
 
 ### `tool.before` field reference
 
@@ -227,7 +227,7 @@ The most important ones for UI consumers:
 
 > **Note for consumers that used `args` for audit purposes:** if you have a plugin
 > or tracing integration that reads `tool.before.args` and relies on it being the
-> unmodified model output, switch to `rawArgs`.  `args` now reflects the effective
+> unmodified model output, switch to `rawArgs`. `args` now reflects the effective
 > (possibly plugin-modified) arguments that were actually executed.
 
 ---

@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message } from "@/types/message.types.js";
-import type { Usage } from "@/types/usage.types.js";
 import type { SessionRef } from "@/session/session-ref.js";
 import type { TodoStorage } from "@/session/todo-storage.js";
+import type { Message } from "@/types/message.types.js";
+import type { Usage } from "@/types/usage.types.js";
 
 /**
  * Minimal storage surface the host runtime needs to load, persist, and compact

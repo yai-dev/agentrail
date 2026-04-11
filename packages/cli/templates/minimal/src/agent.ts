@@ -1,5 +1,5 @@
-import { defineAgent, isRuntimeError, type Message } from "@agentrail/core";
 import { defineProfile } from "@agentrail/app";
+import { defineAgent, isRuntimeError, type Message } from "@agentrail/core";
 // To add filesystem, browser, knowledge, or orchestration capabilities install
 // @agentrail/capabilities and import the relevant factory functions:
 //   import { filesystem, knowledge, browser } from "@agentrail/capabilities";

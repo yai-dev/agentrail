@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/core";
-import { initializeWorker } from "@agentrail/capabilities/orchestration/worker";
-import "@agentrail/core/providers";
 import { DefaultSubAgentRuntime } from "@/agents/default-subagent-runtime.js";
+import { initializeWorker } from "@agentrail/capabilities/orchestration/worker";
+import type { SessionRef } from "@agentrail/core";
+import "@agentrail/core/providers";
 
 interface WorkerInitPayload {
   type: "init";

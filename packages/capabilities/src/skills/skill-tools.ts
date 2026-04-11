@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { AssistantMessage, ModelConfig, RuntimeTool } from "@agentrail/core";
-import { defineAgent, extractText, isAgentEnd, tool, Type } from "@agentrail/core";
 import type { SkillManager } from "@/skills/skill-manager.js";
 import type { ExtendedSseEvent } from "@/skills/types.js";
+import type { AssistantMessage, ModelConfig, RuntimeTool } from "@agentrail/core";
+import { defineAgent, extractText, isAgentEnd, tool, Type } from "@agentrail/core";
 
 /**
  * Build the single `Skill` tool.

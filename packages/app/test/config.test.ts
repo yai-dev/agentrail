@@ -4,10 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-  getDeepResearchConfig,
-  parseAgentrailConfig,
-} from "../src/config/index.js";
+import { getDeepResearchConfig, parseAgentrailConfig } from "../src/config/index.js";
 
 describe("Agentrail config search settings", () => {
   it("parses brave and jina API keys", () => {

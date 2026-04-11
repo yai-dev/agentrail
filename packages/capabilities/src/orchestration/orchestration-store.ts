@@ -3,15 +3,18 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { recoverOrchestrationState, type RecoveredOrchestrationState } from "@/orchestration/recovery.js";
+import {
+  recoverOrchestrationState,
+  type RecoveredOrchestrationState,
+} from "@/orchestration/recovery.js";
 import type {
   OrchestrationEvent,
   OrchestrationMailboxEvent,
   OrchestrationMailboxState,
   OrchestrationSnapshot,
 } from "@/orchestration/types.js";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const ORCHESTRATION_DIRECTORY = "orchestration";
 const EVENTS_FILE = "events.jsonl";

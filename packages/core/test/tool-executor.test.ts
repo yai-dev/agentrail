@@ -3,13 +3,17 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Type } from "@sinclair/typebox";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { executeToolCalls } from "../src/executor/tool-executor.js";
 import { EventStream } from "../src/llm/event-stream.js";
 import type { AssistantMessage, Message } from "../src/types/message.types.js";
 import type { RuntimeEvent } from "../src/types/result.types.js";
-import type { RuntimeTool, ToolInterceptor, ToolValidationContext } from "../src/types/tool.types.js";
+import type {
+  RuntimeTool,
+  ToolInterceptor,
+  ToolValidationContext,
+} from "../src/types/tool.types.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -23,7 +27,10 @@ function makeStream(): { stream: EventStream<RuntimeEvent, Message[]>; events: R
   // Use "session.end" as the completion sentinel (same as agent-loop.ts).
   const stream = new EventStream<RuntimeEvent, Message[]>(
     (e) => e.type === "session.end",
-    (e) => (e.type === "session.end" ? (e as Extract<RuntimeEvent, { type: "session.end" }>).messages : []),
+    (e) =>
+      e.type === "session.end"
+        ? (e as Extract<RuntimeEvent, { type: "session.end" }>).messages
+        : [],
   );
 
   // Tap into push by wrapping the stream in a Proxy so we can intercept events.
@@ -49,7 +56,9 @@ function makeTool(name: string, result = "ok"): RuntimeTool {
   };
 }
 
-function makeAssistantMessage(toolCalls: Array<{ id: string; name: string; arguments: Record<string, unknown> }>): AssistantMessage {
+function makeAssistantMessage(
+  toolCalls: Array<{ id: string; name: string; arguments: Record<string, unknown> }>,
+): AssistantMessage {
   return {
     role: "assistant",
     content: toolCalls.map((tc) => ({
@@ -60,7 +69,14 @@ function makeAssistantMessage(toolCalls: Array<{ id: string; name: string; argum
     })),
     provider: "test",
     modelId: "test",
-    usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+    usage: {
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
     stopReason: "toolUse",
     timestamp: Date.now(),
   };
@@ -86,7 +102,10 @@ describe("executeToolCalls — ToolInterceptor", () => {
     const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "hello" } }]);
     await executeToolCalls([tool], msg, undefined, stream, undefined, interceptor);
 
-    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<RuntimeEvent, { type: "tool.before" }>;
+    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<
+      RuntimeEvent,
+      { type: "tool.before" }
+    >;
     expect(beforeEvent).toBeDefined();
     expect(beforeEvent.args).toEqual({ value: "hello" });
     expect(beforeEvent.rawArgs).toEqual({ value: "hello" });
@@ -105,10 +124,15 @@ describe("executeToolCalls — ToolInterceptor", () => {
       }),
     };
 
-    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "sensitive" } }]);
+    const msg = makeAssistantMessage([
+      { id: "c1", name: "echo", arguments: { value: "sensitive" } },
+    ]);
     await executeToolCalls([tool], msg, undefined, stream, undefined, interceptor);
 
-    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<RuntimeEvent, { type: "tool.before" }>;
+    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<
+      RuntimeEvent,
+      { type: "tool.before" }
+    >;
     expect((beforeEvent.args as Record<string, unknown>).value).toBe("SANITIZED");
     expect((beforeEvent.rawArgs as Record<string, unknown>).value).toBe("sensitive");
 
@@ -146,7 +170,10 @@ describe("executeToolCalls — ToolInterceptor", () => {
 
     expect(collectedEvents.some((e) => e.type === "tool.before")).toBe(true);
     expect(collectedEvents.some((e) => e.type === "tool.after")).toBe(true);
-    const afterEvent = collectedEvents.find((e) => e.type === "tool.after") as Extract<RuntimeEvent, { type: "tool.after" }>;
+    const afterEvent = collectedEvents.find((e) => e.type === "tool.after") as Extract<
+      RuntimeEvent,
+      { type: "tool.after" }
+    >;
     expect(afterEvent.isError).toBe(true);
   });
 
@@ -193,7 +220,10 @@ describe("executeToolCalls — ToolInterceptor", () => {
     expect(ctx.toolName).toBe("echo");
     expect(typeof ctx.durationMs).toBe("number");
     expect(ctx.durationMs).toBeGreaterThanOrEqual(0);
-    expect((ctx.result as { content: unknown[] }).content[0]).toMatchObject({ type: "text", text: "result-text" });
+    expect((ctx.result as { content: unknown[] }).content[0]).toMatchObject({
+      type: "text",
+      text: "result-text",
+    });
   });
 
   it("tool not found: emits tool.before + tool.after error events, no interceptor calls", async () => {
@@ -223,7 +253,9 @@ describe("executeToolCalls — ToolInterceptor", () => {
       description: "Array tool",
       // Type.Array would normally be used; use an empty schema to keep the test lean.
       parameters: Type.Array(Type.String()),
-      execute: vi.fn().mockResolvedValue({ content: [{ type: "text" as const, text: "ok" }], details: {} }),
+      execute: vi
+        .fn()
+        .mockResolvedValue({ content: [{ type: "text" as const, text: "ok" }], details: {} }),
     };
     const interceptor: ToolInterceptor = {
       onBeforeToolCall: vi.fn().mockImplementation(async (ctx) => {
@@ -232,7 +264,9 @@ describe("executeToolCalls — ToolInterceptor", () => {
       }),
     };
 
-    const msg = makeAssistantMessage([{ id: "c1", name: "arr", arguments: ["a", "b"] as unknown as Record<string, unknown> }]);
+    const msg = makeAssistantMessage([
+      { id: "c1", name: "arr", arguments: ["a", "b"] as unknown as Record<string, unknown> },
+    ]);
     await executeToolCalls([arrayTool], msg, undefined, stream, undefined, interceptor);
 
     // The interceptor should receive exactly what came out of validateToolArguments,
@@ -248,7 +282,10 @@ describe("executeToolCalls — ToolInterceptor", () => {
 
     expect(tool.execute).toHaveBeenCalledOnce();
     expect(result.toolResults[0].isError).toBe(false);
-    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<RuntimeEvent, { type: "tool.before" }>;
+    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<
+      RuntimeEvent,
+      { type: "tool.before" }
+    >;
     expect(beforeEvent.rawArgs).toEqual({ value: "x" });
   });
 
@@ -269,9 +306,15 @@ describe("executeToolCalls — ToolInterceptor", () => {
     expect(tool.execute).not.toHaveBeenCalled();
     expect(afterSpy).not.toHaveBeenCalled();
     expect(result.toolResults[0].isError).toBe(true);
-    expect(result.toolResults[0].content[0]).toMatchObject({ type: "text", text: expect.stringContaining('Invalid arguments for tool') });
+    expect(result.toolResults[0].content[0]).toMatchObject({
+      type: "text",
+      text: expect.stringContaining("Invalid arguments for tool"),
+    });
     // tool.before.args should reflect the interceptor-rewritten value
-    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<RuntimeEvent, { type: "tool.before" }>;
+    const beforeEvent = collectedEvents.find((e) => e.type === "tool.before") as Extract<
+      RuntimeEvent,
+      { type: "tool.before" }
+    >;
     expect((beforeEvent.args as Record<string, unknown>).value).toBe(42);
   });
 });
@@ -351,7 +394,10 @@ describe("executeToolCalls — tool.validate()", () => {
 
     expect(collectedEvents.some((e) => e.type === "tool.before")).toBe(true);
     expect(collectedEvents.some((e) => e.type === "tool.after")).toBe(true);
-    const afterEvent = collectedEvents.find((e) => e.type === "tool.after") as Extract<RuntimeEvent, { type: "tool.after" }>;
+    const afterEvent = collectedEvents.find((e) => e.type === "tool.after") as Extract<
+      RuntimeEvent,
+      { type: "tool.after" }
+    >;
     expect(afterEvent.isError).toBe(true);
   });
 
@@ -369,17 +415,23 @@ describe("executeToolCalls — tool.validate()", () => {
   it("validate runs on effectiveArgs (post-interceptor), not original args", async () => {
     const tool = makeTool("echo");
     const receivedParams: unknown[] = [];
-    (tool as RuntimeTool & { validate: (p: unknown, ctx: ToolValidationContext) => { valid: true } }).validate = vi
-      .fn()
-      .mockImplementation((params: unknown) => {
-        receivedParams.push(params);
-        return { valid: true as const };
-      });
+    (
+      tool as RuntimeTool & {
+        validate: (p: unknown, ctx: ToolValidationContext) => { valid: true };
+      }
+    ).validate = vi.fn().mockImplementation((params: unknown) => {
+      receivedParams.push(params);
+      return { valid: true as const };
+    });
     const interceptor: ToolInterceptor = {
-      onBeforeToolCall: vi.fn().mockResolvedValue({ action: "allow", input: { value: "MODIFIED" } }),
+      onBeforeToolCall: vi
+        .fn()
+        .mockResolvedValue({ action: "allow", input: { value: "MODIFIED" } }),
     };
 
-    const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "original" } }]);
+    const msg = makeAssistantMessage([
+      { id: "c1", name: "echo", arguments: { value: "original" } },
+    ]);
     await executeToolCalls([tool], msg, undefined, stream, undefined, interceptor);
 
     expect(receivedParams[0]).toEqual({ value: "MODIFIED" });

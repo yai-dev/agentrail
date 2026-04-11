@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect } from "vitest";
 import { Type } from "@sinclair/typebox";
-import { validateToolInput } from "../src/llm/utils/validation.js";
+import { describe, expect, it } from "vitest";
 import { ToolValidationError } from "../src/errors.js";
+import { validateToolInput } from "../src/llm/utils/validation.js";
 
 const schema = Type.Object({
   name: Type.String(),
@@ -61,7 +61,9 @@ describe("validateToolInput", () => {
   });
 
   it("violating minimum constraint produces an error with the correct path", () => {
-    expect(() => validateToolInput(tool, { name: "Charlie", age: -1 })).toThrow(ToolValidationError);
+    expect(() => validateToolInput(tool, { name: "Charlie", age: -1 })).toThrow(
+      ToolValidationError,
+    );
     let caught: ToolValidationError | undefined;
     try {
       validateToolInput(tool, { name: "Charlie", age: -1 });

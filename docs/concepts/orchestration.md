@@ -57,14 +57,12 @@ Each sub-agent has a **mailbox** — a persisted event queue for inputs and clos
 
 From the parent agent's perspective, orchestration is accessed through four runtime tools. These are injected by the host layer:
 
-
 | Tool          | Purpose                                  |
 | ------------- | ---------------------------------------- |
 | `spawn-agent` | Create a sub-agent and assign it a role  |
 | `send-input`  | Send a work item to a sub-agent          |
 | `wait-agent`  | Block until agents reach a desired state |
 | `close-agent` | Terminate a sub-agent                    |
-
 
 The parent agent calls these tools like any other tool. The orchestration manager handles the actual coordination.
 
@@ -202,3 +200,4 @@ Orchestration is for **multi-agent work distribution**. Plugins are for **cross-
 - [Deep Research Example](../examples/deep-research.md)
 - [Host Primitives Reference](../reference/host-primitives.md)
 
+```

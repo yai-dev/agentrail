@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { SkillConfig, SkillMeta } from "@/skills/types.js";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { SkillConfig, SkillMeta } from "@/skills/types.js";
 
 /**
  * Discovers and reads reusable skills stored beneath `{dataDir}/skills`.
@@ -100,7 +100,7 @@ export class SkillManager {
       if (frontmatter.name && frontmatter.name !== dirName) {
         console.warn(
           `[SkillManager] Skill "${dirName}": SKILL.md declares name "${frontmatter.name}" ` +
-          `but directory is "${dirName}". Using directory name.`,
+            `but directory is "${dirName}". Using directory name.`,
         );
       }
 
@@ -134,8 +134,14 @@ export class SkillManager {
       const key = line.slice(0, colonIdx).trim();
       const rawVal = line.slice(colonIdx + 1).trim();
       // Booleans
-      if (rawVal === "true") { result[key] = true; continue; }
-      if (rawVal === "false") { result[key] = false; continue; }
+      if (rawVal === "true") {
+        result[key] = true;
+        continue;
+      }
+      if (rawVal === "false") {
+        result[key] = false;
+        continue;
+      }
       // Strip surrounding quotes
       result[key] = rawVal.replace(/^["']|["']$/g, "");
     }

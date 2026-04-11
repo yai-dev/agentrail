@@ -13,20 +13,21 @@ describe("deep-research tool adapters", () => {
   });
 
   it("maps Tavily search results into deep research source candidates", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          results: [
-            {
-              title: "OpenAI",
-              url: "https://openai.com/research",
-              content: "AI research",
-              published_date: "2026-04-09",
-            },
-          ],
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            results: [
+              {
+                title: "OpenAI",
+                url: "https://openai.com/research",
+                content: "AI research",
+                published_date: "2026-04-09",
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -48,21 +49,22 @@ describe("deep-research tool adapters", () => {
   });
 
   it("selects Brave when configured", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          web: {
-            results: [
-              {
-                title: "OpenAI",
-                url: "https://openai.com",
-                description: "AI research",
-              },
-            ],
-          },
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            web: {
+              results: [
+                {
+                  title: "OpenAI",
+                  url: "https://openai.com",
+                  description: "AI research",
+                },
+              ],
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -83,19 +85,20 @@ describe("deep-research tool adapters", () => {
   });
 
   it("selects Jina when configured", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          data: [
-            {
-              title: "OpenAI",
-              url: "https://openai.com",
-              content: "AI research",
-            },
-          ],
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                title: "OpenAI",
+                url: "https://openai.com",
+                content: "AI research",
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -116,11 +119,15 @@ describe("deep-research tool adapters", () => {
   });
 
   it("maps successful fetches into deep research fetch payloads", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response("<html><head><title>Example</title></head><body><article><h1>Hello</h1></article></body></html>", {
-        status: 200,
-        headers: { "content-type": "text/html" },
-      }),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          "<html><head><title>Example</title></head><body><article><h1>Hello</h1></article></body></html>",
+          {
+            status: 200,
+            headers: { "content-type": "text/html" },
+          },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -135,11 +142,12 @@ describe("deep-research tool adapters", () => {
   });
 
   it("maps forbidden fetches into the legacy 403 shape", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response("forbidden", {
-        status: 403,
-        headers: { "content-type": "text/plain" },
-      }),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response("forbidden", {
+          status: 403,
+          headers: { "content-type": "text/plain" },
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
 

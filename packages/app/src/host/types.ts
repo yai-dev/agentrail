@@ -10,12 +10,15 @@ import type {
   Agent,
   AgentrailSessionStore,
   ContextProvider,
-  ContextProviderContext,
   SessionRef,
   TransformContextFn,
   Usage,
 } from "@agentrail/core";
-export type { AgentrailSessionStore, ContextProvider, ContextProviderContext } from "@agentrail/core";
+export type {
+  AgentrailSessionStore,
+  ContextProvider,
+  ContextProviderContext,
+} from "@agentrail/core";
 
 // ============================================================================
 // Plugin error reporting
@@ -92,7 +95,9 @@ export interface AgentrailProfile {
    * `capabilities` via `defineProfile`. Route handlers call this after
    * `createAgent` and merge the result with the static `contextProviders`.
    */
-  getContextProviders?(context: AgentrailProfileContext): Promise<ContextProvider[]> | ContextProvider[];
+  getContextProviders?(
+    context: AgentrailProfileContext,
+  ): Promise<ContextProvider[]> | ContextProvider[];
   /**
    * Returns a request-scoped full-message transform for rewrite-style context logic.
    * This runs before context providers so injected messages see the rewritten history.
@@ -125,7 +130,6 @@ export interface AgentrailChatRequestContext {
   agentId: string;
   signal: AbortSignal;
 }
-
 
 /** Fully resolved context for a chat request after session lookup. */
 export interface AgentrailResolvedChatContext {

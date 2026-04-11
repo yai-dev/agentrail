@@ -141,9 +141,9 @@ const searchTool = defineTool({
     query: Type.String(),
   }),
   async execute(params, ctx) {
-  ctx.onUpdate({ content: [{ type: "text", text: "Starting..." }], details: null });
-  const result = await longRunningTask(params.query);
-  return { content: [{ type: "text", text: result }], details: result };
+    ctx.onUpdate({ content: [{ type: "text", text: "Starting..." }], details: null });
+    const result = await longRunningTask(params.query);
+    return { content: [{ type: "text", text: result }], details: result };
   },
 });
 ```
@@ -157,12 +157,12 @@ const approvalTool = defineTool({
   name: "request_approval",
   description: "Ask the user to confirm a choice before continuing.",
   async execute(params, ctx) {
-  ctx.onSignal?.({
-    type: "waiting_for_input",
-    question: "Which option do you prefer?",
-    options: ["Option A", "Option B"],
-  });
-  // ...
+    ctx.onSignal?.({
+      type: "waiting_for_input",
+      question: "Which option do you prefer?",
+      options: ["Option A", "Option B"],
+    });
+    // ...
     return { content: [{ type: "text", text: "Waiting for input." }], details: null };
   },
 });
@@ -189,12 +189,12 @@ The capabilities package exposes tools for common patterns:
 
 Capability tools are added to a profile via `defineProfile({ capabilities: [...] })`:
 
-| Capability         | Example tools                                    |
-| ------------------ | ------------------------------------------------ |
-| `knowledge(km)`    | kb-list, kb-read, kb-search                      |
+| Capability         | Example tools                                          |
+| ------------------ | ------------------------------------------------------ |
+| `knowledge(km)`    | kb-list, kb-read, kb-search                            |
 | `filesystem(...)`  | bash, read, write, edit, glob, grep, sleep, todo-write |
-| `skills(sm)`       | skill-list, skill-invoke                         |
-| `orchestration(r)` | spawn-agent, send-input, wait-agent, close-agent |
+| `skills(sm)`       | skill-list, skill-invoke                               |
+| `orchestration(r)` | spawn-agent, send-input, wait-agent, close-agent       |
 
 ### 3. Orchestration tools
 

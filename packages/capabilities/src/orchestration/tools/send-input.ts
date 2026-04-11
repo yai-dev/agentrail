@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Type, tool } from "@agentrail/core";
 import type { OrchestrationManager } from "@/orchestration/orchestration-manager.js";
+import { Type, tool } from "@agentrail/core";
 
 function formatSendInputResult(inputId: string, agentId: string): string {
   return JSON.stringify({

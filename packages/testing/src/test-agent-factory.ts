@@ -1,6 +1,6 @@
+import type { MockLlmProvider } from "@/mock-llm-provider.js";
 import type { Agent, AgentConfig } from "@agentrail/core";
 import { defineAgent } from "@agentrail/core";
-import type { MockLlmProvider } from "@/mock-llm-provider.js";
 
 export interface CreateTestAgentOptions {
   definition: AgentConfig;

@@ -3,12 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { KBMetadata, KnowledgeManager } from "@agentrail/capabilities";
-import type { MemoryIndex, SessionRef } from "@agentrail/core";
-import type { Message, ModelConfig, RuntimeTool, UserMessage } from "@agentrail/core";
-import type { SandboxManager } from "@agentrail/capabilities";
-import type { ExtendedSseEvent, SkillManager, SkillMeta } from "@agentrail/capabilities";
-import type { WaitHandleRegistry } from "@agentrail/capabilities";
 import type {
   AgentrailChatHandledResponse,
   AgentrailProfile,
@@ -16,6 +10,23 @@ import type {
   AgentrailSessionStore,
   ContextProvider,
 } from "@/host/types.js";
+import type {
+  ExtendedSseEvent,
+  KBMetadata,
+  KnowledgeManager,
+  SandboxManager,
+  SkillManager,
+  SkillMeta,
+  WaitHandleRegistry,
+} from "@agentrail/capabilities";
+import type {
+  MemoryIndex,
+  Message,
+  ModelConfig,
+  RuntimeTool,
+  SessionRef,
+  UserMessage,
+} from "@agentrail/core";
 
 /**
  * Rich hosted profile definition used by the host defaults helpers.

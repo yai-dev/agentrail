@@ -3,12 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type {
-  AgentInput,
-  AgentResult,
-  AgentRunOptions,
-  AgentStream,
-} from "@/types/agent.types.js";
+import type { AgentInput, AgentResult, AgentRunOptions, AgentStream } from "@/types/agent.types.js";
 import type { RuntimeTool } from "@/types/tool.types.js";
 
 /**

@@ -23,12 +23,7 @@ import { WorkspaceEmptyState } from "./WorkspaceEmptyState";
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type WorkspaceTab =
-  | "activity"
-  | "workspace"
-  | "browser"
-  | "agent_team"
-  | "deep_research";
+export type WorkspaceTab = "activity" | "workspace" | "browser" | "agent_team" | "deep_research";
 
 interface ActiveFileView {
   path: string;
@@ -60,7 +55,8 @@ function humanizeAction(toolName: string, args: unknown): string {
     case "Bash": {
       const cmd = String(a.command ?? "");
       if (cmd.includes("run_pipeline.sh")) return "Query database";
-      if (cmd.includes("pip install") || cmd.includes("pip3 install")) return "Install dependencies";
+      if (cmd.includes("pip install") || cmd.includes("pip3 install"))
+        return "Install dependencies";
       if (cmd.includes("python") || cmd.includes("python3")) return "Run script";
       if (cmd.includes("npm") || cmd.includes("pnpm")) return "Run build command";
       if (cmd.includes("git")) return "Run git operation";
@@ -843,7 +839,11 @@ function WorkspaceFilesTab({ sessionId, turns }: { sessionId?: string; turns: Tu
       <div className="ws-file-tree">
         <div className="ws-tree-header">
           <span className="ws-tree-title">/workspace</span>
-          <button className="ws-tree-refresh" onClick={() => fetchFiles()} title="Refresh file list">
+          <button
+            className="ws-tree-refresh"
+            onClick={() => fetchFiles()}
+            title="Refresh file list"
+          >
             {loading ? "⟳" : "↻"}
           </button>
         </div>

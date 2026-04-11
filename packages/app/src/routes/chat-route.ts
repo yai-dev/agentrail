@@ -3,19 +3,20 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { randomUUID } from "node:crypto";
-import type { SessionRef } from "@agentrail/core";
-import type { Message, TransformContextFn } from "@agentrail/core";
-import { Hono } from "hono";
 import {
-  resolveChatTransformContext,
-  respondHandledJson,
-  validateChatRequest,
-} from "@/routes/chat-route-internals.js";
-import { TRACE_PERSISTED_EVENT_TYPES, wrapTraceEvent, type WorkflowTraceEventEnvelope } from "@/events/index.js";
-import { createReactiveCompactionController, type SummarizeMessagesFn } from "@/host/reactive-compaction.js";
-import { runCompactionStep } from "@/routes/compaction-runner.js";
-import { buildToolInterceptor, runPluginChatRequestInterceptors, runPluginRequestHook } from "@/host/plugins.js";
+  TRACE_PERSISTED_EVENT_TYPES,
+  wrapTraceEvent,
+  type WorkflowTraceEventEnvelope,
+} from "@/events/index.js";
+import {
+  buildToolInterceptor,
+  runPluginChatRequestInterceptors,
+  runPluginRequestHook,
+} from "@/host/plugins.js";
+import {
+  createReactiveCompactionController,
+  type SummarizeMessagesFn,
+} from "@/host/reactive-compaction.js";
 import type {
   AgentrailChatHandledResponse,
   AgentrailChatRequest,
@@ -28,6 +29,15 @@ import type {
   ContextProvider,
   PluginErrorHandler,
 } from "@/host/types.js";
+import {
+  resolveChatTransformContext,
+  respondHandledJson,
+  validateChatRequest,
+} from "@/routes/chat-route-internals.js";
+import { runCompactionStep } from "@/routes/compaction-runner.js";
+import type { SessionRef, TransformContextFn } from "@agentrail/core";
+import { Hono } from "hono";
+import { randomUUID } from "node:crypto";
 
 /**
  * Configuration for the JSON chat route factory.
@@ -166,12 +176,16 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
 
     const signal = c.req.raw.signal;
     const agentId = request.agentId ?? options.defaultAgentId;
-    const prehandled = await runPluginChatRequestInterceptors(plugins, {
-      kind: "chat",
-      request,
-      agentId,
-      signal,
-    }, onPluginError);
+    const prehandled = await runPluginChatRequestInterceptors(
+      plugins,
+      {
+        kind: "chat",
+        request,
+        agentId,
+        signal,
+      },
+      onPluginError,
+    );
     if (prehandled) {
       return respondHandledJson(c, prehandled);
     }
@@ -241,10 +255,9 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         sessionRef,
         sessionStore: options.sessionStore,
       };
-      const agent = await profile.createAgent(
-        profileCtx,
-        () => { /* sub-agent events are not forwarded on the JSON /chat route */ },
-      );
+      const agent = await profile.createAgent(profileCtx, () => {
+        /* sub-agent events are not forwarded on the JSON /chat route */
+      });
       const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
       const profileTransform = await profile.getTransformContext?.(profileCtx);
       const history = await runCompactionStep(
@@ -294,7 +307,9 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
           {
             type: "error",
             traceId,
-            error: { message: invokeError instanceof Error ? invokeError.message : String(invokeError) },
+            error: {
+              message: invokeError instanceof Error ? invokeError.message : String(invokeError),
+            },
           },
           traceSeq++,
           traceId,

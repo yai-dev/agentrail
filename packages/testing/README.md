@@ -48,6 +48,7 @@ assertFinalText(result, "done");
 - `assertToolCalled(result, toolName)` / `assertToolCalledWith(...)` — assert tool usage.
 
 Reference:
+
 - `https://agentrail.run/concepts/agents`
 - `https://agentrail.run/guides/quickstart`
 

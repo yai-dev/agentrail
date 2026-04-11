@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 import { createTodoWriteTool } from "@/tools/index.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 
 /**
  * Capability that gives the agent a persistent to-do list for tracking tasks

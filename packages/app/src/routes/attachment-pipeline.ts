@@ -3,8 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { runAttachmentHandlers } from "@/host/plugins.js";
 import type {
   AgentrailPlugin,
@@ -13,6 +11,8 @@ import type {
   PluginErrorHandler,
 } from "@/host/types.js";
 import type { AttachmentInput } from "@/routes/stream-request.js";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 /**
  * Persists base64-encoded attachments to the session upload directory and
@@ -72,7 +72,12 @@ export async function buildEffectiveMessage(
     return effectiveMessage;
   }
 
-  const result = await runAttachmentHandlers(uploadedFiles, plugins, fallbackHandler, onPluginError);
+  const result = await runAttachmentHandlers(
+    uploadedFiles,
+    plugins,
+    fallbackHandler,
+    onPluginError,
+  );
 
   if (result?.contextText) {
     effectiveMessage = effectiveMessage

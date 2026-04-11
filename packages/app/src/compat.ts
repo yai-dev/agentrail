@@ -11,23 +11,14 @@
  */
 
 /** @deprecated Use `defineProfile()` from `@agentrail/app` instead. */
-export { defineHostedProfile, createHostedProfileResolver } from "@/host/defaults/profile.js";
+export { createHostedProfileResolver, defineHostedProfile } from "@/host/defaults/profile.js";
 export type { HostedProfileDefinition } from "@/host/defaults/shared-types.js";
 
 /** @deprecated Capability wiring is handled automatically by `defineProfile()`. */
-export { buildDefaultCapabilityTools } from "@/host/defaults/capability-tools.js";
 export {
   createDefaultCapabilityContextProviders,
   createDefaultCapabilityTransformContext,
 } from "@/host/defaults/capability-context.js";
-export { createDefaultContextProviders, createDefaultToolset } from "@/host/defaults/toolset.js";
-export type {
-  DefaultCapabilityContextOptions,
-  DefaultCapabilityToolOptions,
-  DefaultCapabilityTools,
-  DefaultContextProvidersInput,
-  DefaultToolsetInput,
-} from "@/host/defaults/shared-types.js";
 export {
   makeDateContextMessage,
   makeKnowledgeContextMessage,
@@ -36,3 +27,12 @@ export {
   makeUserIdentityMessage,
   translateMemoryPaths,
 } from "@/host/defaults/capability-messages.js";
+export { buildDefaultCapabilityTools } from "@/host/defaults/capability-tools.js";
+export type {
+  DefaultCapabilityContextOptions,
+  DefaultCapabilityToolOptions,
+  DefaultCapabilityTools,
+  DefaultContextProvidersInput,
+  DefaultToolsetInput,
+} from "@/host/defaults/shared-types.js";
+export { createDefaultContextProviders, createDefaultToolset } from "@/host/defaults/toolset.js";

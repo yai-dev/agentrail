@@ -96,7 +96,9 @@ export function AgentTracePanel({ state }: AgentTracePanelProps) {
         <div className="agent-trace-empty">
           <div className="agent-trace-empty-icon">📋</div>
           <p>No events recorded</p>
-          <p className="agent-trace-empty-hint">Orchestration events will appear here as detailed logs.</p>
+          <p className="agent-trace-empty-hint">
+            Orchestration events will appear here as detailed logs.
+          </p>
         </div>
       </div>
     );

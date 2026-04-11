@@ -3,8 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { TodoStorage } from "@agentrail/core";
-import type { RuntimeTool } from "@agentrail/core";
+import type { RuntimeTool, TodoStorage } from "@agentrail/core";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { mkdir, readFile, writeFile } from "node:fs/promises";

@@ -6,11 +6,6 @@
 // Register built-in LLM providers (Anthropic, OpenAI) as side effects
 import "@agentrail/core/providers";
 
-import { runPluginLifecycle, type PluginErrorHandler } from "@agentrail/app";
-import { createInspectorRoute } from "@agentrail/app/advanced";
-import { serve } from "@hono/node-server";
-import { Hono } from "hono";
-import { logger } from "hono/logger";
 import { config } from "@/config.js";
 import { sandboxManager } from "@/context/index.js";
 import { playgroundPlugins } from "@/plugins/index.js";
@@ -23,6 +18,11 @@ import { orchestration } from "@/routes/orchestration.js";
 import { sessions } from "@/routes/sessions.js";
 import { stream } from "@/routes/stream.js";
 import { trace } from "@/routes/trace.js";
+import { runPluginLifecycle, type PluginErrorHandler } from "@agentrail/app";
+import { createInspectorRoute } from "@agentrail/app/advanced";
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import { logger } from "hono/logger";
 
 const app = new Hono();
 

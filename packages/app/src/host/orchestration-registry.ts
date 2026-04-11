@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/core";
 import {
   OrchestrationManager,
   createFilesystemOrchestrationPersistence,
@@ -11,6 +10,7 @@ import {
   type ManagedAgentInstance,
   type StartRunInput,
 } from "@agentrail/capabilities";
+import type { SessionRef } from "@agentrail/core";
 
 /** Factory that creates a managed agent bound to one session. */
 export type CreateSessionManagedAgent = (
@@ -81,9 +81,9 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
         // The existing factory is kept to avoid re-initialising in-flight agents.
         console.warn(
           `[OrchestrationRegistry] A different createManagedAgent factory was passed for ` +
-          `session "${request.sessionId}" (tenant "${request.tenantId}"). ` +
-          `The original factory will continue to be used for this session. ` +
-          `Call invalidate() first if you intentionally want to replace it.`,
+            `session "${request.sessionId}" (tenant "${request.tenantId}"). ` +
+            `The original factory will continue to be used for this session. ` +
+            `Call invalidate() first if you intentionally want to replace it.`,
         );
       }
     }
@@ -93,8 +93,8 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
       if (!request.createManagedAgent) {
         throw new Error(
           `[OrchestrationRegistry] Cannot create a manager for session "${request.sessionId}" ` +
-          `without a createManagedAgent factory. The orchestration() capability must be ` +
-          `initialized before the stream route subscribes to events.`,
+            `without a createManagedAgent factory. The orchestration() capability must be ` +
+            `initialized before the stream route subscribes to events.`,
         );
       }
       managerPromise = this.createManager(key, request);
@@ -177,19 +177,18 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
       );
       if (alreadyRunning) return alreadyRunning.id;
 
-      const input =
-        this.options.createStartRunInput?.(request) ?? {
-          runId: `orchestration:${request.sessionId}`,
-          initialTask: {
-            id: `task:${request.sessionId}:root`,
-            kind: "agentrail-default-orchestration",
-            input: {
-              tenantId: request.tenantId,
-              userId: request.userId,
-              sessionId: request.sessionId,
-            },
+      const input = this.options.createStartRunInput?.(request) ?? {
+        runId: `orchestration:${request.sessionId}`,
+        initialTask: {
+          id: `task:${request.sessionId}:root`,
+          kind: "agentrail-default-orchestration",
+          input: {
+            tenantId: request.tenantId,
+            userId: request.userId,
+            sessionId: request.sessionId,
           },
-        };
+        },
+      };
       await manager.startRun(input);
       return input.runId;
     })().finally(() => {

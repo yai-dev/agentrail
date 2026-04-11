@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { access, constants, stat } from "node:fs/promises";
 import { loadAgentrailConfig } from "@agentrail/app";
+import { access, constants, stat } from "node:fs/promises";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -197,9 +197,7 @@ export async function runDoctorChecks(opts: DoctorOptions): Promise<CheckResult[
 
   // ── 5. Worker path (conditional) ───────────────────────────────────────────
   const orchestrationCfg = config.orchestration?.subagent;
-  const needsWorker =
-    orchestrationCfg !== undefined &&
-    orchestrationCfg.fakeExecution !== "echo";
+  const needsWorker = orchestrationCfg !== undefined && orchestrationCfg.fakeExecution !== "echo";
 
   if (needsWorker) {
     if (opts.workerPath) {

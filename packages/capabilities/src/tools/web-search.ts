@@ -71,7 +71,9 @@ interface JinaSearchResult {
 }
 
 function createTimedSignal(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
-  return signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
+  return signal
+    ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+    : AbortSignal.timeout(timeoutMs);
 }
 
 function normalizeWhitespace(text: string): string {
@@ -171,9 +173,7 @@ export function createTavilySearchProvider(
 }
 
 /** Creates a Brave-backed search provider adapter. */
-export function createBraveSearchProvider(
-  options: BraveSearchProviderOptions,
-): WebSearchProvider {
+export function createBraveSearchProvider(options: BraveSearchProviderOptions): WebSearchProvider {
   return {
     async search(query, searchOptions = {}) {
       const url = new URL("https://api.search.brave.com/res/v1/web/search");

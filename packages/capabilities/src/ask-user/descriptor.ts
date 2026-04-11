@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 import { createAskUserQuestionTool, type WaitHandleRegistry } from "@/tools/index.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 
 /**
  * Capability that lets the agent pause and ask the user a clarifying question

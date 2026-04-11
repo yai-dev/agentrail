@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Type, tool } from "@agentrail/core";
 import type { OrchestrationManager } from "@/orchestration/orchestration-manager.js";
 import type { OrchestrationAgent } from "@/orchestration/types.js";
+import { Type, tool } from "@agentrail/core";
 
 function formatCloseResult(agent: OrchestrationAgent, reason?: string): string {
   return JSON.stringify({

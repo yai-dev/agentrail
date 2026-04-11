@@ -3,14 +3,14 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildToolInterceptor,
+  collectPluginContextProviders,
+  runAttachmentHandlers,
+  runPluginChatRequestInterceptors,
   runPluginLifecycle,
   runPluginRequestHook,
-  runPluginChatRequestInterceptors,
-  runAttachmentHandlers,
-  collectPluginContextProviders,
 } from "../src/host/plugins.js";
 import type {
   AfterToolCallEvent,
@@ -64,7 +64,9 @@ describe("runPluginLifecycle", () => {
     const error = new Error("start failure");
     const onError: PluginErrorHandler = vi.fn();
     const plugin = makePlugin("bad", {
-      start: async () => { throw error; },
+      start: async () => {
+        throw error;
+      },
     });
     await expect(runPluginLifecycle([plugin], "start", onError)).rejects.toThrow("start failure");
     expect(onError).toHaveBeenCalledWith({ plugin: "bad", hook: "start", error });
@@ -73,8 +75,17 @@ describe("runPluginLifecycle", () => {
   it("stop: notifies onPluginError but continues when a plugin throws", async () => {
     const onError: PluginErrorHandler = vi.fn();
     const order: string[] = [];
-    const bad = makePlugin("bad", { stop: async () => { order.push("bad"); throw new Error("stop fail"); } });
-    const good = makePlugin("good", { stop: async () => { order.push("good"); } });
+    const bad = makePlugin("bad", {
+      stop: async () => {
+        order.push("bad");
+        throw new Error("stop fail");
+      },
+    });
+    const good = makePlugin("good", {
+      stop: async () => {
+        order.push("good");
+      },
+    });
     await runPluginLifecycle([bad, good], "stop", onError);
     expect(onError).toHaveBeenCalledOnce();
     expect(order).toEqual(["bad", "good"]);
@@ -82,41 +93,65 @@ describe("runPluginLifecycle", () => {
 
   it("start: executes in descending priority order", async () => {
     const order: string[] = [];
-    const low = makePlugin("low", { priority: 0, start: async () => { order.push("low"); } });
-    const high = makePlugin("high", { priority: 100, start: async () => { order.push("high"); } });
+    const low = makePlugin("low", {
+      priority: 0,
+      start: async () => {
+        order.push("low");
+      },
+    });
+    const high = makePlugin("high", {
+      priority: 100,
+      start: async () => {
+        order.push("high");
+      },
+    });
     await runPluginLifecycle([low, high], "start");
     expect(order).toEqual(["high", "low"]);
   });
 
   it("stop: executes in ascending priority order (reverse of start)", async () => {
     const order: string[] = [];
-    const low = makePlugin("low", { priority: 0, stop: async () => { order.push("low"); } });
-    const high = makePlugin("high", { priority: 100, stop: async () => { order.push("high"); } });
+    const low = makePlugin("low", {
+      priority: 0,
+      stop: async () => {
+        order.push("low");
+      },
+    });
+    const high = makePlugin("high", {
+      priority: 100,
+      stop: async () => {
+        order.push("high");
+      },
+    });
     await runPluginLifecycle([low, high], "stop");
     expect(order).toEqual(["low", "high"]);
   });
 
   it("uses console.warn by default when no onPluginError is provided", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const plugin = makePlugin("bad", { stop: async () => { throw new Error("oops"); } });
+    const plugin = makePlugin("bad", {
+      stop: async () => {
+        throw new Error("oops");
+      },
+    });
     await runPluginLifecycle([plugin], "stop");
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('"bad"'),
-      expect.any(Error),
-    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"bad"'), expect.any(Error));
     warn.mockRestore();
   });
 
   it("safeNotify: falls back to console.error when onPluginError itself throws", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    const onError: PluginErrorHandler = () => { throw new Error("handler failure"); };
-    const plugin = makePlugin("bad", { stop: async () => { throw new Error("original"); } });
+    const onError: PluginErrorHandler = () => {
+      throw new Error("handler failure");
+    };
+    const plugin = makePlugin("bad", {
+      stop: async () => {
+        throw new Error("original");
+      },
+    });
     // Must NOT throw even though both plugin and handler threw
     await expect(runPluginLifecycle([plugin], "stop", onError)).resolves.toBeUndefined();
-    expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('"bad"'),
-      expect.any(Error),
-    );
+    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('"bad"'), expect.any(Error));
     consoleError.mockRestore();
   });
 
@@ -126,8 +161,17 @@ describe("runPluginLifecycle", () => {
       await new Promise((r) => setTimeout(r, 10));
       order.push("handler");
     };
-    const bad = makePlugin("bad", { stop: async () => { order.push("throw"); throw new Error("err"); } });
-    const next = makePlugin("next", { stop: async () => { order.push("next"); } });
+    const bad = makePlugin("bad", {
+      stop: async () => {
+        order.push("throw");
+        throw new Error("err");
+      },
+    });
+    const next = makePlugin("next", {
+      stop: async () => {
+        order.push("next");
+      },
+    });
     await runPluginLifecycle([bad, next], "stop", onError);
     expect(order).toEqual(["throw", "handler", "next"]);
   });
@@ -138,15 +182,28 @@ describe("runPluginLifecycle", () => {
 describe("runPluginRequestHook", () => {
   it("calls hook on all plugins", async () => {
     const onRequestStart = vi.fn();
-    await runPluginRequestHook([makePlugin("p1", { onRequestStart })], "onRequestStart", mockRequestContext);
+    await runPluginRequestHook(
+      [makePlugin("p1", { onRequestStart })],
+      "onRequestStart",
+      mockRequestContext,
+    );
     expect(onRequestStart).toHaveBeenCalledWith(mockRequestContext);
   });
 
   it("isolates errors: other plugins still run", async () => {
     const onError: PluginErrorHandler = vi.fn();
     const order: string[] = [];
-    const bad = makePlugin("bad", { onRequestEnd: async () => { order.push("bad"); throw new Error("boom"); } });
-    const good = makePlugin("good", { onRequestEnd: async () => { order.push("good"); } });
+    const bad = makePlugin("bad", {
+      onRequestEnd: async () => {
+        order.push("bad");
+        throw new Error("boom");
+      },
+    });
+    const good = makePlugin("good", {
+      onRequestEnd: async () => {
+        order.push("good");
+      },
+    });
     await runPluginRequestHook([bad, good], "onRequestEnd", mockRequestContext, onError);
     expect(onError).toHaveBeenCalledOnce();
     expect(order).toEqual(["bad", "good"]);
@@ -154,8 +211,18 @@ describe("runPluginRequestHook", () => {
 
   it("runs plugins in descending priority order", async () => {
     const order: string[] = [];
-    const low = makePlugin("low", { priority: 0, onRequestStart: async () => { order.push("low"); } });
-    const high = makePlugin("high", { priority: 10, onRequestStart: async () => { order.push("high"); } });
+    const low = makePlugin("low", {
+      priority: 0,
+      onRequestStart: async () => {
+        order.push("low");
+      },
+    });
+    const high = makePlugin("high", {
+      priority: 10,
+      onRequestStart: async () => {
+        order.push("high");
+      },
+    });
     await runPluginRequestHook([low, high], "onRequestStart", mockRequestContext);
     expect(order).toEqual(["high", "low"]);
   });
@@ -165,15 +232,15 @@ describe("runPluginRequestHook", () => {
 
 describe("runPluginChatRequestInterceptors", () => {
   it("returns null when no plugin intercepts", async () => {
-    const result = await runPluginChatRequestInterceptors(
-      [makePlugin("p1")],
-      mockChatContext,
-    );
+    const result = await runPluginChatRequestInterceptors([makePlugin("p1")], mockChatContext);
     expect(result).toBeNull();
   });
 
   it("returns the first non-null response", async () => {
-    const handled = { status: 200 as const, body: { text: "handled", usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 } } };
+    const handled = {
+      status: 200 as const,
+      body: { text: "handled", usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 } },
+    };
     const plugin = makePlugin("p1", { interceptChatRequest: async () => handled });
     const result = await runPluginChatRequestInterceptors([plugin], mockChatContext);
     expect(result).toBe(handled);
@@ -181,10 +248,18 @@ describe("runPluginChatRequestInterceptors", () => {
 
   it("non-critical: isolates errors, notifies onPluginError, continues with null", async () => {
     const onError: PluginErrorHandler = vi.fn();
-    const bad = makePlugin("bad", { interceptChatRequest: async () => { throw new Error("denied"); } });
+    const bad = makePlugin("bad", {
+      interceptChatRequest: async () => {
+        throw new Error("denied");
+      },
+    });
     const result = await runPluginChatRequestInterceptors([bad], mockChatContext, onError);
     expect(result).toBeNull();
-    expect(onError).toHaveBeenCalledWith({ plugin: "bad", hook: "interceptChatRequest", error: expect.any(Error) });
+    expect(onError).toHaveBeenCalledWith({
+      plugin: "bad",
+      hook: "interceptChatRequest",
+      error: expect.any(Error),
+    });
   });
 
   it("critical: notifies onPluginError then rethrows", async () => {
@@ -192,16 +267,32 @@ describe("runPluginChatRequestInterceptors", () => {
     const error = new Error("auth failure");
     const bad = makePlugin("bad", {
       critical: true,
-      interceptChatRequest: async () => { throw error; },
+      interceptChatRequest: async () => {
+        throw error;
+      },
     });
-    await expect(runPluginChatRequestInterceptors([bad], mockChatContext, onError)).rejects.toThrow("auth failure");
+    await expect(runPluginChatRequestInterceptors([bad], mockChatContext, onError)).rejects.toThrow(
+      "auth failure",
+    );
     expect(onError).toHaveBeenCalledWith({ plugin: "bad", hook: "interceptChatRequest", error });
   });
 
   it("runs plugins in descending priority order", async () => {
     const order: string[] = [];
-    const low = makePlugin("low", { priority: 0, interceptChatRequest: async () => { order.push("low"); return null; } });
-    const high = makePlugin("high", { priority: 5, interceptChatRequest: async () => { order.push("high"); return null; } });
+    const low = makePlugin("low", {
+      priority: 0,
+      interceptChatRequest: async () => {
+        order.push("low");
+        return null;
+      },
+    });
+    const high = makePlugin("high", {
+      priority: 5,
+      interceptChatRequest: async () => {
+        order.push("high");
+        return null;
+      },
+    });
     await runPluginChatRequestInterceptors([low, high], mockChatContext);
     expect(order).toEqual(["high", "low"]);
   });
@@ -226,11 +317,19 @@ describe("runAttachmentHandlers", () => {
 
   it("isolates errors: skips failing handler, others still run", async () => {
     const onError: PluginErrorHandler = vi.fn();
-    const bad = makePlugin("bad", { attachmentHandler: async () => { throw new Error("fail"); } });
+    const bad = makePlugin("bad", {
+      attachmentHandler: async () => {
+        throw new Error("fail");
+      },
+    });
     const good = makePlugin("good", { attachmentHandler: async () => ({ contextText: "ok" }) });
     const result = await runAttachmentHandlers(files, [bad, good], undefined, onError);
     expect(result?.contextText).toBe("ok");
-    expect(onError).toHaveBeenCalledWith({ plugin: "bad", hook: "attachmentHandler", error: expect.any(Error) });
+    expect(onError).toHaveBeenCalledWith({
+      plugin: "bad",
+      hook: "attachmentHandler",
+      error: expect.any(Error),
+    });
   });
 
   it("includes fallbackHandler result", async () => {
@@ -246,18 +345,27 @@ const mockProfileCtx: AgentrailProfileContext = {
   tenantId: "t1",
   userId: "u1",
   sessionId: "s1",
-  sessionRef: { tenantId: "t1", userId: "u1", sessionId: "s1" } as AgentrailProfileContext["sessionRef"],
+  sessionRef: {
+    tenantId: "t1",
+    userId: "u1",
+    sessionId: "s1",
+  } as AgentrailProfileContext["sessionRef"],
   sessionStore: {} as AgentrailProfileContext["sessionStore"],
 };
 
 function makeToolPlugin(
   name: string,
-  overrides: Pick<AgentrailPlugin, "priority" | "onBeforeToolCall" | "onAfterToolCall"> & { priority?: number },
+  overrides: Pick<AgentrailPlugin, "priority" | "onBeforeToolCall" | "onAfterToolCall"> & {
+    priority?: number;
+  },
 ): AgentrailPlugin {
   return { name, ...overrides };
 }
 
-function makeBeforeEvent(toolName = "test", input: Record<string, unknown> = { value: "x" }): BeforeToolCallEvent {
+function makeBeforeEvent(
+  toolName = "test",
+  input: Record<string, unknown> = { value: "x" },
+): BeforeToolCallEvent {
   return { toolName, input, context: mockProfileCtx };
 }
 
@@ -286,7 +394,12 @@ describe("buildToolInterceptor", () => {
     const hook = vi.fn();
     const plugin = makeToolPlugin("p1", { onAfterToolCall: hook });
     const interceptor = buildToolInterceptor([plugin], mockProfileCtx)!;
-    await interceptor.onAfterToolCall!({ toolName: "t", input: ["a", "b"], result: {}, durationMs: 0 });
+    await interceptor.onAfterToolCall!({
+      toolName: "t",
+      input: ["a", "b"],
+      result: {},
+      durationMs: 0,
+    });
     expect(hook).not.toHaveBeenCalled();
   });
 
@@ -329,7 +442,9 @@ describe("buildToolInterceptor", () => {
     });
     const interceptor = buildToolInterceptor([plugin], mockProfileCtx);
     // Should not throw; error should be swallowed via defaultErrorHandler → console.warn
-    await expect(interceptor!.onBeforeToolCall!({ toolName: "t", input: {} })).resolves.toMatchObject({ action: "allow" });
+    await expect(
+      interceptor!.onBeforeToolCall!({ toolName: "t", input: {} }),
+    ).resolves.toMatchObject({ action: "allow" });
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -339,11 +454,17 @@ describe("buildToolInterceptor", () => {
       const order: string[] = [];
       const low = makeToolPlugin("low", {
         priority: 0,
-        onBeforeToolCall: vi.fn().mockImplementation(async () => { order.push("low"); return { action: "allow" }; }),
+        onBeforeToolCall: vi.fn().mockImplementation(async () => {
+          order.push("low");
+          return { action: "allow" };
+        }),
       });
       const high = makeToolPlugin("high", {
         priority: 10,
-        onBeforeToolCall: vi.fn().mockImplementation(async () => { order.push("high"); return { action: "allow" }; }),
+        onBeforeToolCall: vi.fn().mockImplementation(async () => {
+          order.push("high");
+          return { action: "allow" };
+        }),
       });
       const interceptor = buildToolInterceptor([low, high], mockProfileCtx)!;
       await interceptor.onBeforeToolCall!({ toolName: "t", input: {} });
@@ -370,7 +491,9 @@ describe("buildToolInterceptor", () => {
       const received: Record<string, unknown>[] = [];
       const first = makeToolPlugin("first", {
         priority: 10,
-        onBeforeToolCall: vi.fn().mockResolvedValue({ action: "allow", input: { value: "modified" } }),
+        onBeforeToolCall: vi
+          .fn()
+          .mockResolvedValue({ action: "allow", input: { value: "modified" } }),
       });
       const second = makeToolPlugin("second", {
         priority: 0,
@@ -380,7 +503,10 @@ describe("buildToolInterceptor", () => {
         }),
       });
       const interceptor = buildToolInterceptor([first, second], mockProfileCtx)!;
-      const result = await interceptor.onBeforeToolCall!({ toolName: "t", input: { value: "original" } }) as AppBeforeToolCallResult & { input?: Record<string, unknown> };
+      const result = (await interceptor.onBeforeToolCall!({
+        toolName: "t",
+        input: { value: "original" },
+      })) as AppBeforeToolCallResult & { input?: Record<string, unknown> };
       expect(received[0].value).toBe("modified");
       expect(result).toMatchObject({ action: "allow", input: { value: "modified" } });
     });
@@ -425,7 +551,11 @@ describe("buildToolInterceptor", () => {
       const interceptor = buildToolInterceptor([bad, good], mockProfileCtx, onError)!;
       const result = await interceptor.onBeforeToolCall!({ toolName: "t", input: {} });
       expect(result).toMatchObject({ action: "allow" });
-      expect(onError).toHaveBeenCalledWith({ plugin: "bad", hook: "onBeforeToolCall", error: expect.any(Error) });
+      expect(onError).toHaveBeenCalledWith({
+        plugin: "bad",
+        hook: "onBeforeToolCall",
+        error: expect.any(Error),
+      });
       expect(good.onBeforeToolCall).toHaveBeenCalledOnce();
     });
   });
@@ -435,15 +565,22 @@ describe("buildToolInterceptor", () => {
       const order: string[] = [];
       const low = makeToolPlugin("low", {
         priority: 0,
-        onAfterToolCall: vi.fn().mockImplementation(async () => { order.push("low"); }),
+        onAfterToolCall: vi.fn().mockImplementation(async () => {
+          order.push("low");
+        }),
       });
       const high = makeToolPlugin("high", {
         priority: 10,
-        onAfterToolCall: vi.fn().mockImplementation(async () => { order.push("high"); }),
+        onAfterToolCall: vi.fn().mockImplementation(async () => {
+          order.push("high");
+        }),
       });
       const interceptor = buildToolInterceptor([low, high], mockProfileCtx)!;
       const ctx: Parameters<NonNullable<typeof interceptor.onAfterToolCall>>[0] = {
-        toolName: "t", input: {}, result: {}, durationMs: 0,
+        toolName: "t",
+        input: {},
+        result: {},
+        durationMs: 0,
       };
       await interceptor.onAfterToolCall!(ctx);
       expect(order).toEqual(["high", "low"]);
@@ -465,7 +602,12 @@ describe("buildToolInterceptor", () => {
         }),
       });
       const interceptor = buildToolInterceptor([plugin1, plugin2], mockProfileCtx)!;
-      await interceptor.onAfterToolCall!({ toolName: "t", input: { value: "x" }, result: {}, durationMs: 0 });
+      await interceptor.onAfterToolCall!({
+        toolName: "t",
+        input: { value: "x" },
+        result: {},
+        durationMs: 0,
+      });
 
       expect(receivedRefs[0]).not.toBe(receivedRefs[1]);
       expect(receivedRefs[1].mutated).toBeUndefined();
@@ -480,14 +622,23 @@ describe("buildToolInterceptor", () => {
       });
       const good = makeToolPlugin("good", {
         priority: 0,
-        onAfterToolCall: vi.fn().mockImplementation(async () => { order.push("good"); }),
+        onAfterToolCall: vi.fn().mockImplementation(async () => {
+          order.push("good");
+        }),
       });
       const interceptor = buildToolInterceptor([bad, good], mockProfileCtx, onError)!;
       const ctx: Parameters<NonNullable<typeof interceptor.onAfterToolCall>>[0] = {
-        toolName: "t", input: {}, result: {}, durationMs: 0,
+        toolName: "t",
+        input: {},
+        result: {},
+        durationMs: 0,
       };
       await interceptor.onAfterToolCall!(ctx);
-      expect(onError).toHaveBeenCalledWith({ plugin: "bad", hook: "onAfterToolCall", error: expect.any(Error) });
+      expect(onError).toHaveBeenCalledWith({
+        plugin: "bad",
+        hook: "onAfterToolCall",
+        error: expect.any(Error),
+      });
       expect(order).toEqual(["good"]);
     });
 

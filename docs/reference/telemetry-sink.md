@@ -49,30 +49,30 @@ interface TelemetrySinkEvent {
   traceId: string;
   sessionId: string;
   tenantId: string;
-  timestamp: string;   // ISO-8601
-  sequence: number;    // monotonically increasing within a request
+  timestamp: string; // ISO-8601
+  sequence: number; // monotonically increasing within a request
   source: "runtime" | "orchestration" | "host";
   event: Record<string, unknown>;
 }
 ```
 
-| Field | Description |
-|---|---|
-| `traceId` | Unique identifier for the originating request chain |
-| `sessionId` | Session this event belongs to |
-| `tenantId` | Tenant this event belongs to |
-| `timestamp` | ISO-8601 timestamp |
-| `sequence` | Monotonically increasing counter within a single request |
-| `source` | Where the event originated (see below) |
-| `event` | Raw event payload matching the corresponding `AgentrailEvent` subtype |
+| Field       | Description                                                           |
+| ----------- | --------------------------------------------------------------------- |
+| `traceId`   | Unique identifier for the originating request chain                   |
+| `sessionId` | Session this event belongs to                                         |
+| `tenantId`  | Tenant this event belongs to                                          |
+| `timestamp` | ISO-8601 timestamp                                                    |
+| `sequence`  | Monotonically increasing counter within a single request              |
+| `source`    | Where the event originated (see below)                                |
+| `event`     | Raw event payload matching the corresponding `AgentrailEvent` subtype |
 
 ### Event sources
 
-| Source | Description |
-|---|---|
-| `"runtime"` | Agent loop events: turn start/end, tool calls, compaction, errors |
+| Source            | Description                                                             |
+| ----------------- | ----------------------------------------------------------------------- |
+| `"runtime"`       | Agent loop events: turn start/end, tool calls, compaction, errors       |
 | `"orchestration"` | Multi-agent coordination events: agent spawn, job dispatch, agent close |
-| `"host"` | Framework-level events emitted by the `/chat` or `/stream` route |
+| `"host"`          | Framework-level events emitted by the `/chat` or `/stream` route        |
 
 ## Built-in sinks
 
@@ -103,7 +103,7 @@ const app = createAgentApp({
   dataDir: "./data",
   profiles: [myProfile],
   telemetrySink: createFileTelemetrySink("./data"),
-  inspector: true,   // Inspector reads the same files
+  inspector: true, // Inspector reads the same files
 });
 ```
 
@@ -138,9 +138,9 @@ function createOpenTelemetrySink(): TelemetrySink {
 
 Events emitted via `/chat` are coarser than `/stream`:
 
-| Route | Events emitted |
-|---|---|
-| `/stream` | Full granularity: `session.start`, `turn.start`, `tool.before`, `tool.after`, `turn.end`, `session.end`, compaction events |
-| `/chat` | Synthetic only: `agent_start`, `agent_end`, and `error` — because `agent.invoke()` does not expose granular turn/tool events |
+| Route     | Events emitted                                                                                                               |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `/stream` | Full granularity: `session.start`, `turn.start`, `tool.before`, `tool.after`, `turn.end`, `session.end`, compaction events   |
+| `/chat`   | Synthetic only: `agent_start`, `agent_end`, and `error` — because `agent.invoke()` does not expose granular turn/tool events |
 
 For complete observability traces, use the `/stream` route.

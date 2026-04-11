@@ -3,12 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type {
-  ParsedSlashCommand,
-  SlashCommandContext,
-  SlashCommandResult,
-} from "@agentrail/app";
 import { userMemoryConsolidationService } from "@/context/index.js";
+import type { ParsedSlashCommand, SlashCommandContext, SlashCommandResult } from "@agentrail/app";
 
 export async function handleMemoryConsolidateCommand(
   parsed: ParsedSlashCommand,

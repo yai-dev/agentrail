@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { appendFile, mkdir, readFile } from "node:fs/promises";
-import path from "node:path";
 import type { SessionRef } from "@agentrail/core";
 import { resolveSessionRef } from "@agentrail/core";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
+import path from "node:path";
 
 /** Session-scoped persistence for workflow trace envelopes. */
 export interface SessionTraceStore<TEnvelope = Record<string, unknown>> {

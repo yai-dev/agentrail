@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { wrapTraceEvent, TRACE_PERSISTED_EVENT_TYPES } from "../src/events/index.js";
+import { describe, expect, it } from "vitest";
+import { TRACE_PERSISTED_EVENT_TYPES, wrapTraceEvent } from "../src/events/index.js";
 import type { TelemetrySink, TelemetrySinkEvent } from "../src/telemetry/sink.js";
 
 // ─── TRACE_PERSISTED_EVENT_TYPES ──────────────────────────────────────────────
@@ -19,13 +19,27 @@ describe("TRACE_PERSISTED_EVENT_TYPES", () => {
   });
 
   it("includes core runtime event types", () => {
-    for (const type of ["session.start", "session.end", "turn.start", "turn.complete", "tool.before", "tool.after", "error"]) {
+    for (const type of [
+      "session.start",
+      "session.end",
+      "turn.start",
+      "turn.complete",
+      "tool.before",
+      "tool.after",
+      "error",
+    ]) {
       expect(TRACE_PERSISTED_EVENT_TYPES.has(type), `missing: ${type}`).toBe(true);
     }
   });
 
   it("does not include high-frequency streaming noise events", () => {
-    for (const type of ["message_start", "message_end", "message_update", "session_id", "text_delta"]) {
+    for (const type of [
+      "message_start",
+      "message_end",
+      "message_update",
+      "session_id",
+      "text_delta",
+    ]) {
       expect(TRACE_PERSISTED_EVENT_TYPES.has(type), `should be absent: ${type}`).toBe(false);
     }
   });

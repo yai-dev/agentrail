@@ -3,6 +3,17 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { getWorkerPath } from "@/agents/worker-path.js";
+import { config } from "@/config.js";
+import {
+  knowledgeManager,
+  orchestrationRegistry,
+  sandboxManager,
+  sessionManager,
+  skillManager,
+} from "@/context/index.js";
+import { buildSystemPrompt } from "@/prompts/index.js";
+import { waitHandleRegistry } from "@/wait-handle-registry.js";
 import { compactToolResults, createStaticProfileResolver, defineProfile } from "@agentrail/app";
 import {
   askUser,
@@ -14,17 +25,6 @@ import {
   orchestration,
   skills,
 } from "@agentrail/capabilities";
-import { config } from "@/config.js";
-import {
-  knowledgeManager,
-  orchestrationRegistry,
-  sandboxManager,
-  sessionManager,
-  skillManager,
-} from "@/context/index.js";
-import { waitHandleRegistry } from "@/wait-handle-registry.js";
-import { buildSystemPrompt } from "@/prompts/index.js";
-import { getWorkerPath } from "@/agents/worker-path.js";
 
 export const DEFAULT_HOSTED_AGENT_ID = "agentrail-default-agent";
 
@@ -67,8 +67,7 @@ export const defaultProfile = defineProfile({
         },
         listSkills: () => skillManager.listSkills(),
         listWorkspaceSnapshot: (ctx) => sandboxManager.listWorkspace(ctx.sessionId),
-        compactMessages: (msgs, ctx) =>
-          compactToolResults(msgs, { sessionDir: ctx?.sessionDir }),
+        compactMessages: (msgs, ctx) => compactToolResults(msgs, { sessionDir: ctx?.sessionDir }),
         delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
       },
       { cacheTtlMs: 5_000 },

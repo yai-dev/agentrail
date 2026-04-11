@@ -3,13 +3,13 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import type { LlmProvider, LlmRequest, LlmStream } from "@/interfaces/llm-client.js";
-import type { ImageContent, TextContent } from "@/types/content.types.js";
-import type { AssistantMessage, StopReason, ToolResultMessage } from "@/types/message.types.js";
 import { AssistantMessageEventStream } from "@/llm/event-stream.js";
 import { parseStreamingJson } from "@/llm/utils/json-parse.js";
 import { sanitizeSurrogates } from "@/llm/utils/sanitize-unicode.js";
+import type { ImageContent, TextContent } from "@/types/content.types.js";
+import type { AssistantMessage, StopReason, ToolResultMessage } from "@/types/message.types.js";
+import Anthropic from "@anthropic-ai/sdk";
 
 type MutableBlock = {
   type: "text" | "thinking" | "toolCall";

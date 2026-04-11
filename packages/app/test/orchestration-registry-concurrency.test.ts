@@ -14,12 +14,12 @@
  * backed by a temporary filesystem directory.
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { randomUUID } from "node:crypto";
-import { createOrchestrationRegistry } from "../src/host/orchestration-registry.js";
 import { createSessionRef } from "@agentrail/core";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it, vi } from "vitest";
+import { createOrchestrationRegistry } from "../src/host/orchestration-registry.js";
 
 describe("OrchestrationRegistry – ensureActiveRunId concurrency", () => {
   it("two concurrent first-spawn calls produce exactly one run", async () => {
