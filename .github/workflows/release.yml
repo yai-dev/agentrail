@@ -23,6 +23,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure git signoff for bot commits
+        run: |
+          mkdir -p .git/hooks
+          cat > .git/hooks/prepare-commit-msg << 'EOF'
+          #!/bin/sh
+          if ! grep -q "^Signed-off-by:" "$1"; then
+            printf "\nSigned-off-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>\n" >> "$1"
+          fi
+          EOF
+          chmod +x .git/hooks/prepare-commit-msg
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
