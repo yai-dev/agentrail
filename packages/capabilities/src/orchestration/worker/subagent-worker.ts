@@ -3,11 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { resolveSessionRef } from "@agentrail/core";
-import { defineAgent, type Message } from "@agentrail/core";
-import { join } from "node:path";
 import {
   type AgentInputEnvelope,
+  type AgentToolCallRecord,
   type CreateManagedAgentInput,
   type ManagedAgentDeliveryResult,
   type OrchestrationMailboxState,
@@ -25,6 +23,14 @@ import {
   type WorkerMessage,
   type WorkerRunTurnMessage,
 } from "@/orchestration/worker/worker-messages.js";
+import {
+  defineAgent,
+  isAssistantMessage,
+  isToolResultMessage,
+  resolveSessionRef,
+  type Message,
+} from "@agentrail/core";
+import { join } from "node:path";
 
 /** Dependencies required to bootstrap a managed sub-agent worker process. */
 export interface WorkerOptions {
@@ -255,6 +261,7 @@ async function runTurn(requestId?: string): Promise<ManagedAgentDeliveryResult |
       consumedInputIds: inputs.map((input) => input.id),
       outcome: "completed",
       outputText: result.outputText,
+      toolCalls: result.toolCalls,
     };
   } catch (error) {
     try {
@@ -279,16 +286,42 @@ async function runTurn(requestId?: string): Promise<ManagedAgentDeliveryResult |
   }
 }
 
+function extractToolCallRecords(messages: Message[]): AgentToolCallRecord[] {
+  const outputs = new Map<string, NonNullable<AgentToolCallRecord["output"]>>();
+  for (const msg of messages) {
+    if (isToolResultMessage(msg)) {
+      outputs.set(msg.toolCallId, { content: msg.content, details: msg.details });
+    }
+  }
+  const records: AgentToolCallRecord[] = [];
+  for (const msg of messages) {
+    if (isAssistantMessage(msg)) {
+      for (const block of msg.content) {
+        if (block.type === "toolCall") {
+          records.push({
+            toolCallId: block.id,
+            toolName: block.name,
+            input: block.arguments,
+            output: outputs.get(block.id),
+          });
+        }
+      }
+    }
+  }
+  return records;
+}
+
 async function executeTurn(
   currentState: WorkerState,
   inputs: AgentInputEnvelope[],
   agent: ReturnType<typeof defineAgent>,
   runtime: SubAgentRuntime,
-): Promise<{ outputText: string; messages: Message[] }> {
+): Promise<{ outputText: string; messages: Message[]; toolCalls: AgentToolCallRecord[] }> {
   if (currentState.workerConfig.fakeExecution === "echo") {
     return {
       outputText: inputs.map((input) => String(input.payload.prompt ?? input.id)).join("\n"),
       messages: [],
+      toolCalls: [],
     };
   }
 
@@ -307,6 +340,7 @@ async function executeTurn(
   return {
     outputText: result.text,
     messages: result.messages,
+    toolCalls: extractToolCallRecords(result.messages),
   };
 }
 

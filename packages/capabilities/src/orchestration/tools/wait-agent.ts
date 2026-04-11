@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Type, tool } from "@agentrail/core";
 import type { OrchestrationManager } from "@/orchestration/orchestration-manager.js";
 import type { WaitCondition } from "@/orchestration/types.js";
+import { Type, tool } from "@agentrail/core";
 
 function formatWaitResult(wait: WaitCondition): string {
   return JSON.stringify({
@@ -14,6 +14,7 @@ function formatWaitResult(wait: WaitCondition): string {
     status: wait.status,
     kind: wait.kind,
     match: wait.match ?? "all",
+    ...(wait.resolution ? { resolution: wait.resolution } : {}),
   });
 }
 
