@@ -119,12 +119,26 @@ export type RuntimeEvent =
   /** Emitted once a message is fully assembled. */
   | { readonly type: "message.end"; readonly message: Message }
   // ── Tool execution ───────────────────────────────────────────────────────
-  /** Emitted just before a tool call is dispatched to the tool implementation. */
+  /**
+   * Emitted just before a tool call is dispatched to the tool implementation.
+   *
+   * When a `ToolInterceptor` is active, this event is emitted **after** the
+   * `onBeforeToolCall` hook has run so that `args` always reflects the effective
+   * (potentially modified) input that will be passed to the tool.
+   *
+   * - `args`    — effective input (after any interceptor modifications).
+   * - `rawArgs` — original model-generated arguments, always equal to
+   *               `toolCall.arguments`.  Identical to `args` when no interceptor
+   *               modifies the input.
+   */
   | {
       readonly type: "tool.before";
       readonly toolCallId: string;
       readonly toolName: string;
+      /** Effective input passed to the tool (may differ from raw model arguments). */
       readonly args: unknown;
+      /** Original model-generated arguments, preserved for audit and debugging. */
+      readonly rawArgs: unknown;
     }
   /** Emitted for each incremental update produced by a streaming tool. */
   | {

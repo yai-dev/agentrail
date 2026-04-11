@@ -46,6 +46,7 @@ export { createFileSystemSessionTraceStore } from "@/session/trace-store.js";
 // ============================================================================
 
 export type {
+  AfterToolCallEvent,
   AgentrailChatHandledResponse,
   AgentrailChatRequest,
   AgentrailChatRequestContext,
@@ -56,9 +57,11 @@ export type {
   AgentrailRequestLifecycleContext,
   AgentrailResolvedChatContext,
   AgentrailSessionStore,
+  AppBeforeToolCallResult,
   AttachmentFile,
   AttachmentHandler,
   AttachmentHandlerResult,
+  BeforeToolCallEvent,
   ContextProvider,
   ContextProviderContext,
   PluginErrorContext,
@@ -69,7 +72,7 @@ export type {
 // Plugins
 // ============================================================================
 
-export { runPluginLifecycle } from "@/host/plugins.js";
+export { buildToolInterceptor, runPluginLifecycle } from "@/host/plugins.js";
 
 export {
   UserMemoryConsolidationService,

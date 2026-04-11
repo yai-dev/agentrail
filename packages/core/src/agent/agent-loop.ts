@@ -13,7 +13,7 @@ import type {
 } from "@/types/agent.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
 import type { RuntimeEvent } from "@/types/result.types.js";
-import type { RuntimeTool } from "@/types/tool.types.js";
+import type { RuntimeTool, ToolInterceptor } from "@/types/tool.types.js";
 import type { Usage } from "@/types/usage.types.js";
 import type { ModelConfig } from "@/agent/define-agent.js";
 
@@ -55,6 +55,8 @@ export interface AgentLoopConfig {
   getFollowUpMessages?: () => Promise<Message[]>;
   transformContext?: TransformContextFn;
   reactiveCompaction?: ReactiveCompactionController;
+  /** Optional pre/post interceptor invoked around each tool execution. */
+  toolInterceptor?: ToolInterceptor;
 }
 
 /** Runs the core agent loop from the first user turn until completion. */
@@ -222,6 +224,7 @@ async function runLoop(
           signal,
           stream,
           config.getSteeringMessages,
+          config.toolInterceptor,
         );
         toolResults.push(...toolExecution.toolResults);
         steeringAfterTools = toolExecution.steeringMessages ?? null;

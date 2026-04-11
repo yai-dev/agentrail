@@ -6,6 +6,7 @@
 import type { ToolCall, UserContent } from "@/types/content.types.js";
 import type { AssistantMessage, Message, StopReason } from "@/types/message.types.js";
 import type { RuntimeEvent } from "@/types/result.types.js";
+import type { ToolInterceptor } from "@/types/tool.types.js";
 import type { Usage } from "@/types/usage.types.js";
 
 // ============================================================================
@@ -86,6 +87,16 @@ export interface AgentRunOptions {
 
   /** Assistant-facing message used when the max-turn limit is reached. */
   readonly maxTurnsMessage?: string;
+
+  /**
+   * Optional pre/post hook interceptor for individual tool calls.
+   *
+   * The interceptor runs inside the core executor: `onBeforeToolCall` just
+   * before the tool's `execute()` is called and `onAfterToolCall` after the
+   * result is produced.  Multi-plugin composition is handled by the host layer
+   * (see `buildToolInterceptor` in `@agentrail/app`).
+   */
+  readonly toolInterceptor?: ToolInterceptor;
 }
 
 // ============================================================================
