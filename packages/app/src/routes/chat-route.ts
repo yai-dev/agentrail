@@ -15,7 +15,7 @@ import {
 import { TRACE_PERSISTED_EVENT_TYPES, wrapTraceEvent, type WorkflowTraceEventEnvelope } from "@/events/index.js";
 import { createReactiveCompactionController, type SummarizeMessagesFn } from "@/host/reactive-compaction.js";
 import { runCompactionStep } from "@/routes/compaction-runner.js";
-import { runPluginChatRequestInterceptors, runPluginRequestHook } from "@/host/plugins.js";
+import { buildToolInterceptor, runPluginChatRequestInterceptors, runPluginRequestHook } from "@/host/plugins.js";
 import type {
   AgentrailChatHandledResponse,
   AgentrailChatRequest,
@@ -286,6 +286,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
           signal,
           transformContext,
           reactiveCompaction,
+          toolInterceptor: buildToolInterceptor(plugins, profileCtx, onPluginError),
         });
       } catch (invokeError) {
         emitTraceEvent(

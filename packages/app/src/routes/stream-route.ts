@@ -14,12 +14,12 @@ import {
 } from "@/events/index.js";
 import type { SessionRef } from "@agentrail/core";
 import type { OrchestrationManager } from "@agentrail/capabilities";
-import type { Agent, Message, RuntimeEvent, TransformContextFn, Usage } from "@agentrail/core";
+import type { Agent, Message, RuntimeEvent, ToolInterceptor, TransformContextFn, Usage } from "@agentrail/core";
 import { isRuntimeError } from "@agentrail/core";
 import type { SandboxManager } from "@agentrail/capabilities";
 import { Hono } from "hono";
 import { streamText } from "hono/streaming";
-import { runPluginRequestHook } from "@/host/plugins.js";
+import { buildToolInterceptor, runPluginRequestHook } from "@/host/plugins.js";
 import { createReactiveCompactionController, type SummarizeMessagesFn } from "@/host/reactive-compaction.js";
 import { runCompactionStep } from "@/routes/compaction-runner.js";
 import { awaitSandboxWarmup } from "@/routes/sandbox-warmup.js";
@@ -398,6 +398,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             contextWindow: profile.contextWindow,
             writeEvent,
             onTraceEvent: maybeTraceEvent,
+            toolInterceptor: buildToolInterceptor(plugins, profileCtx, onPluginError),
             onTurnMessagesReady: async (msgs) => {
               await options.sessionStore.appendMessages(tenantId, sid, msgs);
             },
@@ -436,6 +437,7 @@ interface DrainAgentStreamOptions {
   contextWindow?: number;
   writeEvent: (event: RuntimeEvent | object) => Promise<void>;
   onTraceEvent: (event: RuntimeEvent | object) => void;
+  toolInterceptor?: ToolInterceptor;
   /**
    * Called after each internal reasoning turn (turn.complete) with the batch of new messages
    * produced during that turn. SSE is written first; this runs immediately after.
@@ -471,6 +473,7 @@ async function drainAgentStream(
     signal: opts.signal,
     transformContext: opts.transformContext,
     reactiveCompaction: opts.reactiveCompaction,
+    toolInterceptor: opts.toolInterceptor,
   });
 
   for await (const event of agentStream) {

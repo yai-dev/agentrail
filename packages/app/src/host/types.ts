@@ -156,6 +156,71 @@ export interface AgentrailRequestLifecycleContext {
   agentId: string;
 }
 
+// ============================================================================
+// Tool call hook types
+// ============================================================================
+
+/**
+ * App-layer result type for `onBeforeToolCall`.
+ *
+ * This is the **app-level** variant where a replacement `input` is typed as
+ * `Record<string, unknown>` (matching the structured tool parameter convention).
+ * It is a strict subtype of the core `BeforeToolCallResult` and is safely
+ * up-cast inside `buildToolInterceptor` without runtime validation.
+ */
+export type AppBeforeToolCallResult =
+  | { readonly action: "allow" }
+  | { readonly action: "deny"; readonly reason: string }
+  | { readonly action: "allow"; readonly input: Record<string, unknown> };
+
+/**
+ * Event passed to `AgentrailPlugin.onBeforeToolCall`.
+ *
+ * **Object-only contract**: the app layer only dispatches `onBeforeToolCall` when
+ * the validated tool input is a plain, non-array object.  Tools whose top-level
+ * schema is an array or primitive will silently skip all `onBeforeToolCall` hooks
+ * via `buildToolInterceptor`.  This matches the `Record<string, unknown>` type of
+ * `input` — hooks are not called for schemas that cannot safely be represented as
+ * a record.
+ */
+export interface BeforeToolCallEvent {
+  /** Name of the tool being invoked. */
+  readonly toolName: string;
+  /**
+   * Fresh shallow copy of the validated tool arguments for this plugin call.
+   * Returning `{ action: "allow", input: { ...modified } }` propagates the
+   * modified input to subsequent plugins and to the actual tool execution.
+   * In-place mutations to this object do **not** affect other plugins.
+   */
+  readonly input: Record<string, unknown>;
+  /** Identity and session information for the current request. */
+  readonly context: AgentrailProfileContext;
+}
+
+/**
+ * Event passed to `AgentrailPlugin.onAfterToolCall`.
+ *
+ * Like `BeforeToolCallEvent`, this event is only dispatched for tools whose
+ * validated input is a plain object.  Array- and primitive-typed tools skip
+ * `onAfterToolCall` hooks silently.
+ */
+export interface AfterToolCallEvent {
+  /** Name of the tool that was invoked. */
+  readonly toolName: string;
+  /**
+   * Fresh shallow copy of the effective input that was passed to the tool
+   * (after any `onBeforeToolCall` modifications).  In-place mutations do
+   * **not** affect other plugins.
+   */
+  readonly input: Record<string, unknown>;
+  /** The result produced by the tool. */
+  readonly result: unknown;
+  /** Wall-clock duration of the tool's `execute()` call in milliseconds. */
+  readonly durationMs: number;
+  /** Identity and session information for the current request. */
+  readonly context: AgentrailProfileContext;
+}
+
 /**
  * Lightweight host extension contract for request interception and lifecycle hooks.
  *
@@ -166,9 +231,10 @@ export interface AgentrailRequestLifecycleContext {
  * ### Lifecycle
  * 1. `start()` — called once when `createAgentApp` initialises. Use to open
  *    connections or warm up caches.
- * 2. Per-request hooks run in declaration order:
- *    `interceptChatRequest` → `onRequestStart` → _(agent runs)_ → `onRequestEnd`
- *    → `onTurnPersisted`
+ * 2. Per-request hooks run in priority order:
+ *    `interceptChatRequest` → `onRequestStart` → _(agent runs)_
+ *    → per tool: `onBeforeToolCall` → _(tool executes)_ → `onAfterToolCall`
+ *    → `onTurnPersisted` → `onRequestEnd`
  * 3. `stop()` — called on graceful shutdown. Use to flush buffers and close
  *    connections.
  *
@@ -266,6 +332,30 @@ export interface AgentrailPlugin {
    * Use for post-turn side effects such as triggering memory consolidation.
    */
   onTurnPersisted?(context: AgentrailRequestLifecycleContext): void | Promise<void>;
+
+  /**
+   * Called just before a tool's `execute()` is invoked.
+   *
+   * Return `{ action: "allow" }` to proceed unchanged, `{ action: "allow", input }` to
+   * replace the arguments passed to the tool, or `{ action: "deny", reason }` to abort
+   * the tool call and surface an error to the model.
+   *
+   * If this hook throws, the error is reported via `onPluginError` and execution
+   * continues as if the hook returned `{ action: "allow" }` (i.e. a throw is **not**
+   * treated as a deny).
+   */
+  onBeforeToolCall?(
+    event: BeforeToolCallEvent,
+  ): Promise<AppBeforeToolCallResult> | AppBeforeToolCallResult;
+
+  /**
+   * Called after a tool completes (both successful runs and execution errors).
+   * Not called when execution was blocked by a `deny` result.
+   *
+   * Errors thrown here are reported via `onPluginError` and do not affect the
+   * tool result returned to the model.
+   */
+  onAfterToolCall?(event: AfterToolCallEvent): Promise<void> | void;
 }
 
 /** Uploaded attachment metadata made available to attachment handlers. */

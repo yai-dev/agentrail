@@ -66,3 +66,61 @@ export type ExtractToolParams<T> = T extends RuntimeTool<infer P, unknown> ? Sta
 
 /** Extracts the opaque `details` payload type from a runtime tool definition. */
 export type ExtractToolDetails<T> = T extends RuntimeTool<TSchema, infer D> ? D : never;
+
+// ============================================================================
+// ToolInterceptor — pre/post hook contract for the core agent loop
+// ============================================================================
+
+/**
+ * Result returned by `ToolInterceptor.onBeforeToolCall`.
+ *
+ * - `{ action: "allow" }` — proceed with the original (or previously modified) input.
+ * - `{ action: "allow"; input: unknown }` — proceed with a replacement input value.
+ * - `{ action: "deny"; reason: string }` — abort execution and surface an error to the model.
+ */
+export type BeforeToolCallResult =
+  | { readonly action: "allow" }
+  | { readonly action: "deny"; readonly reason: string }
+  | { readonly action: "allow"; readonly input: unknown };
+
+/** Context passed to `ToolInterceptor.onBeforeToolCall`. */
+export interface ToolInterceptorBeforeContext {
+  readonly toolName: string;
+  /**
+   * The validated arguments that will be passed to the tool.
+   *
+   * The core executor does not clone this value — it is passed by reference.
+   * Host-layer composers (e.g. `buildToolInterceptor`) are responsible for
+   * any defensive copying they wish to do between plugin calls.
+   */
+  readonly input: unknown;
+}
+
+/** Context passed to `ToolInterceptor.onAfterToolCall`. */
+export interface ToolInterceptorAfterContext {
+  readonly toolName: string;
+  /** The effective input that was passed to the tool (after any before-hook modifications). */
+  readonly input: unknown;
+  readonly result: unknown;
+  readonly durationMs: number;
+}
+
+/**
+ * Generic pre/post interception contract consumed by `executeToolCalls`.
+ *
+ * The core executor calls exactly one `onBeforeToolCall` and one `onAfterToolCall`
+ * per tool execution.  Multi-plugin composition, priority ordering, and error
+ * isolation (safeNotify) are the responsibility of the host layer that builds
+ * and supplies this object.
+ *
+ * Error semantics:
+ * - If either hook throws, the error propagates uncaught from the executor.
+ *   The host layer is responsible for ensuring the interceptor does not throw.
+ * - `onAfterToolCall` is not called when a before-hook returns `{ action: "deny" }`.
+ */
+export interface ToolInterceptor {
+  onBeforeToolCall?(
+    ctx: ToolInterceptorBeforeContext,
+  ): Promise<BeforeToolCallResult> | BeforeToolCallResult;
+  onAfterToolCall?(ctx: ToolInterceptorAfterContext): Promise<void> | void;
+}

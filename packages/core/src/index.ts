@@ -25,10 +25,14 @@ export { Type } from "@sinclair/typebox";
 export type { Static, TSchema } from "@sinclair/typebox";
 
 export type {
+  BeforeToolCallResult,
   ExtractToolDetails,
   ExtractToolParams,
   RuntimeTool,
   ToolDefinition,
+  ToolInterceptor,
+  ToolInterceptorAfterContext,
+  ToolInterceptorBeforeContext,
   ToolResult,
   ToolSignalEvent,
   ToolUpdateCallback,

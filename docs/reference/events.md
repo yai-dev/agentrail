@@ -198,10 +198,37 @@ The most important ones for UI consumers:
 | `turn.complete`             | A turn finishes                              |
 | `compaction`                | In-loop reactive compaction rewrites history |
 | `message.update`            | Streaming text delta from the LLM            |
-| `tool.before`               | The agent is about to invoke a tool          |
+| `tool.before`               | A tool call is about to be dispatched (after any `onBeforeToolCall` plugin hooks have run) |
 | `tool.after`                | A tool invocation completes                  |
 | `waiting_for_user_input`    | The agent is paused waiting for user input   |
 | `skill_start` / `skill_end` | A skill sub-agent is invoked                 |
+
+### `tool.before` field reference
+
+```ts
+{
+  type: "tool.before";
+  toolCallId: string;
+  toolName: string;
+  /**
+   * Effective input passed to the tool.
+   * When a `onBeforeToolCall` plugin hook modifies the arguments, this field
+   * reflects the modified value rather than the raw model-generated arguments.
+   */
+  args: unknown;
+  /**
+   * Original model-generated arguments, always equal to the raw tool call
+   * payload from the model.  Identical to `args` when no plugin modified the
+   * input.  Use this field for audit logging and debugging.
+   */
+  rawArgs: unknown;
+}
+```
+
+> **Note for consumers that used `args` for audit purposes:** if you have a plugin
+> or tracing integration that reads `tool.before.args` and relies on it being the
+> unmodified model output, switch to `rawArgs`.  `args` now reflects the effective
+> (possibly plugin-modified) arguments that were actually executed.
 
 ---
 

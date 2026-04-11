@@ -32,10 +32,14 @@ export { isAssistantMessage, isToolResultMessage, isUserMessage } from "@/types/
 
 /** Tool contract and helper types exported from the runtime core type surface. */
 export type {
+  BeforeToolCallResult,
   ExtractToolDetails,
   ExtractToolParams,
   RuntimeTool,
   ToolDefinition,
+  ToolInterceptor,
+  ToolInterceptorAfterContext,
+  ToolInterceptorBeforeContext,
   ToolResult,
   ToolUpdateCallback,
 } from "@/types/tool.types.js";
