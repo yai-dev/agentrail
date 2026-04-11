@@ -122,7 +122,9 @@ export {
 } from "@/orchestration/index.js";
 export type {
   AgentInputEnvelope,
+  AgentToolCallRecord,
   CreateManagedAgentInput,
+  JsonValue,
   ManagedAgentDeliveryResult,
   ManagedAgentInstance,
   OrchestrationAgent,

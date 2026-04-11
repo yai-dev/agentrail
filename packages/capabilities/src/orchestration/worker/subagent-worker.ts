@@ -7,6 +7,7 @@ import {
   type AgentInputEnvelope,
   type AgentToolCallRecord,
   type CreateManagedAgentInput,
+  type JsonValue,
   type ManagedAgentDeliveryResult,
   type OrchestrationMailboxState,
 } from "@/orchestration/index.js";
@@ -286,11 +287,25 @@ async function runTurn(requestId?: string): Promise<ManagedAgentDeliveryResult |
   }
 }
 
+/**
+ * Converts an arbitrary value to a JSON-safe representation.
+ * Non-serializable payloads (BigInt, circular references, class instances, etc.)
+ * are silently dropped rather than crashing the orchestration persistence layer.
+ */
+function toJsonSafe(value: unknown): JsonValue | undefined {
+  if (value === undefined) return undefined;
+  try {
+    return JSON.parse(JSON.stringify(value)) as JsonValue;
+  } catch {
+    return undefined;
+  }
+}
+
 function extractToolCallRecords(messages: Message[]): AgentToolCallRecord[] | undefined {
   const outputs = new Map<string, NonNullable<AgentToolCallRecord["output"]>>();
   for (const msg of messages) {
     if (isToolResultMessage(msg)) {
-      outputs.set(msg.toolCallId, { content: msg.content, details: msg.details });
+      outputs.set(msg.toolCallId, { content: msg.content, details: toJsonSafe(msg.details) });
     }
   }
   const records: AgentToolCallRecord[] = [];

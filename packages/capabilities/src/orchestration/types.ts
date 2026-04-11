@@ -5,6 +5,20 @@
 
 import type { ToolResultContent } from "@agentrail/core";
 
+/**
+ * A JSON-serializable value.
+ * Constraining `details` to this type ensures orchestration persistence
+ * (which uses bare JSON.stringify) never receives non-serializable payloads
+ * such as BigInt or circular references.
+ */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 /** Lifecycle status for an orchestration run. */
 export type RunStatus = "running" | "completed" | "failed";
 
@@ -36,7 +50,8 @@ export interface AgentToolCallRecord {
   output:
     | {
         content: ToolResultContent[];
-        details?: unknown;
+        /** JSON-safe snapshot of the tool's machine-readable payload. */
+        details?: JsonValue;
       }
     | undefined;
 }
