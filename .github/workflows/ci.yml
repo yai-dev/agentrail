@@ -11,6 +11,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changeset:
+    name: Changeset check
+    runs-on: ubuntu-latest
+    # Only check PRs, not direct pushes to master.
+    # Skip the automated "Version Packages" release PR created by changesets/action.
+    # Skip PRs labelled `skip-changeset` (for docs-only / CI-only / internal changes).
+    if: |
+      github.event_name == 'pull_request' &&
+      github.head_ref != 'changeset-release/master' &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-changeset')
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch base branch so we can diff against it.
+          fetch-depth: 0
+
+      - name: Check for changeset
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          FILES=$(git diff --name-only "$BASE"...HEAD -- '.changeset/' \
+            | grep -E '^\.changeset/.+\.md$' \
+            | grep -v '^\.changeset/README\.md$' \
+            || true)
+          if [ -z "$FILES" ]; then
+            echo "::error::No changeset found for this PR."
+            echo ""
+            echo "Run 'pnpm changeset' to generate one."
+            echo "If this PR intentionally needs no changeset (docs-only, CI-only,"
+            echo "internal refactor), add the 'skip-changeset' label to the PR."
+            exit 1
+          fi
+          echo "Changeset(s) found:"
+          echo "$FILES"
+
   verify:
     runs-on: ubuntu-latest
     permissions:
