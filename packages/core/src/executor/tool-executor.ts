@@ -9,7 +9,6 @@ import { validateToolArguments, validateToolInput } from "@/llm/utils/validation
 import type { TextContent, ToolCall } from "@/types/content.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
 import type { RuntimeEvent } from "@/types/result.types.js";
-import type { Static, TSchema } from "@sinclair/typebox";
 import type {
   RuntimeTool,
   ToolInterceptor,
@@ -17,6 +16,7 @@ import type {
   ToolSignalEvent,
   ValidationResult,
 } from "@/types/tool.types.js";
+import type { Static, TSchema } from "@sinclair/typebox";
 
 /** Result produced by executing a single tool call against the runtime registry. */
 export interface ToolExecutionResult {
@@ -138,7 +138,10 @@ export async function executeToolCalls(
     if (tool.validate) {
       let vr: ValidationResult;
       try {
-        vr = await tool.validate(effectiveArgs as Static<TSchema>, { toolCallId: toolCall.id, signal });
+        vr = await tool.validate(effectiveArgs as Static<TSchema>, {
+          toolCallId: toolCall.id,
+          signal,
+        });
       } catch (e) {
         vr = { valid: false, reason: e instanceof Error ? e.message : String(e) };
       }
@@ -273,8 +276,20 @@ function rejectToolCall(
     content: [{ type: "text", text: errorText } as TextContent],
     details: {},
   };
-  stream.push({ type: "tool.before", toolCallId: toolCall.id, toolName: toolCall.name, args, rawArgs });
-  stream.push({ type: "tool.after", toolCallId: toolCall.id, toolName: toolCall.name, result: errorResult, isError: true });
+  stream.push({
+    type: "tool.before",
+    toolCallId: toolCall.id,
+    toolName: toolCall.name,
+    args,
+    rawArgs,
+  });
+  stream.push({
+    type: "tool.after",
+    toolCallId: toolCall.id,
+    toolName: toolCall.name,
+    result: errorResult,
+    isError: true,
+  });
   const msg = buildToolResultMessage(toolCall, errorResult, true);
   results.push(msg);
   stream.push({ type: "message.start", message: msg });

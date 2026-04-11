@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { Message, ToolResultMessage } from "@agentrail/core";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { Message, ToolResultMessage } from "@agentrail/core";
 import { describe, expect, it } from "vitest";
 import { compactToolResults } from "../src/session/compaction.js";
 

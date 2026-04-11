@@ -3,6 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { KnowledgeManager } from "@/knowledge/index.js";
+import type { SandboxManager } from "@/sandbox/index.js";
+import type { SkillManager } from "@/skills/index.js";
+import type { WaitHandleRegistry } from "@/tools/index.js";
 import type {
   AgentrailSessionStore,
   ContextProvider,
@@ -11,10 +15,6 @@ import type {
   SessionRef,
   TransformContextFn,
 } from "@agentrail/core";
-import type { KnowledgeManager } from "@/knowledge/index.js";
-import type { SandboxManager } from "@/sandbox/index.js";
-import type { SkillManager } from "@/skills/index.js";
-import type { WaitHandleRegistry } from "@/tools/index.js";
 
 /**
  * Request-scoped context passed to `CapabilityDescriptor.buildTools` and

@@ -3,10 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { randomUUID } from "node:crypto";
-import type { OrchestrationEvent } from "@agentrail/capabilities";
+import type { ExtendedSseEvent, OrchestrationEvent } from "@agentrail/capabilities";
 import type { RuntimeEvent } from "@agentrail/core";
-import type { ExtendedSseEvent } from "@agentrail/capabilities";
+import { randomUUID } from "node:crypto";
 
 /** Event emitted before chat history compaction starts. */
 export interface AgentrailContextCompactionStartEvent {

@@ -17,7 +17,5 @@
     }
   },
   "include": ["src"],
-  "plugins": [
-    { "transform": "tsc-alias" }
-  ]
+  "plugins": [{ "transform": "tsc-alias" }]
 }

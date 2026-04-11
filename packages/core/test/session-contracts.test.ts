@@ -3,7 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createSessionRef, resolveSessionRef } from "../src/session/session-ref.js";
 
 describe("session-ref", () => {

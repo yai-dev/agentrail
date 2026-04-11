@@ -82,7 +82,9 @@ export function WaitingQuestionPrompt({
           <p className="waiting-question-label">{question}</p>
           {hint && !hasOptions && <p className="waiting-question-hint">{hint}</p>}
           {multiple && hasOptions && (
-            <p className="waiting-question-hint">Multiple selections allowed — click Confirm when done</p>
+            <p className="waiting-question-hint">
+              Multiple selections allowed — click Confirm when done
+            </p>
           )}
         </div>
       </div>

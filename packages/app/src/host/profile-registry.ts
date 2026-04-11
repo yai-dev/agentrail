@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef, AgentrailSessionStore } from "@agentrail/core";
 import type { AgentrailProfile, AgentrailProfileContext } from "@/host/types.js";
 import type { ProfileDefinition } from "@/profile/define-profile.js";
+import type { AgentrailSessionStore, SessionRef } from "@agentrail/core";
 
 /**
  * Formal contract for resolving a profile on a per-request basis.

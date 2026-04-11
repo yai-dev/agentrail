@@ -3,11 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Static, TSchema } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
 import { ToolValidationError } from "@/errors.js";
 import type { ToolCall } from "@/types/content.types.js";
 import type { ToolDefinition } from "@/types/tool.types.js";
+import type { Static, TSchema } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 
 /**
  * Validates a raw value against a tool's TypeBox schema and returns typed data.

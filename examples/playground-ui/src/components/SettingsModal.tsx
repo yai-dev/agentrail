@@ -55,7 +55,9 @@ export function SettingsModal({ initialTenantId, initialUserId, onSave, onCancel
             </svg>
           </div>
           <div>
-            <div className="settings-title">{isSetup ? "Welcome to Agentrail" : "Identity Settings"}</div>
+            <div className="settings-title">
+              {isSetup ? "Welcome to Agentrail" : "Identity Settings"}
+            </div>
             <div className="settings-subtitle">
               {isSetup
                 ? "Enter your Tenant ID and User ID to get started"

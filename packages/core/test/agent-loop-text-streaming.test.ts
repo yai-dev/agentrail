@@ -13,12 +13,12 @@
  * These tests verify that text_* events now produce immediate message.update events.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import type { AgentLoopConfig, InternalContext, InternalSpec } from "../src/agent/agent-loop.js";
 import { agentLoop } from "../src/agent/agent-loop.js";
-import type { AgentLoopConfig, InternalSpec, InternalContext } from "../src/agent/agent-loop.js";
 import type { LlmClient, LlmRequest, LlmStream } from "../src/interfaces/llm-client.js";
-import type { LlmStreamEvent, RuntimeEvent } from "../src/types/result.types.js";
 import type { AssistantMessage } from "../src/types/message.types.js";
+import type { LlmStreamEvent, RuntimeEvent } from "../src/types/result.types.js";
 import type { Usage } from "../src/types/usage.types.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -113,7 +113,10 @@ describe("agent-loop – text event streaming", () => {
   it("text_delta events produce message.update events before message.end (pure text turn)", async () => {
     const finalMsg = makeAssistantMsg("hello world", "stop");
     const partial: AssistantMessage = { ...finalMsg, content: [] };
-    const partialWithText: AssistantMessage = { ...finalMsg, content: [{ type: "text", text: "hello" }] };
+    const partialWithText: AssistantMessage = {
+      ...finalMsg,
+      content: [{ type: "text", text: "hello" }],
+    };
 
     async function* llmEvents(): AsyncGenerator<LlmStreamEvent> {
       yield { type: "start", partial };
@@ -156,10 +159,20 @@ describe("agent-loop – text event streaming", () => {
     async function* llmEvents(): AsyncGenerator<LlmStreamEvent> {
       yield { type: "start", partial: partialEmpty };
       yield { type: "text_start", contentIndex: 0, partial: partialEmpty };
-      yield { type: "text_delta", contentIndex: 0, delta: "let me search", partial: partialWithText };
+      yield {
+        type: "text_delta",
+        contentIndex: 0,
+        delta: "let me search",
+        partial: partialWithText,
+      };
       yield { type: "text_end", contentIndex: 0, content: "let me search", partial: finalMsg };
       yield { type: "toolcall_start", contentIndex: 1, partial: finalMsg };
-      yield { type: "toolcall_end", contentIndex: 1, toolCall: { type: "toolCall", id: "tc1", name: "search", arguments: {} }, partial: finalMsg };
+      yield {
+        type: "toolcall_end",
+        contentIndex: 1,
+        toolCall: { type: "toolCall", id: "tc1", name: "search", arguments: {} },
+        partial: finalMsg,
+      };
       yield { type: "done", reason: "toolUse", message: finalMsg };
     }
 
@@ -189,7 +202,9 @@ describe("agent-loop – text event streaming", () => {
                 if (value.type === "done" || value.type === "error") finalM = value.message;
                 return { done: false, value };
               },
-              [Symbol.asyncIterator]() { return this; },
+              [Symbol.asyncIterator]() {
+                return this;
+              },
             };
           },
           result: async () => finalM!,

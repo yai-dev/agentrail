@@ -559,7 +559,10 @@ export class UserMemoryConsolidationService {
     const existingUserMd = await readFile(userMdPath, "utf8").catch(() => "");
     const existingHistory = extractHistorySection(existingUserMd);
     const trigger = forceRebuild ? "manual" : "idle-auto";
-    await atomicWrite(userMdPath, renderUserMd(profile, sessionSummaries, existingHistory, trigger));
+    await atomicWrite(
+      userMdPath,
+      renderUserMd(profile, sessionSummaries, existingHistory, trigger),
+    );
   }
 
   // --------------------------------------------------------------------------

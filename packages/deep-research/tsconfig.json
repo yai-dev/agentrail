@@ -9,8 +9,5 @@
     "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src"],
-  "references": [
-    { "path": "../core" },
-    { "path": "../capabilities" }
-  ]
+  "references": [{ "path": "../core" }, { "path": "../capabilities" }]
 }

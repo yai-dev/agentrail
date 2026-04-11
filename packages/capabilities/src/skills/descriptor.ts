@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
-import { buildSkillTool } from "@/skills/skill-tools.js";
 import type { SkillManager } from "@/skills/skill-manager.js";
+import { buildSkillTool } from "@/skills/skill-tools.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 
 export interface SkillsOptions {
   /**

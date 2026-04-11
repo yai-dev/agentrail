@@ -3,18 +3,18 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import { normalizeResearchUrl } from "@/utils.js";
 import {
   createBraveSearchProvider,
-  createJinaSearchProvider,
-  createTavilySearchProvider,
   createWebFetchTool as createGenericWebFetchTool,
   createWebSearchTool as createGenericWebSearchTool,
+  createJinaSearchProvider,
+  createTavilySearchProvider,
   type WebFetchDetails,
   type WebSearchProvider,
 } from "@agentrail/capabilities";
 import { tool, Type } from "@agentrail/core";
-import type { DeepResearchRuntimeConfig } from "@/runtime.js";
-import { normalizeResearchUrl } from "@/utils.js";
 
 interface WebSearchItem {
   title: string;
@@ -101,16 +101,17 @@ export function createWebSearchTool(runtime: DeepResearchRuntimeConfig) {
         ctx.onSignal,
       );
 
-      const rawResults = (
-        baseResult.details as {
-          results?: Array<{
-            title?: string;
-            url?: string;
-            snippet?: string;
-            publishedAt?: string;
-          }>;
-        }
-      ).results ?? [];
+      const rawResults =
+        (
+          baseResult.details as {
+            results?: Array<{
+              title?: string;
+              url?: string;
+              snippet?: string;
+              publishedAt?: string;
+            }>;
+          }
+        ).results ?? [];
 
       const items: WebSearchItem[] = rawResults
         .map((item) => {
@@ -175,9 +176,7 @@ export function createFetchUrlTool() {
         evidenceLevel:
           details.status === "success" && details.content ? "body_verified" : "unverified",
         fetchStatus: mapFetchStatus(details),
-        ...(details.status === "success"
-          ? {}
-          : { error: details.error }),
+        ...(details.status === "success" ? {} : { error: details.error }),
       };
 
       return {

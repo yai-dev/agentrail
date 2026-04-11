@@ -81,7 +81,10 @@ export default defineConfig({
             text: "Use Capability Packages",
             link: "/guides/use-capability-packages",
           },
-          { text: "Use OpenAI-Compatible Providers", link: "/guides/use-openai-compatible-providers" },
+          {
+            text: "Use OpenAI-Compatible Providers",
+            link: "/guides/use-openai-compatible-providers",
+          },
           { text: "Deployment", link: "/guides/deployment" },
           { text: "Troubleshooting", link: "/guides/troubleshooting" },
         ],

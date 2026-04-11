@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Agent, ModelConfig, RuntimeTool, TransformContextFn } from "@agentrail/core";
-import type { CapabilityBuildContext, CapabilityDescriptor } from "@agentrail/capabilities";
 import { composeTransformContexts } from "@/host/context-pipeline.js";
 import type { AgentrailProfile, AgentrailProfileContext } from "@/host/types.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@agentrail/capabilities";
+import type { Agent, ModelConfig, RuntimeTool, TransformContextFn } from "@agentrail/core";
 
 /**
  * The value that a dynamic profile's `createAgent()` may return.
@@ -123,9 +123,7 @@ async function buildCapabilityTransformContext(
   capCtx: CapabilityBuildContext,
 ): Promise<TransformContextFn | undefined> {
   if (!capabilities?.length) return undefined;
-  const transforms = await Promise.all(
-    capabilities.map((c) => c.buildTransformContext?.(capCtx)),
-  );
+  const transforms = await Promise.all(capabilities.map((c) => c.buildTransformContext?.(capCtx)));
   const activeTransforms = transforms.filter((t): t is TransformContextFn => Boolean(t));
   return activeTransforms.length > 0 ? composeTransformContexts(activeTransforms) : undefined;
 }
@@ -159,7 +157,16 @@ async function buildCapabilityTransformContext(
  */
 export function defineProfile(def: StaticProfileShape | DynamicProfileShape): ProfileDefinition {
   if (isStaticShape(def)) {
-    const { model, prompt, tools, maxTurns, maxTokens, temperature, thinkingEnabled, maxTurnsMessage } = def.agent;
+    const {
+      model,
+      prompt,
+      tools,
+      maxTurns,
+      maxTokens,
+      temperature,
+      thinkingEnabled,
+      maxTurnsMessage,
+    } = def.agent;
 
     // Normalise model string to a full ModelConfig once, at definition time.
     const colonIdx = model.indexOf(":");
@@ -183,8 +190,7 @@ export function defineProfile(def: StaticProfileShape | DynamicProfileShape): Pr
         onSubAgentEvent?: (event: object) => void,
       ) {
         const { defineAgent } = await import("@agentrail/core");
-        const system =
-          typeof prompt === "function" ? await prompt(context) : prompt;
+        const system = typeof prompt === "function" ? await prompt(context) : prompt;
 
         let agent = defineAgent({
           id: def.id,
@@ -231,10 +237,7 @@ export function defineProfile(def: StaticProfileShape | DynamicProfileShape): Pr
     name: def.name,
     capabilities: def.capabilities,
 
-    async createAgent(
-      context: AgentrailProfileContext,
-      onSubAgentEvent?: (event: object) => void,
-    ) {
+    async createAgent(context: AgentrailProfileContext, onSubAgentEvent?: (event: object) => void) {
       const raw = await def.createAgent(context, onSubAgentEvent);
       const isWrapped = (r: DynamicAgentResult): r is { agent: Agent; modelConfig?: ModelConfig } =>
         typeof r === "object" && r !== null && "agent" in r;

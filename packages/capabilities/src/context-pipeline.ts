@@ -3,8 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message, TransformContextFn } from "@agentrail/core";
-import type { ContextProvider, ContextProviderContext } from "@agentrail/core";
+import type {
+  ContextProvider,
+  ContextProviderContext,
+  Message,
+  TransformContextFn,
+} from "@agentrail/core";
 
 /** Composes multiple transform functions into a single left-to-right pipeline. */
 export function composeTransformContexts(

@@ -95,11 +95,7 @@ export type {
   Taxonomy,
 } from "@/knowledge/index.js";
 
-export {
-  createKbListTool,
-  createKbReadTool,
-  createKbSearchTool,
-} from "@/knowledge/index.js";
+export { createKbListTool, createKbReadTool, createKbSearchTool } from "@/knowledge/index.js";
 
 // ============================================================================
 // SkillManager
@@ -120,10 +116,15 @@ export { buildSkillTool } from "@/skills/index.js";
 // OrchestrationManager
 // ============================================================================
 
-export { OrchestrationManager, createFilesystemOrchestrationPersistence } from "@/orchestration/index.js";
+export {
+  OrchestrationManager,
+  createFilesystemOrchestrationPersistence,
+} from "@/orchestration/index.js";
 export type {
   AgentInputEnvelope,
+  AgentToolCallRecord,
   CreateManagedAgentInput,
+  JsonValue,
   ManagedAgentDeliveryResult,
   ManagedAgentInstance,
   OrchestrationAgent,
@@ -151,19 +152,19 @@ export {
 
 export {
   bashTool,
+  createAskUserQuestionTool,
   createBraveSearchProvider,
   createGlobTool,
   createJinaSearchProvider,
   createSleepTool,
   createTavilySearchProvider,
+  createTodoWriteTool,
   createWebFetchTool,
   createWebSearchTool,
   editTool,
   grepTool,
   readTool,
   writeTool,
-  createAskUserQuestionTool,
-  createTodoWriteTool,
 } from "@/tools/index.js";
 export type {
   BraveSearchProviderOptions,

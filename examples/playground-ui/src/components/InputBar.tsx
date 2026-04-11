@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { SlashCommandMeta } from "../api";
 
 interface Particle {
   x: number;
@@ -14,7 +15,6 @@ interface Particle {
   life: number;
   maxLife: number;
 }
-import type { SlashCommandMeta } from "../api";
 
 export interface PendingAttachment {
   name: string;

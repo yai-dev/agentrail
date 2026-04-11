@@ -373,7 +373,11 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   assertNoUnknownKeys(llm, ["provider", "modelId", "baseUrl"], ["llm"]);
 
   const search = getObject(root, "search", [], DEFAULT_AGENTRAIL_CONFIG.search as UnknownRecord);
-  assertNoUnknownKeys(search, ["provider", "tavilyApiKey", "braveApiKey", "jinaApiKey"], ["search"]);
+  assertNoUnknownKeys(
+    search,
+    ["provider", "tavilyApiKey", "braveApiKey", "jinaApiKey"],
+    ["search"],
+  );
 
   const pathsValue = getObject(root, "paths", [], DEFAULT_AGENTRAIL_CONFIG.paths as UnknownRecord);
   assertNoUnknownKeys(pathsValue, ["dataDir"], ["paths"]);

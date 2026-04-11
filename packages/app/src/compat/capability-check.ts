@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { CapabilityDescriptor } from "@agentrail/capabilities";
 import type { ProfileDefinition } from "@/profile/define-profile.js";
+import type { CapabilityDescriptor } from "@agentrail/capabilities";
 
 // ─── Environment detection ────────────────────────────────────────────────────
 
@@ -43,11 +43,7 @@ const SANDBOX_REQUIRED_TYPES = new Set(["filesystem", "browser"]);
  * They are fundamentally incompatible with stateless serverless environments
  * where each invocation starts a fresh process.
  */
-const SERVERLESS_INCOMPATIBLE_TYPES = new Set([
-  "filesystem",
-  "browser",
-  "orchestration",
-]);
+const SERVERLESS_INCOMPATIBLE_TYPES = new Set(["filesystem", "browser", "orchestration"]);
 
 /**
  * Capability types that degrade in serverless environments but may still work

@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { TransformContextFn } from "@agentrail/core";
 import { composeTransformContexts, createTransformContext } from "@/host/context-pipeline.js";
 import { collectPluginContextProviders } from "@/host/plugins.js";
 import type { AgentrailPlugin, ContextProvider } from "@/host/types.js";
+import type { TransformContextFn } from "@agentrail/core";
 
 interface ResolveTransformContextOptions {
   getTransformContext?: (context: {

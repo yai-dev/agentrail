@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import fg from "fast-glob";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
+import fg from "fast-glob";
 import path from "node:path";
 
 const toolDescription = `Find files by glob pattern.

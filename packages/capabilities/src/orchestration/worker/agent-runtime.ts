@@ -3,9 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/core";
-import type { Message, RuntimeTool, TransformContextFn } from "@agentrail/core";
 import type { CreateManagedAgentInput } from "@/orchestration/orchestration-manager.js";
+import type { Message, RuntimeTool, SessionRef, TransformContextFn } from "@agentrail/core";
 
 /** Provider/model selection used by a sub-agent worker runtime. */
 export interface ModelConfig {

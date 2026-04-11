@@ -3,15 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { estimateMessageTokens } from "@/session/token-estimator.js";
+import type { ImageContent, Message, TextContent, ToolResultMessage } from "@agentrail/core";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type {
-  ImageContent,
-  Message,
-  TextContent,
-  ToolResultMessage,
-} from "@agentrail/core";
-import { estimateMessageTokens } from "@/session/token-estimator.js";
 
 /** Thresholds that control view-only compaction of large tool results. */
 export interface ToolResultCompactionOptions {
@@ -61,55 +56,59 @@ export async function compactToolResults(
     }
   }
 
-  return Promise.all(messages.map(async (m, i): Promise<Message> => {
-    if (m.role !== "toolResult") return m;
+  return Promise.all(
+    messages.map(async (m, i): Promise<Message> => {
+      if (m.role !== "toolResult") return m;
 
-    const estimate = estimateMessageTokens([m]);
-    const isRecentToolResult = recentToolResultIndices.has(i);
-    const shouldCompactRecent = isRecentToolResult && estimate > maxTokensPerRecentToolResult;
-    const exceedsGeneralLimit = estimate > maxTokensPerToolResult;
+      const estimate = estimateMessageTokens([m]);
+      const isRecentToolResult = recentToolResultIndices.has(i);
+      const shouldCompactRecent = isRecentToolResult && estimate > maxTokensPerRecentToolResult;
+      const exceedsGeneralLimit = estimate > maxTokensPerToolResult;
 
-    if (isRecentToolResult && !shouldCompactRecent) return m;
-    if (!shouldCompactRecent && !exceedsGeneralLimit) return m;
+      if (isRecentToolResult && !shouldCompactRecent) return m;
+      if (!shouldCompactRecent && !exceedsGeneralLimit) return m;
 
-    const trm = m as ToolResultMessage;
+      const trm = m as ToolResultMessage;
 
-    // Separate text and image blocks
-    const textBlocks = trm.content.filter((b): b is TextContent => "text" in b);
-    const imageBlocks = trm.content.filter((b): b is ImageContent => b.type === "image");
+      // Separate text and image blocks
+      const textBlocks = trm.content.filter((b): b is TextContent => "text" in b);
+      const imageBlocks = trm.content.filter((b): b is ImageContent => b.type === "image");
 
-    const fullText = textBlocks.map((b) => b.text).join("");
-    const preview = fullText.slice(0, 200).replace(/\n+/g, " ").trim();
-    const persistedPath = sessionDir
-      ? `/workspace/memo/session/tool-results/${trm.toolCallId}.txt`
-      : null;
+      const fullText = textBlocks.map((b) => b.text).join("");
+      const preview = fullText.slice(0, 200).replace(/\n+/g, " ").trim();
+      const persistedPath = sessionDir
+        ? `/workspace/memo/session/tool-results/${trm.toolCallId}.txt`
+        : null;
 
-    if (sessionDir && fullText.length > 0) {
-      const toolResultsDir = path.join(sessionDir, "tool-results");
-      await mkdir(toolResultsDir, { recursive: true });
-      await writeFile(path.join(toolResultsDir, `${trm.toolCallId}.txt`), fullText, "utf8");
-    }
+      if (sessionDir && fullText.length > 0) {
+        const toolResultsDir = path.join(sessionDir, "tool-results");
+        await mkdir(toolResultsDir, { recursive: true });
+        await writeFile(path.join(toolResultsDir, `${trm.toolCallId}.txt`), fullText, "utf8");
+      }
 
-    const compactedText =
-      persistedPath && fullText.length > 0
-        ? `[Tool result compacted — text saved to session storage (~${estimate} tok).\nPreview: ${preview}…\nTo access: Read ${persistedPath}\nNote: For single-line outputs (e.g. minified JSON), Read may truncate; if available, use Grep or another file-search tool to locate relevant content.]`
-        : `[tool result truncated: ~${estimate} tok — re-call the tool to get full content]\n${preview}…`;
+      const compactedText =
+        persistedPath && fullText.length > 0
+          ? `[Tool result compacted — text saved to session storage (~${estimate} tok).\nPreview: ${preview}…\nTo access: Read ${persistedPath}\nNote: For single-line outputs (e.g. minified JSON), Read may truncate; if available, use Grep or another file-search tool to locate relevant content.]`
+          : `[tool result truncated: ~${estimate} tok — re-call the tool to get full content]\n${preview}…`;
 
-    const compactedContent: ToolResultMessage["content"] = [{ type: "text", text: compactedText }];
+      const compactedContent: ToolResultMessage["content"] = [
+        { type: "text", text: compactedText },
+      ];
 
-    // Replace image blocks with path-reference placeholders so the LLM knows
-    // they exist and can request them again, without storing base64 in context.
-    if (imageBlocks.length > 0) {
-      compactedContent.push({
-        type: "text",
-        text: `[${imageBlocks.length} image(s) removed from context]`,
-      });
-    }
+      // Replace image blocks with path-reference placeholders so the LLM knows
+      // they exist and can request them again, without storing base64 in context.
+      if (imageBlocks.length > 0) {
+        compactedContent.push({
+          type: "text",
+          text: `[${imageBlocks.length} image(s) removed from context]`,
+        });
+      }
 
-    const compactedResult: ToolResultMessage = {
-      ...trm,
-      content: compactedContent,
-    };
-    return compactedResult;
-  }));
+      const compactedResult: ToolResultMessage = {
+        ...trm,
+        content: compactedContent,
+      };
+      return compactedResult;
+    }),
+  );
 }

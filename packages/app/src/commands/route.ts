@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { Hono } from "hono";
 import type { SlashCommandRegistry } from "@/commands/registry.js";
+import { Hono } from "hono";
 
 interface CommandRequest {
   command: string;

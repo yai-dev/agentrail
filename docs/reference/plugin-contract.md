@@ -77,7 +77,9 @@ interface AgentrailPlugin {
    * Return `{ action: "deny", reason }` to block execution, or
    * `{ action: "allow", input }` to replace the tool arguments.
    */
-  onBeforeToolCall?(event: BeforeToolCallEvent): Promise<AppBeforeToolCallResult> | AppBeforeToolCallResult;
+  onBeforeToolCall?(
+    event: BeforeToolCallEvent,
+  ): Promise<AppBeforeToolCallResult> | AppBeforeToolCallResult;
   /** Runs after each tool call completes (success or execution error, not deny). */
   onAfterToolCall?(event: AfterToolCallEvent): Promise<void> | void;
   /** Runs after the resulting turn has been persisted */
@@ -153,12 +155,12 @@ const authPlugin: AgentrailPlugin = { name: "auth", priority: 100, ... };
 const featurePlugin: AgentrailPlugin = { name: "feature", priority: 0, ... };
 ```
 
-| Phase | Order | Rationale |
-|-------|-------|-----------|
-| `start()` | Descending (high first) | High-priority plugins may be dependencies of others |
-| `stop()` | Ascending (low first) | Teardown mirrors initialisation |
-| Request hooks | Descending (high first) | Auth/policy plugins run before feature plugins |
-| Context providers | Descending (high first) | High-priority context is injected first |
+| Phase             | Order                   | Rationale                                           |
+| ----------------- | ----------------------- | --------------------------------------------------- |
+| `start()`         | Descending (high first) | High-priority plugins may be dependencies of others |
+| `stop()`          | Ascending (low first)   | Teardown mirrors initialisation                     |
+| Request hooks     | Descending (high first) | Auth/policy plugins run before feature plugins      |
+| Context providers | Descending (high first) | High-priority context is injected first             |
 
 ### `critical`
 
@@ -241,14 +243,14 @@ hooks but before the tool's `execute()` function is called.
 > **Object-only constraint**: this hook is only called when the validated tool
 > input is a plain, non-array object (`typeof input === "object" && !Array.isArray(input)`).
 > Tools whose top-level schema is an array or a primitive (string, number, …) will
-> **not** trigger `onBeforeToolCall`.  This matches the `Record<string, unknown>` type
+> **not** trigger `onBeforeToolCall`. This matches the `Record<string, unknown>` type
 > of `input` — the hook is not called for schemas that cannot be safely represented
 > as a record.
 
 ```ts
 export interface BeforeToolCallEvent {
   toolName: string;
-  input: Record<string, unknown>;   // fresh shallow copy per plugin call
+  input: Record<string, unknown>; // fresh shallow copy per plugin call
   context: AgentrailProfileContext; // tenantId, userId, sessionId, …
 }
 
@@ -260,10 +262,10 @@ export type AppBeforeToolCallResult =
 
 Return values:
 
-| Result | Effect |
-|--------|--------|
-| `{ action: "allow" }` | Proceed with the original arguments |
-| `{ action: "allow", input }` | Replace the tool arguments with `input` |
+| Result                       | Effect                                                       |
+| ---------------------------- | ------------------------------------------------------------ |
+| `{ action: "allow" }`        | Proceed with the original arguments                          |
+| `{ action: "allow", input }` | Replace the tool arguments with `input`                      |
 | `{ action: "deny", reason }` | Block the tool call; the model receives `reason` as an error |
 
 If a plugin throws, the error is reported via `onPluginError` and execution
@@ -272,7 +274,7 @@ continues with the next plugin — **a throw is not treated as a deny**.
 Multiple plugins run in descending `priority` order. The first `deny` wins; a
 modified `input` is forwarded to subsequent plugins.
 
-Each plugin receives a **fresh shallow copy** of `input`.  In-place mutations do
+Each plugin receives a **fresh shallow copy** of `input`. In-place mutations do
 not affect other plugins; use the `{ action: "allow", input }` return value to
 propagate changes.
 
@@ -282,7 +284,7 @@ stripping, path restriction enforcement.
 ### `onAfterToolCall`
 
 Runs after a tool's `execute()` returns, whether the execution succeeded or
-raised an error.  **Not called** in two cases:
+raised an error. **Not called** in two cases:
 
 1. When `onBeforeToolCall` returned `{ action: "deny" }`.
 2. When the tool's validated input is not a plain object (same constraint as
@@ -409,16 +411,16 @@ propagates to the calling request unless `critical: true` is set on that plugin.
 
 ### Error strategy per hook
 
-| Hook | On error |
-|------|----------|
-| `start()` | Report to `onPluginError`, then rethrow (startup is aborted) |
-| `stop()` | Report to `onPluginError`, continue (all plugins always get to stop) |
-| `onRequestStart/End/onTurnPersisted` | Report, continue |
-| `interceptChatRequest` (non-critical) | Report, skip plugin (treated as `null`) |
-| `interceptChatRequest` (critical) | Report, rethrow (request is aborted) |
-| `attachmentHandler` | Report, skip plugin result, merge others |
-| `onBeforeToolCall` | Report, continue to next plugin (not treated as deny) |
-| `onAfterToolCall` | Report, continue (tool result is unaffected) |
+| Hook                                  | On error                                                             |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| `start()`                             | Report to `onPluginError`, then rethrow (startup is aborted)         |
+| `stop()`                              | Report to `onPluginError`, continue (all plugins always get to stop) |
+| `onRequestStart/End/onTurnPersisted`  | Report, continue                                                     |
+| `interceptChatRequest` (non-critical) | Report, skip plugin (treated as `null`)                              |
+| `interceptChatRequest` (critical)     | Report, rethrow (request is aborted)                                 |
+| `attachmentHandler`                   | Report, skip plugin result, merge others                             |
+| `onBeforeToolCall`                    | Report, continue to next plugin (not treated as deny)                |
+| `onAfterToolCall`                     | Report, continue (tool result is unaffected)                         |
 
 ### `onPluginError` callback
 

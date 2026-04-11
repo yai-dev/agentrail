@@ -3,15 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { MemoryIndex, Message } from "@agentrail/core";
-import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
 import type { KBMetadata } from "@/knowledge/types.js";
-import type { SkillMeta } from "@/skills/types.js";
 import {
+  createDefaultCapabilityContextProviders,
   createDefaultCapabilityContextState,
   createDefaultCapabilityTransformContext,
-  createDefaultCapabilityContextProviders,
 } from "@/memory/context.js";
+import type { SkillMeta } from "@/skills/types.js";
+import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
+import type { MemoryIndex, Message } from "@agentrail/core";
 
 export type { DefaultCapabilityContextOptions } from "@/memory/types.js";
 
@@ -99,25 +99,28 @@ export function memoryContext(
         sessionId: ctx.sessionId,
       };
       const state = getState(ctx);
-      return createDefaultCapabilityContextProviders({
-        tenantId: ctx.tenantId,
-        userId: ctx.userId,
-        sessionId: ctx.sessionId,
-        includeSkillsContext: opts?.includeSkillsContext ?? true,
-        delegateSkillsToSubAgent: builders.delegateSkillsToSubAgent ?? false,
-        cacheTtlMs: opts?.cacheTtlMs,
-        buildMemoryIndex: () => builders.buildMemoryIndex(sessionCtx),
-        listKnowledgeMetadatas: builders.listKnowledgeMetadatas
-          ? () => builders.listKnowledgeMetadatas!(sessionCtx)
-          : () => Promise.resolve([]),
-        listSkills: builders.listSkills
-          ? () => builders.listSkills!(sessionCtx)
-          : () => Promise.resolve([]),
-        listWorkspaceSnapshot: builders.listWorkspaceSnapshot
-          ? () => builders.listWorkspaceSnapshot!(sessionCtx)
-          : undefined,
-        compactMessages: builders.compactMessages,
-      }, state);
+      return createDefaultCapabilityContextProviders(
+        {
+          tenantId: ctx.tenantId,
+          userId: ctx.userId,
+          sessionId: ctx.sessionId,
+          includeSkillsContext: opts?.includeSkillsContext ?? true,
+          delegateSkillsToSubAgent: builders.delegateSkillsToSubAgent ?? false,
+          cacheTtlMs: opts?.cacheTtlMs,
+          buildMemoryIndex: () => builders.buildMemoryIndex(sessionCtx),
+          listKnowledgeMetadatas: builders.listKnowledgeMetadatas
+            ? () => builders.listKnowledgeMetadatas!(sessionCtx)
+            : () => Promise.resolve([]),
+          listSkills: builders.listSkills
+            ? () => builders.listSkills!(sessionCtx)
+            : () => Promise.resolve([]),
+          listWorkspaceSnapshot: builders.listWorkspaceSnapshot
+            ? () => builders.listWorkspaceSnapshot!(sessionCtx)
+            : undefined,
+          compactMessages: builders.compactMessages,
+        },
+        state,
+      );
     },
 
     buildTransformContext(ctx: CapabilityBuildContext) {
@@ -128,25 +131,28 @@ export function memoryContext(
       };
       const state = getState(ctx);
 
-      return createDefaultCapabilityTransformContext({
-        tenantId: ctx.tenantId,
-        userId: ctx.userId,
-        sessionId: ctx.sessionId,
-        includeSkillsContext: opts?.includeSkillsContext ?? true,
-        delegateSkillsToSubAgent: builders.delegateSkillsToSubAgent ?? false,
-        cacheTtlMs: opts?.cacheTtlMs,
-        buildMemoryIndex: () => builders.buildMemoryIndex(sessionCtx),
-        listKnowledgeMetadatas: builders.listKnowledgeMetadatas
-          ? () => builders.listKnowledgeMetadatas!(sessionCtx)
-          : () => Promise.resolve([]),
-        listSkills: builders.listSkills
-          ? () => builders.listSkills!(sessionCtx)
-          : () => Promise.resolve([]),
-        listWorkspaceSnapshot: builders.listWorkspaceSnapshot
-          ? () => builders.listWorkspaceSnapshot!(sessionCtx)
-          : undefined,
-        compactMessages: builders.compactMessages,
-      }, state);
+      return createDefaultCapabilityTransformContext(
+        {
+          tenantId: ctx.tenantId,
+          userId: ctx.userId,
+          sessionId: ctx.sessionId,
+          includeSkillsContext: opts?.includeSkillsContext ?? true,
+          delegateSkillsToSubAgent: builders.delegateSkillsToSubAgent ?? false,
+          cacheTtlMs: opts?.cacheTtlMs,
+          buildMemoryIndex: () => builders.buildMemoryIndex(sessionCtx),
+          listKnowledgeMetadatas: builders.listKnowledgeMetadatas
+            ? () => builders.listKnowledgeMetadatas!(sessionCtx)
+            : () => Promise.resolve([]),
+          listSkills: builders.listSkills
+            ? () => builders.listSkills!(sessionCtx)
+            : () => Promise.resolve([]),
+          listWorkspaceSnapshot: builders.listWorkspaceSnapshot
+            ? () => builders.listWorkspaceSnapshot!(sessionCtx)
+            : undefined,
+          compactMessages: builders.compactMessages,
+        },
+        state,
+      );
     },
   };
 }

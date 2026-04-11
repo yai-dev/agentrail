@@ -197,12 +197,12 @@ export const powerProfile = defineProfile({
 
 ## What Belongs Where
 
-| Concern                           | Import from                |
-| --------------------------------- | -------------------------- |
-| Document search and retrieval     | `@agentrail/capabilities`  |
-| Code execution, file I/O, browser | `@agentrail/capabilities`  |
-| Reusable named agent capabilities | `@agentrail/capabilities`  |
-| Session history and compaction    | `@agentrail/app`           |
+| Concern                           | Import from               |
+| --------------------------------- | ------------------------- |
+| Document search and retrieval     | `@agentrail/capabilities` |
+| Code execution, file I/O, browser | `@agentrail/capabilities` |
+| Reusable named agent capabilities | `@agentrail/capabilities` |
+| Session history and compaction    | `@agentrail/app`          |
 
 ## Related Concepts
 

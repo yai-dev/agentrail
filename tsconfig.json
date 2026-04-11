@@ -1,7 +1,4 @@
 {
   "files": [],
-  "references": [
-    { "path": "examples/playground-server" },
-    { "path": "examples/playground-ui" }
-  ]
+  "references": [{ "path": "examples/playground-server" }, { "path": "examples/playground-ui" }]
 }

@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message } from "@agentrail/core";
 import { runCompactionIfNeeded, type CompactionConfig } from "@/host/compaction.js";
 import type { SummarizeMessagesFn } from "@/host/reactive-compaction.js";
 import type { AgentrailSessionStore } from "@/host/types.js";
+import type { Message } from "@agentrail/core";
 
 /**
  * Loads all session messages, runs compaction when thresholds are exceeded,
@@ -28,6 +28,14 @@ export async function runCompactionStep(
   },
 ): Promise<Message[]> {
   const allMessages = await sessionStore.loadAllMessages(tenantId, sessionId);
-  await runCompactionIfNeeded(sessionStore, tenantId, sessionId, allMessages, summarize, compaction, opts);
+  await runCompactionIfNeeded(
+    sessionStore,
+    tenantId,
+    sessionId,
+    allMessages,
+    summarize,
+    compaction,
+    opts,
+  );
   return sessionStore.loadMessagesWithBudget(tenantId, sessionId);
 }

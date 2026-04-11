@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { AssistantMessage, Message, Usage } from "@agentrail/core";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { AssistantMessage, Message, Usage } from "@agentrail/core";
 import { describe, expect, it } from "vitest";
 import { SessionManager } from "../src/session/session-manager.js";
 

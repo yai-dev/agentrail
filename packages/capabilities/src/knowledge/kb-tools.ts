@@ -3,12 +3,12 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { KnowledgeManager } from "@/knowledge/knowledge-manager.js";
 import { tool, Type } from "@agentrail/core";
 import { exec } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import type { KnowledgeManager } from "@/knowledge/knowledge-manager.js";
 
 const execAsync = promisify(exec);
 

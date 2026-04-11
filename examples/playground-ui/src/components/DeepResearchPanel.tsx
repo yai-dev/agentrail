@@ -662,7 +662,10 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
             </div>
             <div className="deep-research-entity-row">
               <span className="deep-research-stat-pill">
-                Mode: {entityProfile.mode === "entity_disambiguation" ? "Entity Disambiguation" : "Topic Scope"}
+                Mode:{" "}
+                {entityProfile.mode === "entity_disambiguation"
+                  ? "Entity Disambiguation"
+                  : "Topic Scope"}
               </span>
               {state.entityProfile?.confidence && (
                 <span className="deep-research-stat-pill">
@@ -670,7 +673,9 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
                 </span>
               )}
               {state.entityProfile?.source && (
-                <span className="deep-research-stat-pill">Source: {state.entityProfile?.source}</span>
+                <span className="deep-research-stat-pill">
+                  Source: {state.entityProfile?.source}
+                </span>
               )}
             </div>
             <TagGroup title="Aliases" items={entityProfile.aliases} />
@@ -791,7 +796,11 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
       <section className="deep-research-card">
         <h4>Sources</h4>
         <div className="deep-research-source-groups">
-          <SourceSection title="Primary Sources" sources={primarySources} emptyText="No primary sources yet." />
+          <SourceSection
+            title="Primary Sources"
+            sources={primarySources}
+            emptyText="No primary sources yet."
+          />
           <SourceSection
             title="Supporting Sources"
             sources={supportingSources}
@@ -813,9 +822,13 @@ export function DeepResearchPanel({ state, isLoading, sessionId }: Props) {
         <div className="deep-research-artifacts-layout">
           <div className="deep-research-artifact-list">
             <div className="deep-research-artifact-list-header">
-              <span className="deep-research-artifact-count">{state.artifacts.length} artifacts</span>
+              <span className="deep-research-artifact-count">
+                {state.artifacts.length} artifacts
+              </span>
               {selectedArtifact && (
-                <span className="deep-research-artifact-count">Current: {selectedArtifact.title}</span>
+                <span className="deep-research-artifact-count">
+                  Current: {selectedArtifact.title}
+                </span>
               )}
             </div>
             {state.artifacts.map((artifact) => (

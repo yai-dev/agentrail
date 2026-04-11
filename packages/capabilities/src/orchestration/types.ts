@@ -3,6 +3,22 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ToolResultContent } from "@agentrail/core";
+
+/**
+ * A JSON-serializable value.
+ * Constraining `details` to this type ensures orchestration persistence
+ * (which uses bare JSON.stringify) never receives non-serializable payloads
+ * such as BigInt or circular references.
+ */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 /** Lifecycle status for an orchestration run. */
 export type RunStatus = "running" | "completed" | "failed";
 
@@ -18,6 +34,28 @@ export type WaitMatch = "any" | "all";
 /** Final outcome recorded for one managed-agent job. */
 export type AgentJobOutcome = "completed" | "failed" | "cancelled" | "timed_out";
 
+/** A single tool call made by a sub-agent, including its input and output. */
+export interface AgentToolCallRecord {
+  /** Provider-assigned identifier for this tool call. */
+  toolCallId: string;
+  /** Name of the tool that was invoked. */
+  toolName: string;
+  /** Parsed arguments supplied by the model. */
+  input: Record<string, unknown>;
+  /**
+   * Result returned by the tool.
+   * `content` carries the model-visible text/image blocks.
+   * `details` carries the machine-readable structured payload preserved for host code.
+   */
+  output:
+    | {
+        content: ToolResultContent[];
+        /** JSON-safe snapshot of the tool's machine-readable payload. */
+        details?: JsonValue;
+      }
+    | undefined;
+}
+
 /** Recorded output for one completed managed-agent job. */
 export interface OrchestrationAgentJob {
   jobId: string;
@@ -25,6 +63,8 @@ export interface OrchestrationAgentJob {
   outcome: AgentJobOutcome;
   outputText?: string;
   error?: string;
+  /** Tool calls made by the sub-agent during this job, in execution order. */
+  toolCalls?: AgentToolCallRecord[];
   completedAt: string;
 }
 
@@ -133,6 +173,8 @@ export interface ManagedAgentDeliveryResult {
   outcome: AgentJobOutcome;
   outputText?: string;
   error?: string;
+  /** Tool calls made by the sub-agent during this job, in execution order. */
+  toolCalls?: AgentToolCallRecord[];
 }
 
 /** Mailbox events persisted separately for durable agent input delivery. */

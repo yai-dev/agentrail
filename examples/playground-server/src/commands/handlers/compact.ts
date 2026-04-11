@@ -3,13 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type {
-  ParsedSlashCommand,
-  SlashCommandContext,
-  SlashCommandResult,
-} from "@agentrail/app";
 import { buildSummarizeFn } from "@/agents/summarizer.js";
 import { sandboxManager, sessionManager } from "@/context/index.js";
+import type { ParsedSlashCommand, SlashCommandContext, SlashCommandResult } from "@agentrail/app";
 
 export async function handleCompactCommand(
   parsed: ParsedSlashCommand,

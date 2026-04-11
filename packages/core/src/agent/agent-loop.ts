@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ModelConfig } from "@/agent/define-agent.js";
 import { executeToolCalls } from "@/executor/tool-executor.js";
 import type { LlmClient, LlmRequest } from "@/interfaces/llm-client.js";
 import { EventStream } from "@/llm/event-stream.js";
@@ -15,7 +16,6 @@ import type { AssistantMessage, Message, ToolResultMessage } from "@/types/messa
 import type { RuntimeEvent } from "@/types/result.types.js";
 import type { RuntimeTool, ToolInterceptor } from "@/types/tool.types.js";
 import type { Usage } from "@/types/usage.types.js";
-import type { ModelConfig } from "@/agent/define-agent.js";
 
 // ============================================================================
 // ============================================================================
@@ -238,19 +238,14 @@ async function runLoop(
       stream.push({ type: "turn.complete", message, toolResults });
 
       const compactedMessages = config.reactiveCompaction
-        ? await maybeApplyReactiveCompaction(
-            currentMessages,
-            config.reactiveCompaction,
-            stream,
-            {
-              turnCount,
-              usage: message.usage,
-              latestMessage: message,
-              protectedMessages,
-              records: compactionRecords,
-              trigger: "proactive",
-            },
-          )
+        ? await maybeApplyReactiveCompaction(currentMessages, config.reactiveCompaction, stream, {
+            turnCount,
+            usage: message.usage,
+            latestMessage: message,
+            protectedMessages,
+            records: compactionRecords,
+            trigger: "proactive",
+          })
         : null;
       if (compactedMessages) {
         currentMessages.splice(0, currentMessages.length, ...compactedMessages);

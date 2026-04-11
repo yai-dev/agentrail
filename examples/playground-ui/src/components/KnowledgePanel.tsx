@@ -85,7 +85,8 @@ function KBSelector({ onSelect }: KBSelectorProps) {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`Delete knowledge base "${id}" and all its documents? This cannot be undone.`)) return;
+    if (!confirm(`Delete knowledge base "${id}" and all its documents? This cannot be undone.`))
+      return;
     setDeletingKb(id);
     try {
       await deleteKB(id);

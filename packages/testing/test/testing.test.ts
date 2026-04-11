@@ -1,9 +1,8 @@
-import { Type } from "@agentrail/core";
-import { defineTool, defineAgent } from "@agentrail/core";
-import { describe, it, expect } from "vitest";
+import { defineTool, Type } from "@agentrail/core";
+import { describe, expect, it } from "vitest";
+import { assertFinalText, assertToolCalled, assertToolCalledWith } from "../src/assertions.js";
 import { MockLlmProvider } from "../src/mock-llm-provider.js";
 import { createTestAgent } from "../src/test-agent-factory.js";
-import { assertToolCalled, assertToolCalledWith, assertFinalText } from "../src/assertions.js";
 
 describe("Testing Package", () => {
   it("should run a test agent with mock provider and execute tools", async () => {

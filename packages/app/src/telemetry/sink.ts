@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { randomUUID } from "node:crypto";
-import { createSessionRef } from "@agentrail/core";
 import { createFileSystemSessionTraceStore } from "@/session/trace-store.js";
+import { createSessionRef } from "@agentrail/core";
+import { randomUUID } from "node:crypto";
 
 // ─── Core interface ───────────────────────────────────────────────────────────
 

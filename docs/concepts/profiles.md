@@ -65,14 +65,14 @@ export const tenantProfile = defineProfile({
 
 ## Key Fields
 
-| Field           | Purpose                                                                                   |
-| --------------- | ----------------------------------------------------------------------------------------- |
-| `id`            | Stable identifier used by the host to resolve this profile                                |
-| `name`          | Human-readable label for logs and diagnostics                                             |
-| `agent`         | Static agent config (static shape only)                                                   |
-| `createAgent`   | Per-request factory function (dynamic shape only)                                         |
-| `capabilities`  | Capability descriptors to compose into the agent                                          |
-| `modelConfig`   | Model metadata for capabilities that spawn sub-agents (e.g. `skills()`)                  |
+| Field          | Purpose                                                                 |
+| -------------- | ----------------------------------------------------------------------- |
+| `id`           | Stable identifier used by the host to resolve this profile              |
+| `name`         | Human-readable label for logs and diagnostics                           |
+| `agent`        | Static agent config (static shape only)                                 |
+| `createAgent`  | Per-request factory function (dynamic shape only)                       |
+| `capabilities` | Capability descriptors to compose into the agent                        |
+| `modelConfig`  | Model metadata for capabilities that spawn sub-agents (e.g. `skills()`) |
 
 The low-level `AgentrailProfile` contract also supports `contextWindow` for token-budget calculations, but `defineProfile` does not currently expose it as a first-class helper field. If you do not provide it through a lower-level custom profile, the host defaults to `200_000`.
 
@@ -120,11 +120,11 @@ Most apps start with a single profile and add more over time. Each profile is in
 
 These three concepts often get confused:
 
-| Concern                                              | Belongs in                           |
-| ---------------------------------------------------- | ------------------------------------ |
-| Agent execution loop, model, tools                   | Agent (`defineAgent`)                |
-| How an agent is assembled for a request              | Profile (`defineProfile`)            |
-| Cross-cutting host behavior (memory, slash commands) | Plugin (`AgentrailPlugin`)           |
+| Concern                                              | Belongs in                             |
+| ---------------------------------------------------- | -------------------------------------- |
+| Agent execution loop, model, tools                   | Agent (`defineAgent`)                  |
+| How an agent is assembled for a request              | Profile (`defineProfile`)              |
+| Cross-cutting host behavior (memory, slash commands) | Plugin (`AgentrailPlugin`)             |
 | Prompt content and fragments                         | Prompt builder (`createPromptBuilder`) |
 
 ## Related Concepts

@@ -9,7 +9,9 @@
       "@agentrail/core": ["packages/core/src/index.ts"],
       "@agentrail/core/providers": ["packages/core/src/llm/providers/index.ts"],
       "@agentrail/capabilities": ["packages/capabilities/src/index.ts"],
-      "@agentrail/capabilities/orchestration/worker": ["packages/capabilities/src/orchestration/worker/index.ts"],
+      "@agentrail/capabilities/orchestration/worker": [
+        "packages/capabilities/src/orchestration/worker/index.ts"
+      ],
       "@agentrail/app": ["packages/app/src/index.ts"],
       "@agentrail/deep-research": ["packages/deep-research/src/index.ts"]
     },

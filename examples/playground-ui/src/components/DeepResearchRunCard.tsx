@@ -50,7 +50,9 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
         <button
           className={`deep-research-inline-toggle ${expanded ? "expanded" : ""}`}
           onClick={() => setExpanded((value) => !value)}
-          aria-label={expanded ? "Collapse deep research progress" : "Expand deep research progress"}
+          aria-label={
+            expanded ? "Collapse deep research progress" : "Expand deep research progress"
+          }
         >
           <span className="deep-research-inline-chevron">›</span>
         </button>
@@ -90,7 +92,7 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
       {expanded && (
         <div className="deep-research-inline-body">
           <div className="deep-research-inline-section">
-              <div className="deep-research-inline-section-title">Plan</div>
+            <div className="deep-research-inline-section-title">Plan</div>
             <div className="deep-research-inline-steps">
               {state.steps.map((step) => (
                 <div key={step.id} className={`deep-research-inline-step ${step.status}`}>
@@ -146,7 +148,9 @@ export function DeepResearchRunCard({ state, derived, onOpenPanel }: Props) {
                   {derived.excludedSources.slice(0, 3).map((source) => (
                     <div key={source.id} className="deep-research-inline-excluded-item">
                       <span>{source.title}</span>
-                      <span>{source.excludeReason ?? source.note ?? "Duplicate or low-relevance source"}</span>
+                      <span>
+                        {source.excludeReason ?? source.note ?? "Duplicate or low-relevance source"}
+                      </span>
                     </div>
                   ))}
                 </div>

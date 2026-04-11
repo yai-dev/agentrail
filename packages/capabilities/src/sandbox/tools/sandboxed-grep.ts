@@ -3,11 +3,11 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 
 const runRg = promisify(execFile);
 

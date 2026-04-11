@@ -4,8 +4,6 @@
  */
 
 import { SessionManager } from "@agentrail/app";
-import type { SessionRef } from "@agentrail/core";
-import type { ModelConfig } from "@agentrail/core";
 import {
   askUser,
   browser,
@@ -15,7 +13,7 @@ import {
   type CreateManagedAgentInput,
   type SubAgentRuntime,
 } from "@agentrail/capabilities";
-import type { RuntimeTool, TransformContextFn } from "@agentrail/core";
+import type { ModelConfig, RuntimeTool, SessionRef, TransformContextFn } from "@agentrail/core";
 
 import { config } from "@/config.js";
 import { knowledgeManager, sandboxManager } from "@/context/index.js";

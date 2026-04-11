@@ -3,22 +3,19 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { getRolePrompt } from "@/prompts.js";
+import type { DeepResearchRuntimeConfig } from "@/runtime.js";
+import { createFetchUrlTool, createWebSearchTool } from "@/tools.js";
+import type { CreateManagedAgentInput, SubAgentRuntime } from "@agentrail/capabilities";
 import {
   createKbListTool,
   createKbReadTool,
   createKbSearchTool,
+  createSandboxedPython,
   KnowledgeManager,
+  SandboxManager,
 } from "@agentrail/capabilities";
-import type {
-  CreateManagedAgentInput,
-  SubAgentRuntime,
-} from "@agentrail/capabilities";
-import type { ModelConfig } from "@agentrail/core";
-import type { RuntimeTool, TransformContextFn } from "@agentrail/core";
-import { createSandboxedPython, SandboxManager } from "@agentrail/capabilities";
-import { getRolePrompt } from "@/prompts.js";
-import type { DeepResearchRuntimeConfig } from "@/runtime.js";
-import { createFetchUrlTool, createWebSearchTool } from "@/tools.js";
+import type { ModelConfig, RuntimeTool, TransformContextFn } from "@agentrail/core";
 
 export interface DeepResearchSubAgentRuntimeConfig {
   tenantId: string;

@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { defineProfile } from "../src/profile/define-profile.js";
+import { describe, expect, it, vi } from "vitest";
 import type { AgentrailProfileContext } from "../src/host/types.js";
+import { defineProfile } from "../src/profile/define-profile.js";
 
 const fakeContext: AgentrailProfileContext = {
   tenantId: "t1",

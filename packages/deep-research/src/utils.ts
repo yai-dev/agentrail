@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import path from "node:path";
 import type {
   DeepResearchArtifact,
   DeepResearchEntityProfile,
@@ -18,6 +17,7 @@ import type {
   DeepResearchStepDigest,
   PlannerOutput,
 } from "@/types.js";
+import path from "node:path";
 
 /**
  * This file holds the "quality guardrails" for Deep Research.
@@ -167,7 +167,9 @@ export function normalizePlan(
 }
 
 export function buildFallbackPlan(query: string): DeepResearchPlan {
-  const processingNeeded = /(chart|plot|trend|compare|stat|forecast|distribution|ratio)/i.test(query);
+  const processingNeeded = /(chart|plot|trend|compare|stat|forecast|distribution|ratio)/i.test(
+    query,
+  );
   return {
     title: `Deep Research: ${query.slice(0, 60)}`,
     thought: "Collect external sources, synthesize them, and produce a sourced report.",
@@ -265,7 +267,10 @@ const DECODE_ENTITIES: Record<string, string> = {
 };
 
 function decodeHtmlEntities(text: string): string {
-  return text.replace(/&(nbsp|amp|lt|gt|#39|quot);?/gi, (_, e) => DECODE_ENTITIES[e.toLowerCase()] ?? `&${e};`);
+  return text.replace(
+    /&(nbsp|amp|lt|gt|#39|quot);?/gi,
+    (_, e) => DECODE_ENTITIES[e.toLowerCase()] ?? `&${e};`,
+  );
 }
 
 export function normalizeResearchUrl(rawUrl: string): string {
@@ -481,7 +486,6 @@ export function normalizeResearchProfile(
   };
 }
 
-
 function computeDigestConfidence(
   sources: DeepResearchSource[],
   findingsCount: number,
@@ -509,13 +513,17 @@ export function buildStepDigest(
   const findings = compressAtomicLines(
     candidates.filter(
       (line) =>
-        !/(open question|unknown|uncertain|unverified|not confirmed|possibly|may be|pending)/i.test(line),
+        !/(open question|unknown|uncertain|unverified|not confirmed|possibly|may be|pending)/i.test(
+          line,
+        ),
     ),
     5,
   );
   const openQuestions = compressAtomicLines(
     candidates.filter((line) =>
-      /(open question|uncertain|unverified|not confirmed|not found|possibly|may be|pending|needs? verification)/i.test(line),
+      /(open question|uncertain|unverified|not confirmed|not found|possibly|may be|pending|needs? verification)/i.test(
+        line,
+      ),
     ),
     3,
   );

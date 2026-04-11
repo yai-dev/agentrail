@@ -4,14 +4,14 @@
 
 ## Migration
 
-| Old API                                 | Replacement                                      |
-| --------------------------------------- | ------------------------------------------------ |
-| `defineHostedProfile`                   | `defineProfile` from `@agentrail/app`            |
-| `createHostedProfileResolver`           | `createStaticProfileResolver` from `@agentrail/app` |
-| `buildDefaultCapabilityTools`           | `capabilities: [...]` in `defineProfile`         |
-| `createDefaultCapabilityContextProviders` | `capabilities: [...]` in `defineProfile`       |
-| `@agentrail/host`                       | `@agentrail/app/advanced`                        |
-| `@agentrail/host/defaults`              | `@agentrail/app/compat`                          |
+| Old API                                   | Replacement                                         |
+| ----------------------------------------- | --------------------------------------------------- |
+| `defineHostedProfile`                     | `defineProfile` from `@agentrail/app`               |
+| `createHostedProfileResolver`             | `createStaticProfileResolver` from `@agentrail/app` |
+| `buildDefaultCapabilityTools`             | `capabilities: [...]` in `defineProfile`            |
+| `createDefaultCapabilityContextProviders` | `capabilities: [...]` in `defineProfile`            |
+| `@agentrail/host`                         | `@agentrail/app/advanced`                           |
+| `@agentrail/host/defaults`                | `@agentrail/app/compat`                             |
 
 ## Import Path
 
@@ -60,7 +60,8 @@ export const supportProfile = defineProfile({
   name: "Support Agent",
   agent: {
     model: "anthropic:claude-sonnet-4-5",
-    prompt: async (ctx) => createPromptBuilder(myBundle).render({ vars: { sessionId: ctx.sessionId } }),
+    prompt: async (ctx) =>
+      createPromptBuilder(myBundle).render({ vars: { sessionId: ctx.sessionId } }),
     maxTurns: 30,
   },
 });

@@ -3,10 +3,10 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { readFile, writeFile } from "node:fs/promises";
-import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 
 const toolDescription = `Performs exact string replacements in files inside the sandbox workspace.
 

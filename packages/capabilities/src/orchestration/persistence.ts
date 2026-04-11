@@ -3,9 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/core";
-import { resolveSessionRef } from "@agentrail/core";
-import path from "node:path";
 import { createFilesystemOrchestrationStore } from "@/orchestration/orchestration-store.js";
 import type { RecoveredOrchestrationState } from "@/orchestration/recovery.js";
 import type {
@@ -14,6 +11,9 @@ import type {
   OrchestrationMailboxState,
   OrchestrationSnapshot,
 } from "@/orchestration/types.js";
+import type { SessionRef } from "@agentrail/core";
+import { resolveSessionRef } from "@agentrail/core";
+import path from "node:path";
 
 export interface OrchestrationPersistence {
   appendEvent(event: OrchestrationEvent): Promise<void>;

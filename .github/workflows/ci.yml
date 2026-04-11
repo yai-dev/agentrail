@@ -56,6 +56,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Detect sandbox changes
+        id: sandbox
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - 'docker/sandbox/**'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
@@ -78,4 +86,5 @@ jobs:
         run: pnpm typecheck
 
       - name: Build sandbox image
+        if: steps.sandbox.outputs.changed == 'true'
         run: docker build -t agentrail-sandbox:ci docker/sandbox

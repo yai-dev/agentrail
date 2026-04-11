@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Context } from "hono";
 import type { AgentrailChatHandledResponse, AgentrailChatRequest } from "@/host/types.js";
+import type { Context } from "hono";
 
 export { resolveTransformContext as resolveChatTransformContext } from "@/routes/context-resolver.js";
 

@@ -11,11 +11,18 @@
  * Also covers flush-failure drop semantics.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import type {
+  Agent,
+  AgentStream,
+  AssistantMessage,
+  Message,
+  RuntimeEvent,
+  ToolResultMessage,
+  Usage,
+} from "@agentrail/core";
+import { describe, expect, it, vi } from "vitest";
+import type { AgentrailProfile, AgentrailSessionStore } from "../src/host/types.js";
 import { createStreamRoute } from "../src/routes/stream-route.js";
-import type { AgentrailSessionStore, AgentrailProfile } from "../src/host/types.js";
-import type { Agent, AgentStream, RuntimeEvent, Message, Usage } from "@agentrail/core";
-import type { AssistantMessage, ToolResultMessage } from "@agentrail/core";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -74,7 +81,13 @@ function makeTwoTurnStream(): AgentStream {
     yield { type: "message.start", message: assistantMsg1 };
     yield { type: "message.end", message: assistantMsg1 };
     yield { type: "tool.before", toolCallId: "tc1", toolName: "search", args: {} };
-    yield { type: "tool.after", toolCallId: "tc1", toolName: "search", result: "result", isError: false };
+    yield {
+      type: "tool.after",
+      toolCallId: "tc1",
+      toolName: "search",
+      result: "result",
+      isError: false,
+    };
     yield { type: "message.start", message: toolResultMsg };
     yield { type: "message.end", message: toolResultMsg };
     yield { type: "turn.complete", message: assistantMsg1, toolResults: [toolResultMsg] };
@@ -240,7 +253,8 @@ describe("stream-route – incremental persistence", () => {
 
     const agentStream: AgentStream = {
       [Symbol.asyncIterator]: () => earlyEndStream(),
-      result: () => Promise.resolve({ text: "", messages: [], usage: ZERO_USAGE, stopReason: "stop" } as any),
+      result: () =>
+        Promise.resolve({ text: "", messages: [], usage: ZERO_USAGE, stopReason: "stop" } as any),
     };
 
     const route = createStreamRoute({
@@ -313,7 +327,12 @@ describe("stream-route – flush failure drop semantics", () => {
     const req = new Request("http://localhost/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: TENANT_ID, userId: USER_ID, agentId: AGENT_ID, message: "hi" }),
+      body: JSON.stringify({
+        tenantId: TENANT_ID,
+        userId: USER_ID,
+        agentId: AGENT_ID,
+        message: "hi",
+      }),
     });
 
     const res = await route.fetch(req);
@@ -343,7 +362,12 @@ describe("stream-route – abort race condition", () => {
       method: "POST",
       signal,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: TENANT_ID, userId: USER_ID, agentId: AGENT_ID, message: "hello" }),
+      body: JSON.stringify({
+        tenantId: TENANT_ID,
+        userId: USER_ID,
+        agentId: AGENT_ID,
+        message: "hello",
+      }),
     });
   }
 
@@ -379,7 +403,12 @@ describe("stream-route – abort race condition", () => {
     const agentStream: AgentStream = {
       [Symbol.asyncIterator]: () => streamWithSessionEnd(),
       result: () =>
-        Promise.resolve({ text: "done", messages: [], usage: ZERO_USAGE, stopReason: "stop" } as any),
+        Promise.resolve({
+          text: "done",
+          messages: [],
+          usage: ZERO_USAGE,
+          stopReason: "stop",
+        } as any),
     };
 
     const route = createStreamRoute({

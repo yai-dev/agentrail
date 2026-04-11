@@ -4,7 +4,12 @@
  */
 
 import type { ToolCall } from "@/types/content.types.js";
-import type { AssistantMessage, Message, StopReason, ToolResultMessage } from "@/types/message.types.js";
+import type {
+  AssistantMessage,
+  Message,
+  StopReason,
+  ToolResultMessage,
+} from "@/types/message.types.js";
 import type { ToolResult } from "@/types/tool.types.js";
 import type { Usage } from "@/types/usage.types.js";
 

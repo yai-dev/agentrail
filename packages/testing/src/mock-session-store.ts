@@ -1,5 +1,5 @@
-import { createSessionRef } from "@agentrail/core";
 import type { AgentrailSessionStore, Message, SessionRef, Usage } from "@agentrail/core";
+import { createSessionRef } from "@agentrail/core";
 
 export class MockSessionStore implements AgentrailSessionStore {
   private memory: Map<string, Message[]> = new Map();

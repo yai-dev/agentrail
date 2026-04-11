@@ -13,11 +13,15 @@ describe("createWebFetchTool", () => {
   });
 
   it("converts HTML into readable markdown", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response("<html><head><title>Example</title></head><body><article><h1>Hello</h1><p>World</p></article></body></html>", {
-        status: 200,
-        headers: { "content-type": "text/html" },
-      }),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          "<html><head><title>Example</title></head><body><article><h1>Hello</h1><p>World</p></article></body></html>",
+          {
+            status: 200,
+            headers: { "content-type": "text/html" },
+          },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -36,11 +40,12 @@ describe("createWebFetchTool", () => {
   });
 
   it("upgrades http URLs to https before fetching", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response("plain text", {
-        status: 200,
-        headers: { "content-type": "text/plain" },
-      }),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response("plain text", {
+          status: 200,
+          headers: { "content-type": "text/plain" },
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -51,11 +56,12 @@ describe("createWebFetchTool", () => {
   });
 
   it("reuses the page cache for repeated fetches", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response("<html><body><article><p>cached page</p></article></body></html>", {
-        status: 200,
-        headers: { "content-type": "text/html" },
-      }),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response("<html><body><article><p>cached page</p></article></body></html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -71,11 +77,12 @@ describe("createWebFetchTool", () => {
   });
 
   it("reuses extraction cache for repeated query extraction", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response("<html><body><article><p>OpenAI builds models.</p></article></body></html>", {
-        status: 200,
-        headers: { "content-type": "text/html" },
-      }),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response("<html><body><article><p>OpenAI builds models.</p></article></body></html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -120,8 +127,9 @@ describe("createWebFetchTool", () => {
   });
 
   it("does not cache HTTP failures", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response("forbidden", { status: 403, headers: { "content-type": "text/plain" } }),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response("forbidden", { status: 403, headers: { "content-type": "text/plain" } }),
     );
     vi.stubGlobal("fetch", fetchMock);
 

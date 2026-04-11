@@ -10,7 +10,7 @@ Pass `inspector: true` to `createAgentApp`:
 import { createAgentApp } from "@agentrail/app";
 
 const app = createAgentApp({
-  dataDir: "./data",   // required when inspector is enabled
+  dataDir: "./data", // required when inspector is enabled
   profiles: [myProfile],
   inspector: true,
 });
@@ -19,6 +19,7 @@ const app = createAgentApp({
 The route is mounted at the fixed path `/__inspector`. The Agentrail Inspector Docker image's nginx proxy hardcodes this prefix, so the mount path is not configurable in v1.
 
 **Requirements:**
+
 - `dataDir` must be set. A custom `sessionStore` is not supported.
 - An error is thrown at startup if `inspector: true` is set without `dataDir`.
 
@@ -47,6 +48,7 @@ All endpoints are relative to `/__inspector`.
 Returns a list of all sessions across all tenants with enriched metadata.
 
 **Response:**
+
 ```json
 {
   "sessions": [
@@ -73,11 +75,12 @@ Returns the merged trace for a session: runtime events (agent loop, tools, compa
 
 **Query parameters:**
 
-| Parameter | Default | Description |
-|---|---|---|
+| Parameter  | Default     | Description                  |
+| ---------- | ----------- | ---------------------------- |
 | `tenantId` | `"default"` | Tenant that owns the session |
 
 **Response:**
+
 ```json
 {
   "envelopes": [
@@ -105,11 +108,12 @@ Returns the current orchestration state snapshot for a session: all agents that 
 
 **Query parameters:**
 
-| Parameter | Default | Description |
-|---|---|---|
+| Parameter  | Default     | Description                  |
+| ---------- | ----------- | ---------------------------- |
 | `tenantId` | `"default"` | Tenant that owns the session |
 
 **Response:**
+
 ```json
 {
   "agents": [
@@ -134,14 +138,17 @@ Returns the raw message history for a session. Used by the Context Diff view in 
 
 **Query parameters:**
 
-| Parameter | Default | Description |
-|---|---|---|
+| Parameter  | Default     | Description                  |
+| ---------- | ----------- | ---------------------------- |
 | `tenantId` | `"default"` | Tenant that owns the session |
 
 **Response:**
+
 ```json
 {
-  "messages": [ /* Anthropic-format Message objects */ ]
+  "messages": [
+    /* Anthropic-format Message objects */
+  ]
 }
 ```
 
@@ -152,6 +159,7 @@ Returns the raw message history for a session. Used by the Context Diff view in 
 Lightweight liveness check. Always returns 200 while the process is alive.
 
 **Response:**
+
 ```json
 { "status": "ok" }
 ```

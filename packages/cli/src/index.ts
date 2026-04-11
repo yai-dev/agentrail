@@ -4,9 +4,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { runConfigValidate } from "./commands/config-validate.js";
 import { runCreate } from "./commands/create.js";
 import { runDoctor } from "./commands/doctor.js";
-import { runConfigValidate } from "./commands/config-validate.js";
 
 // ─── Public API (used by create-agentrail-app wrapper) ───────────────────────
 export { runCreate } from "./commands/create.js";

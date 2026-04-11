@@ -3,10 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { KBMetadata } from "@agentrail/capabilities";
-import type { MemoryIndex, MemoryIndexEntry } from "@agentrail/core";
-import type { UserMessage } from "@agentrail/core";
-import type { SkillMeta } from "@agentrail/capabilities";
+import type { KBMetadata, SkillMeta } from "@agentrail/capabilities";
+import type { MemoryIndex, MemoryIndexEntry, UserMessage } from "@agentrail/core";
 
 /** Creates a user-scoped identity hint message for default hosted profiles. */
 export function makeUserIdentityMessage(

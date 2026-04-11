@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { ContextProvider, MemoryIndex, Message } from "@agentrail/core";
 import type { KBMetadata } from "@/knowledge/types.js";
 import type { SkillMeta } from "@/skills/types.js";
+import type { ContextProvider, MemoryIndex, Message } from "@agentrail/core";
 
 /** Request-scoped data needed to build default capability context messages. */
 export interface DefaultCapabilityContextOptions {

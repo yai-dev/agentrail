@@ -3,11 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { promisify } from "node:util";
 import {
   buildKnowledgeMetadata,
   buildTopicSummaries,
@@ -27,6 +22,11 @@ import type {
   SearchResult,
   Taxonomy,
 } from "@/knowledge/types.js";
+import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 

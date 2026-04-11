@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { randomUUID } from "node:crypto";
 import {
   mapOrchestrationEvent,
   TRACE_PERSISTED_EVENT_TYPES,
@@ -12,21 +11,11 @@ import {
   type AgentrailErrorEvent,
   type WorkflowTraceEventEnvelope,
 } from "@/events/index.js";
-import type { SessionRef } from "@agentrail/core";
-import type { OrchestrationManager } from "@agentrail/capabilities";
-import type { Agent, Message, RuntimeEvent, ToolInterceptor, TransformContextFn, Usage } from "@agentrail/core";
-import { isRuntimeError } from "@agentrail/core";
-import type { SandboxManager } from "@agentrail/capabilities";
-import { Hono } from "hono";
-import { streamText } from "hono/streaming";
 import { buildToolInterceptor, runPluginRequestHook } from "@/host/plugins.js";
-import { createReactiveCompactionController, type SummarizeMessagesFn } from "@/host/reactive-compaction.js";
-import { runCompactionStep } from "@/routes/compaction-runner.js";
-import { awaitSandboxWarmup } from "@/routes/sandbox-warmup.js";
-import { persistUploadedFiles, buildEffectiveMessage } from "@/routes/attachment-pipeline.js";
-import { createSseEventWriter } from "@/routes/sse-writer.js";
-import { resolveTransformContext } from "@/routes/context-resolver.js";
-import { validateStreamRequest, type StreamRequest } from "@/routes/stream-request.js";
+import {
+  createReactiveCompactionController,
+  type SummarizeMessagesFn,
+} from "@/host/reactive-compaction.js";
 import type {
   AgentrailPlugin,
   AgentrailProfile,
@@ -38,6 +27,26 @@ import type {
   ContextProvider,
   PluginErrorHandler,
 } from "@/host/types.js";
+import { buildEffectiveMessage, persistUploadedFiles } from "@/routes/attachment-pipeline.js";
+import { runCompactionStep } from "@/routes/compaction-runner.js";
+import { resolveTransformContext } from "@/routes/context-resolver.js";
+import { awaitSandboxWarmup } from "@/routes/sandbox-warmup.js";
+import { createSseEventWriter } from "@/routes/sse-writer.js";
+import { validateStreamRequest, type StreamRequest } from "@/routes/stream-request.js";
+import type { OrchestrationManager, SandboxManager } from "@agentrail/capabilities";
+import type {
+  Agent,
+  Message,
+  RuntimeEvent,
+  SessionRef,
+  ToolInterceptor,
+  TransformContextFn,
+  Usage,
+} from "@agentrail/core";
+import { isRuntimeError } from "@agentrail/core";
+import { Hono } from "hono";
+import { streamText } from "hono/streaming";
+import { randomUUID } from "node:crypto";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -179,11 +188,22 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
     const validation = validateStreamRequest(body);
     if (!validation.valid) return c.json({ error: validation.error }, 400);
 
-    const { message, agentId = options.defaultAgentId, tenantId, userId, sessionId, attachments } =
-      body;
+    const {
+      message,
+      agentId = options.defaultAgentId,
+      tenantId,
+      userId,
+      sessionId,
+      attachments,
+    } = body;
 
     // ── 2. Session init ──────────────────────────────────────────────────────
-    const sessionInfo = await options.sessionStore.getOrCreate(tenantId, userId, agentId, sessionId);
+    const sessionInfo = await options.sessionStore.getOrCreate(
+      tenantId,
+      userId,
+      agentId,
+      sessionId,
+    );
     const sid = sessionInfo.sessionId;
     const sessionRef = sessionInfo.sessionRef;
     const requestContext: AgentrailRequestLifecycleContext = {
@@ -350,9 +370,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
         // events because capabilities (e.g. orchestration()) register their
         // createManagedAgent factory into the registry during agent creation.
         // Subscribing first would cause getManager() to fail for new sessions.
-        const agent = await profile.createAgent(profileCtx, (event) =>
-          forwardSubAgentEvent(event),
-        );
+        const agent = await profile.createAgent(profileCtx, (event) => forwardSubAgentEvent(event));
         const capProviders = (await profile.getContextProviders?.(profileCtx)) ?? [];
         const profileTransform = await profile.getTransformContext?.(profileCtx);
         const transformContext = await resolveTransformContext(

@@ -8,6 +8,6 @@
 // and avoid any structural type mismatch.
 export {
   composeTransformContexts,
-  createTransformContext,
   createContextProviderFromTransform,
+  createTransformContext,
 } from "@agentrail/capabilities";

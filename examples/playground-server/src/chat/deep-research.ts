@@ -3,18 +3,15 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { config } from "@/config.js";
+import type { AgentrailChatHandledResponse, AgentrailResolvedChatContext } from "@agentrail/app";
+import type { AgentrailResolvedStreamContext } from "@agentrail/app/advanced";
+import type { Message, Usage } from "@agentrail/core";
 import {
   runDeepResearchBlocking,
   runDeepResearchStreaming,
   type DeepResearchStreamingRunInput,
 } from "@agentrail/deep-research";
-import type {
-  AgentrailChatHandledResponse,
-  AgentrailResolvedChatContext,
-} from "@agentrail/app";
-import type { AgentrailResolvedStreamContext } from "@agentrail/app/advanced";
-import type { Message, Usage } from "@agentrail/core";
-import { config } from "@/config.js";
 
 function buildDeepResearchRuntime() {
   return {

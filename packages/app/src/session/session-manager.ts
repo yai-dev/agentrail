@@ -3,11 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message, Usage } from "@agentrail/core";
-import { randomUUID } from "node:crypto";
-import type { Dirent } from "node:fs";
-import { access, appendFile, constants, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import * as path from "node:path";
 import {
   buildCompactionMetadata,
   buildMemoryEntry,
@@ -18,21 +13,39 @@ import {
   replaySessionInfo,
   statOrNull,
 } from "@/session/session-manager-helpers.js";
-import type { SessionRef } from "@agentrail/core";
-import { createSessionRef, resolveSessionRef } from "@agentrail/core";
-import type { TodoStorage } from "@agentrail/core";
 import { estimateMessageTokens } from "@/session/token-estimator.js";
-import { createFileSystemSessionTraceStore, type SessionTraceStore } from "@/session/trace-store.js";
+import {
+  createFileSystemSessionTraceStore,
+  type SessionTraceStore,
+} from "@/session/trace-store.js";
 import type {
   CompactionMetadata,
   MemoryIndex,
+  Message,
   SessionContextUsage,
   SessionHandle,
   SessionInfo,
   SessionInitEvent,
   SessionMeta,
+  SessionRef,
   SessionTurnEvent,
+  TodoStorage,
+  Usage,
 } from "@agentrail/core";
+import { createSessionRef, resolveSessionRef } from "@agentrail/core";
+import { randomUUID } from "node:crypto";
+import type { Dirent } from "node:fs";
+import {
+  access,
+  appendFile,
+  constants,
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import * as path from "node:path";
 
 /** Prefix used for synthetic compaction messages written to messages.jsonl. */
 export const COMPACTION_MESSAGE_PREFIX = "[Conversation compacted at ";

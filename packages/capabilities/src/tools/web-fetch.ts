@@ -4,8 +4,8 @@
  */
 
 import { tool } from "@agentrail/core";
-import { Type } from "@sinclair/typebox";
 import { Readability } from "@mozilla/readability";
+import { Type } from "@sinclair/typebox";
 import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 
@@ -114,7 +114,9 @@ const parametersSchema = Type.Object({
 });
 
 function createTimedSignal(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
-  return signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
+  return signal
+    ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+    : AbortSignal.timeout(timeoutMs);
 }
 
 function getFromCache<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
@@ -127,7 +129,12 @@ function getFromCache<T>(cache: Map<string, CacheEntry<T>>, key: string): T | nu
   return entry.value;
 }
 
-function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttlMs: number): void {
+function setCache<T>(
+  cache: Map<string, CacheEntry<T>>,
+  key: string,
+  value: T,
+  ttlMs: number,
+): void {
   cache.set(key, {
     value,
     expiresAt: Date.now() + ttlMs,
@@ -135,7 +142,11 @@ function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, t
 }
 
 function normalizeWhitespace(text: string): string {
-  return text.replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function normalizeFetchUrl(rawUrl: string): string {
@@ -182,7 +193,9 @@ function truncateIfNeeded(content: string, maxChars: number, trusted: boolean) {
 }
 
 function extractReadableMarkdown(source: string, url: string, contentType: string | null) {
-  const looksHtml = Boolean(contentType?.includes("text/html")) || /<html[\s>]|<body[\s>]|<article[\s>]/i.test(source);
+  const looksHtml =
+    Boolean(contentType?.includes("text/html")) ||
+    /<html[\s>]|<body[\s>]|<article[\s>]/i.test(source);
 
   if (!looksHtml) {
     return {
@@ -193,11 +206,7 @@ function extractReadableMarkdown(source: string, url: string, contentType: strin
 
   const dom = new JSDOM(source, { url });
   const article = new Readability(dom.window.document).parse();
-  const title = normalizeWhitespace(
-    article?.title ||
-      dom.window.document.title ||
-      url,
-  );
+  const title = normalizeWhitespace(article?.title || dom.window.document.title || url);
 
   const articleHtml = article?.content ?? dom.window.document.body?.innerHTML ?? "";
   const markdown = normalizeWhitespace(turndown.turndown(articleHtml));
@@ -295,7 +304,11 @@ export function createWebFetchTool(options: WebFetchToolOptions = {}) {
           }
 
           const source = await response.text();
-          const extracted = extractReadableMarkdown(source, finalUrl, response.headers.get("content-type"));
+          const extracted = extractReadableMarkdown(
+            source,
+            finalUrl,
+            response.headers.get("content-type"),
+          );
 
           if (!extracted.markdown) {
             return {
@@ -332,8 +345,7 @@ export function createWebFetchTool(options: WebFetchToolOptions = {}) {
           const message = error instanceof Error ? error.message : String(error);
           const isTimeout =
             error instanceof Error &&
-            (error.name === "TimeoutError" ||
-              /timed out|timeout/i.test(error.message));
+            (error.name === "TimeoutError" || /timed out|timeout/i.test(error.message));
 
           return {
             content: [{ type: "text" as const, text: `Error: ${message}` }],
@@ -376,7 +388,9 @@ export function createWebFetchTool(options: WebFetchToolOptions = {}) {
       }
 
       let fromExtractionCache = false;
-      const cachedExtraction = extractionCacheKey ? getFromCache(extractionCache, extractionCacheKey) : null;
+      const cachedExtraction = extractionCacheKey
+        ? getFromCache(extractionCache, extractionCacheKey)
+        : null;
       let extraction: CachedExtraction;
 
       if (cachedExtraction) {

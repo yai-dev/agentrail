@@ -3,9 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { SessionRef } from "@agentrail/core";
-import { fork } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import type {
   CreateManagedAgentInput,
   ManagedAgentEventHandlers,
@@ -13,6 +10,9 @@ import type {
 } from "@/orchestration/orchestration-manager.js";
 import type { AgentInputEnvelope, ManagedAgentDeliveryResult } from "@/orchestration/types.js";
 import type { SubagentWorkerConfig } from "@/orchestration/worker/agent-runtime.js";
+import type { SessionRef } from "@agentrail/core";
+import { fork } from "node:child_process";
+import { randomUUID } from "node:crypto";
 
 interface WorkerReadyMessage {
   type: "ready";

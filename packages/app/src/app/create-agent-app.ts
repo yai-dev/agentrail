@@ -3,24 +3,23 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import type { Message, SessionRef } from "@agentrail/core";
-import type { AgentrailSessionStore } from "@agentrail/core";
-import type { SandboxManager } from "@agentrail/capabilities";
-import type { ReactiveCompactionConfig, SummarizeMessagesFn } from "@/host/reactive-compaction.js";
-import type { AgentrailPlugin, ContextProvider, PluginErrorHandler } from "@/host/types.js";
-import type { AgentrailOrchestrationRegistry } from "@/host/orchestration-registry.js";
-import type { ProfileDefinition } from "@/profile/define-profile.js";
-import type { ProfileResolver } from "@/host/profile-registry.js";
-import type { TelemetrySink } from "@/telemetry/sink.js";
+import { runCapabilityCompatibilityChecks } from "@/compat/capability-check.js";
 import type { WorkflowTraceEventEnvelope } from "@/events/index.js";
 import type { ReadinessCheck } from "@/health/index.js";
 import { createHealthRoute } from "@/health/index.js";
+import type { AgentrailOrchestrationRegistry } from "@/host/orchestration-registry.js";
+import type { ProfileResolver } from "@/host/profile-registry.js";
+import { createStaticProfileResolver } from "@/host/profile-registry.js";
+import type { ReactiveCompactionConfig, SummarizeMessagesFn } from "@/host/reactive-compaction.js";
+import type { AgentrailPlugin, ContextProvider, PluginErrorHandler } from "@/host/types.js";
 import { createInspectorRoute } from "@/inspector/index.js";
-import { runCapabilityCompatibilityChecks } from "@/compat/capability-check.js";
-import { SessionManager } from "@/session/session-manager.js";
+import type { ProfileDefinition } from "@/profile/define-profile.js";
 import { createChatRoute } from "@/routes/chat-route.js";
 import { createStreamRoute } from "@/routes/stream-route.js";
-import { createStaticProfileResolver } from "@/host/profile-registry.js";
+import { SessionManager } from "@/session/session-manager.js";
+import type { TelemetrySink } from "@/telemetry/sink.js";
+import type { SandboxManager } from "@agentrail/capabilities";
+import type { AgentrailSessionStore, Message, SessionRef } from "@agentrail/core";
 import { Hono } from "hono";
 
 /**
@@ -271,27 +270,21 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
     : undefined;
 
   if (profiles.length === 0 && !customResolver) {
-    throw new Error(
-      "createAgentApp: at least one of `profiles` or `resolveProfile` is required.",
-    );
+    throw new Error("createAgentApp: at least one of `profiles` or `resolveProfile` is required.");
   }
 
   // Resolve the session store: prefer explicit override, fall back to filesystem.
   const sessionStore: AgentrailSessionStore = (() => {
     if (options.sessionStore) return options.sessionStore;
     if (!dataDir) {
-      throw new Error(
-        "createAgentApp: `dataDir` is required when `sessionStore` is not provided.",
-      );
+      throw new Error("createAgentApp: `dataDir` is required when `sessionStore` is not provided.");
     }
     return new SessionManager(dataDir);
   })();
 
   const defaultAgentId = explicitDefaultAgentId ?? profiles[0]?.id;
   if (!defaultAgentId) {
-    throw new Error(
-      "createAgentApp: `defaultAgentId` is required when `profiles` is empty.",
-    );
+    throw new Error("createAgentApp: `defaultAgentId` is required when `profiles` is empty.");
   }
 
   // Build the static resolver from the profiles array (used when no custom resolver given).

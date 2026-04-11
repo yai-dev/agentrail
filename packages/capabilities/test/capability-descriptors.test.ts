@@ -3,9 +3,9 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { describe, it, expect } from "vitest";
-import { filesystem } from "../src/filesystem/index.js";
+import { describe, expect, it } from "vitest";
 import { browser } from "../src/browser/index.js";
+import { filesystem } from "../src/filesystem/index.js";
 import type { CapabilityBuildContext } from "../src/types.js";
 
 // Minimal stub that satisfies the shape used by buildTools
@@ -26,9 +26,7 @@ describe("filesystem() capability descriptor", () => {
 
   it("throws a descriptive error when no sandboxManager is available", async () => {
     const cap = filesystem();
-    await expect(cap.buildTools(stubCtx(undefined))).rejects.toThrow(
-      /sandboxManager/,
-    );
+    await expect(cap.buildTools(stubCtx(undefined))).rejects.toThrow(/sandboxManager/);
   });
 
   it("accepts a sandboxManager via opts and does not throw during construction", () => {
@@ -61,9 +59,7 @@ describe("browser() capability descriptor", () => {
 
   it("throws a descriptive error when no sandboxManager is available", async () => {
     const cap = browser();
-    await expect(cap.buildTools(stubCtx(undefined))).rejects.toThrow(
-      /sandboxManager/,
-    );
+    await expect(cap.buildTools(stubCtx(undefined))).rejects.toThrow(/sandboxManager/);
   });
 
   it("prefers opts.sandboxManager over ctx.sandboxManager", async () => {

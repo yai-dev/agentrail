@@ -709,6 +709,7 @@ export class OrchestrationManager {
                 outcome: primaryAgent.lastJob.outcome,
                 outputText: primaryAgent.lastJob.outputText,
                 error: primaryAgent.lastJob.error,
+                toolCalls: primaryAgent.lastJob.toolCalls,
               },
             }
           : {}),
@@ -937,6 +938,7 @@ export class OrchestrationManager {
           outcome: deliveryResult.outcome,
           outputText: deliveryResult.outputText,
           error: deliveryResult.error,
+          toolCalls: deliveryResult.toolCalls,
         },
       } as const;
 
@@ -1136,6 +1138,7 @@ export class OrchestrationManager {
         outcome: result.outcome,
         outputText: result.outputText,
         error: result.error,
+        toolCalls: result.toolCalls,
       },
     });
 

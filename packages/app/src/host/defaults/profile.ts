@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createProfileResolver } from "@/host/profile-registry.js";
 import type { HostedProfileDefinition } from "@/host/defaults/shared-types.js";
+import { createProfileResolver } from "@/host/profile-registry.js";
 
 /**
  * Defines a hosted profile without changing its runtime behavior.

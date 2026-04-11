@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { createSessionRef } from "@agentrail/core";
 import { createFilesystemOrchestrationPersistence } from "@agentrail/capabilities";
+import { createSessionRef } from "@agentrail/core";
 import assert from "node:assert/strict";
 import { fork } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";

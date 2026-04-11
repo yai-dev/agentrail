@@ -3,7 +3,6 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { randomUUID } from "node:crypto";
 import type {
   AgentInputEnvelope,
   ManagedAgentDeliveryResult,
@@ -12,6 +11,7 @@ import type {
   WaitCondition,
   WaitMatch,
 } from "@/orchestration/types.js";
+import { randomUUID } from "node:crypto";
 
 /** Normalizes a wait input so omitted fields are filled with stable defaults. */
 export function normalizeWaitInput(input: WaitAgentInput): WaitAgentInput {
@@ -92,6 +92,7 @@ export function normalizeDeliveryResult(
       outcome: result.outcome,
       outputText: result.outputText,
       error: result.error,
+      toolCalls: result.toolCalls,
     };
   }
 
