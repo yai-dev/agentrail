@@ -275,8 +275,38 @@ const app = createAgentApp({
 ```
 
 The Bash DSL uses a `verb:args` form: `"git:*"` matches any command whose first word is `git`
-(e.g. `git status`, `git log`). The tool normalises `"git status"` → `"git:status"` before
-pattern matching so glob patterns work as expected.
+(e.g. `git status`, `git log --oneline`, `git add src/main.ts`). The tool normalises
+`"git status"` → `"git:status"` before pattern matching. The `*` wildcard in Bash patterns
+matches across `/` so path arguments in commands are matched correctly.
+
+**Permission modes:**
+
+| `mode` | Default outcome | Description |
+|--------|----------------|-------------|
+| `"default"` | `allow` | Opt-in deny/ask. Only rules explicitly listed in `deny`/`ask` block tool calls. |
+| `"strict"` | `deny` | Deny-by-default. Only operations listed in `allow` are permitted; everything else is blocked. Use for minimal-privilege configurations. |
+| `"acceptEdits"` | `allow` | Like `default`, but `ask` decisions for `Write`/`Edit` tools are auto-approved. |
+| `"dontAsk"` | `allow` | Like `default`, but `ask` decisions are demoted to `deny` (headless environments). |
+| `"bypassPermissions"` | `allow` | All checks skipped (trusted automation only). |
+
+**Strict (deny-by-default) allowlist example:**
+
+```ts
+import { parseRules } from "@agentrail/capabilities";
+
+const app = createAgentApp({
+  permissionPolicy: {
+    mode: "strict",          // deny anything not explicitly allowed
+    allow: parseRules([
+      "Bash(git:*)",         // permit all git commands
+      "Bash(npm:*)",         // permit all npm commands
+      "Read",                // permit all file reads
+    ]),
+    deny: [],
+    ask: [],
+  },
+});
+```
 
 **Loading from `agentrail.yaml`:**
 

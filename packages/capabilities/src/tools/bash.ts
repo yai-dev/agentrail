@@ -74,7 +74,7 @@ export function createBashTool(policy?: ToolPermissionPolicy) {
         return { decision: "deny" as const, reason: `Command matches a known-dangerous pattern` };
       }
       if (policy) {
-        return evaluatePolicy(policy, "Bash", normalizeBashCommand(command));
+        return evaluatePolicy(policy, "Bash", normalizeBashCommand(command), "command");
       }
       return "allow";
     })

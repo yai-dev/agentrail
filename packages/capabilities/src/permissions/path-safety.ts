@@ -88,21 +88,17 @@ function resolveRealPath(filePath: string): string {
     // Not found — walk up to find the nearest existing ancestor
   }
 
-  const parts = absolute.split(path.sep);
-  let existingAncestor: string = path.sep;
-  let remainingParts: string[] = [];
-
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const candidate = parts.slice(0, i + 1).join(path.sep) || path.sep;
+  // Walk up using path.dirname — handles Windows drive letters and POSIX equally.
+  let existingAncestor = absolute;
+  while (existingAncestor !== path.dirname(existingAncestor)) {
     try {
-      fs.accessSync(candidate);
-      existingAncestor = candidate;
-      remainingParts = parts.slice(i + 1);
+      fs.accessSync(existingAncestor);
       break;
     } catch {
-      // Not found, keep walking up
+      existingAncestor = path.dirname(existingAncestor);
     }
   }
+  const remainingParts = path.relative(existingAncestor, absolute).split(path.sep);
 
   try {
     const resolvedAncestor = fs.realpathSync(existingAncestor);

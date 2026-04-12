@@ -29,7 +29,7 @@ export interface AgentrailPermissionsConfig {
    * Permission mode controlling how `ask` decisions are handled.
    * Defaults to `"default"` when absent.
    */
-  mode?: "default" | "acceptEdits" | "bypassPermissions" | "dontAsk";
+  mode?: "default" | "acceptEdits" | "bypassPermissions" | "dontAsk" | "strict";
   /** Rule strings that unconditionally allow matching tool calls, e.g. `"Bash(git:*)"`. */
   allow?: string[];
   /** Rule strings that unconditionally deny matching tool calls, e.g. `"Bash(rm:*)"`. */
@@ -833,7 +833,7 @@ function parsePermissionsBlock(root: UnknownRecord): AgentrailPermissionsConfig 
   const perm = assertObject(raw, ["permissions"]);
   assertNoUnknownKeys(perm, ["mode", "allow", "deny", "ask"], ["permissions"]);
 
-  const VALID_MODES = ["default", "acceptEdits", "bypassPermissions", "dontAsk"] as const;
+  const VALID_MODES = ["default", "acceptEdits", "bypassPermissions", "dontAsk", "strict"] as const;
   type PermMode = (typeof VALID_MODES)[number];
 
   let mode: PermMode | undefined;

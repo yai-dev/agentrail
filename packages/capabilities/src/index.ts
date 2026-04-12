@@ -210,7 +210,12 @@ export {
   parseRules,
   workspaceAnchor,
 } from "@/permissions/index.js";
-export type { PermissionMode, PermissionRule, ToolPermissionPolicy } from "@/permissions/index.js";
+export type {
+  ContentMatchMode,
+  PermissionMode,
+  PermissionRule,
+  ToolPermissionPolicy,
+} from "@/permissions/index.js";
 
 // ============================================================================
 // Memory context utilities (advanced)

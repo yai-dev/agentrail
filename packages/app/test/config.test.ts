@@ -93,4 +93,16 @@ describe("parseAgentrailConfig — permissions block", () => {
     expect(config.permissions?.ask).toEqual([]);
     expect(config.permissions?.mode).toBeUndefined();
   });
+
+  it("parses permissions.mode: strict", () => {
+    const config = parseAgentrailConfig({
+      permissions: {
+        mode: "strict",
+        allow: ["Bash(git:*)", "Read"],
+      },
+    }) as AgentrailConfig;
+
+    expect(config.permissions?.mode).toBe("strict");
+    expect(config.permissions?.allow).toEqual(["Bash(git:*)", "Read"]);
+  });
 });

@@ -62,7 +62,7 @@ export function createSandboxedBash(
     .parameters(parametersSchema)
     .checkPermissions(({ command }) => {
       if (policy) {
-        return evaluatePolicy(policy, "Bash", normalizeBashCommand(command));
+        return evaluatePolicy(policy, "Bash", normalizeBashCommand(command), "command");
       }
       return "allow";
     })

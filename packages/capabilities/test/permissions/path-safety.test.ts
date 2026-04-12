@@ -78,4 +78,17 @@ describe("workspaceAnchor", () => {
     // Use /etc as an example of an existing path clearly outside tmpDir.
     expect(() => workspaceAnchor("/etc/passwd", tmpDir)).toThrow(/outside the allowed root/i);
   });
+
+  it("allows a non-existent path whose nearest existing ancestor is inside rootDir", () => {
+    // deep/non/existent.txt does not exist but its ancestor chain leads back to tmpDir
+    const nonExistent = path.join(tmpDir, "deep", "non", "existent.txt");
+    expect(() => workspaceAnchor(nonExistent, tmpDir)).not.toThrow();
+  });
+
+  it("blocks a non-existent path whose nearest existing ancestor is outside rootDir", () => {
+    // /etc exists and is outside tmpDir; a non-existent child must still be blocked
+    expect(() => workspaceAnchor("/etc/nonexistent/file.txt", tmpDir)).toThrow(
+      /outside the allowed root/i,
+    );
+  });
 });

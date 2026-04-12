@@ -13,26 +13,52 @@ type SimpleDecision = "allow" | "deny" | "ask";
 // ============================================================================
 
 /**
+ * Matching mode that controls how the `*` wildcard is interpreted.
+ *
+ * - `"path"` *(default)* — `*` matches any sequence of characters **except**
+ *   path separators (`/`).  Use for file-path patterns such as
+ *   `Write(/workspace/*)`.
+ * - `"command"` — `*` matches **any** sequence of characters including `/`.
+ *   Use for Bash command patterns such as `Bash(git:*)`, where the content
+ *   after the verb may contain paths like `src/main.ts`.
+ *
+ * In both modes `**` always matches any sequence including `/`.
+ */
+export type ContentMatchMode = "path" | "command";
+
+/**
  * Matches `content` against a glob-style `pattern`.
  *
  * Supports:
  * - `**` — matches any sequence of characters including path separators
- * - `*`  — matches any sequence of characters except path separators (`/`)
- * - All other characters are matched literally
+ * - `*`  — in `"path"` mode (default): matches any sequence **except** `/`;
+ *           in `"command"` mode: matches any sequence including `/`
+ * - All other characters are matched literally (including `?`)
  *
  * The match is prefix-anchored: `"git:*"` matches content that begins with
  * `"git:"`, while `"/workspace/**"` matches any path under `/workspace/`.
+ *
+ * @param pattern     Glob-style pattern string.
+ * @param content     The string to test against the pattern.
+ * @param contentMode Controls `*` semantics. Pass `"command"` for Bash
+ *                    content so that `*` matches across `/`. Defaults to
+ *                    `"path"`.
  */
-export function matchPattern(pattern: string, content: string): boolean {
+export function matchPattern(
+  pattern: string,
+  content: string,
+  contentMode: ContentMatchMode = "path",
+): boolean {
+  const singleWildcard = contentMode === "command" ? ".*" : "[^/]*";
   // Convert glob pattern to a regular expression.
-  // Escape regex special chars first (except * which we handle separately).
+  // Escape regex special chars first (including ? — except * which we handle separately).
   const regexSource = pattern
     .split("**")
     .map((segment) =>
       segment
         .split("*")
-        .map((part) => part.replace(/[.+^${}()|[\]\\]/g, "\\$&"))
-        .join("[^/]*"),
+        .map((part) => part.replace(/[.+^${}()?|[\]\\]/g, "\\$&"))
+        .join(singleWildcard),
     )
     .join(".*");
 
@@ -44,11 +70,16 @@ export function matchPattern(pattern: string, content: string): boolean {
  * Returns `true` if any rule in `rules` matches the given `toolName` and
  * optional `content`.
  */
-function matchesAny(rules: readonly PermissionRule[], toolName: string, content?: string): boolean {
+function matchesAny(
+  rules: readonly PermissionRule[],
+  toolName: string,
+  content?: string,
+  contentMode: ContentMatchMode = "path",
+): boolean {
   for (const rule of rules) {
     if (rule.toolName !== toolName) continue;
     if (!rule.pattern) return true; // bare tool name matches all calls
-    if (content !== undefined && matchPattern(rule.pattern, content)) return true;
+    if (content !== undefined && matchPattern(rule.pattern, content, contentMode)) return true;
   }
   return false;
 }
@@ -66,36 +97,44 @@ const EDIT_TOOL_NAMES = new Set(["Write", "Edit"]);
  * Evaluates a `ToolPermissionPolicy` for a given tool call and returns the
  * effective `PermissionDecision`.
  *
- * Evaluation order: **deny → ask → allow → default(allow)**
+ * Evaluation order: **deny → ask → allow → default**
  *
  * Mode adjustments applied after rule evaluation:
  * - `bypassPermissions` — always returns `"allow"` before evaluating rules.
  * - `dontAsk` — demotes `"ask"` to `"deny"`.
  * - `acceptEdits` — promotes `"ask"` to `"allow"` for Write/Edit tools.
+ * - `strict` — the default outcome is `"deny"` instead of `"allow"`.  Use
+ *   this to build deny-by-default allowlists: add explicit `allow` rules for
+ *   permitted operations and everything else is blocked.
  *
- * @param policy   The active permission policy.
- * @param toolName The name of the tool being called (e.g. `"Bash"`).
- * @param content  The primary argument used for pattern matching (e.g. the
- *                 shell command or file path). May be omitted for tools without
- *                 a meaningful primary argument.
+ * @param policy      The active permission policy.
+ * @param toolName    The name of the tool being called (e.g. `"Bash"`).
+ * @param content     The primary argument used for pattern matching (e.g. the
+ *                    shell command or file path). May be omitted for tools
+ *                    without a meaningful primary argument.
+ * @param contentMode Controls how `*` wildcards in patterns are matched.
+ *                    Pass `"command"` for Bash tools so that `*` matches
+ *                    across `/` (e.g. `git:*` matches `git:add src/main.ts`).
+ *                    Defaults to `"path"` where `*` stops at `/`.
  */
 export function evaluatePolicy(
   policy: ToolPermissionPolicy,
   toolName: string,
   content?: string,
+  contentMode: ContentMatchMode = "path",
 ): SimpleDecision {
   if (policy.mode === "bypassPermissions") return "allow";
 
-  if (matchesAny(policy.deny, toolName, content)) return "deny";
+  if (matchesAny(policy.deny, toolName, content, contentMode)) return "deny";
 
-  if (matchesAny(policy.ask, toolName, content)) {
+  if (matchesAny(policy.ask, toolName, content, contentMode)) {
     if (policy.mode === "dontAsk") return "deny";
     if (policy.mode === "acceptEdits" && EDIT_TOOL_NAMES.has(toolName)) return "allow";
     return "ask";
   }
 
-  if (matchesAny(policy.allow, toolName, content)) return "allow";
+  if (matchesAny(policy.allow, toolName, content, contentMode)) return "allow";
 
-  // Default: allow (policy is opt-in deny/ask)
-  return "allow";
+  // Default: deny in strict mode, allow otherwise
+  return policy.mode === "strict" ? "deny" : "allow";
 }

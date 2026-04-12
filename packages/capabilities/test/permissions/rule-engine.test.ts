@@ -54,6 +54,11 @@ describe("normalizeBashCommand", () => {
   it("trims leading whitespace before splitting", () => {
     expect(normalizeBashCommand("  git log --oneline")).toBe("git:log --oneline");
   });
+
+  it("handles tab between verb and args", () => {
+    expect(normalizeBashCommand("git\tstatus")).toBe("git:status");
+    expect(normalizeBashCommand("npm\tinstall lodash")).toBe("npm:install lodash");
+  });
 });
 
 // ─── Bash DSL end-to-end (pattern matching after normalization) ────────────────
@@ -195,5 +200,89 @@ describe("evaluatePolicy — allow and default", () => {
   it("unrelated tool names do not trigger rules", () => {
     const policy = makePolicy({ deny: parseRules(["Bash"]) });
     expect(evaluatePolicy(policy, "Read", "/workspace/file.ts")).toBe("allow");
+  });
+});
+
+// ─── contentMode tests ────────────────────────────────────────────────────────
+//
+// The behavioral difference between path and command mode only matters when
+// the pattern has content AFTER the wildcard (e.g. "git:*/index.ts").
+// For suffix-only wildcards like "git:*", both modes behave identically
+// because the regex is prefix-anchored (no trailing $) and [^/]* can match
+// up to the first / in the content.
+
+describe("matchPattern — contentMode", () => {
+  it("command mode: * matches across / in suffix-wildcard patterns", () => {
+    expect(matchPattern("git:*", "git:add src/main.ts", "command")).toBe(true);
+    expect(matchPattern("git:*", "git:status", "command")).toBe(true);
+    expect(matchPattern("npm:*", "npm:install lodash", "command")).toBe(true);
+  });
+
+  it("path mode: * stops at / when pattern has content after the wildcard", () => {
+    // "git:*/index.ts" — path mode cannot skip "components/" to find "index.ts"
+    expect(matchPattern("git:*/index.ts", "git:src/components/index.ts", "path")).toBe(false);
+    // same pattern in a single-segment path does work in path mode
+    expect(matchPattern("git:*/index.ts", "git:src/index.ts", "path")).toBe(true);
+  });
+
+  it("command mode: * matches across / even with content after the wildcard", () => {
+    // "git:*/index.ts" — command mode can match multi-segment paths
+    expect(matchPattern("git:*/index.ts", "git:src/components/index.ts", "command")).toBe(true);
+  });
+
+  it("command mode: ** still matches across / as well", () => {
+    expect(matchPattern("/workspace/**", "/workspace/src/index.ts", "command")).toBe(true);
+  });
+
+  it("unrelated tool prefix never matches regardless of mode", () => {
+    expect(matchPattern("git:*", "npm:install", "command")).toBe(false);
+    expect(matchPattern("git:*", "npm:install", "path")).toBe(false);
+  });
+});
+
+describe("evaluatePolicy — contentMode plumbing", () => {
+  it("Bash allow rule in command mode correctly matches content with path separator", () => {
+    const policy = makePolicy({ allow: parseRules(["Bash(git:*)"]) });
+    // git:add src/main.ts — suffix wildcard; both modes match, but command mode
+    // is the documented convention for Bash tools
+    expect(evaluatePolicy(policy, "Bash", "git:add src/main.ts", "command")).toBe("allow");
+  });
+
+  it("Bash deny rule in command mode fires for path-containing arguments", () => {
+    // "Bash(git:add *)" with a .ts file deeper in a directory tree
+    // path mode: "^git:add [^/]*" matches prefix "git:add src" → deny fires
+    // command mode: "^git:add .*" matches full string → deny fires
+    // Both deny, confirming plumbing is intact in command mode
+    const policy = makePolicy({ deny: parseRules(["Bash(git:add *)"]) });
+    expect(evaluatePolicy(policy, "Bash", "git:add src/main.ts", "command")).toBe("deny");
+  });
+});
+
+// ─── strict mode tests ────────────────────────────────────────────────────────
+
+describe("evaluatePolicy — strict mode", () => {
+  it("returns deny by default when no rule matches", () => {
+    const policy = makePolicy({ mode: "strict" });
+    expect(evaluatePolicy(policy, "Bash", "git status")).toBe("deny");
+    expect(evaluatePolicy(policy, "Read", "/workspace/file.ts")).toBe("deny");
+  });
+
+  it("explicit allow rule overrides the strict deny default", () => {
+    const policy = makePolicy({
+      mode: "strict",
+      allow: parseRules(["Bash(git:*)"]),
+    });
+    expect(evaluatePolicy(policy, "Bash", "git:status", "command")).toBe("allow");
+    expect(evaluatePolicy(policy, "Bash", "npm:install", "command")).toBe("deny");
+  });
+
+  it("deny rules still work in strict mode", () => {
+    const policy = makePolicy({
+      mode: "strict",
+      allow: parseRules(["Bash"]),
+      deny: parseRules(["Bash(rm:*)"]),
+    });
+    expect(evaluatePolicy(policy, "Bash", "rm:-rf /", "command")).toBe("deny");
+    expect(evaluatePolicy(policy, "Bash", "git:status", "command")).toBe("allow");
   });
 });

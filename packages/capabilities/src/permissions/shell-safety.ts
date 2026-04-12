@@ -164,7 +164,6 @@ export function isReadOnlyCommand(command: string): boolean {
  */
 export function normalizeBashCommand(command: string): string {
   const trimmed = command.trimStart();
-  const firstSpace = trimmed.indexOf(" ");
-  if (firstSpace === -1) return trimmed;
-  return trimmed.slice(0, firstSpace) + ":" + trimmed.slice(firstSpace + 1);
+  // Replace any whitespace (space, tab, etc.) between the verb and its args with ":"
+  return trimmed.replace(/^(\S+)\s+/, "$1:");
 }

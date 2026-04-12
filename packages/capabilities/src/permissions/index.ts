@@ -5,6 +5,7 @@
 
 export { DANGEROUS_FILES, DANGEROUS_PATHS, isPathSafe, workspaceAnchor } from "./path-safety.js";
 export { evaluatePolicy, matchPattern } from "./rule-engine.js";
+export type { ContentMatchMode } from "./rule-engine.js";
 export { parseRule, parseRules } from "./rule-parser.js";
 export {
   DANGEROUS_BASH_PATTERNS,

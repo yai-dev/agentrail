@@ -16,8 +16,12 @@
  *   unconditionally (trusted automation / admin contexts only).
  * - `dontAsk` — `ask` decisions are demoted to `deny`; intended for headless
  *   environments where there is no user present to answer prompts.
+ * - `strict` — deny-by-default; the policy default outcome is `"deny"` rather
+ *   than `"allow"`.  Add explicit `allow` rules to whitelist permitted
+ *   operations.  Use this to build a minimal-privilege configuration where only
+ *   named tool calls are permitted.
  */
-export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "dontAsk";
+export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "dontAsk" | "strict";
 
 /**
  * A single parsed permission rule.
