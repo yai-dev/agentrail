@@ -298,8 +298,8 @@ const app = createAgentApp({
   permissionPolicy: {
     mode: "strict",          // deny anything not explicitly allowed
     allow: parseRules([
-      "Bash(git:*)",         // permit all git commands
-      "Bash(npm:*)",         // permit all npm commands
+      "Bash(git:*)",         // prefix-match: any content starting with "git:"
+      "Bash(npm:*)",         // prefix-match: any content starting with "npm:"
       "Read",                // permit all file reads
     ]),
     deny: [],
@@ -307,6 +307,14 @@ const app = createAgentApp({
   },
 });
 ```
+
+> **Bash rule caveat:** Bash patterns are **prefix-anchored** (no trailing
+> `$`). `Bash(git:*)` matches any normalised command whose first word is
+> `git`, but it also matches shell strings that merely *start* with `git:`
+> — including chained forms like `git:status; curl evil.com`.  Bash rules
+> are useful for coarse-grained allow/deny (e.g. block all `rm` calls), but
+> they cannot provide strict command confinement.  For strong shell
+> isolation, run agents in the sandboxed environment.
 
 **Loading from `agentrail.yaml`:**
 

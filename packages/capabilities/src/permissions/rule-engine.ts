@@ -40,9 +40,16 @@ export type ContentMatchMode = "path" | "command";
  *
  * @param pattern     Glob-style pattern string.
  * @param content     The string to test against the pattern.
- * @param contentMode Controls `*` semantics. Pass `"command"` for Bash
- *                    content so that `*` matches across `/`. Defaults to
- *                    `"path"`.
+ * @param contentMode Controls how `*` is compiled.  The difference is only
+ *                    observable when the pattern has content **after** the
+ *                    wildcard.  For example, in `"path"` mode
+ *                    `"git:*\/index.ts"` does **not** match
+ *                    `"git:src/components/index.ts"` because `[^/]*` stops
+ *                    at the first `/`; in `"command"` mode it does because
+ *                    `.*` can span multiple segments.  For suffix-only
+ *                    wildcards like `"git:*"` both modes behave identically
+ *                    due to prefix anchoring (no trailing `$`).
+ *                    Defaults to `"path"`.
  */
 export function matchPattern(
   pattern: string,
@@ -112,10 +119,14 @@ const EDIT_TOOL_NAMES = new Set(["Write", "Edit"]);
  * @param content     The primary argument used for pattern matching (e.g. the
  *                    shell command or file path). May be omitted for tools
  *                    without a meaningful primary argument.
- * @param contentMode Controls how `*` wildcards in patterns are matched.
- *                    Pass `"command"` for Bash tools so that `*` matches
- *                    across `/` (e.g. `git:*` matches `git:add src/main.ts`).
- *                    Defaults to `"path"` where `*` stops at `/`.
+ * @param contentMode Controls how `*` wildcards in patterns are compiled.
+ *                    Pass `"command"` for Bash content so that patterns with
+ *                    content **after** the wildcard can span `/` — for
+ *                    example `"git:*\/index.ts"` matches
+ *                    `"git:src/components/index.ts"` in command mode but not
+ *                    in path mode.  Suffix-only wildcards like `"git:*"` are
+ *                    unaffected by this setting (prefix anchor, no `$`).
+ *                    Defaults to `"path"`.
  */
 export function evaluatePolicy(
   policy: ToolPermissionPolicy,
