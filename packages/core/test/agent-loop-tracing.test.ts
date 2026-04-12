@@ -15,9 +15,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { defineAgent } from "../src/agent/define-agent.js";
-import type { AgentLoopConfig, InternalContext, InternalSpec } from "../src/agent/agent-loop.js";
+import type { InternalContext, InternalSpec } from "../src/agent/agent-loop.js";
 import { agentLoop } from "../src/agent/agent-loop.js";
+import { defineAgent } from "../src/agent/define-agent.js";
 import type { LlmClient, LlmRequest, LlmStream } from "../src/interfaces/llm-client.js";
 import type { AssistantMessage } from "../src/types/message.types.js";
 import type { LlmStreamEvent, RuntimeEvent } from "../src/types/result.types.js";
@@ -158,9 +158,7 @@ describe("agent-loop – tracing fields", () => {
     // All events share the same auto-generated chainId
     expect(chainIds).toHaveLength(1);
     // Should look like a UUID
-    expect(chainIds[0]).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-    );
+    expect(chainIds[0]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
   it("depth defaults to 0 when not provided", async () => {

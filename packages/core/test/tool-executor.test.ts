@@ -153,7 +153,15 @@ describe("executeToolCalls — ToolInterceptor", () => {
     };
 
     const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
-    const result = await executeToolCalls([tool], msg, undefined, stream, TEST_TRACING, undefined, interceptor);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      interceptor,
+    );
 
     expect(tool.execute).not.toHaveBeenCalled();
     expect(afterSpy).not.toHaveBeenCalled();
@@ -236,7 +244,15 @@ describe("executeToolCalls — ToolInterceptor", () => {
     };
 
     const msg = makeAssistantMessage([{ id: "c1", name: "ghost", arguments: {} }]);
-    const result = await executeToolCalls([], msg, undefined, stream, TEST_TRACING, undefined, interceptor);
+    const result = await executeToolCalls(
+      [],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      interceptor,
+    );
 
     expect(result.toolResults[0].isError).toBe(true);
     expect(interceptor.onBeforeToolCall).not.toHaveBeenCalled();
@@ -269,7 +285,15 @@ describe("executeToolCalls — ToolInterceptor", () => {
     const msg = makeAssistantMessage([
       { id: "c1", name: "arr", arguments: ["a", "b"] as unknown as Record<string, unknown> },
     ]);
-    await executeToolCalls([arrayTool], msg, undefined, stream, TEST_TRACING, undefined, interceptor);
+    await executeToolCalls(
+      [arrayTool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      interceptor,
+    );
 
     // The interceptor should receive exactly what came out of validateToolArguments,
     // not an object-spread of an array.
@@ -280,7 +304,15 @@ describe("executeToolCalls — ToolInterceptor", () => {
   it("no interceptor: behaves like original executor", async () => {
     const tool = makeTool("echo");
     const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
-    const result = await executeToolCalls([tool], msg, undefined, stream, TEST_TRACING, undefined, undefined);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      undefined,
+    );
 
     expect(tool.execute).toHaveBeenCalledOnce();
     expect(result.toolResults[0].isError).toBe(false);
@@ -303,7 +335,15 @@ describe("executeToolCalls — ToolInterceptor", () => {
     };
 
     const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "ok" } }]);
-    const result = await executeToolCalls([tool], msg, undefined, stream, TEST_TRACING, undefined, interceptor);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      interceptor,
+    );
 
     expect(tool.execute).not.toHaveBeenCalled();
     expect(afterSpy).not.toHaveBeenCalled();
@@ -337,7 +377,15 @@ describe("executeToolCalls — tool.validate()", () => {
     const interceptor: ToolInterceptor = { onAfterToolCall: afterSpy };
 
     const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
-    const result = await executeToolCalls([tool], msg, undefined, stream, TEST_TRACING, undefined, interceptor);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      interceptor,
+    );
 
     expect(validateFn).toHaveBeenCalledOnce();
     expect(tool.execute).toHaveBeenCalledOnce();
@@ -354,7 +402,15 @@ describe("executeToolCalls — tool.validate()", () => {
     const interceptor: ToolInterceptor = { onAfterToolCall: afterSpy };
 
     const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
-    const result = await executeToolCalls([tool], msg, undefined, stream, TEST_TRACING, undefined, interceptor);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      interceptor,
+    );
 
     expect(tool.execute).not.toHaveBeenCalled();
     expect(afterSpy).not.toHaveBeenCalled();
@@ -374,7 +430,15 @@ describe("executeToolCalls — tool.validate()", () => {
     const interceptor: ToolInterceptor = { onAfterToolCall: afterSpy };
 
     const msg = makeAssistantMessage([{ id: "c1", name: "echo", arguments: { value: "x" } }]);
-    const result = await executeToolCalls([tool], msg, undefined, stream, TEST_TRACING, undefined, interceptor);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      interceptor,
+    );
 
     expect(tool.execute).not.toHaveBeenCalled();
     expect(afterSpy).not.toHaveBeenCalled();

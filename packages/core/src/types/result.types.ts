@@ -116,96 +116,101 @@ export interface RuntimeTracingFields {
  *
  * @see {@link https://agentrail.run/concepts/events}
  */
-export type RuntimeEvent = (
+export type RuntimeEvent =
   // ── Session lifecycle ────────────────────────────────────────────────────
   /** Emitted once when the agent begins processing the user input. */
-  | { readonly type: "session.start" }
-  /** Emitted once after all turns complete. Contains the full message list and token usage. */
-  | { readonly type: "session.end"; readonly messages: Message[]; readonly usage: Usage }
-  // ── Turn lifecycle ───────────────────────────────────────────────────────
-  /** Emitted at the start of each reasoning turn (LLM call). */
-  | { readonly type: "turn.start" }
-  /** Emitted after each turn completes, including the assistant message and any tool results. */
-  | {
-      readonly type: "turn.complete";
-      readonly message: AssistantMessage;
-      readonly toolResults: ToolResultMessage[];
-    }
-  // ── Message lifecycle ────────────────────────────────────────────────────
-  /** Emitted when a new message (user, assistant, or tool result) begins. */
-  | { readonly type: "message.start"; readonly message: Message }
-  /** Emitted for each incremental token update on an in-progress assistant message. */
-  | {
-      readonly type: "message.update";
-      readonly message: AssistantMessage;
-      readonly event: LlmStreamEvent;
-    }
-  /** Emitted once a message is fully assembled. */
-  | { readonly type: "message.end"; readonly message: Message }
-  // ── Tool execution ───────────────────────────────────────────────────────
-  /**
-   * Emitted just before a tool call is dispatched to the tool implementation.
-   *
-   * When a `ToolInterceptor` is active, this event is emitted **after** the
-   * `onBeforeToolCall` hook has run so that `args` always reflects the effective
-   * (potentially modified) input that will be passed to the tool.
-   *
-   * - `args`    — effective input (after any interceptor modifications).
-   * - `rawArgs` — original model-generated arguments, always equal to
-   *               `toolCall.arguments`.  Identical to `args` when no interceptor
-   *               modifies the input.
-   */
-  | {
-      readonly type: "tool.before";
-      readonly toolCallId: string;
-      readonly toolName: string;
-      /** Effective input passed to the tool (may differ from raw model arguments). */
-      readonly args: unknown;
-      /** Original model-generated arguments, preserved for audit and debugging. */
-      readonly rawArgs: unknown;
-    }
-  /** Emitted for each incremental update produced by a streaming tool. */
-  | {
-      readonly type: "tool.update";
-      readonly toolCallId: string;
-      readonly toolName: string;
-      readonly partialResult: ToolResult;
-    }
-  /** Emitted once a tool call completes (success or error). `isError` distinguishes the two. */
-  | {
-      readonly type: "tool.after";
-      readonly toolCallId: string;
-      readonly toolName: string;
-      readonly result: ToolResult;
-      readonly isError: boolean;
-    }
-  // ── Control flow ─────────────────────────────────────────────────────────
-  /** Emitted when the configured `maxTurns` limit is reached. */
-  | { readonly type: "max_turns_reached"; readonly turnCount: number }
-  /**
-   * Emitted when a tool requests human input. The host is expected to collect
-   * the response and resume execution.
-   */
-  | {
-      readonly type: "waiting_for_user_input";
-      readonly toolCallId: string;
-      readonly question: string;
-      readonly hint?: string;
-      readonly options?: string[];
-      readonly multiple?: boolean;
-      readonly custom?: boolean;
-    }
-  // ── New lifecycle events ─────────────────────────────────────────────────
-  /** Emitted when context compaction runs during a streaming request. */
-  | { readonly type: "compaction"; readonly messagesBefore: number; readonly messagesAfter: number }
-  /** Emitted when a sub-agent is spawned by a capability (e.g. a skill). */
-  | { readonly type: "subagent.spawn"; readonly childSessionId: string }
-  /** Emitted when a spawned sub-agent finishes. */
-  | { readonly type: "subagent.complete"; readonly childSessionId: string }
-  // ── Error ────────────────────────────────────────────────────────────────
-  /** Emitted when a runtime error terminates the agent stream. */
-  | { readonly type: "error"; readonly error: Error }
-) & RuntimeTracingFields;
+  (| { readonly type: "session.start" }
+    /** Emitted once after all turns complete. Contains the full message list and token usage. */
+    | { readonly type: "session.end"; readonly messages: Message[]; readonly usage: Usage }
+    // ── Turn lifecycle ───────────────────────────────────────────────────────
+    /** Emitted at the start of each reasoning turn (LLM call). */
+    | { readonly type: "turn.start" }
+    /** Emitted after each turn completes, including the assistant message and any tool results. */
+    | {
+        readonly type: "turn.complete";
+        readonly message: AssistantMessage;
+        readonly toolResults: ToolResultMessage[];
+      }
+    // ── Message lifecycle ────────────────────────────────────────────────────
+    /** Emitted when a new message (user, assistant, or tool result) begins. */
+    | { readonly type: "message.start"; readonly message: Message }
+    /** Emitted for each incremental token update on an in-progress assistant message. */
+    | {
+        readonly type: "message.update";
+        readonly message: AssistantMessage;
+        readonly event: LlmStreamEvent;
+      }
+    /** Emitted once a message is fully assembled. */
+    | { readonly type: "message.end"; readonly message: Message }
+    // ── Tool execution ───────────────────────────────────────────────────────
+    /**
+     * Emitted just before a tool call is dispatched to the tool implementation.
+     *
+     * When a `ToolInterceptor` is active, this event is emitted **after** the
+     * `onBeforeToolCall` hook has run so that `args` always reflects the effective
+     * (potentially modified) input that will be passed to the tool.
+     *
+     * - `args`    — effective input (after any interceptor modifications).
+     * - `rawArgs` — original model-generated arguments, always equal to
+     *               `toolCall.arguments`.  Identical to `args` when no interceptor
+     *               modifies the input.
+     */
+    | {
+        readonly type: "tool.before";
+        readonly toolCallId: string;
+        readonly toolName: string;
+        /** Effective input passed to the tool (may differ from raw model arguments). */
+        readonly args: unknown;
+        /** Original model-generated arguments, preserved for audit and debugging. */
+        readonly rawArgs: unknown;
+      }
+    /** Emitted for each incremental update produced by a streaming tool. */
+    | {
+        readonly type: "tool.update";
+        readonly toolCallId: string;
+        readonly toolName: string;
+        readonly partialResult: ToolResult;
+      }
+    /** Emitted once a tool call completes (success or error). `isError` distinguishes the two. */
+    | {
+        readonly type: "tool.after";
+        readonly toolCallId: string;
+        readonly toolName: string;
+        readonly result: ToolResult;
+        readonly isError: boolean;
+      }
+    // ── Control flow ─────────────────────────────────────────────────────────
+    /** Emitted when the configured `maxTurns` limit is reached. */
+    | { readonly type: "max_turns_reached"; readonly turnCount: number }
+    /**
+     * Emitted when a tool requests human input. The host is expected to collect
+     * the response and resume execution.
+     */
+    | {
+        readonly type: "waiting_for_user_input";
+        readonly toolCallId: string;
+        readonly question: string;
+        readonly hint?: string;
+        readonly options?: string[];
+        readonly multiple?: boolean;
+        readonly custom?: boolean;
+      }
+    // ── New lifecycle events ─────────────────────────────────────────────────
+    /** Emitted when context compaction runs during a streaming request. */
+    | {
+        readonly type: "compaction";
+        readonly messagesBefore: number;
+        readonly messagesAfter: number;
+      }
+    /** Emitted when a sub-agent is spawned by a capability (e.g. a skill). */
+    | { readonly type: "subagent.spawn"; readonly childSessionId: string }
+    /** Emitted when a spawned sub-agent finishes. */
+    | { readonly type: "subagent.complete"; readonly childSessionId: string }
+    // ── Error ────────────────────────────────────────────────────────────────
+    /** Emitted when a runtime error terminates the agent stream. */
+    | { readonly type: "error"; readonly error: Error }
+  ) &
+    RuntimeTracingFields;
 
 // ============================================================================
 // Deprecated aliases (remove in next major)

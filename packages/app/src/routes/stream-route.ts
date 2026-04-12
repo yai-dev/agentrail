@@ -506,7 +506,12 @@ async function drainAgentStream(
       await opts.writeEvent(errorEvent);
       // Trace consumers receive a sanitized event that preserves tracing fields AND
       // keeps the error message readable (raw Error instances serialize as "{}").
-      opts.onTraceEvent({ ...errorEvent, chainId: event.chainId, depth: event.depth, turnIndex: event.turnIndex });
+      opts.onTraceEvent({
+        ...errorEvent,
+        chainId: event.chainId,
+        depth: event.depth,
+        turnIndex: event.turnIndex,
+      });
       break;
     }
 

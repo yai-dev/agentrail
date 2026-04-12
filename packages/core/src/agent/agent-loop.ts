@@ -87,7 +87,16 @@ export function agentLoop(
       stream.push({ type: "message.end", message: prompt, ...preLoopTracing });
     }
 
-    await runLoop(currentMessages, newMessages, prompts, config, context.signal, stream, chainId, depth);
+    await runLoop(
+      currentMessages,
+      newMessages,
+      prompts,
+      config,
+      context.signal,
+      stream,
+      chainId,
+      depth,
+    );
   })();
 
   return stream;
@@ -265,14 +274,20 @@ async function runLoop(
       stream.push({ type: "turn.complete", message, toolResults, ...tracing });
 
       const compactedMessages = config.reactiveCompaction
-        ? await maybeApplyReactiveCompaction(currentMessages, config.reactiveCompaction, stream, tracing, {
-            turnCount,
-            usage: message.usage,
-            latestMessage: message,
-            protectedMessages,
-            records: compactionRecords,
-            trigger: "proactive",
-          })
+        ? await maybeApplyReactiveCompaction(
+            currentMessages,
+            config.reactiveCompaction,
+            stream,
+            tracing,
+            {
+              turnCount,
+              usage: message.usage,
+              latestMessage: message,
+              protectedMessages,
+              records: compactionRecords,
+              trigger: "proactive",
+            },
+          )
         : null;
       if (compactedMessages) {
         currentMessages.splice(0, currentMessages.length, ...compactedMessages);
@@ -303,7 +318,11 @@ async function runLoop(
   }
 
   // Compute the final tracing — turnCount at this point is the last completed turn.
-  const finalTracing: RuntimeTracingFields = { chainId, depth, turnIndex: Math.max(0, turnCount - 1) };
+  const finalTracing: RuntimeTracingFields = {
+    chainId,
+    depth,
+    turnIndex: Math.max(0, turnCount - 1),
+  };
   stream.push({ type: "session.end", messages: newMessages, usage: totalUsage, ...finalTracing });
   stream.end(newMessages);
 }

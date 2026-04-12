@@ -22,10 +22,10 @@ import type {
   Usage,
 } from "@agentrail/core";
 import { describe, expect, it, vi } from "vitest";
-
-const T: RuntimeTracingFields = { chainId: "test-chain", depth: 0, turnIndex: 0 };
 import type { AgentrailProfile, AgentrailSessionStore } from "../src/host/types.js";
 import { createStreamRoute } from "../src/routes/stream-route.js";
+
+const T: RuntimeTracingFields = { chainId: "test-chain", depth: 0, turnIndex: 0 };
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
