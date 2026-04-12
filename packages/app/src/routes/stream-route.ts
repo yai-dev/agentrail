@@ -500,14 +500,13 @@ async function drainAgentStream(
 
   for await (const event of agentStream) {
     if (isRuntimeError(event)) {
-      const errorEvent: AgentrailErrorEvent = {
-        type: "error",
-        error: { message: (event.error as Error)?.message ?? "Unknown runtime error" },
-      };
+      const message = (event.error as Error)?.message ?? "Unknown runtime error";
+      const errorEvent: AgentrailErrorEvent = { type: "error", error: { message } };
       // SSE clients receive the sanitised host event (no raw Error object).
       await opts.writeEvent(errorEvent);
-      // Trace consumers receive the original RuntimeEvent so chainId/depth/turnIndex are preserved.
-      opts.onTraceEvent(event);
+      // Trace consumers receive a sanitized event that preserves tracing fields AND
+      // keeps the error message readable (raw Error instances serialize as "{}").
+      opts.onTraceEvent({ ...errorEvent, chainId: event.chainId, depth: event.depth, turnIndex: event.turnIndex });
       break;
     }
 

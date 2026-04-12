@@ -182,7 +182,13 @@ export class OrchestrationManager {
       }
 
       if (existingAgent.status !== "closed" && !this.activeAgents.has(existingAgent.id)) {
-        await this.attachAgent(existingAgent, normalizedInput.chainId, normalizedInput.depth);
+        // Prefer the persisted tracing identity; fall back to the caller's values only if
+        // the agent was originally spawned without tracing (e.g. before this feature existed).
+        await this.attachAgent(
+          existingAgent,
+          existingAgent.chainId ?? normalizedInput.chainId,
+          existingAgent.depth ?? normalizedInput.depth,
+        );
         this.resumeQueuedInputsForAgent(existingAgent.id);
       }
 
