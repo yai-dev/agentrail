@@ -245,6 +245,9 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         return c.json({ error: `Agent profile '${agentId}' not found` }, 404);
       }
 
+      // traceId is created here so it can serve as chainId for capability build context.
+      const traceId = randomUUID();
+
       // Pass a no-op sub-agent event handler so that capabilities relying on
       // onSubAgentEvent (e.g. orchestration tools) work on the /chat path too.
       // Events are discarded here — use the /stream endpoint for live event delivery.
@@ -254,6 +257,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         sessionId,
         sessionRef,
         sessionStore: options.sessionStore,
+        chainId: traceId,
       };
       const agent = await profile.createAgent(profileCtx, () => {
         /* sub-agent events are not forwarded on the JSON /chat route */
@@ -282,7 +286,6 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
       );
 
       const traceCtx = { tenantId: request.tenantId, sessionId, sessionRef };
-      const traceId = randomUUID();
       let traceSeq = 0;
 
       emitTraceEvent(traceCtx, { type: "agent_start", agentId, traceId }, traceSeq++, traceId);
@@ -300,6 +303,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
           transformContext,
           reactiveCompaction,
           toolInterceptor: buildToolInterceptor(plugins, profileCtx, onPluginError),
+          chainId: traceId,
         });
       } catch (invokeError) {
         emitTraceEvent(

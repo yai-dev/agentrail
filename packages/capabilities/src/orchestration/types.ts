@@ -124,6 +124,10 @@ export interface SpawnAgentInput {
   taskId?: string;
   displayName?: string;
   role: string;
+  /** Shared correlation ID for the entire request chain (root + descendants). */
+  chainId?: string;
+  /** Sub-agent nesting depth within the multi-agent hierarchy. */
+  depth?: number;
 }
 
 /** Input queued for delivery to a managed agent. */

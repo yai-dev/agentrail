@@ -65,7 +65,7 @@ export class DefaultSubAgentRuntime implements SubAgentRuntime {
     ].join("\n\n");
   }
 
-  async buildTools(_input: CreateManagedAgentInput): Promise<RuntimeTool[]> {
+  async buildTools(input: CreateManagedAgentInput): Promise<RuntimeTool[]> {
     const sessionStore = new SessionManager(this.dataDir);
     const capCtx: CapabilityBuildContext = {
       tenantId: this.tenantId,
@@ -73,6 +73,10 @@ export class DefaultSubAgentRuntime implements SubAgentRuntime {
       sessionId: this.sessionId,
       sessionRef: this.sessionRef,
       sessionStore,
+      tracing:
+        input.chainId !== undefined
+          ? { chainId: input.chainId, depth: input.depth ?? 0 }
+          : undefined,
     };
 
     return (

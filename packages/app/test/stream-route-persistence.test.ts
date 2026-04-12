@@ -17,10 +17,13 @@ import type {
   AssistantMessage,
   Message,
   RuntimeEvent,
+  RuntimeTracingFields,
   ToolResultMessage,
   Usage,
 } from "@agentrail/core";
 import { describe, expect, it, vi } from "vitest";
+
+const T: RuntimeTracingFields = { chainId: "test-chain", depth: 0, turnIndex: 0 };
 import type { AgentrailProfile, AgentrailSessionStore } from "../src/host/types.js";
 import { createStreamRoute } from "../src/routes/stream-route.js";
 
@@ -74,28 +77,30 @@ function makeTwoTurnStream(): AgentStream {
   const assistantMsg2 = makeAssistantMsg(false); // turn 2: final response
 
   async function* events(): AsyncGenerator<RuntimeEvent> {
-    yield { type: "session.start" };
-    yield { type: "turn.start" };
-    yield { type: "message.start", message: userMsg };
-    yield { type: "message.end", message: userMsg };
-    yield { type: "message.start", message: assistantMsg1 };
-    yield { type: "message.end", message: assistantMsg1 };
-    yield { type: "tool.before", toolCallId: "tc1", toolName: "search", args: {} };
+    yield { ...T, type: "session.start" };
+    yield { ...T, type: "turn.start" };
+    yield { ...T, type: "message.start", message: userMsg };
+    yield { ...T, type: "message.end", message: userMsg };
+    yield { ...T, type: "message.start", message: assistantMsg1 };
+    yield { ...T, type: "message.end", message: assistantMsg1 };
+    yield { ...T, type: "tool.before", toolCallId: "tc1", toolName: "search", args: {} };
     yield {
+      ...T,
       type: "tool.after",
       toolCallId: "tc1",
       toolName: "search",
       result: "result",
       isError: false,
     };
-    yield { type: "message.start", message: toolResultMsg };
-    yield { type: "message.end", message: toolResultMsg };
-    yield { type: "turn.complete", message: assistantMsg1, toolResults: [toolResultMsg] };
-    yield { type: "turn.start" };
-    yield { type: "message.start", message: assistantMsg2 };
-    yield { type: "message.end", message: assistantMsg2 };
-    yield { type: "turn.complete", message: assistantMsg2, toolResults: [] };
+    yield { ...T, type: "message.start", message: toolResultMsg };
+    yield { ...T, type: "message.end", message: toolResultMsg };
+    yield { ...T, type: "turn.complete", message: assistantMsg1, toolResults: [toolResultMsg] };
+    yield { ...T, type: "turn.start" };
+    yield { ...T, type: "message.start", message: assistantMsg2 };
+    yield { ...T, type: "message.end", message: assistantMsg2 };
+    yield { ...T, type: "turn.complete", message: assistantMsg2, toolResults: [] };
     yield {
+      ...T,
       type: "session.end",
       messages: [userMsg, assistantMsg1, toolResultMsg, assistantMsg2],
       usage: ZERO_USAGE,
@@ -246,8 +251,8 @@ describe("stream-route – incremental persistence", () => {
     const sessionStore = makeSessionStore();
 
     async function* earlyEndStream(): AsyncGenerator<RuntimeEvent> {
-      yield { type: "session.start" };
-      yield { type: "turn.start" };
+      yield { ...T, type: "session.start" };
+      yield { ...T, type: "turn.start" };
       // stream ends without session.end
     }
 
@@ -387,13 +392,14 @@ describe("stream-route – abort race condition", () => {
     const assistantMsg = makeAssistantMsg(false);
 
     async function* streamWithSessionEnd(): AsyncGenerator<RuntimeEvent> {
-      yield { type: "session.start" };
-      yield { type: "turn.start" };
-      yield { type: "message.end", message: assistantMsg };
-      yield { type: "turn.complete", message: assistantMsg, toolResults: [] };
+      yield { ...T, type: "session.start" };
+      yield { ...T, type: "turn.start" };
+      yield { ...T, type: "message.end", message: assistantMsg };
+      yield { ...T, type: "turn.complete", message: assistantMsg, toolResults: [] };
       // This event should never be consumed — the bottom-of-loop abort check
       // fires after the flush above and breaks out before reaching here.
       yield {
+        ...T,
         type: "session.end",
         messages: [assistantMsg],
         usage: ZERO_USAGE,
@@ -442,12 +448,13 @@ describe("stream-route – abort race condition", () => {
     // check runs, signal.aborted is already true — so the loop breaks before
     // ever requesting turn.complete from the generator.
     async function* streamWithEarlyAbort(): AsyncGenerator<RuntimeEvent> {
-      yield { type: "session.start" };
+      yield { ...T, type: "session.start" };
       reqAbortCtrl.abort(); // fires before the next yield is consumed
-      yield { type: "turn.start" };
-      yield { type: "message.end", message: assistantMsg };
-      yield { type: "turn.complete", message: assistantMsg, toolResults: [] };
+      yield { ...T, type: "turn.start" };
+      yield { ...T, type: "message.end", message: assistantMsg };
+      yield { ...T, type: "turn.complete", message: assistantMsg, toolResults: [] };
       yield {
+        ...T,
         type: "session.end",
         messages: [assistantMsg],
         usage: ZERO_USAGE,

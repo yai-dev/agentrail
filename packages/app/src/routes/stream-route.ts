@@ -340,6 +340,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           sessionId: sid,
           sessionRef,
           sessionStore: options.sessionStore,
+          chainId: requestTraceId,
         };
 
         // ── 6d. Compact history + load budget slice ────────────────────────
@@ -417,6 +418,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             writeEvent,
             onTraceEvent: maybeTraceEvent,
             toolInterceptor: buildToolInterceptor(plugins, profileCtx, onPluginError),
+            chainId: requestTraceId,
             onTurnMessagesReady: async (msgs) => {
               await options.sessionStore.appendMessages(tenantId, sid, msgs);
             },
@@ -456,6 +458,7 @@ interface DrainAgentStreamOptions {
   writeEvent: (event: RuntimeEvent | object) => Promise<void>;
   onTraceEvent: (event: RuntimeEvent | object) => void;
   toolInterceptor?: ToolInterceptor;
+  chainId?: string;
   /**
    * Called after each internal reasoning turn (turn.complete) with the batch of new messages
    * produced during that turn. SSE is written first; this runs immediately after.
@@ -492,6 +495,7 @@ async function drainAgentStream(
     transformContext: opts.transformContext,
     reactiveCompaction: opts.reactiveCompaction,
     toolInterceptor: opts.toolInterceptor,
+    chainId: opts.chainId,
   });
 
   for await (const event of agentStream) {

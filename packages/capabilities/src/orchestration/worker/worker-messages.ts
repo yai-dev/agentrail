@@ -21,6 +21,10 @@ export interface WorkerInitMessage {
   // biome-ignore lint/suspicious/noExplicitAny: Worker state is serialized
   runtimeConfig: any;
   workerConfig?: WorkerConfigMessage;
+  /** Shared correlation ID for the request chain (root + all descendants). */
+  chainId?: string;
+  /** Sub-agent nesting depth within the multi-agent hierarchy. */
+  depth?: number;
 }
 
 /** Parent-to-worker message that asks the worker to process queued input. */

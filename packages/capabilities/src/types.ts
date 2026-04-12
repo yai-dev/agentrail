@@ -42,6 +42,12 @@ export interface CapabilityBuildContext {
   waitHandleRegistry?: WaitHandleRegistry;
   /** Forwarded to the sub-agent orchestration system. */
   onSubAgentEvent?: (event: object) => void;
+  /**
+   * Tracing context for the current request chain.
+   * `chainId` is the same string as the route-level `traceId`/`requestTraceId`.
+   * `depth` is 0 for the root agent, incremented by 1 for each sub-agent level.
+   */
+  tracing?: { chainId: string; depth: number };
 }
 
 /**

@@ -203,6 +203,27 @@ The most important ones for UI consumers:
 | `waiting_for_user_input`    | The agent is paused waiting for user input                                                 |
 | `skill_start` / `skill_end` | A skill sub-agent is invoked                                                               |
 
+### Tracing fields on every RuntimeEvent
+
+Every `RuntimeEvent` carries three additional fields for distributed tracing and log correlation:
+
+```ts
+interface RuntimeTracingFields {
+  /** Stable correlation ID for the entire request chain.
+   * Shared by the root agent and all spawned sub-agents.
+   * In the app layer this equals the route-level traceId / requestTraceId. */
+  readonly chainId: string;
+  /** Nesting depth: 0 = root agent, 1 = direct sub-agent, etc. */
+  readonly depth: number;
+  /** Zero-based turn counter within this agent's loop.
+   * Pre-loop events (session.start, initial turn.start, initial prompt messages)
+   * carry turnIndex = 0. */
+  readonly turnIndex: number;
+}
+```
+
+These fields are automatically stamped by `agentLoop` and propagated to sub-agents via the orchestration subsystem. You can use `chainId` to join all events across a multi-agent invocation in your telemetry backend.
+
 ### `tool.before` field reference
 
 ```ts

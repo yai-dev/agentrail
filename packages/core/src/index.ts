@@ -139,7 +139,7 @@ export {
   isLlmStreamTerminal,
   isRuntimeError,
 } from "@/types/result.types.js";
-export type { LlmStreamEvent, RuntimeEvent } from "@/types/result.types.js";
+export type { LlmStreamEvent, RuntimeEvent, RuntimeTracingFields } from "@/types/result.types.js";
 
 // ============================================================================
 // LLM client — low-level provider access

@@ -87,6 +87,23 @@ export type LlmStreamEvent =
 // ============================================================================
 
 /**
+ * Tracing fields attached to every `RuntimeEvent`.
+ *
+ * - `chainId` — stable correlation ID for the entire request chain, shared by the
+ *   root agent and all descendant sub-agents.  In the app layer this is the same
+ *   string as the route-level `traceId` / `requestTraceId`.
+ * - `depth` — nesting level: `0` for the root agent, `1` for direct sub-agents, etc.
+ * - `turnIndex` — zero-based turn counter within the current agent's loop.
+ *   All events emitted before `runLoop()` starts (`session.start`, the initial
+ *   `turn.start`, and the initial prompt `message.*` events) carry `turnIndex = 0`.
+ */
+export interface RuntimeTracingFields {
+  readonly chainId: string;
+  readonly depth: number;
+  readonly turnIndex: number;
+}
+
+/**
  * Higher-level runtime events exposed by `agent.stream()`.
  *
  * Event types use a dotted namespace convention:
@@ -95,9 +112,11 @@ export type LlmStreamEvent =
  *   - `message.*`  — individual message lifecycle (including tool results)
  *   - `tool.*`     — tool execution lifecycle
  *
+ * All events carry `chainId`, `depth`, and `turnIndex` via `RuntimeTracingFields`.
+ *
  * @see {@link https://agentrail.run/concepts/events}
  */
-export type RuntimeEvent =
+export type RuntimeEvent = (
   // ── Session lifecycle ────────────────────────────────────────────────────
   /** Emitted once when the agent begins processing the user input. */
   | { readonly type: "session.start" }
@@ -185,7 +204,8 @@ export type RuntimeEvent =
   | { readonly type: "subagent.complete"; readonly childSessionId: string }
   // ── Error ────────────────────────────────────────────────────────────────
   /** Emitted when a runtime error terminates the agent stream. */
-  | { readonly type: "error"; readonly error: Error };
+  | { readonly type: "error"; readonly error: Error }
+) & RuntimeTracingFields;
 
 // ============================================================================
 // Deprecated aliases (remove in next major)

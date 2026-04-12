@@ -250,6 +250,7 @@ export async function createManagedSubAgentInstance(
     readyTimeout.unref?.();
   }
 
+  const resolvedInput: CreateManagedAgentInput = options.runtimeConfig?.input ?? options.input;
   safeSend(
     child,
     {
@@ -261,9 +262,11 @@ export async function createManagedSubAgentInstance(
       dataDir: options.dataDir,
       runtimeConfig: {
         ...(options.runtimeConfig ?? {}),
-        input: options.runtimeConfig?.input ?? options.input,
+        input: resolvedInput,
       },
       workerConfig: options.workerConfig,
+      chainId: resolvedInput.chainId,
+      depth: resolvedInput.depth,
     },
     recentStderr,
   );
