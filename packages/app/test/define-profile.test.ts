@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ToolPermissionPolicy } from "@agentrail/capabilities";
 import { describe, expect, it, vi } from "vitest";
 import type { AgentrailProfileContext } from "../src/host/types.js";
 import { defineProfile } from "../src/profile/define-profile.js";
@@ -69,6 +70,64 @@ describe("defineProfile – static shape", () => {
     // createAgent should not throw; the apiKey override should be applied
     const agent = await profile.createAgent(fakeContext);
     expect(agent).toBeDefined();
+  });
+});
+
+describe("defineProfile – permissionPolicy assembly hop", () => {
+  it("forwards permissionPolicy from profileCtx into CapabilityBuildContext", async () => {
+    const policy: ToolPermissionPolicy = {
+      mode: "default",
+      allow: [],
+      deny: [],
+      ask: [],
+    };
+
+    const capturedCtx: { permissionPolicy?: ToolPermissionPolicy } = {};
+    const cap = {
+      type: "spy-cap",
+      buildTools: vi.fn(async (ctx) => {
+        capturedCtx.permissionPolicy = ctx.permissionPolicy;
+        return [];
+      }),
+    };
+
+    const profile = defineProfile({
+      id: "perm-test",
+      name: "Perm Test",
+      agent: { model: "openai:gpt-4o", prompt: "test" },
+      capabilities: [cap],
+    });
+
+    const ctx: AgentrailProfileContext = {
+      ...fakeContext,
+      permissionPolicy: policy,
+    };
+    await profile.createAgent(ctx);
+
+    expect(cap.buildTools).toHaveBeenCalledOnce();
+    expect(capturedCtx.permissionPolicy).toBe(policy);
+  });
+
+  it("passes undefined permissionPolicy when none is set on profileCtx", async () => {
+    const capturedCtx: { permissionPolicy?: ToolPermissionPolicy } = { permissionPolicy: "sentinel" as never };
+    const cap = {
+      type: "spy-cap-2",
+      buildTools: vi.fn(async (ctx) => {
+        capturedCtx.permissionPolicy = ctx.permissionPolicy;
+        return [];
+      }),
+    };
+
+    const profile = defineProfile({
+      id: "no-perm-test",
+      name: "No Perm Test",
+      agent: { model: "openai:gpt-4o", prompt: "test" },
+      capabilities: [cap],
+    });
+
+    await profile.createAgent(fakeContext);
+
+    expect(capturedCtx.permissionPolicy).toBeUndefined();
   });
 });
 

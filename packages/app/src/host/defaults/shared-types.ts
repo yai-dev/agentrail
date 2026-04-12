@@ -135,7 +135,7 @@ export interface DefaultCapabilityToolOptions {
   skillManager?: SkillManager;
   onSubAgentEvent?: (event: ExtendedSseEvent) => void;
   containerSkillsDir?: string;
-  /** Active permission policy forwarded to sandboxed Bash and other tools. */
+  /** Active permission policy forwarded to all sandboxed file/shell tools and non-sandboxed tools. */
   permissionPolicy?: ToolPermissionPolicy;
 }
 

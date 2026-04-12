@@ -78,9 +78,9 @@ export interface AgentrailProfileContext {
    */
   chainId?: string;
   /**
-   * Active permission policy for this session.  When present, non-sandboxed
-   * file and shell tools evaluate it via `checkPermissions` before executing.
-   * Sandboxed Bash also honours command-level allow/deny/ask rules.
+   * Active permission policy for this session.  When present, all file and
+   * shell tools — both sandboxed (Bash, Read, Write, Edit) and non-sandboxed
+   * — evaluate it via `checkPermissions` before executing.
    */
   permissionPolicy?: ToolPermissionPolicy;
 }
