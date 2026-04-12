@@ -15,10 +15,14 @@
 export const DANGEROUS_BASH_PATTERNS: readonly RegExp[] = [
   // Fork bomb
   /:\(\)\s*\{\s*:\|:&\s*\}\s*;/,
-  // Wipe entire filesystem
-  /\brm\s+(-[a-z]*f[a-z]*\s+)*\/\s*($|\|)/i,
-  /\brm\s+-rf\s+\/($|\s)/i,
-  /\brm\s+-fr\s+\/($|\s)/i,
+  // Wipe entire filesystem.
+  // Single combined flag block containing 'f', e.g. rm -rf /, rm -rrf /, rm -Rf /
+  // (no outer repetition avoids ReDoS from nested quantifiers)
+  /\brm\s+-[a-z]*f[a-z]*\s+\/\s*($|\|)/i,
+  // Separate flag tokens with force flag second, e.g. rm -r -f /
+  /\brm\s+-[a-z]+\s+-[a-z]*f[a-z]*\s+\/\s*($|\|)/i,
+  // Separate flag tokens with force flag first, e.g. rm -f -r /
+  /\brm\s+-[a-z]*f[a-z]*\s+-[a-z]+\s+\/\s*($|\|)/i,
   // Low-level disk write
   /\bdd\s+.*of=\/dev\/(sd|hd|nvme|xvd|vd)/i,
   // Format filesystem

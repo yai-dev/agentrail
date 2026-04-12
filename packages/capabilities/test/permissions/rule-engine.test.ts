@@ -6,8 +6,37 @@
 import { describe, expect, it } from "vitest";
 import { evaluatePolicy, matchPattern } from "../../src/permissions/rule-engine.js";
 import { parseRules } from "../../src/permissions/rule-parser.js";
-import { normalizeBashCommand } from "../../src/permissions/shell-safety.js";
+import { isDangerousCommand, normalizeBashCommand } from "../../src/permissions/shell-safety.js";
 import type { ToolPermissionPolicy } from "../../src/permissions/types.js";
+
+// ─── isDangerousCommand tests ─────────────────────────────────────────────────
+
+describe("isDangerousCommand", () => {
+  it("blocks rm -rf / variants", () => {
+    // combined flag block
+    expect(isDangerousCommand("rm -rf /")).toBe(true);
+    expect(isDangerousCommand("rm -fr /")).toBe(true);
+    expect(isDangerousCommand("rm -Rf /")).toBe(true);
+    expect(isDangerousCommand("rm -rrf /")).toBe(true);
+    // separate flag tokens
+    expect(isDangerousCommand("rm -r -f /")).toBe(true);
+    expect(isDangerousCommand("rm -f -r /")).toBe(true);
+  });
+
+  it("blocks fork bomb", () => {
+    expect(isDangerousCommand(":(){:|:&};:")).toBe(true);
+  });
+
+  it("blocks dd writing to block device", () => {
+    expect(isDangerousCommand("dd if=/dev/zero of=/dev/sda")).toBe(true);
+  });
+
+  it("does not block safe rm commands", () => {
+    expect(isDangerousCommand("rm -rf ./build")).toBe(false);
+    expect(isDangerousCommand("rm -rf /tmp/workdir")).toBe(false);
+    expect(isDangerousCommand("rm file.txt")).toBe(false);
+  });
+});
 
 // ─── normalizeBashCommand tests ───────────────────────────────────────────────
 
