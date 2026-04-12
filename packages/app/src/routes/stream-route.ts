@@ -504,8 +504,10 @@ async function drainAgentStream(
         type: "error",
         error: { message: (event.error as Error)?.message ?? "Unknown runtime error" },
       };
+      // SSE clients receive the sanitised host event (no raw Error object).
       await opts.writeEvent(errorEvent);
-      opts.onTraceEvent(errorEvent);
+      // Trace consumers receive the original RuntimeEvent so chainId/depth/turnIndex are preserved.
+      opts.onTraceEvent(event);
       break;
     }
 

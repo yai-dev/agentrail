@@ -99,6 +99,10 @@ export interface OrchestrationAgent {
   updatedAt: string;
   closedAt?: string;
   lastJob?: OrchestrationAgentJob;
+  /** Persisted so the sub-agent retains its tracing identity across manager restarts. */
+  chainId?: string;
+  /** Persisted so the sub-agent retains its depth after manager recovery. */
+  depth?: number;
 }
 
 /** Wait condition registered by a managed agent. */

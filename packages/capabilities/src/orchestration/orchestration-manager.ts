@@ -412,7 +412,7 @@ export class OrchestrationManager {
       (currentAgent) => currentAgent.status !== "closed",
     )) {
       try {
-        await this.attachAgent(agent);
+        await this.attachAgent(agent, agent.chainId, agent.depth);
       } catch {
         // Keep recovered state intact; a later explicit attach path can retry.
       }

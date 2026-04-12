@@ -154,6 +154,8 @@ export function applyOrchestrationEvent(
         status: "idle",
         createdAt: event.occurredAt,
         updatedAt: event.occurredAt,
+        chainId: event.agent.chainId,
+        depth: event.agent.depth,
       };
       break;
     }
