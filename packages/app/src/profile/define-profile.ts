@@ -115,6 +115,7 @@ function buildBaseCapCtx(
     sessionStore: context.sessionStore,
     modelConfig,
     onSubAgentEvent,
+    tracing: context.chainId ? { chainId: context.chainId, depth: 0 } : undefined,
   };
 }
 

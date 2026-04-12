@@ -80,6 +80,11 @@ interface AgentrailProfileContext {
   sessionId: string;
   sessionRef: SessionRef;
   sessionStore: AgentrailSessionStore;
+  /** Stable correlation ID for the entire request chain.
+   * When provided, it flows into CapabilityBuildContext.tracing.chainId and
+   * AgentRunOptions.chainId so that RuntimeEvent.chainId equals the route-level
+   * traceId. Sub-agent events inherit the same chainId with depth incremented. */
+  chainId?: string;
 }
 
 interface AgentrailProfile {

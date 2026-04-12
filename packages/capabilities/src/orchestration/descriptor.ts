@@ -147,7 +147,7 @@ export function orchestration(
               });
 
       return [
-        createSpawnAgentTool(om, getRunId),
+        createSpawnAgentTool(om, getRunId, ctx.tracing),
         createSendInputTool(om),
         createWaitAgentTool(om),
         createCloseAgentTool(om),

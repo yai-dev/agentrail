@@ -97,6 +97,20 @@ export interface AgentRunOptions {
    * (see `buildToolInterceptor` in `@agentrail/app`).
    */
   readonly toolInterceptor?: ToolInterceptor;
+
+  /**
+   * Stable correlation ID for the entire request chain, shared by the root
+   * agent and all descendant sub-agents.  When absent, `agentLoop` generates a
+   * random UUID.  In the app layer this should be set to the route-level
+   * `traceId` so that `RuntimeEvent.chainId === telemetry traceId`.
+   */
+  readonly chainId?: string;
+
+  /**
+   * Nesting depth within a multi-agent hierarchy.  `0` for the root agent,
+   * incremented by 1 for each orchestration level.  Defaults to `0`.
+   */
+  readonly depth?: number;
 }
 
 // ============================================================================

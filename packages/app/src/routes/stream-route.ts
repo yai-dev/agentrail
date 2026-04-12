@@ -340,6 +340,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           sessionId: sid,
           sessionRef,
           sessionStore: options.sessionStore,
+          chainId: requestTraceId,
         };
 
         // ── 6d. Compact history + load budget slice ────────────────────────
@@ -417,6 +418,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             writeEvent,
             onTraceEvent: maybeTraceEvent,
             toolInterceptor: buildToolInterceptor(plugins, profileCtx, onPluginError),
+            chainId: requestTraceId,
             onTurnMessagesReady: async (msgs) => {
               await options.sessionStore.appendMessages(tenantId, sid, msgs);
             },
@@ -456,6 +458,7 @@ interface DrainAgentStreamOptions {
   writeEvent: (event: RuntimeEvent | object) => Promise<void>;
   onTraceEvent: (event: RuntimeEvent | object) => void;
   toolInterceptor?: ToolInterceptor;
+  chainId?: string;
   /**
    * Called after each internal reasoning turn (turn.complete) with the batch of new messages
    * produced during that turn. SSE is written first; this runs immediately after.
@@ -492,13 +495,20 @@ async function drainAgentStream(
     transformContext: opts.transformContext,
     reactiveCompaction: opts.reactiveCompaction,
     toolInterceptor: opts.toolInterceptor,
+    chainId: opts.chainId,
   });
 
   for await (const event of agentStream) {
     if (isRuntimeError(event)) {
-      const errorEvent: AgentrailErrorEvent = {
-        type: "error",
+      // Build a single sanitized event: no raw Error instance (serializes as "{}"),
+      // and tracing fields are preserved so both SSE clients and trace observers
+      // satisfy the RuntimeEvent contract.
+      const errorEvent = {
+        type: "error" as const,
         error: { message: (event.error as Error)?.message ?? "Unknown runtime error" },
+        chainId: event.chainId,
+        depth: event.depth,
+        turnIndex: event.turnIndex,
       };
       await opts.writeEvent(errorEvent);
       opts.onTraceEvent(errorEvent);

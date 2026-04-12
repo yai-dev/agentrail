@@ -101,6 +101,8 @@ async function handleInit(message: WorkerInitMessage): Promise<void> {
       pollIntervalMs: message.workerConfig?.pollIntervalMs ?? DEFAULT_WORKER_CONFIG.pollIntervalMs,
       fakeExecution: message.workerConfig?.fakeExecution ?? DEFAULT_WORKER_CONFIG.fakeExecution,
     },
+    chainId: message.chainId,
+    depth: message.depth,
   };
   send({ type: "ready" });
   schedulePoll();
@@ -350,6 +352,8 @@ async function executeTurn(
   const result = await agent.invoke(formatInputs(inputs), {
     messages: currentState.history,
     ...(transformContext ? { transformContext } : {}),
+    ...(currentState.chainId !== undefined ? { chainId: currentState.chainId } : {}),
+    ...(currentState.depth !== undefined ? { depth: currentState.depth } : {}),
   });
 
   return {

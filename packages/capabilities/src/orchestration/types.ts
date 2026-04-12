@@ -99,6 +99,10 @@ export interface OrchestrationAgent {
   updatedAt: string;
   closedAt?: string;
   lastJob?: OrchestrationAgentJob;
+  /** Persisted so the sub-agent retains its tracing identity across manager restarts. */
+  chainId?: string;
+  /** Persisted so the sub-agent retains its depth after manager recovery. */
+  depth?: number;
 }
 
 /** Wait condition registered by a managed agent. */
@@ -124,6 +128,10 @@ export interface SpawnAgentInput {
   taskId?: string;
   displayName?: string;
   role: string;
+  /** Shared correlation ID for the entire request chain (root + descendants). */
+  chainId?: string;
+  /** Sub-agent nesting depth within the multi-agent hierarchy. */
+  depth?: number;
 }
 
 /** Input queued for delivery to a managed agent. */

@@ -52,6 +52,10 @@ export interface CreateManagedAgentInput {
   runId: string;
   role: string;
   taskId: string;
+  /** Shared correlation ID for the entire request chain (root + descendants). */
+  chainId?: string;
+  /** Sub-agent nesting depth within the multi-agent hierarchy. */
+  depth?: number;
 }
 
 /** Runtime adapter that creates managed-agent instances on demand. */
@@ -178,7 +182,13 @@ export class OrchestrationManager {
       }
 
       if (existingAgent.status !== "closed" && !this.activeAgents.has(existingAgent.id)) {
-        await this.attachAgent(existingAgent);
+        // Prefer the persisted tracing identity; fall back to the caller's values only if
+        // the agent was originally spawned without tracing (e.g. before this feature existed).
+        await this.attachAgent(
+          existingAgent,
+          existingAgent.chainId ?? normalizedInput.chainId,
+          existingAgent.depth ?? normalizedInput.depth,
+        );
         this.resumeQueuedInputsForAgent(existingAgent.id);
       }
 
@@ -203,7 +213,7 @@ export class OrchestrationManager {
       throw new Error(`Failed to create agent ${normalizedInput.id}`);
     }
 
-    await this.attachAgent(agent);
+    await this.attachAgent(agent, normalizedInput.chainId, normalizedInput.depth);
     return cloneAgent(agent);
   }
 
@@ -408,7 +418,7 @@ export class OrchestrationManager {
       (currentAgent) => currentAgent.status !== "closed",
     )) {
       try {
-        await this.attachAgent(agent);
+        await this.attachAgent(agent, agent.chainId, agent.depth);
       } catch {
         // Keep recovered state intact; a later explicit attach path can retry.
       }
@@ -484,12 +494,18 @@ export class OrchestrationManager {
     }
   }
 
-  private async attachAgent(agent: OrchestrationAgent): Promise<void> {
+  private async attachAgent(
+    agent: OrchestrationAgent,
+    chainId?: string,
+    depth?: number,
+  ): Promise<void> {
     const instance = await this.runtime.createAgent({
       agentId: agent.id,
       runId: agent.runId,
       role: agent.role,
       taskId: agent.taskId,
+      chainId,
+      depth,
     });
     instance.subscribe?.({
       onJobStarted: (job) => {

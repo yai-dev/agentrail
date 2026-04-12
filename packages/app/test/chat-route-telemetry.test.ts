@@ -123,6 +123,55 @@ describe("createChatRoute – telemetry event filtering", () => {
     expect([...traceIds][0]).toBeDefined();
   });
 
+  it("agent.invoke is called with chainId matching the request traceId", async () => {
+    const collected: WorkflowTraceEventEnvelope[] = [];
+    let invokeOptions: Record<string, unknown> | undefined;
+
+    const profile: AgentrailProfile = {
+      id: AGENT_ID,
+      name: AGENT_ID,
+      createAgent: vi.fn().mockResolvedValue({
+        invoke: vi.fn().mockImplementation((_msg: string, opts: Record<string, unknown>) => {
+          invokeOptions = opts;
+          return Promise.resolve({
+            text: "hello",
+            messages: [],
+            usage: { inputTokens: 10, outputTokens: 5 },
+            stopReason: "end_turn",
+          });
+        }),
+      }),
+      getContextProviders: vi.fn().mockResolvedValue([]),
+    } as unknown as AgentrailProfile;
+
+    const route = createChatRoute({
+      defaultAgentId: AGENT_ID,
+      sessionStore: makeSessionStore(),
+      summarize: async () => "",
+      compaction: { triggerTokens: 999_999, minMessages: 9999 },
+      resolveProfile: vi.fn().mockResolvedValue(profile),
+      onTraceEvent: (_ctx, envelope) => collected.push(envelope),
+    });
+
+    const req = new Request("http://localhost/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tenantId: TENANT_ID,
+        userId: USER_ID,
+        agentId: AGENT_ID,
+        message: "ping",
+      }),
+    });
+
+    await route.fetch(req);
+
+    // The traceId from the envelopes and the chainId passed to invoke must match.
+    const traceId = collected[0]?.traceId;
+    expect(traceId).toBeDefined();
+    expect(invokeOptions?.chainId).toBe(traceId);
+  });
+
   it("each envelope has a unique id even though traceId is shared", async () => {
     const collected: WorkflowTraceEventEnvelope[] = [];
     const profile = makeProfile();

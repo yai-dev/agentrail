@@ -48,6 +48,8 @@ interface InternalContext {
   transformContext?: TransformContextFn;
   reactiveCompaction?: ReactiveCompactionController;
   metadata?: Record<string, unknown>;
+  chainId?: string;
+  depth?: number;
 }
 
 // ============================================================================
@@ -167,6 +169,8 @@ export class AgentImpl implements Agent {
       signal: options?.signal,
       transformContext: options?.transformContext,
       reactiveCompaction: options?.reactiveCompaction,
+      chainId: options?.chainId,
+      depth: options?.depth,
     };
   }
 

@@ -42,4 +42,8 @@ export interface WorkerState {
   input: CreateManagedAgentInput;
   history: Message[];
   workerConfig: SubagentWorkerConfig;
+  /** Shared correlation ID for the request chain (root + all descendants). */
+  chainId?: string;
+  /** Sub-agent nesting depth within the multi-agent hierarchy. */
+  depth?: number;
 }

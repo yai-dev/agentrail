@@ -13,9 +13,10 @@ import type {
   TransformContextFn,
 } from "@/types/agent.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
-import type { RuntimeEvent } from "@/types/result.types.js";
+import type { RuntimeEvent, RuntimeTracingFields } from "@/types/result.types.js";
 import type { RuntimeTool, ToolInterceptor } from "@/types/tool.types.js";
 import type { Usage } from "@/types/usage.types.js";
+import { randomUUID } from "node:crypto";
 
 // ============================================================================
 // ============================================================================
@@ -41,6 +42,10 @@ export interface InternalContext {
   signal?: AbortSignal;
   transformContext?: TransformContextFn;
   metadata?: Record<string, unknown>;
+  /** Correlation ID for the full request chain (root + all descendants). Auto-generated if absent. */
+  chainId?: string;
+  /** Nesting depth: 0 = root agent, +1 per orchestration level. */
+  depth?: number;
 }
 
 // ============================================================================
@@ -66,20 +71,32 @@ export function agentLoop(
   config: AgentLoopConfig,
 ): EventStream<RuntimeEvent, Message[]> {
   const stream = createAgentStream();
+  const chainId = context.chainId ?? randomUUID();
+  const depth = context.depth ?? 0;
+  const preLoopTracing: RuntimeTracingFields = { chainId, depth, turnIndex: 0 };
 
   (async () => {
     const newMessages: Message[] = [...prompts];
     const currentMessages: Message[] = [...context.messages, ...prompts];
 
-    stream.push({ type: "session.start" });
-    stream.push({ type: "turn.start" });
+    stream.push({ type: "session.start", ...preLoopTracing });
+    stream.push({ type: "turn.start", ...preLoopTracing });
 
     for (const prompt of prompts) {
-      stream.push({ type: "message.start", message: prompt });
-      stream.push({ type: "message.end", message: prompt });
+      stream.push({ type: "message.start", message: prompt, ...preLoopTracing });
+      stream.push({ type: "message.end", message: prompt, ...preLoopTracing });
     }
 
-    await runLoop(currentMessages, newMessages, prompts, config, context.signal, stream);
+    await runLoop(
+      currentMessages,
+      newMessages,
+      prompts,
+      config,
+      context.signal,
+      stream,
+      chainId,
+      depth,
+    );
   })();
 
   return stream;
@@ -99,15 +116,18 @@ export function agentLoopContinue(
   }
 
   const stream = createAgentStream();
+  const chainId = context.chainId ?? randomUUID();
+  const depth = context.depth ?? 0;
+  const preLoopTracing: RuntimeTracingFields = { chainId, depth, turnIndex: 0 };
 
   (async () => {
     const newMessages: Message[] = [];
     const currentMessages: Message[] = [...context.messages];
 
-    stream.push({ type: "session.start" });
-    stream.push({ type: "turn.start" });
+    stream.push({ type: "session.start", ...preLoopTracing });
+    stream.push({ type: "turn.start", ...preLoopTracing });
 
-    await runLoop(currentMessages, newMessages, [], config, context.signal, stream);
+    await runLoop(currentMessages, newMessages, [], config, context.signal, stream, chainId, depth);
   })();
 
   return stream;
@@ -130,6 +150,8 @@ async function runLoop(
   config: AgentLoopConfig,
   signal: AbortSignal | undefined,
   stream: EventStream<RuntimeEvent, Message[]>,
+  chainId: string,
+  depth: number,
 ): Promise<void> {
   let firstTurn = true;
   let turnCount = 0;
@@ -152,15 +174,19 @@ async function runLoop(
 
     while (hasMoreToolCalls || pendingMessages.length > 0) {
       if (!firstTurn) {
-        stream.push({ type: "turn.start" });
+        // turnIndex for this turn.start will be set after turnCount++ below
       } else {
         firstTurn = false;
       }
 
       if (pendingMessages.length > 0) {
+        // These steering messages belong to the upcoming turn; stamp with current
+        // turnCount (still pre-increment, so turnIndex = turnCount).  In practice
+        // these are emitted before the LLM call so turnCount hasn't advanced yet.
+        const steeringTracing: RuntimeTracingFields = { chainId, depth, turnIndex: turnCount };
         for (const message of pendingMessages) {
-          stream.push({ type: "message.start", message });
-          stream.push({ type: "message.end", message });
+          stream.push({ type: "message.start", message, ...steeringTracing });
+          stream.push({ type: "message.end", message, ...steeringTracing });
           currentMessages.push(message);
           newMessages.push(message);
         }
@@ -168,10 +194,17 @@ async function runLoop(
       }
 
       turnCount++;
+      const turnIndex = turnCount - 1; // 0-based
+      const tracing: RuntimeTracingFields = { chainId, depth, turnIndex };
+
+      // Emit turn.start for non-first turns (first turn.start was emitted pre-loop).
+      if (turnCount > 1) {
+        stream.push({ type: "turn.start", ...tracing });
+      }
 
       const isLastTurn = config.spec.maxTurns !== undefined && turnCount >= config.spec.maxTurns;
       if (isLastTurn) {
-        stream.push({ type: "max_turns_reached", turnCount });
+        stream.push({ type: "max_turns_reached", turnCount, ...tracing });
       }
 
       const assistantResult = await streamAssistantResponse(
@@ -179,6 +212,7 @@ async function runLoop(
         config,
         signal,
         stream,
+        tracing,
         config.spec.maxTurns !== undefined ? { turnCount, isLastTurn } : undefined,
       );
       const message = assistantResult.message;
@@ -188,6 +222,7 @@ async function runLoop(
           currentMessages,
           config.reactiveCompaction,
           stream,
+          tracing,
           {
             turnCount,
             latestMessage: message,
@@ -200,15 +235,15 @@ async function runLoop(
           currentMessages.splice(0, currentMessages.length, ...compactedMessages);
           continue;
         }
-        emitFinalAssistantMessage(currentMessages, stream, message);
+        emitFinalAssistantMessage(currentMessages, stream, tracing, message);
       }
 
       newMessages.push(message);
       totalUsage = accumulateUsage(totalUsage, message.usage);
 
       if (message.stopReason === "error" || message.stopReason === "aborted") {
-        stream.push({ type: "turn.complete", message, toolResults: [] });
-        stream.push({ type: "session.end", messages: newMessages, usage: totalUsage });
+        stream.push({ type: "turn.complete", message, toolResults: [], ...tracing });
+        stream.push({ type: "session.end", messages: newMessages, usage: totalUsage, ...tracing });
         stream.end(newMessages);
         return;
       }
@@ -223,6 +258,7 @@ async function runLoop(
           message,
           signal,
           stream,
+          tracing,
           config.getSteeringMessages,
           config.toolInterceptor,
         );
@@ -235,17 +271,23 @@ async function runLoop(
         }
       }
 
-      stream.push({ type: "turn.complete", message, toolResults });
+      stream.push({ type: "turn.complete", message, toolResults, ...tracing });
 
       const compactedMessages = config.reactiveCompaction
-        ? await maybeApplyReactiveCompaction(currentMessages, config.reactiveCompaction, stream, {
-            turnCount,
-            usage: message.usage,
-            latestMessage: message,
-            protectedMessages,
-            records: compactionRecords,
-            trigger: "proactive",
-          })
+        ? await maybeApplyReactiveCompaction(
+            currentMessages,
+            config.reactiveCompaction,
+            stream,
+            tracing,
+            {
+              turnCount,
+              usage: message.usage,
+              latestMessage: message,
+              protectedMessages,
+              records: compactionRecords,
+              trigger: "proactive",
+            },
+          )
         : null;
       if (compactedMessages) {
         currentMessages.splice(0, currentMessages.length, ...compactedMessages);
@@ -275,7 +317,13 @@ async function runLoop(
     break;
   }
 
-  stream.push({ type: "session.end", messages: newMessages, usage: totalUsage });
+  // Compute the final tracing — turnCount at this point is the last completed turn.
+  const finalTracing: RuntimeTracingFields = {
+    chainId,
+    depth,
+    turnIndex: Math.max(0, turnCount - 1),
+  };
+  stream.push({ type: "session.end", messages: newMessages, usage: totalUsage, ...finalTracing });
   stream.end(newMessages);
 }
 
@@ -284,6 +332,7 @@ async function streamAssistantResponse(
   config: AgentLoopConfig,
   signal: AbortSignal | undefined,
   stream: EventStream<RuntimeEvent, Message[]>,
+  tracing: RuntimeTracingFields,
   turnContext?: { turnCount: number; isLastTurn: boolean },
 ): Promise<{ message: AssistantMessage; recoverablePromptTooLong: boolean }> {
   let transformedMessages = messages;
@@ -325,7 +374,7 @@ async function streamAssistantResponse(
         partialMessage = event.partial;
         messages.push(partialMessage);
         addedPartial = true;
-        stream.push({ type: "message.start", message: { ...partialMessage } });
+        stream.push({ type: "message.start", message: { ...partialMessage }, ...tracing });
         break;
 
       case "text_start":
@@ -344,6 +393,7 @@ async function streamAssistantResponse(
             type: "message.update",
             message: { ...partialMessage },
             event,
+            ...tracing,
           });
         }
         break;
@@ -366,9 +416,9 @@ async function streamAssistantResponse(
           messages.push(finalMessage);
         }
         if (!addedPartial) {
-          stream.push({ type: "message.start", message: { ...finalMessage } });
+          stream.push({ type: "message.start", message: { ...finalMessage }, ...tracing });
         }
-        stream.push({ type: "message.end", message: finalMessage });
+        stream.push({ type: "message.end", message: finalMessage, ...tracing });
         return { message: finalMessage, recoverablePromptTooLong: false };
       }
     }
@@ -381,6 +431,7 @@ async function maybeApplyReactiveCompaction(
   messages: Message[],
   controller: ReactiveCompactionController,
   stream: EventStream<RuntimeEvent, Message[]>,
+  tracing: RuntimeTracingFields,
   input: {
     turnCount: number;
     usage?: Usage;
@@ -411,6 +462,7 @@ async function maybeApplyReactiveCompaction(
     type: "compaction",
     messagesBefore: messages.length,
     messagesAfter: decision.messages.length,
+    ...tracing,
   });
   return decision.messages;
 }
@@ -418,11 +470,12 @@ async function maybeApplyReactiveCompaction(
 function emitFinalAssistantMessage(
   messages: Message[],
   stream: EventStream<RuntimeEvent, Message[]>,
+  tracing: RuntimeTracingFields,
   message: AssistantMessage,
 ): void {
   messages.push(message);
-  stream.push({ type: "message.start", message: { ...message } });
-  stream.push({ type: "message.end", message });
+  stream.push({ type: "message.start", message: { ...message }, ...tracing });
+  stream.push({ type: "message.end", message, ...tracing });
 }
 
 function accumulateUsage(total: Usage, current: Usage): Usage {

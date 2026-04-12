@@ -21,6 +21,7 @@ function formatSpawnResult(agent: OrchestrationAgent): string {
 export function createSpawnAgentTool(
   manager: OrchestrationManager,
   getRunId: () => Promise<string>,
+  tracingCtx?: { chainId: string; depth: number },
 ) {
   return tool()
     .name("spawn_agent")
@@ -46,7 +47,12 @@ export function createSpawnAgentTool(
     )
     .execute(async (input) => {
       const runId = await getRunId();
-      const agent = await manager.spawnAgent({ ...input, runId });
+      const agent = await manager.spawnAgent({
+        ...input,
+        runId,
+        chainId: tracingCtx?.chainId ?? runId,
+        depth: (tracingCtx?.depth ?? 0) + 1,
+      });
       return {
         content: [{ type: "text" as const, text: formatSpawnResult(agent) }],
         details: {

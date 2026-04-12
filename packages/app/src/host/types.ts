@@ -69,6 +69,13 @@ export interface AgentrailProfileContext {
   sessionId: string;
   sessionRef: SessionRef;
   sessionStore: AgentrailSessionStore;
+  /**
+   * Stable correlation ID for the entire request chain.  When present, this is
+   * propagated into `CapabilityBuildContext.tracing.chainId` and then into
+   * `AgentRunOptions.chainId` so that `RuntimeEvent.chainId` equals the
+   * route-level `traceId`/`requestTraceId`.
+   */
+  chainId?: string;
 }
 
 /**

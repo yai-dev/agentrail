@@ -8,7 +8,7 @@ import { EventStream } from "@/llm/event-stream.js";
 import { validateToolArguments, validateToolInput } from "@/llm/utils/validation.js";
 import type { TextContent, ToolCall } from "@/types/content.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
-import type { RuntimeEvent } from "@/types/result.types.js";
+import type { RuntimeEvent, RuntimeTracingFields } from "@/types/result.types.js";
 import type {
   RuntimeTool,
   ToolInterceptor,
@@ -29,6 +29,7 @@ export async function executeToolCalls(
   assistantMessage: AssistantMessage,
   signal: AbortSignal | undefined,
   stream: EventStream<RuntimeEvent, Message[]>,
+  tracing: RuntimeTracingFields,
   getSteeringMessages?: () => Promise<Message[]>,
   toolInterceptor?: ToolInterceptor,
 ): Promise<ToolExecutionResult> {
@@ -49,6 +50,7 @@ export async function executeToolCalls(
         rawArgs,
         rawArgs,
         stream,
+        tracing,
         results,
       );
       continue;
@@ -73,6 +75,7 @@ export async function executeToolCalls(
         rawArgs,
         rawArgs,
         stream,
+        tracing,
         results,
       );
       continue;
@@ -96,7 +99,7 @@ export async function executeToolCalls(
       if (beforeResult.action === "deny") {
         // tool.before is emitted even for denied calls so stream consumers always
         // see a matching before/after pair.
-        rejectToolCall(toolCall, beforeResult.reason, rawArgs, rawArgs, stream, results);
+        rejectToolCall(toolCall, beforeResult.reason, rawArgs, rawArgs, stream, tracing, results);
         // onAfterToolCall is NOT called for denied executions.
         continue;
       }
@@ -124,6 +127,7 @@ export async function executeToolCalls(
             effectiveArgs,
             rawArgs,
             stream,
+            tracing,
             results,
           );
           // onAfterToolCall is NOT called for schema re-validation failures.
@@ -152,6 +156,7 @@ export async function executeToolCalls(
           effectiveArgs,
           rawArgs,
           stream,
+          tracing,
           results,
         );
         // onAfterToolCall is NOT called for validate() failures.
@@ -166,6 +171,7 @@ export async function executeToolCalls(
       toolName: toolCall.name,
       args: effectiveArgs,
       rawArgs,
+      ...tracing,
     });
 
     // ── Execute ───────────────────────────────────────────────────────────────
@@ -183,6 +189,7 @@ export async function executeToolCalls(
           options: event.options,
           multiple: event.multiple,
           custom: event.custom,
+          ...tracing,
         });
       }
     };
@@ -199,6 +206,7 @@ export async function executeToolCalls(
             toolCallId: toolCall.id,
             toolName: toolCall.name,
             partialResult,
+            ...tracing,
           });
         },
         onSignal,
@@ -221,6 +229,7 @@ export async function executeToolCalls(
       toolName: toolCall.name,
       result,
       isError,
+      ...tracing,
     });
 
     // ── After-hook (called for both success and execution errors, not for deny) ──
@@ -237,8 +246,8 @@ export async function executeToolCalls(
     // ── Finalise ──────────────────────────────────────────────────────────────
     const toolResultMessage = buildToolResultMessage(toolCall, result, isError);
     results.push(toolResultMessage);
-    stream.push({ type: "message.start", message: toolResultMessage });
-    stream.push({ type: "message.end", message: toolResultMessage });
+    stream.push({ type: "message.start", message: toolResultMessage, ...tracing });
+    stream.push({ type: "message.end", message: toolResultMessage, ...tracing });
 
     if (getSteeringMessages) {
       const steering = await getSteeringMessages();
@@ -246,7 +255,7 @@ export async function executeToolCalls(
         steeringMessages = steering;
         const remainingCalls = toolCalls.slice(index + 1);
         for (const skipped of remainingCalls) {
-          results.push(skipToolCall(skipped, stream));
+          results.push(skipToolCall(skipped, stream, tracing));
         }
         break;
       }
@@ -270,6 +279,7 @@ function rejectToolCall(
   args: unknown,
   rawArgs: unknown,
   stream: EventStream<RuntimeEvent, Message[]>,
+  tracing: RuntimeTracingFields,
   results: ToolResultMessage[],
 ): void {
   const errorResult: ToolResult = {
@@ -282,6 +292,7 @@ function rejectToolCall(
     toolName: toolCall.name,
     args,
     rawArgs,
+    ...tracing,
   });
   stream.push({
     type: "tool.after",
@@ -289,11 +300,12 @@ function rejectToolCall(
     toolName: toolCall.name,
     result: errorResult,
     isError: true,
+    ...tracing,
   });
   const msg = buildToolResultMessage(toolCall, errorResult, true);
   results.push(msg);
-  stream.push({ type: "message.start", message: msg });
-  stream.push({ type: "message.end", message: msg });
+  stream.push({ type: "message.start", message: msg, ...tracing });
+  stream.push({ type: "message.end", message: msg, ...tracing });
 }
 
 function buildToolResultMessage(
@@ -315,6 +327,7 @@ function buildToolResultMessage(
 function skipToolCall(
   toolCall: ToolCall,
   stream: EventStream<RuntimeEvent, Message[]>,
+  tracing: RuntimeTracingFields,
 ): ToolResultMessage {
   const result: ToolResult = {
     content: [{ type: "text", text: "Skipped due to queued user message." } as TextContent],
@@ -327,6 +340,7 @@ function skipToolCall(
     toolName: toolCall.name,
     args: toolCall.arguments,
     rawArgs: toolCall.arguments,
+    ...tracing,
   });
   stream.push({
     type: "tool.after",
@@ -334,11 +348,12 @@ function skipToolCall(
     toolName: toolCall.name,
     result,
     isError: true,
+    ...tracing,
   });
 
   const toolResultMessage = buildToolResultMessage(toolCall, result, true);
-  stream.push({ type: "message.start", message: toolResultMessage });
-  stream.push({ type: "message.end", message: toolResultMessage });
+  stream.push({ type: "message.start", message: toolResultMessage, ...tracing });
+  stream.push({ type: "message.end", message: toolResultMessage, ...tracing });
 
   return toolResultMessage;
 }
