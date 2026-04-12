@@ -6,7 +6,54 @@
 import { describe, expect, it } from "vitest";
 import { evaluatePolicy, matchPattern } from "../../src/permissions/rule-engine.js";
 import { parseRules } from "../../src/permissions/rule-parser.js";
+import { normalizeBashCommand } from "../../src/permissions/shell-safety.js";
 import type { ToolPermissionPolicy } from "../../src/permissions/types.js";
+
+// ─── normalizeBashCommand tests ───────────────────────────────────────────────
+
+describe("normalizeBashCommand", () => {
+  it("converts first space to colon", () => {
+    expect(normalizeBashCommand("git status")).toBe("git:status");
+    expect(normalizeBashCommand("npm install lodash")).toBe("npm:install lodash");
+    expect(normalizeBashCommand("rm -rf /")).toBe("rm:-rf /");
+  });
+
+  it("returns single-word commands unchanged", () => {
+    expect(normalizeBashCommand("ls")).toBe("ls");
+  });
+
+  it("trims leading whitespace before splitting", () => {
+    expect(normalizeBashCommand("  git log --oneline")).toBe("git:log --oneline");
+  });
+});
+
+// ─── Bash DSL end-to-end (pattern matching after normalization) ────────────────
+
+describe("Bash DSL — colon-convention patterns via normalizeBashCommand", () => {
+  it("git:* matches any git command after normalization", () => {
+    const policy: ToolPermissionPolicy = {
+      mode: "default",
+      allow: parseRules(["Bash(git:*)"]),
+      deny: [],
+      ask: [],
+    };
+    expect(evaluatePolicy(policy, "Bash", normalizeBashCommand("git status"))).toBe("allow");
+    expect(evaluatePolicy(policy, "Bash", normalizeBashCommand("git log --oneline"))).toBe("allow");
+    expect(evaluatePolicy(policy, "Bash", normalizeBashCommand("npm install"))).toBe("allow"); // default
+  });
+
+  it("rm:* deny rule blocks rm commands", () => {
+    const policy: ToolPermissionPolicy = {
+      mode: "default",
+      allow: [],
+      deny: parseRules(["Bash(rm:*)"]),
+      ask: [],
+    };
+    expect(evaluatePolicy(policy, "Bash", normalizeBashCommand("rm -rf /"))).toBe("deny");
+    expect(evaluatePolicy(policy, "Bash", normalizeBashCommand("rm file.txt"))).toBe("deny");
+    expect(evaluatePolicy(policy, "Bash", normalizeBashCommand("git status"))).toBe("allow");
+  });
+});
 
 // ─── matchPattern tests ────────────────────────────────────────────────────────
 

@@ -4,7 +4,7 @@
  */
 
 import type { ToolPermissionPolicy } from "@/permissions/index.js";
-import { evaluatePolicy, isDangerousCommand } from "@/permissions/index.js";
+import { evaluatePolicy, isDangerousCommand, normalizeBashCommand } from "@/permissions/index.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { spawn } from "node:child_process";
@@ -74,7 +74,7 @@ export function createBashTool(policy?: ToolPermissionPolicy) {
         return { decision: "deny" as const, reason: `Command matches a known-dangerous pattern` };
       }
       if (policy) {
-        return evaluatePolicy(policy, "Bash", command);
+        return evaluatePolicy(policy, "Bash", normalizeBashCommand(command));
       }
       return "allow";
     })

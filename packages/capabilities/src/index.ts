@@ -205,6 +205,7 @@ export {
   isPathSafe,
   isReadOnlyCommand,
   matchPattern,
+  normalizeBashCommand,
   parseRule,
   parseRules,
   workspaceAnchor,

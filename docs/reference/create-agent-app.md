@@ -266,10 +266,33 @@ const app = createAgentApp({
   profiles: [myProfile],
   permissionPolicy: {
     mode: "default",
+    // Bash rules use "verb:args" DSL — "git:*" matches any git command
     allow: parseRules(["Bash(git:*)", "Bash(npm:*)"]),
     deny: parseRules(["Bash(rm:*)"]),
     ask: parseRules(["Write", "Edit"]),
   },
+});
+```
+
+The Bash DSL uses a `verb:args` form: `"git:*"` matches any command whose first word is `git`
+(e.g. `git status`, `git log`). The tool normalises `"git status"` → `"git:status"` before
+pattern matching so glob patterns work as expected.
+
+**Loading from `agentrail.yaml`:**
+
+When `config.permissions` is set, use `configPermissionsToPolicy` to convert the raw YAML config
+into a runtime `ToolPermissionPolicy`:
+
+```ts
+import { createAgentApp, loadAgentrailConfig, configPermissionsToPolicy } from "@agentrail/app";
+
+const config = loadAgentrailConfig();
+const app = createAgentApp({
+  dataDir: "./data",
+  profiles: [myProfile],
+  permissionPolicy: config.permissions
+    ? configPermissionsToPolicy(config.permissions)
+    : undefined,
 });
 ```
 

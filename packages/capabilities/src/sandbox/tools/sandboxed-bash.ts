@@ -4,7 +4,7 @@
  */
 
 import type { ToolPermissionPolicy } from "@/permissions/index.js";
-import { evaluatePolicy } from "@/permissions/index.js";
+import { evaluatePolicy, normalizeBashCommand } from "@/permissions/index.js";
 import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
@@ -62,7 +62,7 @@ export function createSandboxedBash(
     .parameters(parametersSchema)
     .checkPermissions(({ command }) => {
       if (policy) {
-        return evaluatePolicy(policy, "Bash", command);
+        return evaluatePolicy(policy, "Bash", normalizeBashCommand(command));
       }
       return "allow";
     })

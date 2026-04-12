@@ -140,3 +140,27 @@ export function isReadOnlyCommand(command: string): boolean {
   const firstWord = command.trimStart().split(/\s+/)[0]?.toLowerCase() ?? "";
   return READ_ONLY_COMMANDS.has(firstWord);
 }
+
+/**
+ * Normalises a raw shell command string into the `"verb:rest"` form used by
+ * the Bash permission DSL.
+ *
+ * The DSL convention `Bash(git:*)` means "any shell command whose first word
+ * is `git`". Because raw commands use spaces (`"git status"`) rather than
+ * colons, this function converts `"git status --porcelain"` into
+ * `"git:status --porcelain"` so that glob patterns like `git:*` match
+ * correctly.
+ *
+ * Single-word commands (e.g. `"ls"`) are returned as-is.
+ *
+ * @example
+ * normalizeBashCommand("git status")  // → "git:status"
+ * normalizeBashCommand("npm install") // → "npm:install"
+ * normalizeBashCommand("ls")          // → "ls"
+ */
+export function normalizeBashCommand(command: string): string {
+  const trimmed = command.trimStart();
+  const firstSpace = trimmed.indexOf(" ");
+  if (firstSpace === -1) return trimmed;
+  return trimmed.slice(0, firstSpace) + ":" + trimmed.slice(firstSpace + 1);
+}

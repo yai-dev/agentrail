@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { parseRules } from "@agentrail/capabilities";
+import type { ToolPermissionPolicy } from "@agentrail/capabilities";
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -34,6 +36,36 @@ export interface AgentrailPermissionsConfig {
   deny?: string[];
   /** Rule strings that require user confirmation, e.g. `"Write"`. */
   ask?: string[];
+}
+
+/**
+ * Converts a raw `AgentrailPermissionsConfig` (string arrays from YAML) into
+ * the fully-typed `ToolPermissionPolicy` expected by the runtime.
+ *
+ * Call this once after loading the config and pass the result to
+ * `createAgentApp({ permissionPolicy })`.
+ *
+ * @throws {Error} if any rule string fails to parse (propagated from `parseRules`).
+ *
+ * @example
+ * ```ts
+ * const config = loadAgentrailConfig();
+ * const app = createAgentApp({
+ *   permissionPolicy: config.permissions
+ *     ? configPermissionsToPolicy(config.permissions)
+ *     : undefined,
+ * });
+ * ```
+ */
+export function configPermissionsToPolicy(
+  cfg: AgentrailPermissionsConfig,
+): ToolPermissionPolicy {
+  return {
+    mode: cfg.mode ?? "default",
+    allow: parseRules(cfg.allow ?? []),
+    deny: parseRules(cfg.deny ?? []),
+    ask: parseRules(cfg.ask ?? []),
+  };
 }
 
 /** Full validated YAML config schema used by Agentrail apps and examples. */

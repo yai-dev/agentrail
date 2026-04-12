@@ -11,5 +11,6 @@ export {
   READ_ONLY_COMMANDS,
   isDangerousCommand,
   isReadOnlyCommand,
+  normalizeBashCommand,
 } from "./shell-safety.js";
 export type { PermissionMode, PermissionRule, ToolPermissionPolicy } from "./types.js";
