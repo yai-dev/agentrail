@@ -85,6 +85,13 @@ interface AgentrailProfileContext {
    * AgentRunOptions.chainId so that RuntimeEvent.chainId equals the route-level
    * traceId. Sub-agent events inherit the same chainId with depth incremented. */
   chainId?: string;
+  /**
+   * Active permission policy for this session.
+   * When present, non-sandboxed file/shell tools evaluate it via
+   * `checkPermissions` before executing. Propagated automatically by
+   * `defineProfile` into `CapabilityBuildContext.permissionPolicy`.
+   */
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 interface AgentrailProfile {

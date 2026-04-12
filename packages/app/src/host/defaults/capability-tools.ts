@@ -70,6 +70,7 @@ export async function buildDefaultCapabilityTools(
     skillManager,
     onSubAgentEvent,
     containerSkillsDir = "/skills",
+    permissionPolicy,
   } = options;
 
   const todoStorage = sessionStore.createTodoStorage?.(sessionRef);
@@ -84,7 +85,7 @@ export async function buildDefaultCapabilityTools(
   ];
 
   const sandboxFileTools = [
-    createSandboxedBash(sandboxManager, sessionId, tenantId, userId),
+    createSandboxedBash(sandboxManager, sessionId, tenantId, userId, permissionPolicy),
     createSandboxedRead(sandboxManager, sessionId, tenantId, userId),
     createSandboxedWrite(sandboxManager, sessionId, tenantId, userId),
     createSandboxedEdit(sandboxManager, sessionId, tenantId, userId),

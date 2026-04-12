@@ -201,6 +201,7 @@ The most important ones for UI consumers:
 | `tool.before`               | A tool call is about to be dispatched (after any `onBeforeToolCall` plugin hooks have run) |
 | `tool.after`                | A tool invocation completes                                                                |
 | `waiting_for_user_input`    | The agent is paused waiting for user input                                                 |
+| `permission_request`        | A tool's `checkPermissions` returned `"ask"`; execution is blocked pending host approval   |
 | `skill_start` / `skill_end` | A skill sub-agent is invoked                                                               |
 
 ### Tracing fields on every RuntimeEvent
@@ -250,6 +251,25 @@ These fields are automatically stamped by `agentLoop` and propagated to sub-agen
 > or tracing integration that reads `tool.before.args` and relies on it being the
 > unmodified model output, switch to `rawArgs`. `args` now reflects the effective
 > (possibly plugin-modified) arguments that were actually executed.
+
+### `permission_request` field reference
+
+Emitted when a tool's `checkPermissions` hook returns `"ask"`. Execution is
+blocked until the host provides an interactive approval mechanism; in the current
+release, the tool call is always denied and the model receives an error result.
+
+```ts
+{
+  type: "permission_request";
+  toolCallId: string;
+  toolName: string;
+  /** Optional human-readable reason why approval is being requested. */
+  reason?: string;
+}
+```
+
+This event is persisted to the trace log (`TRACE_PERSISTED_EVENT_TYPES`) so that
+audit tooling can record which tool calls required permission.
 
 ---
 

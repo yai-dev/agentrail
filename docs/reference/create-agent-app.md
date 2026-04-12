@@ -246,6 +246,37 @@ Health route configuration. By default `createAgentApp` mounts `GET /health` and
 
 ---
 
+### `permissionPolicy`
+
+```ts
+permissionPolicy?: ToolPermissionPolicy
+```
+
+Optional permission policy applied to all sessions served by this app.
+
+When set, tools evaluate the policy via their `checkPermissions` hook before executing.
+The policy is forwarded through `AgentrailProfileContext.permissionPolicy` →
+`CapabilityBuildContext.permissionPolicy` into each capability's tool set.
+
+```ts
+import { parseRules } from "@agentrail/capabilities";
+
+const app = createAgentApp({
+  dataDir: "./data",
+  profiles: [myProfile],
+  permissionPolicy: {
+    mode: "default",
+    allow: parseRules(["Bash(git:*)", "Bash(npm:*)"]),
+    deny: parseRules(["Bash(rm:*)"]),
+    ask: parseRules(["Write", "Edit"]),
+  },
+});
+```
+
+See the [Permissions Guide](/guides/tool-permissions) for the full DSL reference.
+
+---
+
 ### `telemetrySink`
 
 ```ts

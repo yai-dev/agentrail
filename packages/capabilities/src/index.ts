@@ -153,14 +153,18 @@ export {
 export {
   bashTool,
   createAskUserQuestionTool,
+  createBashTool,
   createBraveSearchProvider,
+  createEditTool,
   createGlobTool,
   createJinaSearchProvider,
+  createReadTool,
   createSleepTool,
   createTavilySearchProvider,
   createTodoWriteTool,
   createWebFetchTool,
   createWebSearchTool,
+  createWriteTool,
   editTool,
   grepTool,
   readTool,
@@ -168,7 +172,9 @@ export {
 } from "@/tools/index.js";
 export type {
   BraveSearchProviderOptions,
+  EditToolOptions,
   JinaSearchProviderOptions,
+  ReadToolOptions,
   SleepToolOptions,
   TavilySearchProviderOptions,
   WaitHandleRegistry,
@@ -182,7 +188,28 @@ export type {
   WebSearchProvider,
   WebSearchResult,
   WebSearchToolOptions,
+  WriteToolOptions,
 } from "@/tools/index.js";
+
+// ============================================================================
+// Permissions — policy types, rule engine, path/shell safety
+// ============================================================================
+
+export {
+  DANGEROUS_BASH_PATTERNS,
+  DANGEROUS_FILES,
+  DANGEROUS_PATHS,
+  READ_ONLY_COMMANDS,
+  evaluatePolicy,
+  isDangerousCommand,
+  isPathSafe,
+  isReadOnlyCommand,
+  matchPattern,
+  parseRule,
+  parseRules,
+  workspaceAnchor,
+} from "@/permissions/index.js";
+export type { PermissionMode, PermissionRule, ToolPermissionPolicy } from "@/permissions/index.js";
 
 // ============================================================================
 // Memory context utilities (advanced)

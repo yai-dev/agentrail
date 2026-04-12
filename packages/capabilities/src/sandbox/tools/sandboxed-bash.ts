@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ToolPermissionPolicy } from "@/permissions/index.js";
+import { evaluatePolicy } from "@/permissions/index.js";
 import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
@@ -51,12 +53,19 @@ export function createSandboxedBash(
   sessionId: string,
   tenantId: string,
   userId: string,
+  policy?: ToolPermissionPolicy,
 ) {
   return tool()
     .name("Bash")
     .label("Bash")
     .description(toolDescription)
     .parameters(parametersSchema)
+    .checkPermissions(({ command }) => {
+      if (policy) {
+        return evaluatePolicy(policy, "Bash", command);
+      }
+      return "allow";
+    })
     .execute(async ({ command, working_directory, timeout }, { signal }) => {
       await manager.ensureSandbox(sessionId, tenantId, userId);
 

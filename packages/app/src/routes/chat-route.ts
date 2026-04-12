@@ -35,6 +35,7 @@ import {
   validateChatRequest,
 } from "@/routes/chat-route-internals.js";
 import { runCompactionStep } from "@/routes/compaction-runner.js";
+import type { ToolPermissionPolicy } from "@agentrail/capabilities";
 import type { SessionRef, TransformContextFn } from "@agentrail/core";
 import { Hono } from "hono";
 import { randomUUID } from "node:crypto";
@@ -129,6 +130,11 @@ export interface AgentrailChatRouteOptions {
     context: { tenantId: string; sessionId: string; sessionRef: SessionRef },
     envelope: WorkflowTraceEventEnvelope,
   ) => void;
+  /**
+   * Optional permission policy applied to all sessions handled by this route.
+   * When set, tools evaluate the policy via `checkPermissions` before executing.
+   */
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 /**
@@ -258,6 +264,7 @@ export function createChatRoute(options: AgentrailChatRouteOptions): Hono {
         sessionRef,
         sessionStore: options.sessionStore,
         chainId: traceId,
+        permissionPolicy: options.permissionPolicy,
       };
       const agent = await profile.createAgent(profileCtx, () => {
         /* sub-agent events are not forwarded on the JSON /chat route */

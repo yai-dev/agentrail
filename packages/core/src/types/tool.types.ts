@@ -43,6 +43,24 @@ export type ToolSignalEvent = {
   readonly custom?: boolean;
 };
 
+/**
+ * The outcome of a `checkPermissions` call.
+ *
+ * - `"allow"` — execution may proceed.
+ * - `"deny"` — execution is blocked; the model receives an error result.
+ * - `"ask"` — execution requires user approval; the executor emits a
+ *   `permission_request` RuntimeEvent and then denies the call until an
+ *   interactive approval mechanism is wired in by the host layer.
+ *
+ * The object form allows attaching an optional human-readable `reason` that
+ * is surfaced in the error result and the `permission_request` event.
+ */
+export type PermissionDecision =
+  | "allow"
+  | "deny"
+  | "ask"
+  | { readonly decision: "allow" | "deny" | "ask"; readonly reason?: string };
+
 /** Full runtime representation of an executable tool. */
 export interface RuntimeTool<
   TParameters extends TSchema = TSchema,
@@ -50,6 +68,21 @@ export interface RuntimeTool<
 > extends ToolDefinition<TParameters> {
   /** Human-readable label used in logs and developer tooling. */
   label: string;
+
+  /**
+   * Optional permission check invoked after `onBeforeToolCall` and before
+   * `validate`.
+   *
+   * The function receives the effective (post-interceptor) arguments and
+   * returns a `PermissionDecision`:
+   * - `"allow"` — proceed to `validate` / `execute`.
+   * - `"deny"` — block execution; model receives an error result.
+   * - `"ask"` — emit a `permission_request` RuntimeEvent then block
+   *   (non-interactive until the host wires up an approval mechanism).
+   *
+   * `onAfterToolCall` is **not** called for permission-denied executions.
+   */
+  checkPermissions?(params: unknown): Promise<PermissionDecision> | PermissionDecision;
 
   /**
    * Optional business-logic precondition check.

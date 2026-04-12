@@ -21,6 +21,21 @@ export const DEFAULT_SANDBOX_IMAGE = "ghcr.io/yai-dev/agentrail-sandbox:latest";
 
 type UnknownRecord = Record<string, unknown>;
 
+/** Raw permissions block from `agentrail.yaml`. */
+export interface AgentrailPermissionsConfig {
+  /**
+   * Permission mode controlling how `ask` decisions are handled.
+   * Defaults to `"default"` when absent.
+   */
+  mode?: "default" | "acceptEdits" | "bypassPermissions" | "dontAsk";
+  /** Rule strings that unconditionally allow matching tool calls, e.g. `"Bash(git:*)"`. */
+  allow?: string[];
+  /** Rule strings that unconditionally deny matching tool calls, e.g. `"Bash(rm:*)"`. */
+  deny?: string[];
+  /** Rule strings that require user confirmation, e.g. `"Write"`. */
+  ask?: string[];
+}
+
 /** Full validated YAML config schema used by Agentrail apps and examples. */
 export interface AgentrailConfig {
   version: 1;
@@ -92,6 +107,8 @@ export interface AgentrailConfig {
       backendPort: number;
     };
   };
+  /** Optional permission policy applied to all sessions served by this app. */
+  permissions?: AgentrailPermissionsConfig;
 }
 
 /** Options for resolving the Agentrail config path. */
@@ -305,6 +322,20 @@ function getInteger(
   return raw;
 }
 
+function getStringArray(parent: UnknownRecord, key: string, parts: string[]): string[] {
+  const raw = parent[key];
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) {
+    throw new Error(`Expected ${formatConfigPath([...parts, key])} to be an array.`);
+  }
+  return raw.map((item, i) => {
+    if (typeof item !== "string") {
+      throw new Error(`Expected ${formatConfigPath([...parts, key, String(i)])} to be a string.`);
+    }
+    return item;
+  });
+}
+
 function getVersion(parent: UnknownRecord): 1 {
   const raw = parent.version;
   if (raw === undefined) return AGENTRAIL_CONFIG_VERSION;
@@ -365,7 +396,17 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   const root = assertObject(raw, []);
   assertNoUnknownKeys(
     root,
-    ["version", "llm", "search", "paths", "auth", "sandbox", "orchestration", "apps"],
+    [
+      "version",
+      "llm",
+      "search",
+      "paths",
+      "auth",
+      "sandbox",
+      "orchestration",
+      "apps",
+      "permissions",
+    ],
     [],
   );
 
@@ -750,6 +791,35 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
         ),
       },
     },
+    permissions: parsePermissionsBlock(root),
+  };
+}
+
+function parsePermissionsBlock(root: UnknownRecord): AgentrailPermissionsConfig | undefined {
+  const raw = root["permissions"];
+  if (raw === undefined) return undefined;
+  const perm = assertObject(raw, ["permissions"]);
+  assertNoUnknownKeys(perm, ["mode", "allow", "deny", "ask"], ["permissions"]);
+
+  const VALID_MODES = ["default", "acceptEdits", "bypassPermissions", "dontAsk"] as const;
+  type PermMode = (typeof VALID_MODES)[number];
+
+  let mode: PermMode | undefined;
+  const rawMode = perm["mode"];
+  if (rawMode !== undefined) {
+    if (typeof rawMode !== "string" || !(VALID_MODES as readonly string[]).includes(rawMode)) {
+      throw new Error(
+        `Invalid permissions.mode "${rawMode}". Must be one of: ${VALID_MODES.join(", ")}.`,
+      );
+    }
+    mode = rawMode as PermMode;
+  }
+
+  return {
+    mode,
+    allow: getStringArray(perm, "allow", ["permissions"]),
+    deny: getStringArray(perm, "deny", ["permissions"]),
+    ask: getStringArray(perm, "ask", ["permissions"]),
   };
 }
 

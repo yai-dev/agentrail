@@ -136,6 +136,50 @@ export async function executeToolCalls(
       }
     }
 
+    // ── Permission check (tool.checkPermissions) ──────────────────────────────
+    // Runs after the interceptor (so effectiveArgs reflects any rewrites) but
+    // before tool.validate and execute.  onAfterToolCall is NOT called for
+    // permission-denied executions.
+    if (tool.checkPermissions) {
+      let permDecision: import("@/types/tool.types.js").PermissionDecision;
+      try {
+        permDecision = await tool.checkPermissions(effectiveArgs);
+      } catch (e) {
+        permDecision = {
+          decision: "deny",
+          reason: e instanceof Error ? e.message : String(e),
+        };
+      }
+      const decision = typeof permDecision === "string" ? permDecision : permDecision.decision;
+      const permReason =
+        typeof permDecision === "object" && "reason" in permDecision
+          ? permDecision.reason
+          : undefined;
+
+      if (decision === "ask" || decision === "deny") {
+        if (decision === "ask") {
+          stream.push({
+            type: "permission_request",
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            reason: permReason,
+            ...tracing,
+          });
+        }
+        rejectToolCall(
+          toolCall,
+          permReason ?? `Permission denied for tool "${toolCall.name}"`,
+          effectiveArgs,
+          rawArgs,
+          stream,
+          tracing,
+          results,
+        );
+        // onAfterToolCall is NOT called for permission-denied executions.
+        continue;
+      }
+    }
+
     // ── Business-logic validation (tool.validate) ─────────────────────────────
     // Runs on the final effectiveArgs (post-interceptor) so tool-level
     // preconditions cannot be bypassed by a before-hook rewrite.

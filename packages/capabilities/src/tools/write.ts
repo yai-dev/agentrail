@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ToolPermissionPolicy } from "@/permissions/index.js";
+import { evaluatePolicy, isPathSafe, workspaceAnchor } from "@/permissions/index.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -27,26 +29,62 @@ const parametersSchema = Type.Object({
   }),
 });
 
-export const writeTool = tool()
-  .name(toolName)
-  .label(toolLabel)
-  .description(toolDescription)
-  .parameters(parametersSchema)
-  .execute(async ({ file_path, contents }) => {
-    try {
-      await mkdir(dirname(file_path), { recursive: true });
-      await writeFile(file_path, contents, "utf-8");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      return {
-        content: [{ type: "text" as const, text: `Error writing file: ${message}` }],
-        details: { error: message },
-      };
-    }
+/** Options for `createWriteTool`. */
+export interface WriteToolOptions {
+  /** When set, file paths must be anchored within this directory. */
+  rootDir?: string;
+  /** Active permission policy evaluated before writing. */
+  policy?: ToolPermissionPolicy;
+}
 
-    return {
-      content: [{ type: "text" as const, text: `Successfully wrote ${file_path}` }],
-      details: { file_path },
-    };
-  })
-  .build();
+/**
+ * Creates a non-sandboxed Write tool with optional path anchoring and
+ * permission policy.
+ */
+export function createWriteTool(opts?: WriteToolOptions) {
+  return tool()
+    .name(toolName)
+    .label(toolLabel)
+    .description(toolDescription)
+    .parameters(parametersSchema)
+    .checkPermissions(({ file_path }) => {
+      if (!isPathSafe(file_path)) {
+        return { decision: "deny" as const, reason: `Path "${file_path}" is not allowed` };
+      }
+      if (opts?.rootDir) {
+        try {
+          workspaceAnchor(file_path, opts.rootDir);
+        } catch (err) {
+          return {
+            decision: "deny" as const,
+            reason: err instanceof Error ? err.message : String(err),
+          };
+        }
+      }
+      if (opts?.policy) {
+        return evaluatePolicy(opts.policy, "Write", file_path);
+      }
+      return "allow";
+    })
+    .execute(async ({ file_path, contents }) => {
+      try {
+        await mkdir(dirname(file_path), { recursive: true });
+        await writeFile(file_path, contents, "utf-8");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Error writing file: ${message}` }],
+          details: { error: message },
+        };
+      }
+
+      return {
+        content: [{ type: "text" as const, text: `Successfully wrote ${file_path}` }],
+        details: { file_path },
+      };
+    })
+    .build();
+}
+
+/** Non-sandboxed Write tool with no path restrictions (backward-compatible singleton). */
+export const writeTool = createWriteTool();

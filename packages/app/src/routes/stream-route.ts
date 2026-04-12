@@ -33,7 +33,11 @@ import { resolveTransformContext } from "@/routes/context-resolver.js";
 import { awaitSandboxWarmup } from "@/routes/sandbox-warmup.js";
 import { createSseEventWriter } from "@/routes/sse-writer.js";
 import { validateStreamRequest, type StreamRequest } from "@/routes/stream-request.js";
-import type { OrchestrationManager, SandboxManager } from "@agentrail/capabilities";
+import type {
+  OrchestrationManager,
+  SandboxManager,
+  ToolPermissionPolicy,
+} from "@agentrail/capabilities";
 import type {
   Agent,
   Message,
@@ -147,6 +151,11 @@ export interface AgentrailStreamRouteOptions {
     context: { tenantId: string; sessionId: string; sessionRef: SessionRef },
     envelope: WorkflowTraceEventEnvelope,
   ) => void;
+  /**
+   * Optional permission policy applied to all sessions handled by this route.
+   * When set, tools evaluate the policy via `checkPermissions` before executing.
+   */
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 /** Fully resolved stream request context exposed to custom handlers. */
@@ -341,6 +350,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           sessionRef,
           sessionStore: options.sessionStore,
           chainId: requestTraceId,
+          permissionPolicy: options.permissionPolicy,
         };
 
         // ── 6d. Compact history + load budget slice ────────────────────────

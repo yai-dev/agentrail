@@ -116,6 +116,7 @@ function buildBaseCapCtx(
     modelConfig,
     onSubAgentEvent,
     tracing: context.chainId ? { chainId: context.chainId, depth: 0 } : undefined,
+    permissionPolicy: context.permissionPolicy,
   };
 }
 

@@ -119,7 +119,8 @@ export interface RuntimeTracingFields {
 export type RuntimeEvent =
   // ── Session lifecycle ────────────────────────────────────────────────────
   /** Emitted once when the agent begins processing the user input. */
-  (| { readonly type: "session.start" }
+  (
+    | { readonly type: "session.start" }
     /** Emitted once after all turns complete. Contains the full message list and token usage. */
     | { readonly type: "session.end"; readonly messages: Message[]; readonly usage: Usage }
     // ── Turn lifecycle ───────────────────────────────────────────────────────
@@ -194,6 +195,23 @@ export type RuntimeEvent =
         readonly options?: string[];
         readonly multiple?: boolean;
         readonly custom?: boolean;
+      }
+    /**
+     * Emitted when a tool's `checkPermissions` returns `"ask"` or `"deny"`.
+     *
+     * - `"ask"` decisions emit this event and then block execution until an
+     *   interactive approval mechanism is provided by the host layer.
+     * - `"deny"` decisions do **not** emit this event; they produce a standard
+     *   error tool result directly.
+     *
+     * The event is always followed immediately by an error `ToolResult` that
+     * the model sees as the tool's response.
+     */
+    | {
+        readonly type: "permission_request";
+        readonly toolCallId: string;
+        readonly toolName: string;
+        readonly reason?: string;
       }
     // ── New lifecycle events ─────────────────────────────────────────────────
     /** Emitted when context compaction runs during a streaming request. */

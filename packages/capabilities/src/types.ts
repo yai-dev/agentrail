@@ -4,6 +4,7 @@
  */
 
 import type { KnowledgeManager } from "@/knowledge/index.js";
+import type { ToolPermissionPolicy } from "@/permissions/index.js";
 import type { SandboxManager } from "@/sandbox/index.js";
 import type { SkillManager } from "@/skills/index.js";
 import type { WaitHandleRegistry } from "@/tools/index.js";
@@ -48,6 +49,12 @@ export interface CapabilityBuildContext {
    * `depth` is 0 for the root agent, incremented by 1 for each sub-agent level.
    */
   tracing?: { chainId: string; depth: number };
+  /**
+   * Active permission policy for this session.  When present, non-sandboxed
+   * file and shell tools evaluate it via `checkPermissions` before executing.
+   * Sandboxed Bash also honours command-level allow/deny/ask rules.
+   */
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 /**

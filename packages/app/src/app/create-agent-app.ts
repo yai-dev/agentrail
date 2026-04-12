@@ -18,7 +18,7 @@ import { createChatRoute } from "@/routes/chat-route.js";
 import { createStreamRoute } from "@/routes/stream-route.js";
 import { SessionManager } from "@/session/session-manager.js";
 import type { TelemetrySink } from "@/telemetry/sink.js";
-import type { SandboxManager } from "@agentrail/capabilities";
+import type { SandboxManager, ToolPermissionPolicy } from "@agentrail/capabilities";
 import type { AgentrailSessionStore, Message, SessionRef } from "@agentrail/core";
 import { Hono } from "hono";
 
@@ -168,6 +168,17 @@ export interface CreateAgentAppOptions {
    * @see {@link https://agentrail.run/reference/telemetry-sink}
    */
   telemetrySink?: TelemetrySink;
+  /**
+   * Optional permission policy applied to all sessions served by this app.
+   *
+   * When set, tools evaluate the policy via their `checkPermissions` hook
+   * before executing.  The policy is forwarded through the `profileCtx` into
+   * `CapabilityBuildContext.permissionPolicy`.
+   *
+   * Individual routes (`createStreamRoute`, `createChatRoute`) expose the same
+   * option when using the lower-level primitives directly.
+   */
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 /**
@@ -230,6 +241,7 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
     telemetrySink,
     health: healthOptions,
     inspector: inspectorOptions,
+    permissionPolicy,
   } = options;
 
   /**
@@ -332,6 +344,7 @@ export function createAgentApp(options: CreateAgentAppOptions): Hono {
     ...(onPluginError ? { onPluginError } : {}),
     ...(makeSinkTraceHandler ? { onTraceEvent: makeSinkTraceHandler } : {}),
     ...(onRequestEnd ? { onRequestEnd } : {}),
+    ...(permissionPolicy ? { permissionPolicy } : {}),
   };
 
   // ── Capability compatibility checks ───────────────────────────────────────
