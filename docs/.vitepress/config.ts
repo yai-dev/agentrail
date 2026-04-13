@@ -99,6 +99,7 @@ export default defineConfig({
           { text: "Tool Permissions", link: "/guides/tool-permissions" },
           { text: "Add Context", link: "/guides/add-context" },
           { text: "Configure Sessions", link: "/guides/configure-sessions" },
+          { text: "Build a Storage Backend", link: "/guides/build-a-storage-backend" },
           { text: "Consume Stream (SSE)", link: "/guides/consume-stream" },
           { text: "Write a Plugin", link: "/guides/write-a-plugin" },
           {
