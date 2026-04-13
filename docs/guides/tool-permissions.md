@@ -143,6 +143,97 @@ const stream = createStreamRoute({
 
 When no handler is registered, `"ask"` behaves like `"deny"` (backward-compatible fallback).
 
+## UI Integration
+
+The SSE stream emits `permission_request` and `permission_resolved` events. A client can listen for these to show an approval prompt and POST the user's decision back to the server.
+
+### 1. Consume events from the stream
+
+```ts
+for await (const event of streamChat(sessionId, message)) {
+  if (event.type === "permission_request") {
+    // { type, toolCallId, toolName, reason? }
+    setPendingPermission({
+      toolCallId: event.toolCallId,
+      toolName: event.toolName,
+      reason: event.reason,
+    });
+  } else if (event.type === "permission_resolved" || event.type === "turn.complete") {
+    setPendingPermission(null);
+  }
+}
+```
+
+### 2. Send the user's decision to the server
+
+POST to `/api/sessions/:sessionId/respond` with `kind: "permission"`:
+
+```ts
+async function respondToPermission(
+  sessionId: string,
+  decision: "approved" | "rejected",
+): Promise<boolean> {
+  const res = await fetch(`/api/sessions/${sessionId}/respond`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind: "permission", decision }),
+  });
+  return res.ok;
+}
+```
+
+The server resolves the suspended wait handle and the agent run continues (or receives a rejection error result).
+
+### 3. Render an approval prompt
+
+Only show the prompt when a `permission_request` is pending. Dismiss it only **after** the POST succeeds to avoid hiding the prompt on network failure:
+
+```tsx
+function PermissionPrompt({ sessionId, pending, onDismiss }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Reset state when a new request arrives (consecutive approvals).
+  useEffect(() => {
+    setSubmitting(false);
+    setError(null);
+  }, [pending?.toolCallId]);
+
+  if (!pending) return null;
+
+  const respond = async (decision) => {
+    setSubmitting(true);
+    const ok = await respondToPermission(sessionId, decision);
+    if (ok) {
+      onDismiss();
+    } else {
+      setError("Failed — please try again.");
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div>
+      <p>Allow <strong>{pending.toolName}</strong> to run?</p>
+      {pending.reason && <p>{pending.reason}</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <button disabled={submitting} onClick={() => respond("approved")}>
+        {submitting ? "…" : "Approve"}
+      </button>
+      <button disabled={submitting} onClick={() => respond("rejected")}>
+        {submitting ? "…" : "Reject"}
+      </button>
+    </div>
+  );
+}
+```
+
+Key points:
+
+- **Reset state on new request** — `useEffect` keyed on `toolCallId` prevents button state leaking across consecutive approval prompts.
+- **Dismiss after success** — call `onDismiss` only when `respondToPermission` returns `true`; on failure restore the buttons so the user can retry.
+- **Disable during POST** — prevent double-submission while the request is in flight.
+
 ## Per-Tool `checkPermissions`
 
 Individual tools can also enforce their own permission logic independently of the global policy. Define `checkPermissions` on `defineTool`:
