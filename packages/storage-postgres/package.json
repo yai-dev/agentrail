@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/storage-postgres",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "PostgreSQL storage backend for Agentrail session, trace, orchestration, and inspector data.",
   "type": "module",
   "files": [
