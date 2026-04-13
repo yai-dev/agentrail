@@ -143,6 +143,7 @@ export const TRACE_EVENT_TYPES = new Set([
   "skill_end",
   "waiting_for_user_input",
   "permission_request",
+  "permission_resolved",
   "context_compaction_start",
   "context_compaction_end",
   "error",

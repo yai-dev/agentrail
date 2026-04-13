@@ -3094,41 +3094,89 @@ body {
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* ── Permission-blocked banner ────────────────────────────────────────── */
-.permission-blocked-banner {
-  padding: 8px 16px;
+/* ── Permission-approval prompt ───────────────────────────────────────── */
+.permission-approval-bar {
+  padding: 10px 16px;
   background: var(--surface);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-muted, #888);
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.permission-blocked-icon {
-  flex-shrink: 0;
-  font-size: 14px;
-}
-
-.permission-blocked-text {
+.permission-approval-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   flex: 1;
-  color: var(--error, #e05252);
+  min-width: 0;
 }
 
-.permission-blocked-dismiss {
+.permission-approval-icon {
   flex-shrink: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
   font-size: 16px;
-  line-height: 1;
-  color: var(--text-muted, #888);
-  padding: 0 2px;
+  line-height: 1.4;
 }
 
-.permission-blocked-dismiss:hover {
+.permission-approval-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  min-width: 0;
+}
+
+.permission-approval-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #888);
+}
+
+.permission-approval-tool {
   color: var(--text, #ccc);
+}
+
+.permission-approval-reason {
+  font-size: 12px;
+  color: var(--text-muted, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.permission-approval-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.permission-approval-btn {
+  padding: 5px 14px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.permission-approval-btn:hover {
+  opacity: 0.85;
+}
+
+.permission-approval-approve {
+  background: var(--accent, #3b82f6);
+  color: #fff;
+  border-color: var(--accent, #3b82f6);
+}
+
+.permission-approval-reject {
+  background: transparent;
+  color: var(--text-muted, #888);
+  border-color: var(--border, #333);
 }
 
 /* ── Waiting-for-user-input question bar ──────────────────────────────── */

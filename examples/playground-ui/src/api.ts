@@ -66,6 +66,12 @@ export type StreamEvent =
       custom?: boolean;
     }
   | { type: "permission_request"; toolCallId: string; toolName: string; reason?: string }
+  | {
+      type: "permission_resolved";
+      toolCallId: string;
+      toolName: string;
+      decision: "approved" | "rejected";
+    }
   | { type: "error"; error: { message: string } }
   | OrchestrationStreamEvent
   | DeepResearchStreamEvent
@@ -237,7 +243,23 @@ export async function respondToQuestion(sessionId: string, answer: string): Prom
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/respond`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ answer }),
+    body: JSON.stringify({ kind: "question", answer }),
+  });
+  if (res.status === 401) {
+    dispatchUnauthorized();
+    return false;
+  }
+  return res.ok;
+}
+
+export async function respondToPermission(
+  sessionId: string,
+  decision: "approved" | "rejected",
+): Promise<boolean> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/respond`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ kind: "permission", decision }),
   });
   if (res.status === 401) {
     dispatchUnauthorized();

@@ -9,6 +9,7 @@ import {
   fetchCompactedMessages,
   fetchSessionMessages,
   fetchSlashCommands,
+  respondToPermission,
   runCommand,
   streamChat,
   type CompactionMarker,
@@ -35,6 +36,7 @@ import {
   WaitingQuestionPrompt,
   type WaitingQuestionState,
 } from "./components/WaitingQuestionPrompt";
+import { PermissionApprovalPrompt } from "./components/PermissionApprovalPrompt";
 import { useAuth } from "./hooks/useAuth";
 import { useDeepResearchState } from "./hooks/useDeepResearchState";
 import { useIdentity } from "./hooks/useIdentity";
@@ -97,7 +99,8 @@ export default function App() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [waitingQuestion, setWaitingQuestion] = useState<WaitingQuestionState | null>(null);
-  const [permissionBlocked, setPermissionBlocked] = useState<{
+  const [pendingPermission, setPendingPermission] = useState<{
+    toolCallId: string;
     toolName: string;
     reason?: string;
   } | null>(null);
@@ -538,7 +541,7 @@ export default function App() {
               setLiveSkillActivity(null);
             }
             pendingDirectSkillRef.current = null;
-            setPermissionBlocked(null);
+            setPendingPermission(null);
             // Persist session metadata
             if (resolvedSessionId) {
               upsert({
@@ -575,9 +578,11 @@ export default function App() {
               toolName: string;
               reason?: string;
             };
-            setPermissionBlocked({ toolName: pr.toolName, reason: pr.reason });
+            setPendingPermission({ toolCallId: pr.toolCallId, toolName: pr.toolName, reason: pr.reason });
+          } else if (event.type === "permission_resolved") {
+            setPendingPermission(null);
           } else if (event.type === "turn.complete") {
-            setPermissionBlocked(null);
+            setPendingPermission(null);
           } else if (event.type === "tool.after" || event.type === "tool_execution_end") {
             const tee = event as {
               type: string;
@@ -644,7 +649,7 @@ export default function App() {
         setLiveSkillActivity(null);
         setCompacting(false);
         setWaitingQuestion(null);
-        setPermissionBlocked(null);
+        setPendingPermission(null);
         setQuestionInput("");
         setSelectedOptions([]);
         setBusy(false);
@@ -675,7 +680,7 @@ export default function App() {
     setContextUsage(null);
     setCompacting(false);
     setWaitingQuestion(null);
-    setPermissionBlocked(null);
+    setPendingPermission(null);
     setQuestionInput("");
     setSelectedOptions([]);
     turnIndexRef.current = 0;
@@ -697,7 +702,7 @@ export default function App() {
       setBusy(false);
       setInput("");
       setWaitingQuestion(null);
-      setPermissionBlocked(null);
+      setPendingPermission(null);
       setQuestionInput("");
       setSelectedOptions([]);
       clearTrace();
@@ -943,22 +948,11 @@ export default function App() {
         </main>
 
         {compacting && <CompactionBanner />}
-        {permissionBlocked && (
-          <div className="permission-blocked-banner">
-            <span className="permission-blocked-icon">🚫</span>
-            <span className="permission-blocked-text">
-              {`Permission denied — ${permissionBlocked.toolName} was blocked by policy`}
-              {permissionBlocked.reason ? `: ${permissionBlocked.reason}` : ""}
-            </span>
-            <button
-              className="permission-blocked-dismiss"
-              onClick={() => setPermissionBlocked(null)}
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-        )}
+        <PermissionApprovalPrompt
+          sessionId={currentSessionId}
+          pendingPermission={pendingPermission}
+          onDismiss={() => setPendingPermission(null)}
+        />
         <WaitingQuestionPrompt
           sessionId={currentSessionId}
           waitingQuestion={waitingQuestion}

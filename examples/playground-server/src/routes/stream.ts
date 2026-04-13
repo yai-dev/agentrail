@@ -10,6 +10,7 @@ import { config } from "@/config.js";
 import { orchestrationRegistry, sandboxManager, sessionManager } from "@/context/index.js";
 import { playgroundPlugins } from "@/plugins/index.js";
 import { resolvePlaygroundProfile } from "@/profiles/default-profile.js";
+import { waitHandleRegistry } from "@/wait-handle-registry.js";
 import type { WorkflowTraceEventEnvelope } from "@agentrail/app";
 import { createFileSystemSessionTraceStore } from "@agentrail/app";
 import { createStreamRoute } from "@agentrail/app/advanced";
@@ -29,6 +30,20 @@ const stream = createStreamRoute({
     orchestrationRegistry.getManager({ tenantId, userId, sessionId, sessionRef }),
   handleResolvedRequest: handlePlaygroundDeepResearchModeStream,
   permissionPolicy: config.permissionPolicy,
+  createPermissionApprovalHandler: config.permissionPolicy
+    ? (sessionId) => ({
+        requestApproval({ toolCallId, toolName, reason, signal }) {
+          return Promise.race([
+            waitHandleRegistry.registerPermission(sessionId, toolCallId, toolName, reason),
+            new Promise<never>((_resolve, reject) => {
+              signal?.addEventListener("abort", () =>
+                reject(new Error("Request aborted while waiting for permission approval")),
+              );
+            }),
+          ]);
+        },
+      })
+    : undefined,
   onTraceEvent: (ctx, envelope) => {
     const traceStore = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(
       config.dataDir,

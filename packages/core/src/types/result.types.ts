@@ -213,6 +213,17 @@ export type RuntimeEvent =
         readonly toolName: string;
         readonly reason?: string;
       }
+    /**
+     * Emitted after interactive approval: `decision` is `"approved"` when the
+     * user allowed the tool call, `"rejected"` when they denied it.
+     * Always follows a `permission_request` event with the same `toolCallId`.
+     */
+    | {
+        readonly type: "permission_resolved";
+        readonly toolCallId: string;
+        readonly toolName: string;
+        readonly decision: "approved" | "rejected";
+      }
     // ── New lifecycle events ─────────────────────────────────────────────────
     /** Emitted when context compaction runs during a streaming request. */
     | {

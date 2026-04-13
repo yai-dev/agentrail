@@ -817,6 +817,7 @@ function filterEnvelopes(
       return (
         type === "waiting_for_user_input" ||
         type === "permission_request" ||
+        type === "permission_resolved" ||
         type === "wait_registered" ||
         type === "wait_resolved"
       );

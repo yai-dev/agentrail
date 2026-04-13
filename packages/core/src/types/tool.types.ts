@@ -61,6 +61,22 @@ export type PermissionDecision =
   | "ask"
   | { readonly decision: "allow" | "deny" | "ask"; readonly reason?: string };
 
+/**
+ * Host-provided callback that resolves a `"ask"` permission decision
+ * interactively instead of denying it immediately.
+ *
+ * Implementations should suspend the call until the user approves or rejects,
+ * then resolve with `"approved"` or `"rejected"`.
+ */
+export interface PermissionApprovalHandler {
+  requestApproval(input: {
+    toolCallId: string;
+    toolName: string;
+    reason?: string;
+    signal?: AbortSignal;
+  }): Promise<"approved" | "rejected">;
+}
+
 /** Full runtime representation of an executable tool. */
 export interface RuntimeTool<
   TParameters extends TSchema = TSchema,

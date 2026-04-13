@@ -28,6 +28,7 @@ export type {
   BeforeToolCallResult,
   ExtractToolDetails,
   ExtractToolParams,
+  PermissionApprovalHandler,
   PermissionDecision,
   RuntimeTool,
   ToolDefinition,

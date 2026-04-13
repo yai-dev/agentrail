@@ -6,7 +6,7 @@
 import type { ToolCall, UserContent } from "@/types/content.types.js";
 import type { AssistantMessage, Message, StopReason } from "@/types/message.types.js";
 import type { RuntimeEvent } from "@/types/result.types.js";
-import type { ToolInterceptor } from "@/types/tool.types.js";
+import type { PermissionApprovalHandler, ToolInterceptor } from "@/types/tool.types.js";
 import type { Usage } from "@/types/usage.types.js";
 
 // ============================================================================
@@ -111,6 +111,19 @@ export interface AgentRunOptions {
    * incremented by 1 for each orchestration level.  Defaults to `0`.
    */
   readonly depth?: number;
+
+  /**
+   * Optional handler that converts an `"ask"` permission decision into an
+   * interactive suspend-and-resume instead of an immediate denial.
+   *
+   * When provided and a tool's `checkPermissions` returns `"ask"`, the
+   * executor emits a `permission_request` event then awaits the handler's
+   * `requestApproval()`.  Execution continues if the result is `"approved"`
+   * and is denied if the result is `"rejected"`.
+   *
+   * When absent, `"ask"` behaves identically to `"deny"`.
+   */
+  readonly permissionApprovalHandler?: PermissionApprovalHandler;
 }
 
 // ============================================================================
