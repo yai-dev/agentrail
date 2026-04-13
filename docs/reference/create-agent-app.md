@@ -334,7 +334,7 @@ const app = createAgentApp({
 });
 ```
 
-See the [Permissions Guide](/guides/tool-permissions) for the full DSL reference.
+See the [Tool Permissions Guide](/guides/tool-permissions) for the full DSL reference, mode descriptions, and interactive approval wiring.
 
 ---
 

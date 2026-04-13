@@ -69,6 +69,7 @@ export default defineConfig({
           { text: "Build a Profile", link: "/guides/build-a-profile" },
           { text: "Manage Prompts", link: "/guides/manage-prompts" },
           { text: "Add Tools", link: "/guides/add-tools" },
+          { text: "Tool Permissions", link: "/guides/tool-permissions" },
           { text: "Add Context", link: "/guides/add-context" },
           { text: "Configure Sessions", link: "/guides/configure-sessions" },
           { text: "Consume Stream (SSE)", link: "/guides/consume-stream" },
