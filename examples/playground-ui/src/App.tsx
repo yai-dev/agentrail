@@ -538,6 +538,7 @@ export default function App() {
               setLiveSkillActivity(null);
             }
             pendingDirectSkillRef.current = null;
+            setPermissionBlocked(null);
             // Persist session metadata
             if (resolvedSessionId) {
               upsert({
@@ -575,7 +576,7 @@ export default function App() {
               reason?: string;
             };
             setPermissionBlocked({ toolName: pr.toolName, reason: pr.reason });
-          } else if (event.type === "turn.complete" || event.type === "session.end") {
+          } else if (event.type === "turn.complete") {
             setPermissionBlocked(null);
           } else if (event.type === "tool.after" || event.type === "tool_execution_end") {
             const tee = event as {

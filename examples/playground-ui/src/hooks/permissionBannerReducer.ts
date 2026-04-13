@@ -7,7 +7,12 @@ export type PermissionBlockedState = { toolName: string; reason?: string } | nul
 
 /**
  * Pure reducer for the `permissionBlocked` banner state.
- * Exported for unit testing; use `setPermissionBlocked` in component code.
+ * Exported for unit testing only; do not call from production code.
+ *
+ * In App.tsx the two clearing events are handled in separate if-else branches:
+ * - `session.end` is cleared inside the existing session.end handler
+ * - `turn.complete` is cleared in its own branch
+ * This reducer unifies them for test purposes.
  */
 export function applyPermissionEventForTest(
   state: PermissionBlockedState,

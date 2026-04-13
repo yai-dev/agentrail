@@ -10,7 +10,8 @@
     "build": "vite build",
     "prepreview": "pnpm --filter @agentrail/config build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"test/*.test.ts\""
   },
   "dependencies": {
     "@agentrail/app": "workspace:*",
