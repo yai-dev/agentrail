@@ -29,11 +29,11 @@ When `multiple` is `true`, selected options are returned as a comma-separated st
 
 When called, the tool:
 
-1. Emits a `waiting_for_input` signal event on the runtime stream with the question and options.
+1. Emits a `waiting_for_user_input` event on the runtime stream with the question and options.
 2. Suspends execution and waits for the host to provide an answer via the wait-handle registry.
 3. Resumes and returns the user's answer to the model.
 
-The host layer (e.g. the playground server) receives the `waiting_for_input` event and must POST the user's answer back to resume the run.
+The host layer (e.g. the playground server) receives the `waiting_for_user_input` event and must POST the user's answer back to resume the run.
 
 ## UI Integration
 

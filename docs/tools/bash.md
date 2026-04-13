@@ -32,7 +32,7 @@ The tool returns combined stdout and stderr as text. The `details` field is a di
 ```ts
 {
   mode: "background";
-  pid: number;
+  pid?: number;
   stdout: string; // partial output captured before timeout
   stderr: string;
 }

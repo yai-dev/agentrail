@@ -8,12 +8,12 @@ Execute Python code inside the isolated sandbox environment.
 
 ## Parameters
 
-| Name                    | Type       | Required | Description                                                                                                        |
-| ----------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
-| `code`                  | `string`   | Yes      | Python code to execute. Use `print(...)` to surface important results.                                             |
-| `working_directory`     | `string`   | No       | Sandbox working directory. Must start with `/workspace`. Defaults to `/workspace`.                                 |
-| `timeout`               | `integer`  | No       | Maximum execution time in milliseconds. Defaults to `60000`.                                                       |
-| `expected_output_files` | `string[]` | No       | Absolute sandbox paths expected to be created or updated (typically under `/workspace/.deep-research/artifacts/`). |
+| Name                    | Type       | Required | Description                                                                                                                                                                                        |
+| ----------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code`                  | `string`   | Yes      | Python code to execute. Use `print(...)` to surface important results.                                                                                                                             |
+| `working_directory`     | `string`   | No       | Sandbox working directory. Must start with `/workspace`. Defaults to `/workspace`.                                                                                                                 |
+| `timeout`               | `integer`  | No       | Maximum execution time in milliseconds. Defaults to `60000`.                                                                                                                                       |
+| `expected_output_files` | `string[]` | No       | Absolute sandbox paths expected to be created or updated. The current sandboxed Python tool is optimized for artifact workflows that typically write under `/workspace/.deep-research/artifacts/`. |
 
 ## Result
 
@@ -30,12 +30,12 @@ Returns combined stdout and stderr as text with an exit code suffix. The `detail
 }
 ```
 
-The tool automatically detects changed files under `/workspace/.deep-research/artifacts/` and includes them in `outputFiles`, alongside any paths listed in `expected_output_files`.
+The current sandboxed Python tool automatically detects changed files under `/workspace/.deep-research/artifacts/` and includes them in `outputFiles`, alongside any paths listed in `expected_output_files`. That path is the current implementation detail of this tool, not a general Agentrail-wide artifact convention.
 
 ## Usage notes
 
 - Only packages preinstalled in the sandbox image are available. Do not attempt `pip install` without verifying sandbox image contents.
-- Save generated charts, tables, and data files under `/workspace/.deep-research/artifacts/`.
+- If you want automatic artifact detection, save generated charts, tables, and data files under `/workspace/.deep-research/artifacts/`, which is the directory this tool currently scans by default.
 - The script is written to `/workspace/.deep-research/tmp/` before execution and cleaned up automatically.
 - Use `working_directory` to control the script's cwd (useful for relative imports).
 - `expected_output_files` helps the tool report output even when mtime detection is unreliable.
