@@ -3147,6 +3147,10 @@ body {
   text-overflow: ellipsis;
 }
 
+.permission-approval-error {
+  font-size: 12px;
+  color: var(--error, #e05252);
+}
 .permission-approval-actions {
   display: flex;
   gap: 8px;
@@ -3169,7 +3173,7 @@ body {
 
 .permission-approval-approve {
   background: var(--accent, #3b82f6);
-  color: #fff;
+  color: #000;
   border-color: var(--accent, #3b82f6);
 }
 

@@ -3,6 +3,7 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { useEffect, useState } from "react";
 import { respondToPermission } from "../api";
 
 export interface PendingPermissionState {
@@ -22,14 +23,30 @@ export function PermissionApprovalPrompt({
   pendingPermission,
   onDismiss,
 }: PermissionApprovalPromptProps) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset interaction state whenever a new permission request arrives.
+  useEffect(() => {
+    setSubmitting(false);
+    setError(null);
+  }, [pendingPermission?.toolCallId]);
+
   if (!pendingPermission) return null;
 
   const { toolName, reason } = pendingPermission;
 
   const respond = async (decision: "approved" | "rejected") => {
-    if (!sessionId) return;
-    onDismiss();
-    await respondToPermission(sessionId, decision);
+    if (!sessionId || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    const ok = await respondToPermission(sessionId, decision);
+    if (ok) {
+      onDismiss();
+    } else {
+      setError("Failed to send decision — please try again.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -42,20 +59,23 @@ export function PermissionApprovalPrompt({
             Allow <strong>{toolName}</strong> to run?
           </span>
           {reason && <span className="permission-approval-reason">{reason}</span>}
+          {error && <span className="permission-approval-error">{error}</span>}
         </div>
       </div>
       <div className="permission-approval-actions">
         <button
           className="permission-approval-btn permission-approval-approve"
+          disabled={submitting}
           onClick={() => void respond("approved")}
         >
-          Approve
+          {submitting ? "…" : "Approve"}
         </button>
         <button
           className="permission-approval-btn permission-approval-reject"
+          disabled={submitting}
           onClick={() => void respond("rejected")}
         >
-          Reject
+          {submitting ? "…" : "Reject"}
         </button>
       </div>
     </div>
