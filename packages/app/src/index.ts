@@ -115,11 +115,12 @@ export {
   getDeepResearchConfig,
   getPlaygroundServerConfig,
   getPlaygroundUiConfig,
+  configPermissionsToPolicy,
   loadAgentrailConfig,
   parseAgentrailConfig,
   resolveAgentrailConfigPath,
 } from "@/config/index.js";
-export type { AgentrailConfig } from "@/config/index.js";
+export type { AgentrailConfig, AgentrailPermissionsConfig } from "@/config/index.js";
 
 // ============================================================================
 // Slash commands

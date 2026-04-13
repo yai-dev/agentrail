@@ -42,10 +42,10 @@ export function filesystem(opts?: FilesystemOptions): CapabilityDescriptor {
 
       const todoStorage = sessionStore.createTodoStorage?.(sessionRef);
       const tools = [
-        createSandboxedBash(sm, sessionId, tenantId, userId),
-        createSandboxedRead(sm, sessionId, tenantId, userId),
-        createSandboxedWrite(sm, sessionId, tenantId, userId),
-        createSandboxedEdit(sm, sessionId, tenantId, userId),
+        createSandboxedBash(sm, sessionId, tenantId, userId, ctx.permissionPolicy),
+        createSandboxedRead(sm, sessionId, tenantId, userId, ctx.permissionPolicy),
+        createSandboxedWrite(sm, sessionId, tenantId, userId, ctx.permissionPolicy),
+        createSandboxedEdit(sm, sessionId, tenantId, userId, ctx.permissionPolicy),
         createSandboxedGlob(sm, sessionId, tenantId, userId),
         createSandboxedGrep(sm, sessionId, tenantId, userId),
         createSleepTool(),

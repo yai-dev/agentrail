@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ToolPermissionPolicy } from "@/permissions/index.js";
+import { evaluatePolicy, isPathSafe, workspaceAnchor } from "@/permissions/index.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { readFile, writeFile } from "node:fs/promises";
@@ -40,72 +42,108 @@ const parametersSchema = Type.Object({
   ),
 });
 
-export const editTool = tool()
-  .name(toolName)
-  .label(toolLabel)
-  .description(toolDescription)
-  .parameters(parametersSchema)
-  .execute(async ({ file_path, old_string, new_string, replace_all }) => {
-    let content: string;
-    try {
-      content = await readFile(file_path, "utf-8");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      return {
-        content: [{ type: "text" as const, text: `Error reading file: ${message}` }],
-        details: { error: message },
-      };
-    }
+/** Options for `createEditTool`. */
+export interface EditToolOptions {
+  /** When set, file paths must be anchored within this directory. */
+  rootDir?: string;
+  /** Active permission policy evaluated before editing. */
+  policy?: ToolPermissionPolicy;
+}
 
-    const occurrences = content.split(old_string).length - 1;
+/**
+ * Creates a non-sandboxed Edit tool with optional path anchoring and
+ * permission policy.
+ */
+export function createEditTool(opts?: EditToolOptions) {
+  return tool()
+    .name(toolName)
+    .label(toolLabel)
+    .description(toolDescription)
+    .parameters(parametersSchema)
+    .checkPermissions(({ file_path }) => {
+      if (!isPathSafe(file_path)) {
+        return { decision: "deny" as const, reason: `Path "${file_path}" is not allowed` };
+      }
+      if (opts?.rootDir) {
+        try {
+          workspaceAnchor(file_path, opts.rootDir);
+        } catch (err) {
+          return {
+            decision: "deny" as const,
+            reason: err instanceof Error ? err.message : String(err),
+          };
+        }
+      }
+      if (opts?.policy) {
+        return evaluatePolicy(opts.policy, "Edit", file_path);
+      }
+      return "allow";
+    })
+    .execute(async ({ file_path, old_string, new_string, replace_all }) => {
+      let content: string;
+      try {
+        content = await readFile(file_path, "utf-8");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Error reading file: ${message}` }],
+          details: { error: message },
+        };
+      }
 
-    if (occurrences === 0) {
+      const occurrences = content.split(old_string).length - 1;
+
+      if (occurrences === 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Error: old_string not found in file. The string must match exactly, including whitespace and indentation.`,
+            },
+          ],
+          details: { error: "old_string not found", occurrences: 0 },
+        };
+      }
+
+      if (!replace_all && occurrences > 1) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Error: old_string is not unique in the file (found ${occurrences} occurrences). Provide more surrounding context to make it unique, or set replace_all to true.`,
+            },
+          ],
+          details: { error: "old_string not unique", occurrences },
+        };
+      }
+
+      const updated = replace_all
+        ? content.split(old_string).join(new_string)
+        : content.replace(old_string, new_string);
+
+      try {
+        await writeFile(file_path, updated, "utf-8");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Error writing file: ${message}` }],
+          details: { error: message },
+        };
+      }
+
+      const replacedCount = replace_all ? occurrences : 1;
       return {
         content: [
           {
             type: "text" as const,
-            text: `Error: old_string not found in file. The string must match exactly, including whitespace and indentation.`,
+            text: `Successfully replaced ${replacedCount} occurrence(s) in ${file_path}`,
           },
         ],
-        details: { error: "old_string not found", occurrences: 0 },
+        details: { replacedCount },
       };
-    }
+    })
+    .build();
+}
 
-    if (!replace_all && occurrences > 1) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error: old_string is not unique in the file (found ${occurrences} occurrences). Provide more surrounding context to make it unique, or set replace_all to true.`,
-          },
-        ],
-        details: { error: "old_string not unique", occurrences },
-      };
-    }
-
-    const updated = replace_all
-      ? content.split(old_string).join(new_string)
-      : content.replace(old_string, new_string);
-
-    try {
-      await writeFile(file_path, updated, "utf-8");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      return {
-        content: [{ type: "text" as const, text: `Error writing file: ${message}` }],
-        details: { error: message },
-      };
-    }
-
-    const replacedCount = replace_all ? occurrences : 1;
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: `Successfully replaced ${replacedCount} occurrence(s) in ${file_path}`,
-        },
-      ],
-      details: { replacedCount },
-    };
-  })
-  .build();
+/** Non-sandboxed Edit tool with no path restrictions (backward-compatible singleton). */
+export const editTool = createEditTool();

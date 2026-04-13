@@ -10,6 +10,7 @@ import type { TextContent, ToolCall } from "@/types/content.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
 import type { RuntimeEvent, RuntimeTracingFields } from "@/types/result.types.js";
 import type {
+  PermissionApprovalHandler,
   RuntimeTool,
   ToolInterceptor,
   ToolResult,
@@ -32,6 +33,7 @@ export async function executeToolCalls(
   tracing: RuntimeTracingFields,
   getSteeringMessages?: () => Promise<Message[]>,
   toolInterceptor?: ToolInterceptor,
+  permissionApprovalHandler?: PermissionApprovalHandler,
 ): Promise<ToolExecutionResult> {
   const toolCalls = assistantMessage.content.filter((c): c is ToolCall => c.type === "toolCall");
   const results: ToolResultMessage[] = [];
@@ -133,6 +135,104 @@ export async function executeToolCalls(
           // onAfterToolCall is NOT called for schema re-validation failures.
           continue;
         }
+      }
+    }
+
+    // ── Permission check (tool.checkPermissions) ──────────────────────────────
+    // Runs after the interceptor (so effectiveArgs reflects any rewrites) but
+    // before tool.validate and execute.  onAfterToolCall is NOT called for
+    // permission-denied executions.
+    if (tool.checkPermissions) {
+      let permDecision: import("@/types/tool.types.js").PermissionDecision;
+      try {
+        permDecision = await tool.checkPermissions(effectiveArgs);
+      } catch (e) {
+        permDecision = {
+          decision: "deny",
+          reason: e instanceof Error ? e.message : String(e),
+        };
+      }
+      const decision = typeof permDecision === "string" ? permDecision : permDecision.decision;
+      const permReason =
+        typeof permDecision === "object" && "reason" in permDecision
+          ? permDecision.reason
+          : undefined;
+
+      if (decision === "ask") {
+        stream.push({
+          type: "permission_request",
+          toolCallId: toolCall.id,
+          toolName: toolCall.name,
+          reason: permReason,
+          ...tracing,
+        });
+
+        if (permissionApprovalHandler) {
+          let approval: "approved" | "rejected";
+          try {
+            approval = await permissionApprovalHandler.requestApproval({
+              toolCallId: toolCall.id,
+              toolName: toolCall.name,
+              reason: permReason,
+              signal,
+            });
+          } catch {
+            approval = "rejected";
+          }
+
+          if (approval === "approved") {
+            stream.push({
+              type: "permission_resolved",
+              toolCallId: toolCall.id,
+              toolName: toolCall.name,
+              decision: "approved",
+              ...tracing,
+            });
+            // Continue to validation and execution below.
+          } else {
+            stream.push({
+              type: "permission_resolved",
+              toolCallId: toolCall.id,
+              toolName: toolCall.name,
+              decision: "rejected",
+              ...tracing,
+            });
+            rejectToolCall(
+              toolCall,
+              permReason ?? `Permission denied for tool "${toolCall.name}"`,
+              effectiveArgs,
+              rawArgs,
+              stream,
+              tracing,
+              results,
+            );
+            continue;
+          }
+        } else {
+          // No interactive handler — treat ask as deny.
+          rejectToolCall(
+            toolCall,
+            permReason ?? `Permission denied for tool "${toolCall.name}"`,
+            effectiveArgs,
+            rawArgs,
+            stream,
+            tracing,
+            results,
+          );
+          continue;
+        }
+      } else if (decision === "deny") {
+        rejectToolCall(
+          toolCall,
+          permReason ?? `Permission denied for tool "${toolCall.name}"`,
+          effectiveArgs,
+          rawArgs,
+          stream,
+          tracing,
+          results,
+        );
+        // onAfterToolCall is NOT called for permission-denied executions.
+        continue;
       }
     }
 

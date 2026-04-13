@@ -12,7 +12,7 @@
     "build:sandbox": "docker build -t agentrail-sandbox:latest docker/sandbox",
     "changeset": "node ./scripts/create-changeset.mjs",
     "changeset:cli": "changeset",
-    "test": "pnpm -r --filter \"./packages/**\" test",
+    "test": "pnpm -r --filter \"./packages/**\" test && pnpm -r --filter \"./examples/**\" --if-present test",
     "typecheck": "pnpm -r --filter \"./packages/**\" typecheck && pnpm -r --filter \"./examples/**\" typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -22,6 +22,7 @@ const chat = createChatRoute({
   plugins: playgroundPlugins,
   resolveProfile: resolvePlaygroundProfile,
   handleResolvedRequest: handlePlaygroundDeepResearchMode,
+  permissionPolicy: config.permissionPolicy,
 });
 
 export { chat };

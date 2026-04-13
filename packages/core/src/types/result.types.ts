@@ -119,7 +119,8 @@ export interface RuntimeTracingFields {
 export type RuntimeEvent =
   // ── Session lifecycle ────────────────────────────────────────────────────
   /** Emitted once when the agent begins processing the user input. */
-  (| { readonly type: "session.start" }
+  (
+    | { readonly type: "session.start" }
     /** Emitted once after all turns complete. Contains the full message list and token usage. */
     | { readonly type: "session.end"; readonly messages: Message[]; readonly usage: Usage }
     // ── Turn lifecycle ───────────────────────────────────────────────────────
@@ -194,6 +195,43 @@ export type RuntimeEvent =
         readonly options?: string[];
         readonly multiple?: boolean;
         readonly custom?: boolean;
+      }
+    /**
+     * Emitted when a tool's `checkPermissions` returns `"ask"`.
+     *
+     * After emitting this event, the runtime **suspends** the tool call and
+     * waits for the host-supplied `PermissionApprovalHandler.requestApproval`
+     * to resolve. The handler may approve or reject the call:
+     *
+     * - `"approved"` — the tool proceeds normally; a `permission_resolved`
+     *   event with `decision: "approved"` is emitted next.
+     * - `"rejected"` (or the handler throws / the signal aborts) — the tool
+     *   call receives an error `ToolResult`; a `permission_resolved` event
+     *   with `decision: "rejected"` is emitted next.
+     *
+     * When no `PermissionApprovalHandler` is registered, `"ask"` falls back
+     * to immediate denial (same behaviour as `"deny"`), without emitting this
+     * event.
+     *
+     * `"deny"` decisions never emit this event; they always produce a standard
+     * error `ToolResult` directly.
+     */
+    | {
+        readonly type: "permission_request";
+        readonly toolCallId: string;
+        readonly toolName: string;
+        readonly reason?: string;
+      }
+    /**
+     * Emitted after interactive approval: `decision` is `"approved"` when the
+     * user allowed the tool call, `"rejected"` when they denied it.
+     * Always follows a `permission_request` event with the same `toolCallId`.
+     */
+    | {
+        readonly type: "permission_resolved";
+        readonly toolCallId: string;
+        readonly toolName: string;
+        readonly decision: "approved" | "rejected";
       }
     // ── New lifecycle events ─────────────────────────────────────────────────
     /** Emitted when context compaction runs during a streaming request. */

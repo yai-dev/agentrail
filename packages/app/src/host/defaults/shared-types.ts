@@ -17,6 +17,7 @@ import type {
   SandboxManager,
   SkillManager,
   SkillMeta,
+  ToolPermissionPolicy,
   WaitHandleRegistry,
 } from "@agentrail/capabilities";
 import type {
@@ -134,6 +135,8 @@ export interface DefaultCapabilityToolOptions {
   skillManager?: SkillManager;
   onSubAgentEvent?: (event: ExtendedSseEvent) => void;
   containerSkillsDir?: string;
+  /** Active permission policy forwarded to all sandboxed file/shell tools and non-sandboxed tools. */
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 /** Factory that creates a synthetic user message for contextual system hints. */

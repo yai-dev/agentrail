@@ -14,7 +14,7 @@ import type {
 } from "@/types/agent.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
 import type { RuntimeEvent, RuntimeTracingFields } from "@/types/result.types.js";
-import type { RuntimeTool, ToolInterceptor } from "@/types/tool.types.js";
+import type { PermissionApprovalHandler, RuntimeTool, ToolInterceptor } from "@/types/tool.types.js";
 import type { Usage } from "@/types/usage.types.js";
 import { randomUUID } from "node:crypto";
 
@@ -62,6 +62,8 @@ export interface AgentLoopConfig {
   reactiveCompaction?: ReactiveCompactionController;
   /** Optional pre/post interceptor invoked around each tool execution. */
   toolInterceptor?: ToolInterceptor;
+  /** Optional handler that converts an "ask" permission decision into a suspend-and-resume. */
+  permissionApprovalHandler?: PermissionApprovalHandler;
 }
 
 /** Runs the core agent loop from the first user turn until completion. */
@@ -261,6 +263,7 @@ async function runLoop(
           tracing,
           config.getSteeringMessages,
           config.toolInterceptor,
+          config.permissionApprovalHandler,
         );
         toolResults.push(...toolExecution.toolResults);
         steeringAfterTools = toolExecution.steeringMessages ?? null;

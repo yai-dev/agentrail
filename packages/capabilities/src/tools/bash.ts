@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ToolPermissionPolicy } from "@/permissions/index.js";
+import { evaluatePolicy, isDangerousCommand, normalizeBashCommand } from "@/permissions/index.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { spawn } from "node:child_process";
@@ -54,116 +56,137 @@ function truncate(s: string, max: number): string {
   return truncated + "\n[output truncated]";
 }
 
-export const bashTool = tool()
-  .name(toolName)
-  .label(toolLabel)
-  .description(toolDescription)
-  .parameters(parametersSchema)
-  .execute(async ({ command, working_directory, timeout }, { signal }) => {
-    const timeoutMs = timeout ?? DEFAULT_TIMEOUT_MS;
-    const cwd = working_directory ?? process.cwd();
-
-    let stdoutBuf = "";
-    let stderrBuf = "";
-
-    const child = spawn("/bin/sh", ["-c", command], {
-      cwd,
-      env: process.env,
-      // detached so the process can survive beyond the parent wait
-      detached: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-
-    const pid = child.pid!;
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdoutBuf += chunk.toString("utf-8");
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderrBuf += chunk.toString("utf-8");
-    });
-
-    // Abort support: kill child if the agent is aborted
-    const onAbort = () => {
-      try {
-        child.kill();
-      } catch {
-        /* ignore */
+/**
+ * Creates a non-sandboxed Bash tool with optional permission policy.
+ *
+ * When a `policy` is supplied, each command is evaluated against it before
+ * execution.  Regardless of policy, commands that match `DANGEROUS_BASH_PATTERNS`
+ * are always denied as a baseline safety net.
+ */
+export function createBashTool(policy?: ToolPermissionPolicy) {
+  return tool()
+    .name(toolName)
+    .label(toolLabel)
+    .description(toolDescription)
+    .parameters(parametersSchema)
+    .checkPermissions(({ command }) => {
+      if (isDangerousCommand(command)) {
+        return { decision: "deny" as const, reason: `Command matches a known-dangerous pattern` };
       }
-    };
-    signal?.addEventListener("abort", onAbort, { once: true });
+      if (policy) {
+        return evaluatePolicy(policy, "Bash", normalizeBashCommand(command), "command");
+      }
+      return "allow";
+    })
+    .execute(async ({ command, working_directory, timeout }, { signal }) => {
+      const timeoutMs = timeout ?? DEFAULT_TIMEOUT_MS;
+      const cwd = working_directory ?? process.cwd();
 
-    const result = await new Promise<BashDetails>((resolve) => {
-      let settled = false;
-      let timer: ReturnType<typeof setTimeout> | null = null;
+      let stdoutBuf = "";
+      let stderrBuf = "";
 
-      const settle = (details: BashDetails) => {
-        if (settled) return;
-        settled = true;
-        if (timer !== null) clearTimeout(timer);
-        signal?.removeEventListener("abort", onAbort);
-        resolve(details);
+      const child = spawn("/bin/sh", ["-c", command], {
+        cwd,
+        env: process.env,
+        // detached so the process can survive beyond the parent wait
+        detached: true,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+
+      const pid = child.pid!;
+
+      child.stdout.on("data", (chunk: Buffer) => {
+        stdoutBuf += chunk.toString("utf-8");
+      });
+      child.stderr.on("data", (chunk: Buffer) => {
+        stderrBuf += chunk.toString("utf-8");
+      });
+
+      // Abort support: kill child if the agent is aborted
+      const onAbort = () => {
+        try {
+          child.kill();
+        } catch {
+          /* ignore */
+        }
       };
+      signal?.addEventListener("abort", onAbort, { once: true });
 
-      child.on("close", (code) => {
-        settle({
-          mode: "foreground",
-          exit_code: code ?? 0,
-          stdout: truncate(stdoutBuf, MAX_OUTPUT_BYTES),
-          stderr: truncate(stderrBuf, MAX_OUTPUT_BYTES),
-        });
-      });
+      const result = await new Promise<BashDetails>((resolve) => {
+        let settled = false;
+        let timer: ReturnType<typeof setTimeout> | null = null;
 
-      child.on("error", (err) => {
-        settle({
-          mode: "foreground",
-          exit_code: 1,
-          stdout: "",
-          stderr: err.message,
-        });
-      });
+        const settle = (details: BashDetails) => {
+          if (settled) return;
+          settled = true;
+          if (timer !== null) clearTimeout(timer);
+          signal?.removeEventListener("abort", onAbort);
+          resolve(details);
+        };
 
-      if (timeoutMs === 0) {
-        // Immediately background
-        child.unref();
-        settle({
-          mode: "background",
-          pid,
-          stdout: "",
-          stderr: "",
+        child.on("close", (code) => {
+          settle({
+            mode: "foreground",
+            exit_code: code ?? 0,
+            stdout: truncate(stdoutBuf, MAX_OUTPUT_BYTES),
+            stderr: truncate(stderrBuf, MAX_OUTPUT_BYTES),
+          });
         });
-      } else {
-        timer = setTimeout(() => {
-          // Detach from the Node event loop; process keeps running
+
+        child.on("error", (err) => {
+          settle({
+            mode: "foreground",
+            exit_code: 1,
+            stdout: "",
+            stderr: err.message,
+          });
+        });
+
+        if (timeoutMs === 0) {
+          // Immediately background
           child.unref();
           settle({
             mode: "background",
             pid,
-            stdout: truncate(stdoutBuf, MAX_OUTPUT_BYTES),
-            stderr: truncate(stderrBuf, MAX_OUTPUT_BYTES),
+            stdout: "",
+            stderr: "",
           });
-        }, timeoutMs);
+        } else {
+          timer = setTimeout(() => {
+            // Detach from the Node event loop; process keeps running
+            child.unref();
+            settle({
+              mode: "background",
+              pid,
+              stdout: truncate(stdoutBuf, MAX_OUTPUT_BYTES),
+              stderr: truncate(stderrBuf, MAX_OUTPUT_BYTES),
+            });
+          }, timeoutMs);
+        }
+      });
+
+      let text: string;
+      if (result.mode === "foreground") {
+        const parts: string[] = [];
+        if (result.stdout) parts.push(result.stdout);
+        if (result.stderr) parts.push(`[stderr]\n${result.stderr}`);
+        if (parts.length === 0) parts.push("(no output)");
+        parts.push(`\n[exit code: ${result.exit_code}]`);
+        text = parts.join("\n");
+      } else {
+        const parts: string[] = [`Process is running in background (pid: ${result.pid})`];
+        if (result.stdout) parts.push(result.stdout);
+        if (result.stderr) parts.push(`[stderr]\n${result.stderr}`);
+        text = parts.join("\n");
       }
-    });
 
-    let text: string;
-    if (result.mode === "foreground") {
-      const parts: string[] = [];
-      if (result.stdout) parts.push(result.stdout);
-      if (result.stderr) parts.push(`[stderr]\n${result.stderr}`);
-      if (parts.length === 0) parts.push("(no output)");
-      parts.push(`\n[exit code: ${result.exit_code}]`);
-      text = parts.join("\n");
-    } else {
-      const parts: string[] = [`Process is running in background (pid: ${result.pid})`];
-      if (result.stdout) parts.push(result.stdout);
-      if (result.stderr) parts.push(`[stderr]\n${result.stderr}`);
-      text = parts.join("\n");
-    }
+      return {
+        content: [{ type: "text" as const, text }],
+        details: result,
+      };
+    })
+    .build();
+}
 
-    return {
-      content: [{ type: "text" as const, text }],
-      details: result,
-    };
-  })
-  .build();
+/** Non-sandboxed Bash tool with no permission policy (backward-compatible singleton). */
+export const bashTool = createBashTool();

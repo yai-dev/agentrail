@@ -33,10 +33,15 @@ import { resolveTransformContext } from "@/routes/context-resolver.js";
 import { awaitSandboxWarmup } from "@/routes/sandbox-warmup.js";
 import { createSseEventWriter } from "@/routes/sse-writer.js";
 import { validateStreamRequest, type StreamRequest } from "@/routes/stream-request.js";
-import type { OrchestrationManager, SandboxManager } from "@agentrail/capabilities";
+import type {
+  OrchestrationManager,
+  SandboxManager,
+  ToolPermissionPolicy,
+} from "@agentrail/capabilities";
 import type {
   Agent,
   Message,
+  PermissionApprovalHandler,
   RuntimeEvent,
   SessionRef,
   ToolInterceptor,
@@ -147,6 +152,22 @@ export interface AgentrailStreamRouteOptions {
     context: { tenantId: string; sessionId: string; sessionRef: SessionRef },
     envelope: WorkflowTraceEventEnvelope,
   ) => void;
+  /**
+   * Optional permission policy applied to all sessions handled by this route.
+   * When set, tools evaluate the policy via `checkPermissions` before executing.
+   */
+  permissionPolicy?: ToolPermissionPolicy;
+
+  /**
+   * Optional factory that creates a per-session `PermissionApprovalHandler`.
+   *
+   * Called once per stream request with the resolved session ID.  The returned
+   * handler is forwarded to the core executor so that `"ask"` permission
+   * decisions suspend until the user approves or rejects the tool call.
+   *
+   * When absent, `"ask"` decisions are treated as `"deny"`.
+   */
+  createPermissionApprovalHandler?: (sessionId: string) => PermissionApprovalHandler;
 }
 
 /** Fully resolved stream request context exposed to custom handlers. */
@@ -341,6 +362,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
           sessionRef,
           sessionStore: options.sessionStore,
           chainId: requestTraceId,
+          permissionPolicy: options.permissionPolicy,
         };
 
         // ── 6d. Compact history + load budget slice ────────────────────────
@@ -419,6 +441,7 @@ export function createStreamRoute(options: AgentrailStreamRouteOptions): Hono {
             onTraceEvent: maybeTraceEvent,
             toolInterceptor: buildToolInterceptor(plugins, profileCtx, onPluginError),
             chainId: requestTraceId,
+            permissionApprovalHandler: options.createPermissionApprovalHandler?.(sid),
             onTurnMessagesReady: async (msgs) => {
               await options.sessionStore.appendMessages(tenantId, sid, msgs);
             },
@@ -465,6 +488,8 @@ interface DrainAgentStreamOptions {
    * Errors are swallowed — a failed flush permanently drops that batch (no retry).
    */
   onTurnMessagesReady?: (messages: Message[]) => Promise<void>;
+  /** Optional handler that converts an "ask" permission decision into a suspend-and-resume. */
+  permissionApprovalHandler?: PermissionApprovalHandler;
 }
 
 /**
@@ -496,6 +521,7 @@ async function drainAgentStream(
     reactiveCompaction: opts.reactiveCompaction,
     toolInterceptor: opts.toolInterceptor,
     chainId: opts.chainId,
+    permissionApprovalHandler: opts.permissionApprovalHandler,
   });
 
   for await (const event of agentStream) {

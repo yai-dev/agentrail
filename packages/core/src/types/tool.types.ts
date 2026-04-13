@@ -43,6 +43,43 @@ export type ToolSignalEvent = {
   readonly custom?: boolean;
 };
 
+/**
+ * The outcome of a `checkPermissions` call.
+ *
+ * - `"allow"` — execution may proceed.
+ * - `"deny"` — execution is blocked; the model receives an error result.
+ * - `"ask"` — execution requires user approval. When a
+ *   `PermissionApprovalHandler` is available, the executor emits a
+ *   `permission_request` RuntimeEvent and then **suspends** the tool call
+ *   until the handler resolves. The handler's response determines whether
+ *   execution proceeds (`"approved"`) or the call receives an error result
+ *   (`"rejected"`). Without a handler the call is denied immediately.
+ *
+ * The object form allows attaching an optional human-readable `reason` that
+ * is surfaced in the error result and the `permission_request` event.
+ */
+export type PermissionDecision =
+  | "allow"
+  | "deny"
+  | "ask"
+  | { readonly decision: "allow" | "deny" | "ask"; readonly reason?: string };
+
+/**
+ * Host-provided callback that resolves a `"ask"` permission decision
+ * interactively instead of denying it immediately.
+ *
+ * Implementations should suspend the call until the user approves or rejects,
+ * then resolve with `"approved"` or `"rejected"`.
+ */
+export interface PermissionApprovalHandler {
+  requestApproval(input: {
+    toolCallId: string;
+    toolName: string;
+    reason?: string;
+    signal?: AbortSignal;
+  }): Promise<"approved" | "rejected">;
+}
+
 /** Full runtime representation of an executable tool. */
 export interface RuntimeTool<
   TParameters extends TSchema = TSchema,
@@ -50,6 +87,21 @@ export interface RuntimeTool<
 > extends ToolDefinition<TParameters> {
   /** Human-readable label used in logs and developer tooling. */
   label: string;
+
+  /**
+   * Optional permission check invoked after `onBeforeToolCall` and before
+   * `validate`.
+   *
+   * The function receives the effective (post-interceptor) arguments and
+   * returns a `PermissionDecision`:
+   * - `"allow"` — proceed to `validate` / `execute`.
+   * - `"deny"` — block execution; model receives an error result.
+   * - `"ask"` — emit a `permission_request` RuntimeEvent then block
+   *   (non-interactive until the host wires up an approval mechanism).
+   *
+   * `onAfterToolCall` is **not** called for permission-denied executions.
+   */
+  checkPermissions?(params: unknown): Promise<PermissionDecision> | PermissionDecision;
 
   /**
    * Optional business-logic precondition check.

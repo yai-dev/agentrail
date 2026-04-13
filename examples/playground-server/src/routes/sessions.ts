@@ -196,13 +196,32 @@ sessions.get("/:sessionId/compacted-messages", async (c) => {
 sessions.post("/:sessionId/respond", async (c) => {
   const { sessionId } = c.req.param();
 
-  let body: { answer?: unknown };
+  let body: { kind?: unknown; answer?: unknown; decision?: unknown };
   try {
-    body = await c.req.json<{ answer?: unknown }>();
+    body = await c.req.json<{ kind?: unknown; answer?: unknown; decision?: unknown }>();
   } catch {
     return c.json({ error: "Invalid JSON body" }, 400);
   }
 
+  const pendingKind = waitHandleRegistry.getPendingKind(sessionId);
+
+  // ── Permission approval ────────────────────────────────────────────────────
+  if (body.kind === "permission" || pendingKind === "permission") {
+    const { decision } = body;
+    if (decision !== "approved" && decision !== "rejected") {
+      return c.json(
+        { error: "Field 'decision' must be \"approved\" or \"rejected\" for permission responses" },
+        400,
+      );
+    }
+    const resolved = waitHandleRegistry.respondPermission(sessionId, decision);
+    if (!resolved) {
+      return c.json({ error: `No pending permission request for session '${sessionId}'` }, 404);
+    }
+    return c.json({ ok: true });
+  }
+
+  // ── Question answer (AskUserQuestion tool) ─────────────────────────────────
   const { answer } = body;
   if (typeof answer !== "string" || answer.trim() === "") {
     return c.json({ error: "Field 'answer' is required and must be a non-empty string" }, 400);

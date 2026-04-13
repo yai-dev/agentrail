@@ -4,6 +4,7 @@
  */
 
 import type {
+  PermissionDecision,
   RuntimeTool,
   ToolResult,
   ToolSignalEvent,
@@ -43,6 +44,7 @@ interface ToolConfig<TParams, TDetails> {
   label?: string;
   description?: string;
   parameters?: TSchema;
+  checkPermissions?: (params: TParams) => Promise<PermissionDecision> | PermissionDecision;
   validate?: (
     params: TParams,
     ctx: ToolValidationContext,
@@ -87,6 +89,21 @@ export class ToolBuilder<TParams = undefined, TDetails = unknown> {
   }
 
   /**
+   * Registers an optional permission check invoked before `validate` and
+   * `execute`.
+   *
+   * The function receives the effective (post-interceptor) arguments and
+   * returns a `PermissionDecision`. See `RuntimeTool.checkPermissions` for
+   * full semantics.
+   */
+  checkPermissions(
+    fn: (params: TParams) => Promise<PermissionDecision> | PermissionDecision,
+  ): this {
+    this.config.checkPermissions = fn;
+    return this;
+  }
+
+  /**
    * Registers an optional business-logic precondition check.
    *
    * The function is called after schema validation and after any
@@ -124,6 +141,7 @@ export class ToolBuilder<TParams = undefined, TDetails = unknown> {
     const parameters = this.config.parameters ?? Type.Object({});
     const executeFn = this.config.execute;
     const validateFn = this.config.validate;
+    const checkPermFn = this.config.checkPermissions;
 
     const runtimeTool: RuntimeTool<TSchema, TDetails> = {
       name: this.config.name,
@@ -146,6 +164,12 @@ export class ToolBuilder<TParams = undefined, TDetails = unknown> {
         return executeFn(params as TParams, ctx);
       },
     };
+
+    if (checkPermFn) {
+      runtimeTool.checkPermissions = (
+        params: unknown,
+      ): Promise<PermissionDecision> | PermissionDecision => checkPermFn(params as TParams);
+    }
 
     if (validateFn) {
       runtimeTool.validate = (

@@ -503,3 +503,140 @@ describe("executeToolCalls — tool.validate()", () => {
     expect(receivedParams[0]).toEqual({ value: "MODIFIED" });
   });
 });
+
+// ─── checkPermissions tests ───────────────────────────────────────────────────
+
+describe("executeToolCalls — checkPermissions", () => {
+  let stream!: EventStream<RuntimeEvent, Message[]>;
+  let collectedEvents!: RuntimeEvent[];
+
+  beforeEach(() => {
+    ({ stream, events: collectedEvents } = makeStream());
+  });
+
+  it("allow: tool executes normally when checkPermissions returns 'allow'", async () => {
+    const tool: RuntimeTool = {
+      ...makeTool("cmd"),
+      checkPermissions: vi.fn().mockResolvedValue("allow"),
+    };
+
+    const msg = makeAssistantMessage([{ id: "p1", name: "cmd", arguments: { value: "safe" } }]);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      undefined,
+    );
+
+    expect(tool.execute).toHaveBeenCalledOnce();
+    expect(result.toolResults[0].isError).toBe(false);
+    expect(collectedEvents.find((e) => e.type === "permission_request")).toBeUndefined();
+  });
+
+  it("deny: tool is blocked, error result returned, no permission_request event", async () => {
+    const tool: RuntimeTool = {
+      ...makeTool("cmd"),
+      checkPermissions: vi
+        .fn()
+        .mockResolvedValue({ decision: "deny", reason: "blocked by policy" }),
+    };
+
+    const msg = makeAssistantMessage([{ id: "p2", name: "cmd", arguments: { value: "danger" } }]);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      undefined,
+    );
+
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(result.toolResults[0].isError).toBe(true);
+    expect(result.toolResults[0].content[0]).toMatchObject({
+      type: "text",
+      text: "blocked by policy",
+    });
+    // deny must NOT emit permission_request
+    expect(collectedEvents.find((e) => e.type === "permission_request")).toBeUndefined();
+  });
+
+  it("ask: tool is blocked AND permission_request event is emitted", async () => {
+    const tool: RuntimeTool = {
+      ...makeTool("cmd"),
+      checkPermissions: vi.fn().mockResolvedValue({ decision: "ask", reason: "needs approval" }),
+    };
+
+    const msg = makeAssistantMessage([{ id: "p3", name: "cmd", arguments: { value: "risky" } }]);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      undefined,
+    );
+
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(result.toolResults[0].isError).toBe(true);
+
+    const permEvent = collectedEvents.find((e) => e.type === "permission_request") as
+      | Extract<RuntimeEvent, { type: "permission_request" }>
+      | undefined;
+    expect(permEvent).toBeDefined();
+    expect(permEvent!.toolCallId).toBe("p3");
+    expect(permEvent!.toolName).toBe("cmd");
+    expect(permEvent!.reason).toBe("needs approval");
+  });
+
+  it("checkPermissions throws: execution is blocked with deny semantics", async () => {
+    const tool: RuntimeTool = {
+      ...makeTool("cmd"),
+      checkPermissions: vi.fn().mockRejectedValue(new Error("perm check exploded")),
+    };
+
+    const msg = makeAssistantMessage([{ id: "p4", name: "cmd", arguments: { value: "x" } }]);
+    const result = await executeToolCalls(
+      [tool],
+      msg,
+      undefined,
+      stream,
+      TEST_TRACING,
+      undefined,
+      undefined,
+    );
+
+    expect(tool.execute).not.toHaveBeenCalled();
+    expect(result.toolResults[0].isError).toBe(true);
+    expect(collectedEvents.find((e) => e.type === "permission_request")).toBeUndefined();
+  });
+
+  it("checkPermissions runs after onBeforeToolCall interceptor", async () => {
+    const receivedParams: unknown[] = [];
+    const tool: RuntimeTool = {
+      ...makeTool("cmd"),
+      checkPermissions: vi.fn().mockImplementation((params) => {
+        receivedParams.push(params);
+        return "allow";
+      }),
+    };
+
+    const interceptor: ToolInterceptor = {
+      onBeforeToolCall: vi
+        .fn()
+        .mockResolvedValue({ action: "allow", input: { value: "MODIFIED" } }),
+    };
+
+    const msg = makeAssistantMessage([{ id: "p5", name: "cmd", arguments: { value: "original" } }]);
+    await executeToolCalls([tool], msg, undefined, stream, TEST_TRACING, undefined, interceptor);
+
+    // checkPermissions should see the modified value from the interceptor
+    expect(receivedParams[0]).toEqual({ value: "MODIFIED" });
+    expect(tool.execute).toHaveBeenCalledOnce();
+  });
+});

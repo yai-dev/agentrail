@@ -5,11 +5,13 @@
 
 export { createAskUserQuestionTool } from "@/tools/ask-user-question.js";
 export type { WaitHandleRegistry } from "@/tools/ask-user-question.js";
-export { bashTool } from "@/tools/bash.js";
-export { editTool } from "@/tools/edit.js";
+export { bashTool, createBashTool } from "@/tools/bash.js";
+export { createEditTool, editTool } from "@/tools/edit.js";
+export type { EditToolOptions } from "@/tools/edit.js";
 export { createGlobTool } from "@/tools/glob.js";
 export { grepTool } from "@/tools/grep.js";
-export { readTool } from "@/tools/read.js";
+export { createReadTool, readTool } from "@/tools/read.js";
+export type { ReadToolOptions } from "@/tools/read.js";
 export { createSleepTool } from "@/tools/sleep.js";
 export type { SleepToolOptions } from "@/tools/sleep.js";
 export { createTodoWriteTool } from "@/tools/todo-write.js";
@@ -37,4 +39,5 @@ export type {
   WebSearchResult,
   WebSearchToolOptions,
 } from "@/tools/web-search.js";
-export { writeTool } from "@/tools/write.js";
+export { createWriteTool, writeTool } from "@/tools/write.js";
+export type { WriteToolOptions } from "@/tools/write.js";

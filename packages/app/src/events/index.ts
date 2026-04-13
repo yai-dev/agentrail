@@ -155,6 +155,7 @@ export const TRACE_PERSISTED_EVENT_TYPES = new Set([
   "skill_start",
   "skill_end",
   "waiting_for_user_input",
+  "permission_request",
   "context_compaction_start",
   "context_compaction_end",
   "error",

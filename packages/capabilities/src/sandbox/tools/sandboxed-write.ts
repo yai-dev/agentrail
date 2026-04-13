@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ToolPermissionPolicy } from "@/permissions/index.js";
+import { evaluatePolicy } from "@/permissions/index.js";
 import type { SandboxManager } from "@/sandbox/sandbox-manager.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
@@ -32,12 +34,17 @@ export function createSandboxedWrite(
   sessionId: string,
   tenantId: string,
   userId: string,
+  policy?: ToolPermissionPolicy,
 ) {
   return tool()
     .name("Write")
     .label("Write")
     .description(toolDescription)
     .parameters(parametersSchema)
+    .checkPermissions(({ file_path }) => {
+      if (policy) return evaluatePolicy(policy, "Write", file_path);
+      return "allow";
+    })
     .execute(async ({ file_path, contents }) => {
       await manager.ensureSandbox(sessionId, tenantId, userId);
 

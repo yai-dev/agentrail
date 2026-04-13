@@ -6,6 +6,7 @@
 // Import for local use within this file AND re-export so that consumers can
 // import from either @agentrail/app or @agentrail/core without getting
 // structurally-incompatible types.
+import type { ToolPermissionPolicy } from "@agentrail/capabilities";
 import type {
   Agent,
   AgentrailSessionStore,
@@ -76,6 +77,12 @@ export interface AgentrailProfileContext {
    * route-level `traceId`/`requestTraceId`.
    */
   chainId?: string;
+  /**
+   * Active permission policy for this session.  When present, all file and
+   * shell tools — both sandboxed (Bash, Read, Write, Edit) and non-sandboxed
+   * — evaluate it via `checkPermissions` before executing.
+   */
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 /**

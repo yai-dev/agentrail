@@ -815,7 +815,11 @@ function filterEnvelopes(
     if (filter === "orchestration") return e.source === "orchestration";
     if (filter === "waits")
       return (
-        type === "waiting_for_user_input" || type === "wait_registered" || type === "wait_resolved"
+        type === "waiting_for_user_input" ||
+        type === "permission_request" ||
+        type === "permission_resolved" ||
+        type === "wait_registered" ||
+        type === "wait_resolved"
       );
     if (filter === "errors") return type === "error";
     return true;

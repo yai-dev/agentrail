@@ -9,6 +9,7 @@ import {
   fetchCompactedMessages,
   fetchSessionMessages,
   fetchSlashCommands,
+  respondToPermission,
   runCommand,
   streamChat,
   type CompactionMarker,
@@ -35,6 +36,7 @@ import {
   WaitingQuestionPrompt,
   type WaitingQuestionState,
 } from "./components/WaitingQuestionPrompt";
+import { PermissionApprovalPrompt } from "./components/PermissionApprovalPrompt";
 import { useAuth } from "./hooks/useAuth";
 import { useDeepResearchState } from "./hooks/useDeepResearchState";
 import { useIdentity } from "./hooks/useIdentity";
@@ -97,6 +99,11 @@ export default function App() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [waitingQuestion, setWaitingQuestion] = useState<WaitingQuestionState | null>(null);
+  const [pendingPermission, setPendingPermission] = useState<{
+    toolCallId: string;
+    toolName: string;
+    reason?: string;
+  } | null>(null);
   const [questionInput, setQuestionInput] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [liveSkillActivity, setLiveSkillActivity] = useState<{
@@ -534,6 +541,7 @@ export default function App() {
               setLiveSkillActivity(null);
             }
             pendingDirectSkillRef.current = null;
+            setPendingPermission(null);
             // Persist session metadata
             if (resolvedSessionId) {
               upsert({
@@ -563,6 +571,18 @@ export default function App() {
             });
             setQuestionInput("");
             setSelectedOptions([]);
+          } else if (event.type === "permission_request") {
+            const pr = event as {
+              type: "permission_request";
+              toolCallId: string;
+              toolName: string;
+              reason?: string;
+            };
+            setPendingPermission({ toolCallId: pr.toolCallId, toolName: pr.toolName, reason: pr.reason });
+          } else if (event.type === "permission_resolved") {
+            setPendingPermission(null);
+          } else if (event.type === "turn.complete") {
+            setPendingPermission(null);
           } else if (event.type === "tool.after" || event.type === "tool_execution_end") {
             const tee = event as {
               type: string;
@@ -629,6 +649,7 @@ export default function App() {
         setLiveSkillActivity(null);
         setCompacting(false);
         setWaitingQuestion(null);
+        setPendingPermission(null);
         setQuestionInput("");
         setSelectedOptions([]);
         setBusy(false);
@@ -659,6 +680,7 @@ export default function App() {
     setContextUsage(null);
     setCompacting(false);
     setWaitingQuestion(null);
+    setPendingPermission(null);
     setQuestionInput("");
     setSelectedOptions([]);
     turnIndexRef.current = 0;
@@ -680,6 +702,7 @@ export default function App() {
       setBusy(false);
       setInput("");
       setWaitingQuestion(null);
+      setPendingPermission(null);
       setQuestionInput("");
       setSelectedOptions([]);
       clearTrace();
@@ -925,6 +948,11 @@ export default function App() {
         </main>
 
         {compacting && <CompactionBanner />}
+        <PermissionApprovalPrompt
+          sessionId={currentSessionId}
+          pendingPermission={pendingPermission}
+          onDismiss={() => setPendingPermission(null)}
+        />
         <WaitingQuestionPrompt
           sessionId={currentSessionId}
           waitingQuestion={waitingQuestion}
@@ -971,3 +999,4 @@ export default function App() {
     </div>
   );
 }
+

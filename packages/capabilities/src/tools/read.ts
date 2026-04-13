@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import type { ToolPermissionPolicy } from "@/permissions/index.js";
+import { evaluatePolicy, isPathSafe, workspaceAnchor } from "@/permissions/index.js";
 import { tool } from "@agentrail/core";
 import { Type } from "@sinclair/typebox";
 import { readFile } from "node:fs/promises";
@@ -48,68 +50,104 @@ const parametersSchema = Type.Object({
   ),
 });
 
-export const readTool = tool()
-  .name(toolName)
-  .label(toolLabel)
-  .description(toolDescription)
-  .parameters(parametersSchema)
-  .execute(async ({ file_path, offset, limit }) => {
-    let raw: string;
-    try {
-      raw = await readFile(file_path, "utf-8");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+/** Options for `createReadTool`. */
+export interface ReadToolOptions {
+  /** When set, file paths must be anchored within this directory. */
+  rootDir?: string;
+  /** Active permission policy evaluated before reading. */
+  policy?: ToolPermissionPolicy;
+}
+
+/**
+ * Creates a non-sandboxed Read tool with optional path anchoring and
+ * permission policy.
+ */
+export function createReadTool(opts?: ReadToolOptions) {
+  return tool()
+    .name(toolName)
+    .label(toolLabel)
+    .description(toolDescription)
+    .parameters(parametersSchema)
+    .checkPermissions(({ file_path }) => {
+      if (!isPathSafe(file_path)) {
+        return { decision: "deny" as const, reason: `Path "${file_path}" is not allowed` };
+      }
+      if (opts?.rootDir) {
+        try {
+          workspaceAnchor(file_path, opts.rootDir);
+        } catch (err) {
+          return {
+            decision: "deny" as const,
+            reason: err instanceof Error ? err.message : String(err),
+          };
+        }
+      }
+      if (opts?.policy) {
+        return evaluatePolicy(opts.policy, "Read", file_path);
+      }
+      return "allow";
+    })
+    .execute(async ({ file_path, offset, limit }) => {
+      let raw: string;
+      try {
+        raw = await readFile(file_path, "utf-8");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Error reading file: ${message}` }],
+          details: { error: message },
+        };
+      }
+
+      const allLines = raw.split("\n");
+      const totalLines = allLines.length;
+
+      if (raw === "") {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "<system-reminder>File exists but has empty contents.</system-reminder>",
+            },
+          ],
+          details: { totalLines: 0, lines: [] },
+        };
+      }
+
+      const maxLines = limit ?? DEFAULT_READ_LINES;
+
+      let startIndex: number;
+      if (offset === undefined || offset === null) {
+        startIndex = 0;
+      } else if (offset < 0) {
+        startIndex = Math.max(0, totalLines + offset);
+      } else {
+        startIndex = Math.max(0, offset - 1);
+      }
+
+      const selectedLines = allLines.slice(startIndex, startIndex + maxLines);
+
+      const formattedLines = selectedLines.map((line, i) => {
+        const lineNum = startIndex + i + 1;
+        const truncated =
+          line.length > MAX_LINE_LENGTH ? line.slice(0, MAX_LINE_LENGTH) + " [truncated]" : line;
+        return `${String(lineNum).padStart(6)}|${truncated}`;
+      });
+
+      const text = formattedLines.join("\n");
+
       return {
-        content: [{ type: "text" as const, text: `Error reading file: ${message}` }],
-        details: { error: message },
+        content: [{ type: "text" as const, text }],
+        details: {
+          totalLines,
+          startLine: startIndex + 1,
+          endLine: startIndex + selectedLines.length,
+          lines: selectedLines,
+        },
       };
-    }
+    })
+    .build();
+}
 
-    const allLines = raw.split("\n");
-    const totalLines = allLines.length;
-
-    if (raw === "") {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: "<system-reminder>File exists but has empty contents.</system-reminder>",
-          },
-        ],
-        details: { totalLines: 0, lines: [] },
-      };
-    }
-
-    const maxLines = limit ?? DEFAULT_READ_LINES;
-
-    let startIndex: number;
-    if (offset === undefined || offset === null) {
-      startIndex = 0;
-    } else if (offset < 0) {
-      startIndex = Math.max(0, totalLines + offset);
-    } else {
-      startIndex = Math.max(0, offset - 1);
-    }
-
-    const selectedLines = allLines.slice(startIndex, startIndex + maxLines);
-
-    const formattedLines = selectedLines.map((line, i) => {
-      const lineNum = startIndex + i + 1;
-      const truncated =
-        line.length > MAX_LINE_LENGTH ? line.slice(0, MAX_LINE_LENGTH) + " [truncated]" : line;
-      return `${String(lineNum).padStart(6)}|${truncated}`;
-    });
-
-    const text = formattedLines.join("\n");
-
-    return {
-      content: [{ type: "text" as const, text }],
-      details: {
-        totalLines,
-        startLine: startIndex + 1,
-        endLine: startIndex + selectedLines.length,
-        lines: selectedLines,
-      },
-    };
-  })
-  .build();
+/** Non-sandboxed Read tool with no path restrictions (backward-compatible singleton). */
+export const readTool = createReadTool();

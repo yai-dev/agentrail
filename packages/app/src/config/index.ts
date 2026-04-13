@@ -3,6 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
+import { parseRules } from "@agentrail/capabilities";
+import type { ToolPermissionPolicy } from "@agentrail/capabilities";
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -20,6 +22,51 @@ export const DEFAULT_DATA_DIR = path.join(os.homedir(), ".agentrail");
 export const DEFAULT_SANDBOX_IMAGE = "ghcr.io/yai-dev/agentrail-sandbox:latest";
 
 type UnknownRecord = Record<string, unknown>;
+
+/** Raw permissions block from `agentrail.yaml`. */
+export interface AgentrailPermissionsConfig {
+  /**
+   * Permission mode controlling how `ask` decisions are handled.
+   * Defaults to `"default"` when absent.
+   */
+  mode?: "default" | "acceptEdits" | "bypassPermissions" | "dontAsk" | "strict";
+  /** Rule strings that unconditionally allow matching tool calls, e.g. `"Bash(git:*)"`. */
+  allow?: string[];
+  /** Rule strings that unconditionally deny matching tool calls, e.g. `"Bash(rm:*)"`. */
+  deny?: string[];
+  /** Rule strings that require user confirmation, e.g. `"Write"`. */
+  ask?: string[];
+}
+
+/**
+ * Converts a raw `AgentrailPermissionsConfig` (string arrays from YAML) into
+ * the fully-typed `ToolPermissionPolicy` expected by the runtime.
+ *
+ * Call this once after loading the config and pass the result to
+ * `createAgentApp({ permissionPolicy })`.
+ *
+ * @throws {Error} if any rule string fails to parse (propagated from `parseRules`).
+ *
+ * @example
+ * ```ts
+ * const config = loadAgentrailConfig();
+ * const app = createAgentApp({
+ *   permissionPolicy: config.permissions
+ *     ? configPermissionsToPolicy(config.permissions)
+ *     : undefined,
+ * });
+ * ```
+ */
+export function configPermissionsToPolicy(
+  cfg: AgentrailPermissionsConfig,
+): ToolPermissionPolicy {
+  return {
+    mode: cfg.mode ?? "default",
+    allow: parseRules(cfg.allow ?? []),
+    deny: parseRules(cfg.deny ?? []),
+    ask: parseRules(cfg.ask ?? []),
+  };
+}
 
 /** Full validated YAML config schema used by Agentrail apps and examples. */
 export interface AgentrailConfig {
@@ -92,6 +139,8 @@ export interface AgentrailConfig {
       backendPort: number;
     };
   };
+  /** Optional permission policy applied to all sessions served by this app. */
+  permissions?: AgentrailPermissionsConfig;
 }
 
 /** Options for resolving the Agentrail config path. */
@@ -139,6 +188,7 @@ export interface PlaygroundServerConfig extends SharedResolvedAppConfig {
   userMemory: AgentrailConfig["apps"]["playgroundServer"]["userMemory"];
   userPreferenceSummary: AgentrailConfig["apps"]["playgroundServer"]["userPreferenceSummary"];
   skillDelegateToSubAgent: boolean;
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 /** Resolved config consumed by the deep research example app. */
@@ -305,6 +355,20 @@ function getInteger(
   return raw;
 }
 
+function getStringArray(parent: UnknownRecord, key: string, parts: string[]): string[] {
+  const raw = parent[key];
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) {
+    throw new Error(`Expected ${formatConfigPath([...parts, key])} to be an array.`);
+  }
+  return raw.map((item, i) => {
+    if (typeof item !== "string") {
+      throw new Error(`Expected ${formatConfigPath([...parts, key, String(i)])} to be a string.`);
+    }
+    return item;
+  });
+}
+
 function getVersion(parent: UnknownRecord): 1 {
   const raw = parent.version;
   if (raw === undefined) return AGENTRAIL_CONFIG_VERSION;
@@ -365,7 +429,17 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   const root = assertObject(raw, []);
   assertNoUnknownKeys(
     root,
-    ["version", "llm", "search", "paths", "auth", "sandbox", "orchestration", "apps"],
+    [
+      "version",
+      "llm",
+      "search",
+      "paths",
+      "auth",
+      "sandbox",
+      "orchestration",
+      "apps",
+      "permissions",
+    ],
     [],
   );
 
@@ -750,6 +824,35 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
         ),
       },
     },
+    permissions: parsePermissionsBlock(root),
+  };
+}
+
+function parsePermissionsBlock(root: UnknownRecord): AgentrailPermissionsConfig | undefined {
+  const raw = root["permissions"];
+  if (raw === undefined) return undefined;
+  const perm = assertObject(raw, ["permissions"]);
+  assertNoUnknownKeys(perm, ["mode", "allow", "deny", "ask"], ["permissions"]);
+
+  const VALID_MODES = ["default", "acceptEdits", "bypassPermissions", "dontAsk", "strict"] as const;
+  type PermMode = (typeof VALID_MODES)[number];
+
+  let mode: PermMode | undefined;
+  const rawMode = perm["mode"];
+  if (rawMode !== undefined) {
+    if (typeof rawMode !== "string" || !(VALID_MODES as readonly string[]).includes(rawMode)) {
+      throw new Error(
+        `Invalid permissions.mode "${rawMode}". Must be one of: ${VALID_MODES.join(", ")}.`,
+      );
+    }
+    mode = rawMode as PermMode;
+  }
+
+  return {
+    mode,
+    allow: getStringArray(perm, "allow", ["permissions"]),
+    deny: getStringArray(perm, "deny", ["permissions"]),
+    ask: getStringArray(perm, "ask", ["permissions"]),
   };
 }
 
@@ -813,6 +916,7 @@ export function getPlaygroundServerConfig(
     userMemory: config.apps.playgroundServer.userMemory,
     userPreferenceSummary: config.apps.playgroundServer.userPreferenceSummary,
     skillDelegateToSubAgent: config.apps.playgroundServer.skills.delegateToSubAgent,
+    permissionPolicy: config.permissions ? configPermissionsToPolicy(config.permissions) : undefined,
   };
 }
 

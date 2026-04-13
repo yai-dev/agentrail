@@ -112,6 +112,7 @@ export class AgentImpl implements Agent {
       reactiveCompaction: options?.reactiveCompaction,
       getSteeringMessages: options?.getSteeringMessages,
       toolInterceptor: options?.toolInterceptor,
+      permissionApprovalHandler: options?.permissionApprovalHandler,
     });
 
     return this.createAgentStream(eventStream);
