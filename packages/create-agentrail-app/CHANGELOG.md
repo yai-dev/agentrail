@@ -1,5 +1,12 @@
 # @agentrail/create-agentrail-app
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @agentrail/cli@0.2.5
+
 ## 0.2.4
 
 ### Patch Changes

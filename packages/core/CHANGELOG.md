@@ -1,5 +1,54 @@
 # @agentrail/core
 
+## 0.6.0
+
+### Minor Changes
+
+- [#140](https://github.com/yai-dev/agentrail/pull/140) [`81f5cca`](https://github.com/yai-dev/agentrail/commit/81f5cca508d22c4a101c2989076ea7e228b4e8c8) Thanks [@yai-dev](https://github.com/yai-dev)! - Add `chainId`, `depth`, and `turnIndex` tracing fields to every `RuntimeEvent`.
+  - **`@agentrail/core`**: `RuntimeTracingFields` interface exported from the package root. Every `RuntimeEvent` variant is now intersected with `RuntimeTracingFields` (all three fields are required). `AgentRunOptions` gains optional `chainId` and `depth` fields that flow into the agent loop. `InternalContext` is extended with the same optional fields.
+  - **`@agentrail/capabilities`**: `CapabilityBuildContext` gains an optional `tracing` field `{ chainId: string; depth: number }`. `SpawnAgentInput` and `CreateManagedAgentInput` gain optional `chainId` and `depth` fields. The `spawn_agent` tool increments depth and propagates `chainId` to the child agent. `WorkerInitMessage` and `WorkerState` carry the same fields so the worker process can pass them to `agent.invoke`.
+  - **`@agentrail/app`**: `AgentrailProfileContext` gains an optional `chainId` field. The route-level `traceId` / `requestTraceId` is propagated as `chainId` into `AgentrailProfileContext`, `CapabilityBuildContext.tracing`, and `AgentRunOptions.chainId` so that `RuntimeEvent.chainId === telemetry traceId` for the full request chain.
+
+- [#141](https://github.com/yai-dev/agentrail/pull/141) [`405d8de`](https://github.com/yai-dev/agentrail/commit/405d8de29b0ac64f29e492f20f66a44b187c12bf) Thanks [@yai-dev](https://github.com/yai-dev)! - Add tool permission policy system
+
+  Introduces a structured, rule-based permission layer that sits between the LLM
+  and tool execution, enabling fine-grained control over which operations agents
+  are allowed to perform.
+
+  ### @agentrail/core
+  - New `PermissionDecision` type (`"allow" | "deny" | "ask"` or object form with optional `reason`).
+  - New optional `checkPermissions(params)` hook on `RuntimeTool` — called after
+    `onBeforeToolCall` interceptors but before `validate` and `execute`.
+  - New `permission_request` `RuntimeEvent` — emitted when `checkPermissions` returns `"ask"`.
+  - `ToolBuilder` gains a `.checkPermissions()` fluent method.
+  - `permission_request` is added to `TRACE_PERSISTED_EVENT_TYPES`.
+
+  ### @agentrail/capabilities
+  - New `packages/capabilities/src/permissions/` module:
+    - `ToolPermissionPolicy` / `PermissionRule` / `PermissionMode` types.
+    - `parseRule` / `parseRules` DSL parser (e.g. `"Bash(git:*)"`, `"Write(/workspace/**)"`)
+    - `evaluatePolicy` rule engine with priority order: deny → ask → allow → default.
+    - `isPathSafe` / `workspaceAnchor` path-safety utilities.
+    - `isDangerousCommand` / `isReadOnlyCommand` shell-safety utilities.
+  - `CapabilityBuildContext` gains optional `permissionPolicy?: ToolPermissionPolicy`.
+  - Non-sandboxed `bashTool`, `readTool`, `writeTool`, `editTool` are now created via
+    factory functions (`createBashTool`, `createReadTool`, `createWriteTool`, `createEditTool`)
+    that accept optional `rootDir` and `policy` options; the singleton exports are
+    kept for backward compatibility.
+  - Sandboxed `createSandboxedBash` accepts an optional `policy` parameter.
+  - All new symbols are exported from the package root.
+
+  ### @agentrail/app
+  - `AgentrailProfileContext` gains optional `permissionPolicy?: ToolPermissionPolicy`.
+  - `defineProfile` propagates `permissionPolicy` from profile context into
+    `CapabilityBuildContext`.
+  - `createAgentApp`, `createStreamRoute`, and `createChatRoute` all accept an
+    optional `permissionPolicy` option that is forwarded to every request.
+  - `AgentrailConfig` (YAML config) gains an optional `permissions` block with
+    `mode`, `allow`, `deny`, and `ask` keys.
+  - `DefaultCapabilityToolOptions` gains optional `permissionPolicy` forwarded to
+    sandboxed tools.
+
 ## 0.5.0
 
 ### Minor Changes
