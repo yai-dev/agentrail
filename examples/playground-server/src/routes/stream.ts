@@ -30,20 +30,18 @@ const stream = createStreamRoute({
     orchestrationRegistry.getManager({ tenantId, userId, sessionId, sessionRef }),
   handleResolvedRequest: handlePlaygroundDeepResearchModeStream,
   permissionPolicy: config.permissionPolicy,
-  createPermissionApprovalHandler: config.permissionPolicy
-    ? (sessionId) => ({
-        requestApproval({ toolCallId, toolName, reason, signal }) {
-          return Promise.race([
-            waitHandleRegistry.registerPermission(sessionId, toolCallId, toolName, reason),
-            new Promise<never>((_resolve, reject) => {
-              signal?.addEventListener("abort", () =>
-                reject(new Error("Request aborted while waiting for permission approval")),
-              );
-            }),
-          ]);
-        },
-      })
-    : undefined,
+  createPermissionApprovalHandler: (sessionId) => ({
+    requestApproval({ toolCallId, toolName, reason, signal }) {
+      return Promise.race([
+        waitHandleRegistry.registerPermission(sessionId, toolCallId, toolName, reason),
+        new Promise<never>((_resolve, reject) => {
+          signal?.addEventListener("abort", () =>
+            reject(new Error("Request aborted while waiting for permission approval")),
+          );
+        }),
+      ]);
+    },
+  }),
   onTraceEvent: (ctx, envelope) => {
     const traceStore = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(
       config.dataDir,

@@ -197,15 +197,24 @@ export type RuntimeEvent =
         readonly custom?: boolean;
       }
     /**
-     * Emitted when a tool's `checkPermissions` returns `"ask"` or `"deny"`.
+     * Emitted when a tool's `checkPermissions` returns `"ask"`.
      *
-     * - `"ask"` decisions emit this event and then block execution until an
-     *   interactive approval mechanism is provided by the host layer.
-     * - `"deny"` decisions do **not** emit this event; they produce a standard
-     *   error tool result directly.
+     * After emitting this event, the runtime **suspends** the tool call and
+     * waits for the host-supplied `PermissionApprovalHandler.requestApproval`
+     * to resolve. The handler may approve or reject the call:
      *
-     * The event is always followed immediately by an error `ToolResult` that
-     * the model sees as the tool's response.
+     * - `"approved"` — the tool proceeds normally; a `permission_resolved`
+     *   event with `decision: "approved"` is emitted next.
+     * - `"rejected"` (or the handler throws / the signal aborts) — the tool
+     *   call receives an error `ToolResult`; a `permission_resolved` event
+     *   with `decision: "rejected"` is emitted next.
+     *
+     * When no `PermissionApprovalHandler` is registered, `"ask"` falls back
+     * to immediate denial (same behaviour as `"deny"`), without emitting this
+     * event.
+     *
+     * `"deny"` decisions never emit this event; they always produce a standard
+     * error `ToolResult` directly.
      */
     | {
         readonly type: "permission_request";

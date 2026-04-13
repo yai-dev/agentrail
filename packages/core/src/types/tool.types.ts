@@ -48,9 +48,12 @@ export type ToolSignalEvent = {
  *
  * - `"allow"` — execution may proceed.
  * - `"deny"` — execution is blocked; the model receives an error result.
- * - `"ask"` — execution requires user approval; the executor emits a
- *   `permission_request` RuntimeEvent and then denies the call until an
- *   interactive approval mechanism is wired in by the host layer.
+ * - `"ask"` — execution requires user approval. When a
+ *   `PermissionApprovalHandler` is available, the executor emits a
+ *   `permission_request` RuntimeEvent and then **suspends** the tool call
+ *   until the handler resolves. The handler's response determines whether
+ *   execution proceeds (`"approved"`) or the call receives an error result
+ *   (`"rejected"`). Without a handler the call is denied immediately.
  *
  * The object form allows attaching an optional human-readable `reason` that
  * is surfaced in the error result and the `permission_request` event.
