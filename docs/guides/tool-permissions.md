@@ -13,11 +13,11 @@ Read this guide after:
 
 Every tool call passes through a permission check before execution. The check returns one of three decisions:
 
-| Decision | Meaning |
-|----------|---------|
-| `"allow"` | Execution proceeds immediately. |
-| `"deny"` | Execution is blocked; the model receives an error result. |
-| `"ask"` | Execution is suspended until the host approves or rejects the call. |
+| Decision  | Meaning                                                             |
+| --------- | ------------------------------------------------------------------- |
+| `"allow"` | Execution proceeds immediately.                                     |
+| `"deny"`  | Execution is blocked; the model receives an error result.           |
+| `"ask"`   | Execution is suspended until the host approves or rejects the call. |
 
 The `ToolPermissionPolicy` you provide to `createAgentApp` drives this check.
 
@@ -35,7 +35,7 @@ const app = createAgentApp({
   permissionPolicy: {
     mode: "default",
     allow: [],
-    deny: parseRules(["Bash(rm:*)"]),   // block destructive shell commands
+    deny: parseRules(["Bash(rm:*)"]), // block destructive shell commands
     ask: parseRules(["Bash", "Write"]), // require approval for everything else
   },
 });
@@ -50,9 +50,7 @@ import { createAgentApp, loadAgentrailConfig, configPermissionsToPolicy } from "
 
 const config = loadAgentrailConfig();
 const app = createAgentApp({
-  permissionPolicy: config.permissions
-    ? configPermissionsToPolicy(config.permissions)
-    : undefined,
+  permissionPolicy: config.permissions ? configPermissionsToPolicy(config.permissions) : undefined,
 });
 ```
 
@@ -72,14 +70,14 @@ permissions:
 
 Rules are strings of the form `ToolName` or `ToolName(content-pattern)`.
 
-| Rule | Matches |
-|------|---------|
-| `"Bash"` | Any Bash call |
-| `"Bash(git:*)"` | Bash calls whose command starts with `git:` |
-| `"Bash(git:**)"` | Same — `**` spans `/` too, useful for multi-segment paths |
-| `"Write"` | Any file write |
-| `"Write(/workspace/*)"` | Writes to files directly under `/workspace/` |
-| `"Write(/workspace/**)"` | Writes to any path under `/workspace/` |
+| Rule                     | Matches                                                   |
+| ------------------------ | --------------------------------------------------------- |
+| `"Bash"`                 | Any Bash call                                             |
+| `"Bash(git:*)"`          | Bash calls whose command starts with `git:`               |
+| `"Bash(git:**)"`         | Same — `**` spans `/` too, useful for multi-segment paths |
+| `"Write"`                | Any file write                                            |
+| `"Write(/workspace/*)"`  | Writes to files directly under `/workspace/`              |
+| `"Write(/workspace/**)"` | Writes to any path under `/workspace/`                    |
 
 Rules are **prefix-anchored**: `Bash(git:*)` matches any command beginning with `git:`, including chained forms like `git:status; rm -rf /`. For strong shell isolation use the sandboxed environment.
 
@@ -91,13 +89,13 @@ The first matching rule in the highest-priority list wins. When no rule matches,
 
 ## Modes
 
-| Mode | Effect |
-|------|--------|
-| `"default"` | Unmatched calls are allowed; `"ask"` triggers interactive approval. |
-| `"strict"` | Unmatched calls are **denied**. Use to build an explicit allowlist. |
-| `"acceptEdits"` | `"ask"` decisions on `Write` and `Edit` are auto-approved. |
-| `"dontAsk"` | `"ask"` decisions are demoted to `"deny"` (headless environments). |
-| `"bypassPermissions"` | All calls are unconditionally allowed (trusted automation only). |
+| Mode                  | Effect                                                              |
+| --------------------- | ------------------------------------------------------------------- |
+| `"default"`           | Unmatched calls are allowed; `"ask"` triggers interactive approval. |
+| `"strict"`            | Unmatched calls are **denied**. Use to build an explicit allowlist. |
+| `"acceptEdits"`       | `"ask"` decisions on `Write` and `Edit` are auto-approved.          |
+| `"dontAsk"`           | `"ask"` decisions are demoted to `"deny"` (headless environments).  |
+| `"bypassPermissions"` | All calls are unconditionally allowed (trusted automation only).    |
 
 ### Strict allowlist example
 
@@ -214,7 +212,9 @@ function PermissionPrompt({ sessionId, pending, onDismiss }) {
 
   return (
     <div>
-      <p>Allow <strong>{pending.toolName}</strong> to run?</p>
+      <p>
+        Allow <strong>{pending.toolName}</strong> to run?
+      </p>
       {pending.reason && <p>{pending.reason}</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
       <button disabled={submitting} onClick={() => respond("approved")}>
@@ -251,7 +251,9 @@ export const sensitiveOp = defineTool({
     }
     return "allow";
   },
-  async execute(params) { /* ... */ },
+  async execute(params) {
+    /* ... */
+  },
 });
 ```
 
@@ -259,9 +261,9 @@ The global policy and per-tool `checkPermissions` are both evaluated; the strict
 
 ## Runtime Events
 
-| Event type | When emitted |
-|-----------|-------------|
-| `permission_request` | A tool call is suspended waiting for approval. |
+| Event type            | When emitted                                                                |
+| --------------------- | --------------------------------------------------------------------------- |
+| `permission_request`  | A tool call is suspended waiting for approval.                              |
 | `permission_resolved` | The approval decision has been made (`decision: "approved" \| "rejected"`). |
 
 Subscribe to these on your SSE stream to build custom approval UIs or audit logs.

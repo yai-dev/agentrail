@@ -3,8 +3,8 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { parseRules } from "@agentrail/capabilities";
 import type { ToolPermissionPolicy } from "@agentrail/capabilities";
+import { parseRules } from "@agentrail/capabilities";
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -57,9 +57,7 @@ export interface AgentrailPermissionsConfig {
  * });
  * ```
  */
-export function configPermissionsToPolicy(
-  cfg: AgentrailPermissionsConfig,
-): ToolPermissionPolicy {
+export function configPermissionsToPolicy(cfg: AgentrailPermissionsConfig): ToolPermissionPolicy {
   return {
     mode: cfg.mode ?? "default",
     allow: parseRules(cfg.allow ?? []),
@@ -916,7 +914,9 @@ export function getPlaygroundServerConfig(
     userMemory: config.apps.playgroundServer.userMemory,
     userPreferenceSummary: config.apps.playgroundServer.userPreferenceSummary,
     skillDelegateToSubAgent: config.apps.playgroundServer.skills.delegateToSubAgent,
-    permissionPolicy: config.permissions ? configPermissionsToPolicy(config.permissions) : undefined,
+    permissionPolicy: config.permissions
+      ? configPermissionsToPolicy(config.permissions)
+      : undefined,
   };
 }
 

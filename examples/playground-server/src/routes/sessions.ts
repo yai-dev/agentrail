@@ -210,7 +210,7 @@ sessions.post("/:sessionId/respond", async (c) => {
     const { decision } = body;
     if (decision !== "approved" && decision !== "rejected") {
       return c.json(
-        { error: "Field 'decision' must be \"approved\" or \"rejected\" for permission responses" },
+        { error: 'Field \'decision\' must be "approved" or "rejected" for permission responses' },
         400,
       );
     }
