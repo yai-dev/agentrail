@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/create-agentrail-app",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Create a new Agentrail application from a template (delegates to @agentrail/cli)",
   "type": "module",
   "bin": {
