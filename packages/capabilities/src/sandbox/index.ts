@@ -11,6 +11,7 @@ export type {
   RunOptions,
   SandboxEntry,
   SandboxManagerOptions,
+  SandboxMemoProvider,
 } from "@/sandbox/sandbox-manager.js";
 
 export { createSandboxedBash } from "@/sandbox/tools/sandboxed-bash.js";

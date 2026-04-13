@@ -31,10 +31,27 @@ The two host entry points are mounted in `routes/chat.ts` and `routes/stream.ts`
 // examples/playground-server/src/routes/stream.ts (simplified)
 import { createStreamRoute } from "@agentrail/app/advanced";
 import { createFileSystemSessionTraceStore } from "@agentrail/app";
+import type { WorkflowTraceEventEnvelope } from "@agentrail/app";
+import type { SessionRef } from "@agentrail/core";
 import { resolvePlaygroundProfile } from "../profiles/default-profile.js";
 import { sessionManager, sandboxManager, orchestrationRegistry } from "../context/index.js";
 import { plugins } from "../plugins/index.js";
 import { summarize } from "../agents/summarizer.js";
+
+// Cache one trace store per session so the underlying file is opened once per
+// process lifetime, not once per event.
+const traceStoreCache = new Map<
+  SessionRef,
+  ReturnType<typeof createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>>
+>();
+function getTraceStore(sessionRef: SessionRef) {
+  let store = traceStoreCache.get(sessionRef);
+  if (!store) {
+    store = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(dataDir, sessionRef);
+    traceStoreCache.set(sessionRef, store);
+  }
+  return store;
+}
 
 export const streamRoute = createStreamRoute({
   dataDir,
@@ -58,13 +75,33 @@ export const streamRoute = createStreamRoute({
   getOrchestrationManager: ({ tenantId, userId, sessionId, sessionRef }) =>
     orchestrationRegistry.getManager({ tenantId, userId, sessionId, sessionRef }),
   onTraceEvent: (ctx, envelope) => {
-    const traceStore = createFileSystemSessionTraceStore(dataDir, ctx.sessionRef);
-    void traceStore.appendEnvelope(envelope);
+    void getTraceStore(ctx.sessionRef).appendEnvelope(envelope);
   },
 });
 ```
 
 Both chat and stream routes share the same session store, profile resolver, and plugin list — that reuse is the main design goal.
+
+### Inspector Route
+
+The Inspector API is mounted as a sub-app. Pass an `InspectorDataSource` to `createInspectorRoute` — for filesystem-backed setups use `createFilesystemInspectorDataSource`; for database backends, pass a `PostgresInspectorDataSource` or your own implementation:
+
+```ts
+// examples/playground-server/src/main.ts (simplified)
+import { createInspectorRoute, createFilesystemInspectorDataSource } from "@agentrail/app/advanced";
+
+// Filesystem-backed (default playground setup)
+app.route(
+  "/__inspector",
+  createInspectorRoute(createFilesystemInspectorDataSource(config.dataDir)),
+);
+
+// PostgreSQL backend — swap the data source, everything else stays the same
+// import { PostgresInspectorDataSource } from "@agentrail/storage-postgres";
+// app.route("/__inspector", createInspectorRoute(new PostgresInspectorDataSource(sql)));
+```
+
+`createInspectorRoute` is backend-agnostic: it only calls methods on the `InspectorDataSource` interface, so switching from filesystem to PostgreSQL is a one-line change.
 
 ### Profile Definition
 
@@ -133,10 +170,21 @@ export const defaultProfile = defineProfile({
         },
         listSkills: () => skillManager.listSkills(),
         listWorkspaceSnapshot: (ctx) => sandboxManager.listWorkspace(ctx.sessionId),
+        // Persists compacted tool results to the session store and refreshes
+        // the live sandbox mirror so the agent can read the file immediately.
+        writeToolResultArtifact: async (ctx, toolCallId, content) => {
+          const sessionRef = `${ctx.tenantId}:${ctx.sessionId}`;
+          await Promise.all([
+            sessionManager.writeToolResultArtifact?.(sessionRef, toolCallId, content),
+            sandboxManager.refreshMemoMirror(
+              ctx.sessionId,
+              `/workspace/memo/session/tool-results/${toolCallId}.txt`,
+              content,
+            ),
+          ]);
+        },
         compactMessages: (msgs, ctx) =>
-          compactToolResults(msgs, {
-            sessionDir: ctx?.sessionDir,
-          }),
+          compactToolResults(msgs, { writeToolResultArtifact: ctx?.writeToolResultArtifact }),
         delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
       },
       { cacheTtlMs: 5_000 },

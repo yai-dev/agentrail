@@ -23,8 +23,8 @@ Usage:
 - Do NOT use this tool for file search — use the Grep tool instead.
 - Do NOT use this tool for file read/write — use the Read, Write, or Edit tools instead.
 - All file paths inside the sandbox start with /workspace.
-- Session memory files (NOTES.md, TODO.md) are at /workspace/memo/session/.
-- User profile (USER.md) is at /workspace/memo/user/USER.md.`;
+- Session memory files (NOTES.md, TODO.md) are at /workspace/memo/session/; user profile (USER.md) is at /workspace/memo/user/USER.md.
+- /workspace/memo/** is READ-ONLY for Bash — shell writes to memo paths will fail. Use the Write or Edit tools to persist memo changes.`;
 
 const parametersSchema = Type.Object({
   command: Type.String({ description: "The shell command to execute inside the sandbox." }),

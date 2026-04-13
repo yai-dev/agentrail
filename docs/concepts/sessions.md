@@ -32,17 +32,18 @@ getOrCreate → existing session resumed
 
 The host layer depends on the `AgentrailSessionStore` contract rather than any concrete storage implementation. This means you can swap out the storage backend without changing your host code.
 
-The contract includes:
+The required contract includes:
 
 | Method                   | Called when                                                                 |
 | ------------------------ | --------------------------------------------------------------------------- |
 | `getOrCreate`            | Every request — creates or resumes the session                              |
-| `getSessionDir`          | Before agent construction — returns the session data path                   |
 | `loadMessagesWithBudget` | Every request — loads history trimmed to the token budget                   |
 | `loadAllMessages`        | During compaction — loads full history to assess whether to compact         |
 | `appendMessages`         | After agent completes — persists the new turn's messages                    |
 | `recordTurn`             | After agent completes — persists token usage                                |
 | `compactIfNeeded`        | During each request — summarizes old history if token threshold is exceeded |
+
+Additional optional methods (`readMemoryDocument`, `writeMemoryDocument`, `readToolResultArtifact`, `writeToolResultArtifact`, `listToolResultArtifactIds`) unlock memo tools and full `/workspace/memo/**` sandbox access. See [Session Store Reference](../reference/session-store.md) for the complete interface.
 
 ## Default Implementation: `SessionManager`
 

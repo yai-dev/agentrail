@@ -111,6 +111,7 @@ export function createSandboxedEdit(
         } else {
           const hostPath = manager.translateToHostPath(sessionId, file_path);
           await writeFile(hostPath, updated, "utf-8");
+          await manager.writeMemoBack(sessionId, file_path, updated);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

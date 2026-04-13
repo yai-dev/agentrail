@@ -4,13 +4,15 @@ The Inspector route exposes a read-only HTTP API consumed by the [Agentrail Insp
 
 ## Enabling the Inspector
 
-Pass `inspector: true` to `createAgentApp`:
+### Filesystem backend (default)
+
+Pass `inspector: true` to `createAgentApp`. Requires `dataDir` to be set:
 
 ```ts
 import { createAgentApp } from "@agentrail/app";
 
 const app = createAgentApp({
-  dataDir: "./data", // required when inspector is enabled
+  dataDir: "./data",
   profiles: [myProfile],
   inspector: true,
 });
@@ -18,10 +20,29 @@ const app = createAgentApp({
 
 The route is mounted at the fixed path `/__inspector`. The Agentrail Inspector Docker image's nginx proxy hardcodes this prefix, so the mount path is not configurable in v1.
 
-**Requirements:**
+### Custom data source (database backend)
 
-- `dataDir` must be set. A custom `sessionStore` is not supported.
-- An error is thrown at startup if `inspector: true` is set without `dataDir`.
+Pass an `InspectorDataSource` object as the `inspector` option:
+
+```ts
+import { createAgentApp } from "@agentrail/app";
+import { PostgresInspectorDataSource, createSqlClient } from "@agentrail/storage-postgres";
+
+const sql = createSqlClient({ connectionString: process.env.DATABASE_URL! });
+
+const app = createAgentApp({
+  sessionStore: new PostgresSessionStore(sql),
+  profiles: [myProfile],
+  inspector: new PostgresInspectorDataSource(sql),
+});
+```
+
+Any object implementing the `InspectorDataSource` interface is accepted — you can write a custom adapter for any storage backend.
+
+**Constraints:**
+
+- `inspector: true` requires `dataDir` and is incompatible with a custom `sessionStore`. An error is thrown at startup if either invariant is violated.
+- Passing an explicit `InspectorDataSource` works with any `sessionStore` configuration, including custom stores.
 
 ## Running the Inspector UI
 
@@ -65,8 +86,6 @@ Returns a list of all sessions across all tenants with enriched metadata.
 }
 ```
 
-Metadata is derived by reading `session.jsonl` (for userId, turns, and token counts) and the trace `events.jsonl` (for `lastActive` timestamp and error detection).
-
 ---
 
 ### `GET /sessions/:sessionId/trace`
@@ -92,7 +111,7 @@ Returns the merged trace for a session: runtime events (agent loop, tools, compa
       "sessionId": "...",
       "tenantId": "default",
       "traceId": "...",
-      "event": { "type": "session.start", ... }
+      "event": { "type": "session.start" }
     }
   ]
 }
@@ -173,15 +192,50 @@ The Inspector API has no built-in authentication. It exposes **all session data*
 
 ## Advanced: mounting the Inspector manually
 
-If you are not using `createAgentApp`, you can mount the route directly using the advanced API:
+If you are not using `createAgentApp`, mount the route directly via the advanced API:
 
 ```ts
-import { createInspectorRoute } from "@agentrail/app/advanced";
+import { createInspectorRoute, createFilesystemInspectorDataSource } from "@agentrail/app/advanced";
 import { Hono } from "hono";
 
 const app = new Hono();
 
-app.route("/__inspector", createInspectorRoute("./data"));
+// Filesystem backend
+app.route("/__inspector", createInspectorRoute(createFilesystemInspectorDataSource("./data")));
+
+// Or a custom backend
+import { PostgresInspectorDataSource } from "@agentrail/storage-postgres";
+app.route("/__inspector", createInspectorRoute(new PostgresInspectorDataSource(sql)));
 ```
 
-This is equivalent to what `createAgentApp({ inspector: true })` does internally.
+## Implementing a custom `InspectorDataSource`
+
+```ts
+import type { InspectorDataSource } from "@agentrail/app/advanced";
+
+export class MyInspectorDataSource implements InspectorDataSource {
+  async listSessions(): Promise<InspectorSessionItem[]> {
+    /* ... */
+  }
+  async loadTraceEnvelopes(
+    tenantId: string,
+    sessionId: string,
+  ): Promise<WorkflowTraceEventEnvelope[]> {
+    /* ... */
+  }
+  async loadOrchestrationEvents(tenantId: string, sessionId: string): Promise<unknown[]> {
+    /* ... */
+  }
+  async loadOrchestrationState(
+    tenantId: string,
+    sessionId: string,
+  ): Promise<{ snapshot: OrchestrationSnapshot } | null> {
+    /* ... */
+  }
+  async loadMessages(tenantId: string, sessionId: string): Promise<Message[]> {
+    /* ... */
+  }
+}
+```
+
+Import the full interface type from `@agentrail/app/advanced`.

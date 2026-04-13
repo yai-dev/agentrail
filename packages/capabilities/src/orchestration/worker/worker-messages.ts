@@ -10,6 +10,16 @@ export interface WorkerConfigMessage {
   fakeExecution?: "" | "echo";
 }
 
+/**
+ * Serialisable storage configuration sent from the orchestration manager to
+ * each sub-agent worker process.  The worker uses this to reconstruct the
+ * correct `OrchestrationPersistence` without coupling to the parent's
+ * runtime context.
+ */
+export type WorkerStorageConfig =
+  | { type: "filesystem"; dataDir: string }
+  | { type: "postgres"; connectionString: string; schema?: string };
+
 /** Parent-to-worker initialization payload sent once after fork. */
 export interface WorkerInitMessage {
   type: "init";
@@ -17,7 +27,18 @@ export interface WorkerInitMessage {
   userId: string;
   sessionId: string;
   sessionRef: SessionRef;
+  /**
+   * @deprecated Use `storageConfig` instead. Kept for backward compatibility
+   * while all callers migrate to `storageConfig`.  Will be required when
+   * `storageConfig` is absent.
+   */
   dataDir: string;
+  /**
+   * Serialisable storage configuration for the worker process.
+   * When present, the worker uses this to create the `OrchestrationPersistence`
+   * for the sub-agent session.  Defaults to `{ type: "filesystem", dataDir }`.
+   */
+  storageConfig?: WorkerStorageConfig;
   // biome-ignore lint/suspicious/noExplicitAny: Worker state is serialized
   runtimeConfig: any;
   workerConfig?: WorkerConfigMessage;

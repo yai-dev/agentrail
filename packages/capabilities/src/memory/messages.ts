@@ -36,21 +36,36 @@ export function makeDateContextMessage(timestamp = Date.now()): UserMessage {
   };
 }
 
-/** Rewrites local memory paths into sandbox-visible paths for model context. */
+/**
+ * @deprecated This function is no longer required.
+ *
+ * `buildMemoryIndex` now produces canonical `/workspace/memo/**` paths directly.
+ * This function is kept as a passthrough for backward compatibility and will be
+ * removed in a future release.
+ */
 export function translateMemoryPaths(index: MemoryIndex): MemoryIndex {
+  // Paths are already canonical (/workspace/memo/**), so no translation is needed.
+  // We still apply any legacy host-path rewriting for callers that have not yet
+  // migrated to the new buildMemoryIndex output.
+  const sessionDir = index.sessionDir;
+  const userDir = index.userDir;
+
+  if (!sessionDir && !userDir) {
+    // New canonical index: return as-is.
+    return index;
+  }
+
   const translatePath = (filePath: string): string => {
-    if (filePath.startsWith(index.sessionDir)) {
-      return "/workspace/memo/session" + filePath.slice(index.sessionDir.length);
+    if (sessionDir && filePath.startsWith(sessionDir)) {
+      return "/workspace/memo/session" + filePath.slice(sessionDir.length);
     }
-    if (filePath.startsWith(index.userDir)) {
-      return "/workspace/memo/user" + filePath.slice(index.userDir.length);
+    if (userDir && filePath.startsWith(userDir)) {
+      return "/workspace/memo/user" + filePath.slice(userDir.length);
     }
     return filePath;
   };
 
   return {
-    sessionDir: "/workspace/memo/session",
-    userDir: "/workspace/memo/user",
     entries: index.entries.map((entry: MemoryIndexEntry) => ({
       ...entry,
       path: translatePath(entry.path),
@@ -60,12 +75,7 @@ export function translateMemoryPaths(index: MemoryIndex): MemoryIndex {
 
 /** Creates a synthetic message that summarizes session and user memory files. */
 export function makeMemoryIndexMessage(index: MemoryIndex, timestamp = Date.now()): UserMessage {
-  const lines: string[] = [
-    "[Memory Index]",
-    `Session dir : ${index.sessionDir}`,
-    `User dir    : ${index.userDir}`,
-    "",
-  ];
+  const lines: string[] = ["[Memory Index]", "Memo root: /workspace/memo", ""];
 
   for (const entry of index.entries) {
     if (!entry.exists) {

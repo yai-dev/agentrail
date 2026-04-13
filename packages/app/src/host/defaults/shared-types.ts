@@ -108,7 +108,11 @@ export interface DefaultCapabilityContextOptions {
   listWorkspaceSnapshot?(): Promise<string | undefined>;
   compactMessages?(
     messages: Message[],
-    ctx?: { sessionDir?: string },
+    ctx?: {
+      writeToolResultArtifact?: (toolCallId: string, content: string) => Promise<void>;
+      /** @deprecated Use `writeToolResultArtifact` instead. */
+      sessionDir?: string;
+    },
   ): Message[] | Promise<Message[]>;
 }
 

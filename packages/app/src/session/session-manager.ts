@@ -4,6 +4,11 @@
  */
 
 import {
+  buildCompactionMessage,
+  buildCompactionNotesEntry,
+  computeCompactionSplit,
+} from "@/session/compaction-logic.js";
+import {
   buildCompactionMetadata,
   buildMemoryEntry,
   findLastTurnEvent,
@@ -372,13 +377,21 @@ export class SessionManager {
     const sessionDir = this.getSessionDir(tenantId, sessionId);
     const userDir = this.getUserDir(tenantId, userId);
 
-    const [notes, todo, user] = await Promise.all([
+    const [notesRaw, todoRaw, userRaw] = await Promise.all([
       buildMemoryEntry("NOTES.md", path.join(sessionDir, "NOTES.md")),
       buildMemoryEntry("TODO.md", path.join(sessionDir, "TODO.md")),
       buildMemoryEntry("USER.md", path.join(userDir, "USER.md")),
     ]);
 
-    return { sessionDir, userDir, entries: [notes, todo, user] };
+    // Store canonical /workspace/memo/** paths in entries rather than host paths,
+    // so consumers never need to know the host filesystem layout.
+    return {
+      entries: [
+        { ...notesRaw, path: "/workspace/memo/session/NOTES.md" },
+        { ...todoRaw, path: "/workspace/memo/session/TODO.md" },
+        { ...userRaw, path: "/workspace/memo/user/USER.md" },
+      ],
+    };
   }
 
   async readTodoFile(sessionRef: SessionRef): Promise<string | null> {
@@ -512,67 +525,32 @@ export class SessionManager {
     compressedCount: number;
     totalTokens: number;
   } | null> {
-    const {
-      triggerTokens = 60_000,
-      compactFraction = 1 / 3,
-      workspaceSnapshot,
-      force = false,
-    } = options;
+    const { compactFraction = 1 / 3, workspaceSnapshot, force = false } = options;
 
     const all = options.preloadedMessages ?? (await this.loadAllMessages(tenantId, sessionId));
-    if (all.length < 6) return null; // too few messages to compact meaningfully
 
-    const totalTokens = estimateMessageTokens(all);
-    if (!force && totalTokens <= triggerTokens) return null;
+    const split = computeCompactionSplit(all, {
+      triggerTokens: options.triggerTokens,
+      compactFraction,
+      force,
+    });
+    if (!split) return null;
 
-    // Split: compact oldest fraction, keep the rest.
-    // Advance the cut boundary past any toolResult messages to avoid orphaned
-    // tool results: a toolResult must always have its corresponding toolCall
-    // visible in the same context window.
-    let cutPoint = Math.max(1, Math.floor(all.length * compactFraction));
-    while (cutPoint < all.length - 1 && all[cutPoint]!.role === "toolResult") {
-      cutPoint++;
-    }
-    // Edge case: first loop stopped at all.length-1 and it's still a toolResult
-    // (entire tail is toolResults). Pull back until toKeep starts on a safe boundary.
-    while (cutPoint > 1 && all[cutPoint]!.role === "toolResult") {
-      cutPoint--;
-    }
-
-    const toCompact = all.slice(0, cutPoint);
-    const toKeep = all.slice(cutPoint);
+    const { toCompact, toKeep, totalTokens } = split;
 
     const summary = await summarizeFn(toCompact);
     const timestamp = new Date().toISOString();
     const archiveId = await this.getNextCompactionArchiveId(tenantId, sessionId);
 
-    // Build the synthetic replacement message (UserMessage shape)
-    const compactionLines = [
-      `[Conversation compacted at ${timestamp}. Full history preserved in messages.compactions/${archiveId}.jsonl.`,
-      `Archive ID: ${archiveId}`,
-      `${toCompact.length} messages (${Math.round(
-        totalTokens * compactFraction,
-      )} tokens estimated) were compressed.`,
-      ``,
-      `Summary of compressed conversation:`,
+    const compactionMessage = buildCompactionMessage({
       summary,
-    ];
-
-    if (workspaceSnapshot && workspaceSnapshot.trim().length > 0) {
-      compactionLines.push(
-        ``,
-        `Sandbox workspace at time of compaction:`,
-        workspaceSnapshot.trim(),
-      );
-    }
-
-    compactionLines.push(`]`);
-
-    const compactionMessage: Message = {
-      role: "user",
-      content: compactionLines.join("\n"),
-      timestamp: Date.now(),
-    } as Message;
+      archiveId,
+      toCompact,
+      totalTokens,
+      compactFraction,
+      timestamp,
+      workspaceSnapshot,
+    });
 
     const sessionDir = this.getSessionDir(tenantId, sessionId);
     const messagesFile = path.join(sessionDir, "messages.jsonl");
@@ -590,15 +568,12 @@ export class SessionManager {
     await writeFile(messagesFile, newLines, "utf8");
 
     // Append summary to NOTES.md so Memory Index picks it up on next request
-    const notesEntry = [
-      ``,
-      `## Compaction Summary [${timestamp}]`,
-      ``,
-      `*(${toCompact.length} messages compressed, full history in \`messages.compactions/${archiveId}.jsonl\`)*`,
-      ``,
+    const notesEntry = buildCompactionNotesEntry({
       summary,
-      ``,
-    ].join("\n");
+      archiveId,
+      compressedCount: toCompact.length,
+      timestamp,
+    });
     await appendFile(notesFile, notesEntry, "utf8");
 
     return {
@@ -674,5 +649,97 @@ export class SessionManager {
     } catch {
       return null;
     }
+  }
+
+  // ─── AgentrailSessionStore: Memo Documents ────────────────────────────────
+
+  async readMemoryDocument(
+    tenantId: string,
+    ownerId: string,
+    scope: "session" | "user",
+    name: "NOTES.md" | "TODO.md" | "USER.md",
+  ): Promise<string | null> {
+    const filePath = this.getMemoDocumentPath(tenantId, ownerId, scope, name);
+    try {
+      return await readFile(filePath, "utf8");
+    } catch {
+      return null;
+    }
+  }
+
+  async writeMemoryDocument(
+    tenantId: string,
+    ownerId: string,
+    scope: "session" | "user",
+    name: "NOTES.md" | "TODO.md" | "USER.md",
+    content: string,
+  ): Promise<void> {
+    const filePath = this.getMemoDocumentPath(tenantId, ownerId, scope, name);
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, content, "utf8");
+  }
+
+  async appendMemoryDocument(
+    tenantId: string,
+    ownerId: string,
+    scope: "session" | "user",
+    name: "NOTES.md" | "TODO.md" | "USER.md",
+    content: string,
+  ): Promise<void> {
+    const filePath = this.getMemoDocumentPath(tenantId, ownerId, scope, name);
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await appendFile(filePath, content, "utf8");
+  }
+
+  private getMemoDocumentPath(
+    tenantId: string,
+    ownerId: string,
+    scope: "session" | "user",
+    name: string,
+  ): string {
+    if (scope === "user") {
+      return path.join(this.getUserDir(tenantId, ownerId), name);
+    }
+    return path.join(this.getSessionDir(tenantId, ownerId), name);
+  }
+
+  // ─── AgentrailSessionStore: Tool-Result Artifacts ─────────────────────────
+
+  async readToolResultArtifact(sessionRef: SessionRef, toolCallId: string): Promise<string | null> {
+    const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
+    const filePath = this.getToolResultArtifactPath(tenantId, sessionId, toolCallId);
+    try {
+      return await readFile(filePath, "utf8");
+    } catch {
+      return null;
+    }
+  }
+
+  async writeToolResultArtifact(
+    sessionRef: SessionRef,
+    toolCallId: string,
+    content: string,
+  ): Promise<void> {
+    const { tenantId, sessionId } = this.resolveSessionRef(sessionRef);
+    const filePath = this.getToolResultArtifactPath(tenantId, sessionId, toolCallId);
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, content, "utf8");
+  }
+
+  private getToolResultArtifactPath(
+    tenantId: string,
+    sessionId: string,
+    toolCallId: string,
+  ): string {
+    return path.join(this.getSessionDir(tenantId, sessionId), "tool-results", `${toolCallId}.txt`);
+  }
+
+  // ─── UserSessionLister ────────────────────────────────────────────────────
+
+  async listSessionsByUser(
+    tenantId: string,
+    userId: string,
+  ): Promise<{ sessionId: string; updatedAt: number }[]> {
+    return this.listSessionIdsByUser(tenantId, userId);
   }
 }

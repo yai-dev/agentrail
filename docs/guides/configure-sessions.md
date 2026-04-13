@@ -106,9 +106,6 @@ const sessions = await sessionManager.listSessions(tenantId, userId);
 
 // Build a memory index for context injection
 const memoryIndex = await sessionManager.buildMemoryIndex(tenantId, userId, sessionId);
-
-// Get the session directory path (synchronous)
-const dir = sessionManager.getSessionDir(tenantId, sessionId);
 ```
 
 These are useful when building session management UIs or context provider implementations.
@@ -123,15 +120,9 @@ import type { Message, Usage } from "@agentrail/core";
 
 export class DatabaseSessionStore implements AgentrailSessionStore {
   async getOrCreate(tenantId, userId, agentId, sessionId?) {
-    // Find or create a session row in your DB
     const id = sessionId ?? crypto.randomUUID();
     await db.sessions.upsert({ id, tenantId, userId, agentId });
     return { sessionId: id };
-  }
-
-  getSessionDir(tenantId, sessionId) {
-    // Return a logical path or temp dir for sandbox/attachment use
-    return `/tmp/sessions/${tenantId}/${sessionId}`;
   }
 
   async loadMessages(tenantId, sessionId, limit?) {
@@ -139,7 +130,6 @@ export class DatabaseSessionStore implements AgentrailSessionStore {
   }
 
   async loadMessagesWithBudget(tenantId, sessionId, tokenBudget?) {
-    // Load recent messages that fit within the token budget
     const all = await db.messages.findMany({ sessionId, orderBy: "desc" });
     return trimToTokenBudget(all, tokenBudget);
   }
@@ -157,7 +147,6 @@ export class DatabaseSessionStore implements AgentrailSessionStore {
   }
 
   async compactIfNeeded(tenantId, sessionId, summarizeFn, options?) {
-    // Load full history, check token count, call summarizeFn if needed
     const messages = await this.loadAllMessages(tenantId, sessionId);
     if (estimateTokens(messages) < (options?.triggerTokens ?? 80_000)) {
       return false;
@@ -169,7 +158,67 @@ export class DatabaseSessionStore implements AgentrailSessionStore {
 }
 ```
 
-The minimum required methods are all eight listed above. The most frequently called are `loadMessagesWithBudget`, `appendMessages`, `recordTurn`, and `compactIfNeeded`.
+The seven methods above are the required baseline. The most frequently called are `loadMessagesWithBudget`, `appendMessages`, `recordTurn`, and `compactIfNeeded`.
+
+### Adding memo document and sandbox support
+
+Stores that also implement the optional memo and tool-result methods unlock agent memory tools (`write_notes`, `write_todo`) and full `/workspace/memo/**` access inside sandboxes:
+
+```ts
+// In DatabaseSessionStore (or a subclass):
+
+async readMemoryDocument(tenantId, ownerId, scope, name) {
+  return db.memoDocuments.findOne({ tenantId, ownerId, scope, name }) ?? null;
+}
+
+async writeMemoryDocument(tenantId, ownerId, scope, name, content) {
+  await db.memoDocuments.upsert({ tenantId, ownerId, scope, name, content });
+}
+
+async appendMemoryDocument(tenantId, ownerId, scope, name, content) {
+  const existing = (await this.readMemoryDocument(tenantId, ownerId, scope, name)) ?? "";
+  await this.writeMemoryDocument(tenantId, ownerId, scope, name, existing + content);
+}
+
+async readToolResultArtifact(sessionRef, toolCallId) {
+  return db.toolResultArtifacts.findOne({ sessionRef, toolCallId }) ?? null;
+}
+
+async writeToolResultArtifact(sessionRef, toolCallId, content) {
+  await db.toolResultArtifacts.upsert({ sessionRef, toolCallId, content });
+}
+
+async listToolResultArtifactIds(sessionRef) {
+  return db.toolResultArtifacts.findIds({ sessionRef });
+}
+```
+
+Pass the same store instance as `memoProvider` on `SandboxManagerOptions` so the `SandboxManager` can snapshot memo documents and tool-result artifacts into the container at creation time, and write agent-side edits back to the store:
+
+```ts
+import { SandboxManager } from "@agentrail/capabilities";
+
+const store = new DatabaseSessionStore();
+
+const sandboxManager = new SandboxManager(
+  process.env.AGENTRAIL_DATA_DIR!,
+  { memoProvider: store }, // read + write-back of /workspace/memo/** paths
+);
+
+const app = createAgentApp({
+  sessionStore: store,
+  sandboxManager,
+  profiles: [defaultProfile],
+});
+```
+
+When `memoProvider` is set, the `SandboxManager`:
+
+1. Snapshots memo documents and all stored tool-result artifacts into a temporary host directory before container creation.
+2. Bind-mounts that directory to `/workspace/memo/` in the container as **read-only** — Bash cannot bypass the structured Write/Edit tools to write memo files.
+3. Propagates agent `Write` / `Edit` writes to memo paths back to the store via `writeMemoryDocument` / `writeToolResultArtifact`.
+
+A full PostgreSQL implementation is available out of the box via `@agentrail/storage-postgres`. See [Session Store Reference](../reference/session-store.md) for the complete interface.
 
 ## Horizontal Scaling Considerations
 

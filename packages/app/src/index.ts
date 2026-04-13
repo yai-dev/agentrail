@@ -24,6 +24,8 @@ export type {
   ReactiveCompactionConfig,
   SummarizeMessagesFn,
 } from "@/host/compaction.js";
+export { createFilesystemInspectorDataSource, createInspectorRoute } from "@/inspector/index.js";
+export type { InspectorDataSource, InspectorSessionItem } from "@/inspector/index.js";
 
 /** Build a static profile resolver backed by a fixed list of profiles. */
 export { createStaticProfileResolver } from "@/host/profile-registry.js";
@@ -33,6 +35,11 @@ export type { ProfileResolver } from "@/host/profile-registry.js";
 // Session management
 // ============================================================================
 
+export {
+  buildCompactionMessage,
+  buildCompactionNotesEntry,
+  computeCompactionSplit,
+} from "@/session/compaction-logic.js";
 export { compactToolResults } from "@/session/compaction.js";
 export {
   SessionManager,
@@ -40,6 +47,8 @@ export {
   parseCompactionMetadata,
 } from "@/session/session-manager.js";
 export { createFileSystemSessionTraceStore } from "@/session/trace-store.js";
+export type { SessionTraceStore } from "@/session/trace-store.js";
+export type { UserSessionLister } from "@/session/user-session-lister.js";
 
 // ============================================================================
 // Host runtime types (shared across chat and stream routes)

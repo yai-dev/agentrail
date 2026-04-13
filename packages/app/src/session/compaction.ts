@@ -23,7 +23,20 @@ export interface ToolResultCompactionOptions {
    * avoid blowing up the next model request. Default: max(maxTokensPerToolResult * 4, 6000)
    */
   maxTokensPerRecentToolResult?: number;
-  /** Session directory used to persist compacted tool results for later retrieval. */
+  /**
+   * Callback to persist a compacted tool-result artifact by tool call ID.
+   * Preferred over `sessionDir` — works with any storage backend.
+   *
+   * When provided, the full tool-result text is passed to this function;
+   * the agent receives a placeholder that references the canonical path
+   * `/workspace/memo/session/tool-results/{toolCallId}.txt`.
+   */
+  writeToolResultArtifact?: (toolCallId: string, content: string) => Promise<void>;
+  /**
+   * @deprecated Use `writeToolResultArtifact` instead.
+   * Session directory used to persist compacted tool results for later retrieval.
+   * When `writeToolResultArtifact` is also provided, it takes precedence.
+   */
   sessionDir?: string;
 }
 
@@ -43,6 +56,7 @@ export async function compactToolResults(
     maxTokensPerToolResult = 1500,
     keepRecentToolResults = 2,
     maxTokensPerRecentToolResult = Math.max(maxTokensPerToolResult * 4, 6000),
+    writeToolResultArtifact,
     sessionDir,
   } = options;
 
@@ -76,14 +90,19 @@ export async function compactToolResults(
 
       const fullText = textBlocks.map((b) => b.text).join("");
       const preview = fullText.slice(0, 200).replace(/\n+/g, " ").trim();
-      const persistedPath = sessionDir
+      const canPersist = Boolean(writeToolResultArtifact ?? sessionDir);
+      const persistedPath = canPersist
         ? `/workspace/memo/session/tool-results/${trm.toolCallId}.txt`
         : null;
 
-      if (sessionDir && fullText.length > 0) {
-        const toolResultsDir = path.join(sessionDir, "tool-results");
-        await mkdir(toolResultsDir, { recursive: true });
-        await writeFile(path.join(toolResultsDir, `${trm.toolCallId}.txt`), fullText, "utf8");
+      if (fullText.length > 0) {
+        if (writeToolResultArtifact) {
+          await writeToolResultArtifact(trm.toolCallId, fullText);
+        } else if (sessionDir) {
+          const toolResultsDir = path.join(sessionDir, "tool-results");
+          await mkdir(toolResultsDir, { recursive: true });
+          await writeFile(path.join(toolResultsDir, `${trm.toolCallId}.txt`), fullText, "utf8");
+        }
       }
 
       const compactedText =

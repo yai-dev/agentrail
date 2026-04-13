@@ -25,6 +25,18 @@ export interface OrchestrationPersistence {
   loadMailboxEvents(agentId: string): Promise<OrchestrationMailboxEvent[]>;
   loadMailboxState(agentId: string): Promise<OrchestrationMailboxState>;
   writeMailboxState(agentId: string, state: OrchestrationMailboxState): Promise<void>;
+
+  /**
+   * Load the persisted message history for a managed sub-agent.
+   * Used by the worker process to resume a paused sub-agent across turn boundaries.
+   */
+  loadAgentHistory(agentId: string): Promise<unknown[]>;
+
+  /**
+   * Persist the message history for a managed sub-agent after each turn.
+   * The history is keyed by `agentId` within the orchestration session.
+   */
+  writeAgentHistory(agentId: string, history: unknown[]): Promise<void>;
 }
 
 // Filesystem persistence still resolves a session root internally, but the
@@ -51,5 +63,7 @@ export function createFilesystemOrchestrationPersistence(
     loadMailboxEvents: (agentId) => store.loadMailboxEvents(agentId),
     loadMailboxState: (agentId) => store.loadMailboxState(agentId),
     writeMailboxState: (agentId, state) => store.writeMailboxState(agentId, state),
+    loadAgentHistory: (agentId) => store.loadAgentHistory(agentId),
+    writeAgentHistory: (agentId, history) => store.writeAgentHistory(agentId, history),
   };
 }

@@ -12,6 +12,7 @@ import {
   type OrchestrationMailboxState,
 } from "@/orchestration/index.js";
 import { createFilesystemOrchestrationStore } from "@/orchestration/orchestration-store.js";
+import type { OrchestrationMailboxEvent } from "@/orchestration/types.js";
 import {
   type SubAgentRuntime,
   type SubagentWorkerConfig,
@@ -89,7 +90,11 @@ async function handleMessage(message: WorkerMessage): Promise<void> {
 }
 
 async function handleInit(message: WorkerInitMessage): Promise<void> {
-  workerStore = createWorkerStore(message.dataDir, message.sessionRef);
+  workerStore = await createWorkerStoreFromConfig(
+    message.storageConfig,
+    message.dataDir,
+    message.sessionRef,
+  );
   state = {
     tenantId: message.tenantId,
     userId: message.userId,
@@ -468,6 +473,79 @@ function createWorkerStore(dataDir: string, sessionRef: WorkerInitMessage["sessi
     },
     writeHistory: (agentId: string, history: Message[]) =>
       store.writeAgentHistory(agentId, history),
+  };
+}
+
+/**
+ * Creates a worker store from the serialised `WorkerStorageConfig`.
+ *
+ * For `type: "filesystem"` (or when no config is provided) this delegates to
+ * the existing synchronous `createWorkerStore` helper.
+ *
+ * For `type: "postgres"` the worker dynamically imports
+ * `@agentrail/storage-postgres` at runtime to avoid introducing a hard compile-
+ * time dependency from `@agentrail/capabilities` onto the optional postgres
+ * package (which itself depends on `@agentrail/capabilities`).
+ */
+async function createWorkerStoreFromConfig(
+  config: WorkerInitMessage["storageConfig"],
+  fallbackDataDir: string,
+  sessionRef: WorkerInitMessage["sessionRef"],
+): Promise<ReturnType<typeof createWorkerStore>> {
+  if (config?.type !== "postgres") {
+    const dataDir = config?.type === "filesystem" ? config.dataDir : fallbackDataDir;
+    return createWorkerStore(dataDir, sessionRef);
+  }
+
+  // Dynamic import: avoids a circular hard-dependency while still supporting
+  // postgres orchestration in worker processes when the package is installed.
+  let pgMod: {
+    createSqlClient: (opts: { connectionString: string; schema?: string }) => unknown;
+    PostgresOrchestrationPersistence: new (
+      sql: unknown,
+      sessionRef: unknown,
+      schema?: string,
+    ) => {
+      loadMailboxState(agentId: string): Promise<OrchestrationMailboxState>;
+      loadMailboxEvents(agentId: string): Promise<unknown[]>;
+      writeMailboxState(agentId: string, state: OrchestrationMailboxState): Promise<void>;
+      loadAgentHistory(agentId: string): Promise<unknown[]>;
+      writeAgentHistory(agentId: string, history: unknown[]): Promise<void>;
+    };
+  };
+
+  try {
+    // Use Function constructor so tsc does not statically analyse the import
+    // and complain about the optional peer dependency.
+    pgMod = (await new Function("p", "return import(p)")(
+      "@agentrail/storage-postgres",
+    )) as typeof pgMod;
+  } catch {
+    throw new Error(
+      `Sub-agent worker: storageConfig.type is "postgres" but ` +
+        `@agentrail/storage-postgres is not installed. ` +
+        `Install it with: npm install @agentrail/storage-postgres`,
+    );
+  }
+
+  const sql = pgMod.createSqlClient({
+    connectionString: config.connectionString,
+    ...(config.schema ? { schema: config.schema } : {}),
+  });
+  const persistence = new pgMod.PostgresOrchestrationPersistence(sql, sessionRef, config.schema);
+
+  return {
+    loadMailboxState: (agentId: string) => persistence.loadMailboxState(agentId),
+    loadMailboxEvents: (agentId: string) =>
+      persistence.loadMailboxEvents(agentId) as Promise<OrchestrationMailboxEvent[]>,
+    writeMailboxState: (agentId: string, state: OrchestrationMailboxState) =>
+      persistence.writeMailboxState(agentId, state),
+    async loadHistory(agentId: string): Promise<Message[]> {
+      const history = await persistence.loadAgentHistory(agentId);
+      return history as Message[];
+    },
+    writeHistory: (agentId: string, history: Message[]) =>
+      persistence.writeAgentHistory(agentId, history),
   };
 }
 

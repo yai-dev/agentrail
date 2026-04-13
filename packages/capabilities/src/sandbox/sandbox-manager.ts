@@ -5,8 +5,9 @@
 
 import Docker from "dockerode";
 import { randomUUID } from "node:crypto";
-import { mkdir } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import * as net from "node:net";
+import * as os from "node:os";
 import * as path from "node:path";
 import { PassThrough } from "node:stream";
 import tar from "tar-stream";
@@ -23,6 +24,74 @@ const MAX_OUTPUT_BYTES = 1024 * 1024; // 1 MB
 // ============================================================================
 // ============================================================================
 
+/**
+ * Provider that gives `SandboxManager` bidirectional access to memo documents
+ * and tool-result artifacts stored in any backend (filesystem or database).
+ *
+ * When set on `SandboxManagerOptions.memoProvider`:
+ * - **Read path**: memo documents are snapshotted into a temporary host
+ *   directory at sandbox creation time so that `/workspace/memo/**` paths are
+ *   always populated inside the container.
+ * - **Write path**: writes made via the sandboxed `Write` / `Edit` tools to
+ *   memo paths are propagated back to the underlying store so the backing
+ *   store stays consistent with what the agent sees in the sandbox.
+ *
+ * Both `SessionManager` and `PostgresSessionStore` implement all methods of
+ * this interface and can be passed directly.
+ */
+export interface SandboxMemoProvider {
+  // ── Read ──────────────────────────────────────────────────────────────────
+
+  /** Reads a named memo document. Returns `null` when absent. */
+  readMemoryDocument(
+    tenantId: string,
+    ownerId: string,
+    scope: "session" | "user",
+    name: string,
+  ): Promise<string | null>;
+
+  /**
+   * Returns all tool-call IDs whose compacted artifacts are stored in this
+   * session. Used to pre-populate `/workspace/memo/session/tool-results/`
+   * inside the container at creation time.
+   *
+   * Optional — when absent, tool-result artifacts are not snapshotted and
+   * `/workspace/memo/session/tool-results/` will be empty inside the sandbox.
+   */
+  listToolResultArtifactIds?(sessionRef: string): Promise<string[]>;
+
+  /**
+   * Reads a compacted tool-result artifact by tool call ID.
+   * Required when `listToolResultArtifactIds` is implemented.
+   */
+  readToolResultArtifact?(sessionRef: string, toolCallId: string): Promise<string | null>;
+
+  // ── Write ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Persists a memo document back to the underlying store after the agent
+   * modifies it via the sandboxed `Write` or `Edit` tool.
+   *
+   * Optional — when absent, writes to memo paths only update the local temp
+   * directory and are not propagated to the backing store.
+   */
+  writeMemoryDocument?(
+    tenantId: string,
+    ownerId: string,
+    scope: "session" | "user",
+    name: string,
+    content: string,
+  ): Promise<void>;
+
+  /**
+   * Persists a compacted tool-result artifact back to the underlying store
+   * after the agent writes to `/workspace/memo/session/tool-results/<id>.txt`.
+   *
+   * Optional — when absent, such writes are not propagated to the store.
+   */
+  writeToolResultArtifact?(sessionRef: string, toolCallId: string, content: string): Promise<void>;
+}
+
 /** Active sandbox record for one session. */
 export interface SandboxEntry {
   containerId: string;
@@ -30,6 +99,15 @@ export interface SandboxEntry {
   workspaceDir: string;
   memoSessionDir: string;
   memoUserDir: string;
+  /** Stored so write-back methods can call the correct store APIs. */
+  tenantId: string;
+  userId: string;
+  sessionId: string;
+  /**
+   * When a `memoProvider` is used, memo docs are snapshotted here before
+   * container creation so they can be bind-mounted. Cleaned up on destroy.
+   */
+  tempMemoBase?: string;
 }
 
 /** Execution options for one `docker exec` call. */
@@ -61,6 +139,25 @@ export interface SandboxManagerOptions {
   image?: string;
   idleTimeoutMs?: number;
   docker?: Docker;
+  /**
+   * Provider used to snapshot memo documents into the sandbox at creation time.
+   *
+   * When set, the manager fetches session and user memo files (`NOTES.md`,
+   * `TODO.md`, `USER.md`) from the provider before starting the container and
+   * writes them to a temporary host directory that is bind-mounted at
+   * `/workspace/memo/session` and `/workspace/memo/user` inside the container.
+   *
+   * This ensures `/workspace/memo/**` paths are populated even when the host
+   * uses a database-backed session store that does not write files to disk.
+   *
+   * The snapshot is taken once at sandbox creation. Updates to memo documents
+   * while the sandbox is running are not automatically reflected (the container
+   * must be restarted to pick up changes).
+   *
+   * Pass your session store directly — both `SessionManager` and
+   * `PostgresSessionStore` implement the required `readMemoryDocument` method.
+   */
+  memoProvider?: SandboxMemoProvider;
 }
 
 // ============================================================================
@@ -107,6 +204,25 @@ async function waitForHealth(url: string, timeoutMs: number): Promise<void> {
 /**
  * Manages one Docker-backed isolated sandbox per session.
  *
+ * ## Memo path semantics (`/workspace/memo/**`)
+ *
+ * The manager bind-mounts two directories into every container:
+ *
+ * - `/workspace/memo/session` — session-scoped memo files (`NOTES.md`, `TODO.md`)
+ * - `/workspace/memo/user`    — user-scoped memo files (`USER.md`)
+ *
+ * **Filesystem backend** (`SessionManager` / default): the real
+ * `<dataDir>/tenants/...` directories are mounted directly.
+ *
+ * **Database/custom backend**: pass a `memoProvider` in `SandboxManagerOptions`.
+ * The manager will snapshot memo documents from the provider into a temporary
+ * host directory before starting the container and bind-mount that directory.
+ * The snapshot is taken once at sandbox creation; updates while the container
+ * is running are not automatically reflected.
+ *
+ * Without a `memoProvider`, `/workspace/memo/**` will be empty for non-filesystem
+ * backends.
+ *
  * @see {@link https://agentrail.run/guides/use-capability-packages}
  */
 export class SandboxManager {
@@ -116,6 +232,7 @@ export class SandboxManager {
   private readonly idleTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly image: string;
   private readonly idleTimeoutMs: number;
+  private readonly memoProvider: SandboxMemoProvider | undefined;
 
   constructor(
     private readonly dataDir: string,
@@ -124,6 +241,7 @@ export class SandboxManager {
     this.docker = options.docker ?? new Docker();
     this.image = options.image ?? SANDBOX_IMAGE;
     this.idleTimeoutMs = options.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
+    this.memoProvider = options.memoProvider;
   }
 
   async ensureSandbox(sessionId: string, tenantId: string, userId: string): Promise<SandboxEntry> {
@@ -157,14 +275,80 @@ export class SandboxManager {
     userId: string,
   ): Promise<SandboxEntry> {
     const workspaceDir = path.join(this.dataDir, "sandboxes", sessionId);
-    const memoSessionDir = path.join(this.dataDir, "tenants", tenantId, "sessions", sessionId);
-    const memoUserDir = path.join(this.dataDir, "tenants", tenantId, "users", userId);
     const skillsDir = path.join(this.dataDir, "skills");
+
+    // ── Memo directories ────────────────────────────────────────────────────
+    //
+    // When a memoProvider is configured (database-backed stores), snapshot memo
+    // documents to a temporary host directory before container creation so they
+    // can be bind-mounted. The temp dir is stored in the SandboxEntry and
+    // cleaned up on destroySandbox().
+    //
+    // Without a memoProvider the legacy behaviour is preserved: the real
+    // dataDir/tenants/... directories are bind-mounted directly.
+    let memoSessionDir: string;
+    let memoUserDir: string;
+    let tempMemoBase: string | undefined;
+
+    if (this.memoProvider) {
+      tempMemoBase = await mkdtemp(path.join(os.tmpdir(), `agentrail-memo-${sessionId}-`));
+      memoSessionDir = path.join(tempMemoBase, "session");
+      memoUserDir = path.join(tempMemoBase, "user");
+      const toolResultsDir = path.join(memoSessionDir, "tool-results");
+      await Promise.all([
+        mkdir(memoSessionDir, { recursive: true }),
+        mkdir(memoUserDir, { recursive: true }),
+        mkdir(toolResultsDir, { recursive: true }),
+      ]);
+
+      // Build the session reference used for artifact lookups.
+      // Follows the same convention as resolveSessionRef in other modules.
+      const sessionRef = `${tenantId}:${sessionId}`;
+
+      // Snapshot known memo files and tool-result artifacts in parallel.
+      const snapshotTasks: Promise<void>[] = [
+        this._snapshotMemoDoc(
+          this.memoProvider,
+          tenantId,
+          sessionId,
+          "session",
+          "NOTES.md",
+          memoSessionDir,
+        ),
+        this._snapshotMemoDoc(
+          this.memoProvider,
+          tenantId,
+          sessionId,
+          "session",
+          "TODO.md",
+          memoSessionDir,
+        ),
+        this._snapshotMemoDoc(this.memoProvider, tenantId, userId, "user", "USER.md", memoUserDir),
+      ];
+
+      if (this.memoProvider.listToolResultArtifactIds && this.memoProvider.readToolResultArtifact) {
+        const { listToolResultArtifactIds, readToolResultArtifact } = this.memoProvider;
+        snapshotTasks.push(
+          this._snapshotToolResultArtifacts(
+            { listToolResultArtifactIds, readToolResultArtifact },
+            sessionRef,
+            toolResultsDir,
+          ),
+        );
+      }
+
+      await Promise.all(snapshotTasks);
+    } else {
+      memoSessionDir = path.join(this.dataDir, "tenants", tenantId, "sessions", sessionId);
+      memoUserDir = path.join(this.dataDir, "tenants", tenantId, "users", userId);
+      await Promise.all([
+        mkdir(memoSessionDir, { recursive: true }),
+        mkdir(memoUserDir, { recursive: true }),
+      ]);
+    }
 
     await Promise.all([
       mkdir(workspaceDir, { recursive: true }),
-      mkdir(memoSessionDir, { recursive: true }),
-      mkdir(memoUserDir, { recursive: true }),
       mkdir(skillsDir, { recursive: true }),
     ]);
 
@@ -186,8 +370,8 @@ export class SandboxManager {
         CpuQuota: 100_000,
         Binds: [
           `${workspaceDir}:/workspace`,
-          `${memoSessionDir}:/workspace/memo/session`,
-          `${memoUserDir}:/workspace/memo/user`,
+          `${memoSessionDir}:/workspace/memo/session:ro`,
+          `${memoUserDir}:/workspace/memo/user:ro`,
           `${skillsDir}:/skills:ro`,
         ],
         PortBindings: {
@@ -207,7 +391,67 @@ export class SandboxManager {
       `[sandbox] Container ready for session ${sessionId} (browser port: ${browserPort})`,
     );
 
-    return { containerId: container.id, browserPort, workspaceDir, memoSessionDir, memoUserDir };
+    return {
+      containerId: container.id,
+      browserPort,
+      workspaceDir,
+      memoSessionDir,
+      memoUserDir,
+      tenantId,
+      userId,
+      sessionId,
+      ...(tempMemoBase ? { tempMemoBase } : {}),
+    };
+  }
+
+  /** Fetches one memo document from the provider and writes it to `targetDir`. */
+  private async _snapshotMemoDoc(
+    provider: SandboxMemoProvider,
+    tenantId: string,
+    ownerId: string,
+    scope: "session" | "user",
+    name: string,
+    targetDir: string,
+  ): Promise<void> {
+    try {
+      const content = await provider.readMemoryDocument(tenantId, ownerId, scope, name);
+      if (content !== null && content !== "") {
+        await writeFile(path.join(targetDir, name), content, "utf8");
+      }
+    } catch {
+      // Non-fatal: if the store fails to read a memo doc, the sandbox starts
+      // without it rather than blocking sandbox creation entirely.
+    }
+  }
+
+  /**
+   * Fetches all tool-result artifacts for `sessionRef` from the provider and
+   * writes each one to `toolResultsDir/<toolCallId>.txt`.
+   */
+  private async _snapshotToolResultArtifacts(
+    provider: Required<
+      Pick<SandboxMemoProvider, "listToolResultArtifactIds" | "readToolResultArtifact">
+    >,
+    sessionRef: string,
+    toolResultsDir: string,
+  ): Promise<void> {
+    try {
+      const ids = await provider.listToolResultArtifactIds(sessionRef);
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const content = await provider.readToolResultArtifact(sessionRef, id);
+            if (content !== null) {
+              await writeFile(path.join(toolResultsDir, `${id}.txt`), content, "utf8");
+            }
+          } catch {
+            // Non-fatal: skip individual artifacts that fail to load.
+          }
+        }),
+      );
+    } catch {
+      // Non-fatal: if listing fails the sandbox starts without pre-populated artifacts.
+    }
   }
 
   async runInSandbox(sessionId: string, cmd: string[], opts: RunOptions = {}): Promise<ExecResult> {
@@ -464,6 +708,15 @@ export class SandboxManager {
     ]).catch(() => undefined);
   }
 
+  /**
+   * Translates a container-side path into an absolute host filesystem path.
+   *
+   * Handles `/workspace/memo/session`, `/workspace/memo/user`, and `/workspace`.
+   * Returns an empty string for unrecognised paths.
+   *
+   * For database-backed stores with a `memoProvider`, memo paths resolve into
+   * the temporary snapshot directory created at sandbox creation time.
+   */
   translateToHostPath(sessionId: string, containerPath: string): string {
     const entry = this.sandboxes.get(sessionId);
     if (!entry) throw new Error(`No sandbox found for session '${sessionId}'`);
@@ -501,6 +754,107 @@ export class SandboxManager {
 
   isContainerOnlyPath(containerPath: string): boolean {
     return containerPath === "/tmp" || containerPath.startsWith("/tmp/");
+  }
+
+  /**
+   * Propagates a memo-path write back to the underlying store via
+   * `memoProvider`.  Called by the sandboxed `Write` and `Edit` tools after
+   * they successfully update the local temp-mirror file.
+   *
+   * No-op when no `memoProvider` is configured or when the container path is
+   * not under `/workspace/memo/`.
+   */
+  async writeMemoBack(sessionId: string, containerPath: string, content: string): Promise<void> {
+    if (!this.memoProvider) return;
+
+    const entry = this.sandboxes.get(sessionId);
+    if (!entry) return;
+
+    const memoSessionPrefix = "/workspace/memo/session/";
+    const memoUserPrefix = "/workspace/memo/user/";
+    const toolResultsPrefix = `${memoSessionPrefix}tool-results/`;
+
+    if (containerPath.startsWith(toolResultsPrefix)) {
+      // e.g. /workspace/memo/session/tool-results/<toolCallId>.txt
+      if (!this.memoProvider.writeToolResultArtifact) return;
+      const filename = containerPath.slice(toolResultsPrefix.length);
+      const toolCallId = filename.endsWith(".txt") ? filename.slice(0, -4) : filename;
+      const sessionRef = `${entry.tenantId}:${entry.sessionId}`;
+      await this.memoProvider.writeToolResultArtifact(sessionRef, toolCallId, content);
+    } else if (containerPath.startsWith(memoSessionPrefix)) {
+      // e.g. /workspace/memo/session/NOTES.md
+      if (!this.memoProvider.writeMemoryDocument) return;
+      const name = containerPath.slice(memoSessionPrefix.length);
+      await this.memoProvider.writeMemoryDocument(
+        entry.tenantId,
+        entry.sessionId,
+        "session",
+        name,
+        content,
+      );
+    } else if (containerPath.startsWith(memoUserPrefix)) {
+      // e.g. /workspace/memo/user/USER.md
+      if (!this.memoProvider.writeMemoryDocument) return;
+      const name = containerPath.slice(memoUserPrefix.length);
+      await this.memoProvider.writeMemoryDocument(
+        entry.tenantId,
+        entry.userId,
+        "user",
+        name,
+        content,
+      );
+    }
+  }
+
+  /**
+   * Updates a single file in the live host-side memo mirror without writing
+   * back to the store.  Use this after a host-side write (e.g. compaction
+   * persisting a tool-result artifact) so the agent can immediately read the
+   * updated file from inside the container.
+   *
+   * No-op when the session has no active temp mirror (i.e. uses a filesystem
+   * backend where `memoSessionDir` / `memoUserDir` are already the real paths).
+   */
+  async refreshMemoMirror(
+    sessionId: string,
+    containerPath: string,
+    content: string,
+  ): Promise<void> {
+    const entry = this.sandboxes.get(sessionId);
+    if (!entry || !entry.tempMemoBase) return;
+    try {
+      const hostPath = this.translateToHostPath(sessionId, containerPath);
+      await mkdir(path.dirname(hostPath), { recursive: true });
+      await writeFile(hostPath, content, "utf-8");
+    } catch {
+      // Non-fatal: mirror refresh failure must not disrupt host-side logic.
+    }
+  }
+
+  /**
+   * Refreshes the user-level memo file (`/workspace/memo/user/<name>`) in the
+   * live mirror for **all** active sandboxes belonging to the given tenant+user
+   * pair.
+   *
+   * Call this after any host-side write to a user-scoped memo document (e.g.
+   * after `UserMemoryConsolidationService` rewrites `USER.md`) so that every
+   * concurrently running session sees the updated content immediately.
+   */
+  async refreshUserMemoMirrorForAllSessions(
+    tenantId: string,
+    userId: string,
+    name: string,
+    content: string,
+  ): Promise<void> {
+    const containerPath = `/workspace/memo/user/${name}`;
+    await Promise.allSettled(
+      [...this.sandboxes.entries()]
+        .filter(
+          ([, entry]) =>
+            entry.tenantId === tenantId && entry.userId === userId && entry.tempMemoBase,
+        )
+        .map(([sessionId]) => this.refreshMemoMirror(sessionId, containerPath, content)),
+    );
   }
 
   async readFileInContainer(sessionId: string, containerPath: string): Promise<string> {
@@ -597,6 +951,7 @@ export class SandboxManager {
       this.idleTimers.delete(sessionId);
     }
 
+    const entry = this.sandboxes.get(sessionId);
     this.sandboxes.delete(sessionId);
     this.pending.delete(sessionId);
 
@@ -605,6 +960,11 @@ export class SandboxManager {
       await this.docker.getContainer(containerName).remove({ force: true });
     } catch {
       // Container may not exist
+    }
+
+    // Clean up temp memo snapshot directory if one was created.
+    if (entry?.tempMemoBase) {
+      await rm(entry.tempMemoBase, { recursive: true, force: true }).catch(() => {});
     }
   }
 

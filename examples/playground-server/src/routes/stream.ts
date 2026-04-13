@@ -14,8 +14,27 @@ import { waitHandleRegistry } from "@/wait-handle-registry.js";
 import type { WorkflowTraceEventEnvelope } from "@agentrail/app";
 import { createFileSystemSessionTraceStore } from "@agentrail/app";
 import { createStreamRoute } from "@agentrail/app/advanced";
+import type { SessionRef } from "@agentrail/core";
 
 const summarize = buildSummarizeFn();
+
+// Cache trace stores by sessionRef so we open the trace file once per session
+// rather than on every envelope.
+const traceStoreCache = new Map<
+  SessionRef,
+  ReturnType<typeof createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>>
+>();
+function getTraceStore(sessionRef: SessionRef) {
+  let store = traceStoreCache.get(sessionRef);
+  if (!store) {
+    store = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(
+      config.dataDir,
+      sessionRef,
+    );
+    traceStoreCache.set(sessionRef, store);
+  }
+  return store;
+}
 
 const stream = createStreamRoute({
   dataDir: config.dataDir,
@@ -43,11 +62,7 @@ const stream = createStreamRoute({
     },
   }),
   onTraceEvent: (ctx, envelope) => {
-    const traceStore = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(
-      config.dataDir,
-      ctx.sessionRef,
-    );
-    void traceStore.appendEnvelope(envelope);
+    void getTraceStore(ctx.sessionRef).appendEnvelope(envelope);
   },
 });
 

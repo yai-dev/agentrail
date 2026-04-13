@@ -13,19 +13,20 @@ Read this page when:
 ## Responsibilities
 
 - create or resume sessions
-- resolve session directories
 - load message history
 - append messages
 - record usage
 - compact history when needed
+- _(optional)_ read/write memo documents (`NOTES.md`, `TODO.md`, `USER.md`)
+- _(optional)_ read/write tool result artifacts
 
-The default examples use the filesystem-backed `SessionManager` from `@agentrail/app`.
+The default implementation is the filesystem-backed `SessionManager` from `@agentrail/app`. A PostgreSQL implementation is available in `@agentrail/storage-postgres`.
 
 ## Interface
 
-The full `AgentrailSessionStore` contract defined in `packages/app/src/host/types.ts`:
+The full `AgentrailSessionStore` contract defined in `@agentrail/core`:
 
-### `getOrCreate`
+### `getOrCreate` _(required)_
 
 ```ts
 getOrCreate(
@@ -38,15 +39,7 @@ getOrCreate(
 
 Returns an existing session or creates a new one. If `sessionId` is omitted, a new UUID is generated.
 
-### `getSessionDir`
-
-```ts
-getSessionDir(tenantId: string, sessionId: string): string
-```
-
-Returns the filesystem path (or equivalent logical path) for the session's data directory. Called synchronously by the host before agent construction.
-
-### `loadMessages`
+### `loadMessages` _(required)_
 
 ```ts
 loadMessages(tenantId: string, sessionId: string, limit?: number): Promise<Message[]>
@@ -54,7 +47,7 @@ loadMessages(tenantId: string, sessionId: string, limit?: number): Promise<Messa
 
 Returns the most recent `limit` messages from the session. When `limit` is omitted, returns a reasonable recent window.
 
-### `loadMessagesWithBudget`
+### `loadMessagesWithBudget` _(required)_
 
 ```ts
 loadMessagesWithBudget(
@@ -66,7 +59,7 @@ loadMessagesWithBudget(
 
 Returns as many recent messages as fit within the given token budget. Used by both the chat route and stream route to keep context within the model's context window.
 
-### `loadAllMessages`
+### `loadAllMessages` _(required)_
 
 ```ts
 loadAllMessages(tenantId: string, sessionId: string): Promise<Message[]>
@@ -74,7 +67,7 @@ loadAllMessages(tenantId: string, sessionId: string): Promise<Message[]>
 
 Returns the complete, unbounded message history for a session. Used by the compaction system to decide whether to summarize old turns.
 
-### `appendMessages`
+### `appendMessages` _(required)_
 
 ```ts
 appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promise<void>
@@ -82,7 +75,7 @@ appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promis
 
 Persists new messages to the session store after a turn completes.
 
-### `recordTurn`
+### `recordTurn` _(required)_
 
 ```ts
 recordTurn(tenantId: string, sessionId: string, usage: Usage): Promise<void>
@@ -90,7 +83,7 @@ recordTurn(tenantId: string, sessionId: string, usage: Usage): Promise<void>
 
 Records token usage for the turn. Used for billing or observability.
 
-### `compactIfNeeded`
+### `compactIfNeeded` _(required)_
 
 ```ts
 compactIfNeeded(
@@ -108,15 +101,93 @@ compactIfNeeded(
 
 Runs compaction if the accumulated history exceeds `triggerTokens`. Calls `summarizeFn` to collapse old messages into a summary message and persists the compacted history. Returns `true` if compaction ran.
 
+### `readMemoryDocument` _(optional)_
+
+```ts
+readMemoryDocument?(
+  tenantId: string,
+  ownerId: string,
+  scope: "session" | "user",
+  name: "NOTES.md" | "TODO.md" | "USER.md",
+): Promise<string | null>
+```
+
+Reads a named memo document for a session or user. Called by the user-memory consolidation service and by context providers that inject memory into the agent's context.
+
+**Required** when using `UserMemoryConsolidationService` with a non-filesystem store. `SessionManager` implements this automatically. If your store omits this method and `UserMemoryConsolidationService` is configured, the service will throw at runtime.
+
+### `writeMemoryDocument` _(optional)_
+
+```ts
+writeMemoryDocument?(
+  tenantId: string,
+  ownerId: string,
+  scope: "session" | "user",
+  name: "NOTES.md" | "TODO.md" | "USER.md",
+  content: string,
+): Promise<void>
+```
+
+Writes a memo document. Counterpart to `readMemoryDocument`. Same requirements apply.
+
+### `appendMemoryDocument` _(optional)_
+
+```ts
+appendMemoryDocument?(
+  tenantId: string,
+  ownerId: string,
+  scope: "session" | "user",
+  name: "NOTES.md" | "TODO.md" | "USER.md",
+  content: string,
+): Promise<void>
+```
+
+Appends to an existing memo document. Used by in-context memo tools (`write_notes`, `write_todo`).
+
+### `readToolResultArtifact` _(optional)_
+
+```ts
+readToolResultArtifact?(
+  sessionRef: SessionRef,
+  toolCallId: string,
+): Promise<string | null>
+```
+
+Reads a compacted tool result artifact. Called during history reconstruction when a tool result was stored separately to keep the message history compact.
+
+### `writeToolResultArtifact` _(optional)_
+
+```ts
+writeToolResultArtifact?(
+  sessionRef: SessionRef,
+  toolCallId: string,
+  content: string,
+): Promise<void>
+```
+
+Writes a compacted tool result artifact. Called by `compactToolResults` when tool outputs are too large to keep inline.
+
+### `listToolResultArtifactIds` _(optional)_
+
+```ts
+listToolResultArtifactIds?(sessionRef: SessionRef): Promise<string[]>
+```
+
+Returns all tool-call IDs whose artifacts are stored for this session. Used by `SandboxManager` at sandbox creation time to pre-populate the `/workspace/memo/session/tool-results/` directory so the agent can read compacted artifacts from inside the container.
+
+When not implemented, the tool-results directory starts empty inside the sandbox. Already-stored artifacts will not be accessible unless the session happens to use the filesystem backend (where they live at the expected path automatically).
+
+---
+
 ## Implementing a Custom Store
 
-A custom store must implement all methods above. The most commonly replaced parts are `loadMessages`, `loadAllMessages`, `appendMessages`, and `compactIfNeeded` — these are the methods the host calls on every request path.
+A custom store must implement all **required** methods. The optional methods unlock additional features (memo documents, tool result compaction). You can omit optional methods and add them incrementally as needed.
 
-Below is a minimal in-memory implementation that satisfies the full interface. Use it as a starting point before wiring up a real database backend:
+### Minimal in-memory example
 
 ```ts
 import { randomUUID } from "node:crypto";
-import type { Message, Usage } from "@agentrail/core";
+import type { Message, SessionRef, Usage } from "@agentrail/core";
 import type { AgentrailSessionStore } from "@agentrail/app";
 
 interface SessionRecord {
@@ -129,9 +200,9 @@ export class InMemorySessionStore implements AgentrailSessionStore {
   private readonly sessions = new Map<string, SessionRecord>();
 
   async getOrCreate(
-    tenantId: string,
-    userId: string,
-    agentId: string,
+    _tenantId: string,
+    _userId: string,
+    _agentId: string,
     sessionId?: string,
   ): Promise<{ sessionId: string }> {
     const id = sessionId ?? randomUUID();
@@ -141,29 +212,18 @@ export class InMemorySessionStore implements AgentrailSessionStore {
     return { sessionId: id };
   }
 
-  getSessionDir(tenantId: string, sessionId: string): string {
-    // Return a logical path — the in-memory store doesn't use the filesystem,
-    // but the host calls this synchronously before agent construction.
-    return `/tmp/sessions/${tenantId}/${sessionId}`;
-  }
-
-  async loadMessages(tenantId: string, sessionId: string, limit?: number): Promise<Message[]> {
-    const session = this.sessions.get(sessionId);
-    if (!session) return [];
-    const msgs = session.messages;
+  async loadMessages(_tenantId: string, sessionId: string, limit?: number): Promise<Message[]> {
+    const msgs = this.sessions.get(sessionId)?.messages ?? [];
     return limit ? msgs.slice(-limit) : msgs.slice(-50);
   }
 
   async loadMessagesWithBudget(
-    tenantId: string,
+    _tenantId: string,
     sessionId: string,
     tokenBudget?: number,
   ): Promise<Message[]> {
-    const session = this.sessions.get(sessionId);
-    if (!session) return [];
-    // Simplified: estimate ~4 chars per token; trim from the front
+    const messages = this.sessions.get(sessionId)?.messages ?? [];
     const budget = tokenBudget ?? 100_000;
-    const messages = [...session.messages];
     let totalChars = 0;
     const result: Message[] = [];
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -175,33 +235,25 @@ export class InMemorySessionStore implements AgentrailSessionStore {
     return result;
   }
 
-  async loadAllMessages(tenantId: string, sessionId: string): Promise<Message[]> {
+  async loadAllMessages(_tenantId: string, sessionId: string): Promise<Message[]> {
     return this.sessions.get(sessionId)?.messages ?? [];
   }
 
-  async appendMessages(tenantId: string, sessionId: string, messages: Message[]): Promise<void> {
+  async appendMessages(_tenantId: string, sessionId: string, messages: Message[]): Promise<void> {
     const session = this.sessions.get(sessionId);
-    if (session) {
-      session.messages.push(...messages);
-    }
+    if (session) session.messages.push(...messages);
   }
 
-  async recordTurn(tenantId: string, sessionId: string, usage: Usage): Promise<void> {
+  async recordTurn(_tenantId: string, sessionId: string, usage: Usage): Promise<void> {
     const session = this.sessions.get(sessionId);
-    if (session) {
-      session.usageHistory.push(usage);
-    }
+    if (session) session.usageHistory.push(usage);
   }
 
   async compactIfNeeded(
-    tenantId: string,
+    _tenantId: string,
     sessionId: string,
     summarizeFn: (messages: Message[]) => Promise<string>,
-    options?: {
-      triggerTokens?: number;
-      compactFraction?: number;
-      preloadedMessages?: Message[];
-    },
+    options?: { triggerTokens?: number; compactFraction?: number; preloadedMessages?: Message[] },
   ): Promise<boolean> {
     const session = this.sessions.get(sessionId);
     if (!session) return false;
@@ -210,22 +262,16 @@ export class InMemorySessionStore implements AgentrailSessionStore {
     const compactFraction = options?.compactFraction ?? 0.5;
     const messages = options?.preloadedMessages ?? session.messages;
 
-    // Estimate token count (rough: 4 chars ≈ 1 token)
     const estimatedTokens = JSON.stringify(messages).length / 4;
     if (estimatedTokens < triggerTokens) return false;
 
-    // Summarize the oldest fraction of messages
     const cutoff = Math.floor(messages.length * compactFraction);
-    const oldMessages = messages.slice(0, cutoff);
-    const recentMessages = messages.slice(cutoff);
-
-    const summary = await summarizeFn(oldMessages);
+    const summary = await summarizeFn(messages.slice(0, cutoff));
 
     session.messages = [
       { role: "user", content: `[Conversation summary]: ${summary}` },
-      ...recentMessages,
+      ...messages.slice(cutoff),
     ];
-
     return true;
   }
 }
@@ -243,19 +289,23 @@ const app = createAgentApp({
 });
 ```
 
-Or with route primitives directly:
-
-```ts
-import { createStreamRoute } from "@agentrail/app/advanced";
-import { InMemorySessionStore } from "./in-memory-session-store.js";
-
-app.route(
-  "/api/stream",
-  createStreamRoute({
-    sessionStore: new InMemorySessionStore(),
-    // ...
-  }),
-);
-```
+### Production database backend
 
 For a production database-backed implementation, replace the `Map` with queries to your database in `loadMessages`, `appendMessages`, and `compactIfNeeded`. The interface is intentionally small so each method maps cleanly to one or two queries.
+
+A full PostgreSQL implementation is available out of the box:
+
+```ts
+import { PostgresSessionStore, createSqlClient } from "@agentrail/storage-postgres";
+
+const sql = createSqlClient({ connectionString: process.env.DATABASE_URL! });
+
+const app = createAgentApp({
+  sessionStore: new PostgresSessionStore(sql),
+  traceStoreFactory: (sessionRef) => new PostgresSessionTraceStore(sql, sessionRef),
+  inspector: new PostgresInspectorDataSource(sql),
+  profiles: [defaultProfile],
+});
+```
+
+`PostgresSessionStore` implements all required methods plus the optional memo document and tool result artifact methods, so all host features work without additional configuration.

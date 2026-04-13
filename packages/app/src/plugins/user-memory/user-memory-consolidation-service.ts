@@ -3,12 +3,26 @@
  * Copyright (c) 2026 The Agentrail Authors
  */
 
-import { SessionManager, isCompactionMessage } from "@/session/session-manager.js";
-import type { Message } from "@agentrail/core";
+import { isCompactionMessage } from "@/session/session-manager.js";
+import type { UserSessionLister } from "@/session/user-session-lister.js";
+import type { AgentrailSessionStore, Message } from "@agentrail/core";
 import { defineAgent, isRuntimeError } from "@agentrail/core";
 import "@agentrail/core/providers";
 import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+
+/**
+ * Minimal interface for propagating host-side user-memo updates to live
+ * sandbox mirrors. `SandboxManager` satisfies this interface.
+ */
+export interface UserMemoMirrorRefresher {
+  refreshUserMemoMirrorForAllSessions(
+    tenantId: string,
+    userId: string,
+    name: string,
+    content: string,
+  ): Promise<void>;
+}
 
 // ============================================================================
 // Constants
@@ -286,9 +300,29 @@ export class UserMemoryConsolidationService {
   private scanning = false;
 
   constructor(
-    private readonly sessionManager: SessionManager,
+    /**
+     * Session store used to load session message history.
+     * Accepts any `AgentrailSessionStore` implementation.
+     */
+    private readonly sessionStore: AgentrailSessionStore,
+    /**
+     * Provides user-scoped session listing for background scans.
+     * `SessionManager` implements this interface automatically.
+     */
+    private readonly userSessionLister: UserSessionLister,
+    /**
+     * Host data directory used for state/summary cache files
+     * (`.memory-state.json`, `user-memory.json`).
+     */
     private readonly dataDir: string,
     private readonly config: UserMemoryConfig,
+    /**
+     * When provided, the service propagates USER.md updates to all live
+     * sandbox mirrors so the agent immediately reads the updated content
+     * from inside any currently-running container. Pass the `SandboxManager`
+     * instance here when using a non-filesystem session store.
+     */
+    private readonly mirrorRefresher?: UserMemoMirrorRefresher,
   ) {}
 
   // --------------------------------------------------------------------------
@@ -403,11 +437,8 @@ export class UserMemoryConsolidationService {
    */
   private async evaluateAndQueueUser(tenantId: string, userId: string): Promise<void> {
     const state = await this.readState(tenantId, userId);
-    const sessions = await this.sessionManager.listSessionIdsByUser(
-      tenantId,
-      userId,
-      MAX_SESSIONS_PER_USER,
-    );
+    const allSessions = await this.userSessionLister.listSessionsByUser(tenantId, userId);
+    const sessions = allSessions.slice(0, MAX_SESSIONS_PER_USER);
     if (sessions.length === 0) return;
 
     const now = Date.now();
@@ -468,11 +499,8 @@ export class UserMemoryConsolidationService {
     forceRebuild: boolean,
   ): Promise<void> {
     const state = await this.readState(tenantId, userId);
-    const sessions = await this.sessionManager.listSessionIdsByUser(
-      tenantId,
-      userId,
-      MAX_SESSIONS_PER_USER,
-    );
+    const allSessions = await this.userSessionLister.listSessionsByUser(tenantId, userId);
+    const sessions = allSessions.slice(0, MAX_SESSIONS_PER_USER);
     if (sessions.length === 0) return;
 
     // Phase 1: ensure every changed session has an up-to-date cached summary.
@@ -509,10 +537,7 @@ export class UserMemoryConsolidationService {
         continue;
       }
 
-      const messages = await this.sessionManager.loadFullSessionMessages(
-        tenantId,
-        session.sessionId,
-      );
+      const messages = await this.sessionStore.loadAllMessages(tenantId, session.sessionId);
       // Strip compaction placeholder messages; they add noise without useful content.
       const usableMessages = messages.filter((m: Message) => !isCompactionMessage(m));
       if (usableMessages.length < 4) continue;
@@ -555,14 +580,40 @@ export class UserMemoryConsolidationService {
     forceRebuild: boolean,
   ): Promise<void> {
     const profile = await this.buildUserProfile(sessionSummaries);
-    const userMdPath = path.join(this.sessionManager.getUserDir(tenantId, userId), "USER.md");
-    const existingUserMd = await readFile(userMdPath, "utf8").catch(() => "");
+
+    let existingUserMd = "";
+    if (this.sessionStore.readMemoryDocument) {
+      existingUserMd =
+        (await this.sessionStore.readMemoryDocument(tenantId, userId, "user", "USER.md")) ?? "";
+    } else {
+      throw new Error(
+        `UserMemoryConsolidationService: the session store does not implement ` +
+          `readMemoryDocument. Implement this method on your store — ` +
+          `SessionManager implements it automatically for filesystem backends.`,
+      );
+    }
+
     const existingHistory = extractHistorySection(existingUserMd);
     const trigger = forceRebuild ? "manual" : "idle-auto";
-    await atomicWrite(
-      userMdPath,
-      renderUserMd(profile, sessionSummaries, existingHistory, trigger),
-    );
+    const newContent = renderUserMd(profile, sessionSummaries, existingHistory, trigger);
+
+    if (this.sessionStore.writeMemoryDocument) {
+      await this.sessionStore.writeMemoryDocument(tenantId, userId, "user", "USER.md", newContent);
+    } else {
+      throw new Error(
+        `UserMemoryConsolidationService: the session store does not implement ` +
+          `writeMemoryDocument. Implement this method on your store — ` +
+          `SessionManager implements it automatically for filesystem backends.`,
+      );
+    }
+
+    // Refresh the live sandbox mirrors so any currently-running agent
+    // session immediately sees the updated USER.md inside the container.
+    await this.mirrorRefresher
+      ?.refreshUserMemoMirrorForAllSessions(tenantId, userId, "USER.md", newContent)
+      .catch(() => {
+        // Non-fatal: mirror refresh failure must not disrupt consolidation.
+      });
   }
 
   // --------------------------------------------------------------------------
@@ -673,7 +724,7 @@ export class UserMemoryConsolidationService {
   // --------------------------------------------------------------------------
 
   private getStatePath(tenantId: string, userId: string): string {
-    return path.join(this.sessionManager.getUserDir(tenantId, userId), STATE_FILE);
+    return path.join(this.dataDir, "tenants", tenantId, "users", userId, STATE_FILE);
   }
 
   private async readState(tenantId: string, userId: string): Promise<UserMemoryState> {
@@ -710,7 +761,14 @@ export class UserMemoryConsolidationService {
   }
 
   private getSessionSummaryPath(tenantId: string, sessionId: string): string {
-    return path.join(this.sessionManager.getSessionDir(tenantId, sessionId), SESSION_SUMMARY_FILE);
+    return path.join(
+      this.dataDir,
+      "tenants",
+      tenantId,
+      "sessions",
+      sessionId,
+      SESSION_SUMMARY_FILE,
+    );
   }
 
   private async readSessionSummary(

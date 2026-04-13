@@ -8,7 +8,7 @@ import {
   createDefaultCapabilityTransformContext,
 } from "@agentrail/capabilities";
 import type { AssistantMessage, MemoryIndex, Message, ToolResultMessage } from "@agentrail/core";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -203,9 +203,21 @@ describe("memory-context compaction integration", () => {
         buildMemoryIndex: async () => statefulMemoryIndex,
         listKnowledgeMetadatas: async () => [],
         listSkills: async () => [],
-        compactMessages: (messages: Message[], ctx?: { sessionDir?: string }) =>
+        writeToolResultArtifact: async (toolCallId: string, content: string) => {
+          const toolResultsDir = path.join(sessionDir, "tool-results");
+          await mkdir(toolResultsDir, { recursive: true });
+          await writeFile(path.join(toolResultsDir, `${toolCallId}.txt`), content, "utf8");
+        },
+        compactMessages: (
+          messages: Message[],
+          ctx?: {
+            writeToolResultArtifact?: (toolCallId: string, content: string) => Promise<void>;
+            sessionDir?: string;
+          },
+        ) =>
           compactToolResults(messages, {
             keepRecentToolResults: 0,
+            writeToolResultArtifact: ctx?.writeToolResultArtifact,
             sessionDir: ctx?.sessionDir,
           }),
       };
@@ -213,7 +225,6 @@ describe("memory-context compaction integration", () => {
       const sharedState = {
         cachedContextMsgs: null,
         cacheExpiry: 0,
-        capturedSessionDir: undefined,
       };
       const transform = createDefaultCapabilityTransformContext(options, sharedState);
       const providers = createDefaultCapabilityContextProviders(options, sharedState);
