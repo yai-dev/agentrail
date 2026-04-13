@@ -5,7 +5,11 @@
 
 import { describe, expect, it } from "vitest";
 import type { AgentrailConfig } from "../src/config/index.js";
-import { getDeepResearchConfig, parseAgentrailConfig } from "../src/config/index.js";
+import {
+  getDeepResearchConfig,
+  getPlaygroundServerConfig,
+  parseAgentrailConfig,
+} from "../src/config/index.js";
 
 describe("Agentrail config search settings", () => {
   it("parses brave and jina API keys", () => {
@@ -104,5 +108,23 @@ describe("parseAgentrailConfig — permissions block", () => {
 
     expect(config.permissions?.mode).toBe("strict");
     expect(config.permissions?.allow).toEqual(["Bash(git:*)", "Read"]);
+  });
+});
+
+describe("getPlaygroundServerConfig — permissionPolicy wiring", () => {
+  it("converts permissions block to permissionPolicy", () => {
+    const config = parseAgentrailConfig({
+      permissions: { mode: "strict", allow: ["Bash(git:*)"] },
+    }) as AgentrailConfig;
+    const out = getPlaygroundServerConfig(config);
+    expect(out.permissionPolicy).toBeDefined();
+    expect(out.permissionPolicy?.mode).toBe("strict");
+    expect(out.permissionPolicy?.allow).toHaveLength(1);
+    expect(out.permissionPolicy?.allow[0].toolName).toBe("Bash");
+  });
+
+  it("omits permissionPolicy when no permissions in config", () => {
+    const config = parseAgentrailConfig({}) as AgentrailConfig;
+    expect(getPlaygroundServerConfig(config).permissionPolicy).toBeUndefined();
   });
 });

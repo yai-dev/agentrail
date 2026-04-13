@@ -65,6 +65,7 @@ export type StreamEvent =
       multiple?: boolean;
       custom?: boolean;
     }
+  | { type: "permission_request"; toolCallId: string; toolName: string; reason?: string }
   | { type: "error"; error: { message: string } }
   | OrchestrationStreamEvent
   | DeepResearchStreamEvent

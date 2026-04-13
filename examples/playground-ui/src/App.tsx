@@ -97,6 +97,10 @@ export default function App() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [waitingQuestion, setWaitingQuestion] = useState<WaitingQuestionState | null>(null);
+  const [permissionBlocked, setPermissionBlocked] = useState<{
+    toolName: string;
+    reason?: string;
+  } | null>(null);
   const [questionInput, setQuestionInput] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [liveSkillActivity, setLiveSkillActivity] = useState<{
@@ -563,6 +567,16 @@ export default function App() {
             });
             setQuestionInput("");
             setSelectedOptions([]);
+          } else if (event.type === "permission_request") {
+            const pr = event as {
+              type: "permission_request";
+              toolCallId: string;
+              toolName: string;
+              reason?: string;
+            };
+            setPermissionBlocked({ toolName: pr.toolName, reason: pr.reason });
+          } else if (event.type === "turn.complete" || event.type === "session.end") {
+            setPermissionBlocked(null);
           } else if (event.type === "tool.after" || event.type === "tool_execution_end") {
             const tee = event as {
               type: string;
@@ -629,6 +643,7 @@ export default function App() {
         setLiveSkillActivity(null);
         setCompacting(false);
         setWaitingQuestion(null);
+        setPermissionBlocked(null);
         setQuestionInput("");
         setSelectedOptions([]);
         setBusy(false);
@@ -659,6 +674,7 @@ export default function App() {
     setContextUsage(null);
     setCompacting(false);
     setWaitingQuestion(null);
+    setPermissionBlocked(null);
     setQuestionInput("");
     setSelectedOptions([]);
     turnIndexRef.current = 0;
@@ -680,6 +696,7 @@ export default function App() {
       setBusy(false);
       setInput("");
       setWaitingQuestion(null);
+      setPermissionBlocked(null);
       setQuestionInput("");
       setSelectedOptions([]);
       clearTrace();
@@ -925,6 +942,22 @@ export default function App() {
         </main>
 
         {compacting && <CompactionBanner />}
+        {permissionBlocked && (
+          <div className="permission-blocked-banner">
+            <span className="permission-blocked-icon">🚫</span>
+            <span className="permission-blocked-text">
+              {`Permission denied — ${permissionBlocked.toolName} was blocked by policy`}
+              {permissionBlocked.reason ? `: ${permissionBlocked.reason}` : ""}
+            </span>
+            <button
+              className="permission-blocked-dismiss"
+              onClick={() => setPermissionBlocked(null)}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <WaitingQuestionPrompt
           sessionId={currentSessionId}
           waitingQuestion={waitingQuestion}
@@ -971,3 +1004,4 @@ export default function App() {
     </div>
   );
 }
+

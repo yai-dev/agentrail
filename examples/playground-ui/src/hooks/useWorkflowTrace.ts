@@ -130,7 +130,8 @@ export function useWorkflowTrace(sessionId: string | null): UseWorkflowTraceResu
  * Mirrors TRACE_PERSISTED_EVENT_TYPES from @agentrail/events (defined locally
  * since playground-ui doesn't depend on that package).
  */
-const TRACE_EVENT_TYPES = new Set([
+/** Exported for unit tests only. */
+export const TRACE_EVENT_TYPES = new Set([
   "session.start",
   "session.end",
   "turn.start",
@@ -141,6 +142,7 @@ const TRACE_EVENT_TYPES = new Set([
   "skill_start",
   "skill_end",
   "waiting_for_user_input",
+  "permission_request",
   "context_compaction_start",
   "context_compaction_end",
   "error",

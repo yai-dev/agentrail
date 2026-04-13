@@ -3094,6 +3094,43 @@ body {
   background: rgba(255, 255, 255, 0.03);
 }
 
+/* ── Permission-blocked banner ────────────────────────────────────────── */
+.permission-blocked-banner {
+  padding: 8px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted, #888);
+}
+
+.permission-blocked-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.permission-blocked-text {
+  flex: 1;
+  color: var(--error, #e05252);
+}
+
+.permission-blocked-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted, #888);
+  padding: 0 2px;
+}
+
+.permission-blocked-dismiss:hover {
+  color: var(--text, #ccc);
+}
+
 /* ── Waiting-for-user-input question bar ──────────────────────────────── */
 .waiting-question-bar {
   padding: 10px 16px 10px;

@@ -28,6 +28,7 @@ const stream = createStreamRoute({
   getOrchestrationManager: ({ tenantId, userId, sessionId, sessionRef }) =>
     orchestrationRegistry.getManager({ tenantId, userId, sessionId, sessionRef }),
   handleResolvedRequest: handlePlaygroundDeepResearchModeStream,
+  permissionPolicy: config.permissionPolicy,
   onTraceEvent: (ctx, envelope) => {
     const traceStore = createFileSystemSessionTraceStore<WorkflowTraceEventEnvelope>(
       config.dataDir,

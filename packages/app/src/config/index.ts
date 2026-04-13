@@ -188,6 +188,7 @@ export interface PlaygroundServerConfig extends SharedResolvedAppConfig {
   userMemory: AgentrailConfig["apps"]["playgroundServer"]["userMemory"];
   userPreferenceSummary: AgentrailConfig["apps"]["playgroundServer"]["userPreferenceSummary"];
   skillDelegateToSubAgent: boolean;
+  permissionPolicy?: ToolPermissionPolicy;
 }
 
 /** Resolved config consumed by the deep research example app. */
@@ -915,6 +916,7 @@ export function getPlaygroundServerConfig(
     userMemory: config.apps.playgroundServer.userMemory,
     userPreferenceSummary: config.apps.playgroundServer.userPreferenceSummary,
     skillDelegateToSubAgent: config.apps.playgroundServer.skills.delegateToSubAgent,
+    permissionPolicy: config.permissions ? configPermissionsToPolicy(config.permissions) : undefined,
   };
 }
 
