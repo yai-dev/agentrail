@@ -8,6 +8,7 @@ import {
   createFilesystemOrchestrationPersistence,
   type CreateManagedAgentInput,
   type ManagedAgentInstance,
+  type OrchestrationPersistence,
   type StartRunInput,
 } from "@agentrail/capabilities";
 import type { SessionRef } from "@agentrail/core";
@@ -48,7 +49,17 @@ export interface AgentrailOrchestrationRegistry {
 
 /** Inputs required to create the default orchestration registry. */
 export interface CreateOrchestrationRegistryOptions {
-  dataDir: string;
+  /**
+   * Directory used for filesystem-backed orchestration storage.
+   * Required when `createPersistence` is not provided.
+   */
+  dataDir?: string;
+  /**
+   * Factory that creates an `OrchestrationPersistence` for a given session.
+   * When provided, `dataDir` is ignored for orchestration storage.
+   * When absent, `dataDir` must be present and a filesystem persistence is used.
+   */
+  createPersistence?: (sessionRef: SessionRef) => OrchestrationPersistence;
   createStartRunInput?: (
     request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "userId" | "sessionId">,
   ) => StartRunInput;
@@ -67,7 +78,13 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
    */
   private readonly runStartLocks = new Map<string, Promise<string>>();
 
-  constructor(private readonly options: CreateOrchestrationRegistryOptions) {}
+  constructor(private readonly options: CreateOrchestrationRegistryOptions) {
+    if (!options.createPersistence && !options.dataDir) {
+      throw new Error(
+        "[createOrchestrationRegistry] Either `dataDir` or `createPersistence` must be provided.",
+      );
+    }
+  }
 
   async getManager(request: AgentrailOrchestrationRegistryRequest): Promise<OrchestrationManager> {
     const key = this.getKey(request.tenantId, request.sessionId);
@@ -120,11 +137,11 @@ class SessionOrchestrationRegistry implements AgentrailOrchestrationRegistry {
     request: Pick<AgentrailOrchestrationRegistryRequest, "tenantId" | "sessionId" | "sessionRef">,
   ): Promise<OrchestrationManager> {
     try {
+      const persistence = this.options.createPersistence
+        ? this.options.createPersistence(request.sessionRef)
+        : createFilesystemOrchestrationPersistence(this.options.dataDir!, request.sessionRef);
       return await OrchestrationManager.create({
-        persistence: createFilesystemOrchestrationPersistence(
-          this.options.dataDir,
-          request.sessionRef,
-        ),
+        persistence,
         runtime: {
           createAgent: async (input) => {
             const createManagedAgent = this.bindings.get(key);

@@ -16,6 +16,7 @@ export const skillManager = new SkillManager(config.dataDir);
 export const sandboxManager = new SandboxManager(config.dataDir, config.sandbox);
 export const userMemoryConsolidationService = new UserMemoryConsolidationService(
   sessionManager,
+  sessionManager,
   config.dataDir,
   {
     provider: config.provider,
@@ -61,5 +62,12 @@ export const listWorkspaceSnapshot = (sessionId: string) => () =>
   sandboxManager.listWorkspace(sessionId);
 export const compactMessages = (
   messages: Parameters<typeof compactToolResults>[0],
-  ctx?: { sessionDir?: string },
-) => compactToolResults(messages, { sessionDir: ctx?.sessionDir });
+  ctx?: {
+    writeToolResultArtifact?: (toolCallId: string, content: string) => Promise<void>;
+    sessionDir?: string;
+  },
+) =>
+  compactToolResults(messages, {
+    writeToolResultArtifact: ctx?.writeToolResultArtifact,
+    sessionDir: ctx?.sessionDir,
+  });

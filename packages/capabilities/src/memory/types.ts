@@ -19,9 +19,19 @@ export interface DefaultCapabilityContextOptions {
   listKnowledgeMetadatas(): Promise<(KBMetadata | null)[]>;
   listSkills(): Promise<SkillMeta[]>;
   listWorkspaceSnapshot?(): Promise<string | undefined>;
+  /**
+   * Callback to persist compacted tool-result artifacts.
+   * When provided, it is passed to `compactMessages` so the compaction
+   * layer can store artifacts via the active session store rather than
+   * writing directly to the filesystem.
+   */
+  writeToolResultArtifact?: (toolCallId: string, content: string) => Promise<void>;
   compactMessages?(
     messages: Message[],
-    ctx?: { sessionDir?: string },
+    ctx?: {
+      /** Callback to persist a compacted tool-result artifact. */
+      writeToolResultArtifact?: (toolCallId: string, content: string) => Promise<void>;
+    },
   ): Message[] | Promise<Message[]>;
 }
 

@@ -11,7 +11,7 @@ import {
 } from "@/memory/context.js";
 import type { SkillMeta } from "@/skills/types.js";
 import type { CapabilityBuildContext, CapabilityDescriptor } from "@/types.js";
-import type { MemoryIndex, Message } from "@agentrail/core";
+import type { MemoryIndex, Message, SessionRef } from "@agentrail/core";
 
 export type { DefaultCapabilityContextOptions } from "@/memory/types.js";
 
@@ -20,6 +20,7 @@ export interface MemorySessionContext {
   tenantId: string;
   userId: string;
   sessionId: string;
+  sessionRef: SessionRef;
 }
 
 /**
@@ -36,10 +37,48 @@ export interface MemoryContextBuilders {
   listSkills?(ctx: MemorySessionContext): Promise<SkillMeta[]>;
   /** Returns the current workspace snapshot from the sandbox, if available. */
   listWorkspaceSnapshot?(ctx: MemorySessionContext): Promise<string | undefined>;
-  /** Compacts message history to reduce context window usage. */
+  /**
+   * Persists a compacted tool-result artifact to the backing store for the
+   * current session.  Called by `compactMessages` (via `ctx.writeToolResultArtifact`)
+   * when a tool result is too large to keep inline.
+   *
+   * Implement this builder to unlock artifact persistence with any storage
+   * backend.  The implementation should also call
+   * `sandboxManager.refreshMemoMirror(ctx.sessionId, ...)` when a live sandbox
+   * exists so the agent can immediately read the new artifact from inside the
+   * container.
+   *
+   * @example
+   * ```ts
+   * writeToolResultArtifact: async (ctx, toolCallId, content) => {
+   *   const sessionRef = `${ctx.tenantId}:${ctx.sessionId}`;
+   *   await Promise.all([
+   *     store.writeToolResultArtifact?.(sessionRef, toolCallId, content),
+   *     sandboxManager.refreshMemoMirror(
+   *       ctx.sessionId,
+   *       `/workspace/memo/session/tool-results/${toolCallId}.txt`,
+   *       content,
+   *     ),
+   *   ]);
+   * }
+   * ```
+   */
+  writeToolResultArtifact?(
+    ctx: MemorySessionContext,
+    toolCallId: string,
+    content: string,
+  ): Promise<void>;
+  /**
+   * Compacts message history to reduce context window usage.
+   * Receives `ctx.writeToolResultArtifact` when `writeToolResultArtifact` is
+   * configured above — use it instead of the deprecated `sessionDir`.
+   */
   compactMessages?(
     messages: Message[],
-    ctx?: { sessionDir?: string },
+    ctx?: {
+      /** Persists a compacted tool-result artifact. Prefer over `sessionDir`. */
+      writeToolResultArtifact?: (toolCallId: string, content: string) => Promise<void>;
+    },
   ): Message[] | Promise<Message[]>;
   /** When true, skills are delegated to a managed sub-agent. Defaults to false. */
   delegateSkillsToSubAgent?: boolean;
@@ -97,6 +136,7 @@ export function memoryContext(
         tenantId: ctx.tenantId,
         userId: ctx.userId,
         sessionId: ctx.sessionId,
+        sessionRef: ctx.sessionRef,
       };
       const state = getState(ctx);
       return createDefaultCapabilityContextProviders(
@@ -128,6 +168,7 @@ export function memoryContext(
         tenantId: ctx.tenantId,
         userId: ctx.userId,
         sessionId: ctx.sessionId,
+        sessionRef: ctx.sessionRef,
       };
       const state = getState(ctx);
 
@@ -148,6 +189,10 @@ export function memoryContext(
             : () => Promise.resolve([]),
           listWorkspaceSnapshot: builders.listWorkspaceSnapshot
             ? () => builders.listWorkspaceSnapshot!(sessionCtx)
+            : undefined,
+          writeToolResultArtifact: builders.writeToolResultArtifact
+            ? (toolCallId, content) =>
+                builders.writeToolResultArtifact!(sessionCtx, toolCallId, content)
             : undefined,
           compactMessages: builders.compactMessages,
         },

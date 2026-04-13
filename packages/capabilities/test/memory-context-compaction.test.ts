@@ -12,21 +12,27 @@ function userMsg(text: string): Message {
 }
 
 describe("createDefaultCapabilityTransformContext", () => {
-  it("passes sessionDir to compactMessages and awaits async results", async () => {
-    const sessionDir = "/tmp/agentrail-session";
+  it("passes writeToolResultArtifact to compactMessages and awaits async results", async () => {
     const input = [userMsg("hello")];
-    const memoryIndex: MemoryIndex = {
-      sessionDir,
-      userDir: "/tmp/agentrail-user",
-      entries: [],
-    };
+    const memoryIndex: MemoryIndex = { entries: [] };
     const compacted = [userMsg("compacted")];
-    const compactMessages = vi.fn(async (messages: Message[], ctx?: { sessionDir?: string }) => {
-      await Promise.resolve();
-      expect(messages).toEqual(input);
-      expect(ctx).toEqual({ sessionDir });
-      return compacted;
-    });
+
+    const writeToolResultArtifact = vi.fn(async (_id: string, _content: string) => {});
+
+    const compactMessages = vi.fn(
+      async (
+        messages: Message[],
+        ctx?: {
+          writeToolResultArtifact?: (toolCallId: string, content: string) => Promise<void>;
+          sessionDir?: string;
+        },
+      ) => {
+        await Promise.resolve();
+        expect(messages).toEqual(input);
+        expect(ctx).toEqual({ writeToolResultArtifact });
+        return compacted;
+      },
+    );
 
     const transform = createDefaultCapabilityTransformContext({
       tenantId: "tenant-1",
@@ -36,13 +42,14 @@ describe("createDefaultCapabilityTransformContext", () => {
       buildMemoryIndex: async () => memoryIndex,
       listKnowledgeMetadatas: async () => [],
       listSkills: async () => [],
+      writeToolResultArtifact,
       compactMessages,
     });
 
     const result = await transform(input);
 
     expect(compactMessages).toHaveBeenCalledTimes(1);
-    expect(compactMessages).toHaveBeenCalledWith(input, { sessionDir });
+    expect(compactMessages).toHaveBeenCalledWith(input, { writeToolResultArtifact });
     expect(result.at(-1)).toEqual(compacted[0]);
   });
 });

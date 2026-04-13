@@ -55,6 +55,7 @@ export function createSandboxedWrite(
           const hostPath = manager.translateToHostPath(sessionId, file_path);
           await mkdir(dirname(hostPath), { recursive: true });
           await writeFile(hostPath, contents, "utf-8");
+          await manager.writeMemoBack(sessionId, file_path, contents);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

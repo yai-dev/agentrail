@@ -78,6 +78,7 @@ See [Tool Permissions](../guides/tool-permissions.md) for the full DSL reference
 - Do not use `Bash` for file search — use `Grep` instead.
 - Set `timeout: 0` for long-running processes (dev servers, watchers) that should run in the background.
 - Output is truncated at 1 MB.
+- **`/workspace/memo/**`is read-only for Bash.** Shell writes to memo paths (e.g.`echo ... > /workspace/memo/session/NOTES.md`) will fail with a permission error. Use the `Write`or`Edit` tools to persist memo changes — they write back to the backing store regardless of which storage backend is configured.
 
 ## Example
 
@@ -95,7 +96,7 @@ When the sandbox capability is active, a sandboxed `Bash` tool replaces the host
 
 - Commands run inside an isolated Docker container.
 - The working directory must be inside `/workspace` (defaults to `/workspace`).
-- Session memo files are at `/workspace/memo/session/`; user profile at `/workspace/memo/user/USER.md`.
+- Session memo files are at `/workspace/memo/session/`; user profile at `/workspace/memo/user/USER.md`. These paths are **read-only** for Bash — writes must go through the `Write` or `Edit` tools.
 - No `isDangerousCommand` check — the sandbox provides isolation instead.
 - Background mode does not return a `pid` (the process runs inside the container).
 

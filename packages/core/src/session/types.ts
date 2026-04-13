@@ -87,10 +87,18 @@ export interface MemoryIndexEntry {
 
 /** Session and user memory files exposed to hosted profiles and tools. */
 export interface MemoryIndex {
-  /** Absolute path to the session directory */
-  sessionDir: string;
-  /** Absolute path to the user directory (USER.md lives here) */
-  userDir: string;
+  /**
+   * @deprecated No longer part of the public contract.
+   * Paths in `entries` are now always canonical `/workspace/memo/**` paths.
+   * Will be removed in a future release.
+   */
+  sessionDir?: string;
+  /**
+   * @deprecated No longer part of the public contract.
+   * Paths in `entries` are now always canonical `/workspace/memo/**` paths.
+   * Will be removed in a future release.
+   */
+  userDir?: string;
   entries: MemoryIndexEntry[];
 }
 

@@ -50,6 +50,8 @@ export type {
   AgentrailSessionStore,
   ContextProvider,
   ContextProviderContext,
+  MemoDocumentName,
+  MemoDocumentScope,
 } from "@/session/contracts.js";
 export { createSessionRef, resolveSessionRef } from "@/session/session-ref.js";
 export type { SessionRef, SessionRefInfo } from "@/session/session-ref.js";

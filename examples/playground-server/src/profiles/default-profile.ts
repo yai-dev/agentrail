@@ -67,7 +67,18 @@ export const defaultProfile = defineProfile({
         },
         listSkills: () => skillManager.listSkills(),
         listWorkspaceSnapshot: (ctx) => sandboxManager.listWorkspace(ctx.sessionId),
-        compactMessages: (msgs, ctx) => compactToolResults(msgs, { sessionDir: ctx?.sessionDir }),
+        writeToolResultArtifact: async (ctx, toolCallId, content) => {
+          await Promise.all([
+            sessionManager.writeToolResultArtifact?.(ctx.sessionRef, toolCallId, content),
+            sandboxManager.refreshMemoMirror(
+              ctx.sessionId,
+              `/workspace/memo/session/tool-results/${toolCallId}.txt`,
+              content,
+            ),
+          ]);
+        },
+        compactMessages: (msgs, ctx) =>
+          compactToolResults(msgs, { writeToolResultArtifact: ctx?.writeToolResultArtifact }),
         delegateSkillsToSubAgent: config.skillDelegateToSubAgent,
       },
       { cacheTtlMs: 5_000 },

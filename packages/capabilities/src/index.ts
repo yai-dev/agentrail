@@ -119,6 +119,7 @@ export { buildSkillTool } from "@/skills/index.js";
 export {
   OrchestrationManager,
   createFilesystemOrchestrationPersistence,
+  recoverOrchestrationState,
 } from "@/orchestration/index.js";
 export type {
   AgentInputEnvelope,
@@ -129,8 +130,11 @@ export type {
   ManagedAgentInstance,
   OrchestrationAgent,
   OrchestrationEvent,
+  OrchestrationMailboxEvent,
   OrchestrationMailboxState,
   OrchestrationPersistence,
+  OrchestrationSnapshot,
+  RecoveredOrchestrationState,
   StartRunInput,
   SubAgentRuntime,
   SubagentWorkerConfig,

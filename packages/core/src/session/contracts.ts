@@ -9,6 +9,18 @@ import type { Message } from "@/types/message.types.js";
 import type { Usage } from "@/types/usage.types.js";
 
 /**
+ * Scope of a memo document — `"session"` for per-session resources,
+ * `"user"` for cross-session user-level resources.
+ */
+export type MemoDocumentScope = "session" | "user";
+
+/**
+ * Canonical names for the built-in memo documents that map to
+ * `/workspace/memo/{scope}/{name}` inside the agent sandbox.
+ */
+export type MemoDocumentName = "NOTES.md" | "TODO.md" | "USER.md";
+
+/**
  * Minimal storage surface the host runtime needs to load, persist, and compact
  * session history. The default file-backed `SessionManager` satisfies this shape,
  * and any custom implementation must implement every non-optional method.
@@ -19,6 +31,8 @@ import type { Usage } from "@/types/usage.types.js";
  *   append new messages after each agent turn.
  * - **Usage tracking** — record per-turn token usage for billing / analytics.
  * - **Compaction** — optionally summarise old messages when the context window fills up.
+ * - **Memo documents** — optional hooks for `/workspace/memo/**` resources (NOTES, TODO, USER).
+ * - **Tool-result artifacts** — optional persistence for compacted tool-result text.
  * - **Extensions** — optional hooks for TODO storage and skill sub-agent logging.
  *
  * @see {@link https://agentrail.run/reference/session-store}
@@ -115,6 +129,68 @@ export interface AgentrailSessionStore {
       startedAt: number;
       finishedAt: number;
     },
+  ): Promise<void>;
+
+  // ─── Memo Documents (/workspace/memo/**) ──────────────────────────────────
+
+  /**
+   * Read the full text of a memo document.
+   *
+   * - `scope = "session"`, `ownerId = sessionId` → `/workspace/memo/session/{name}`
+   * - `scope = "user"`,    `ownerId = userId`    → `/workspace/memo/user/{name}`
+   *
+   * Optional — when absent the runtime falls back to reading the corresponding
+   * file on the host filesystem.
+   */
+  readMemoryDocument?(
+    tenantId: string,
+    ownerId: string,
+    scope: MemoDocumentScope,
+    name: MemoDocumentName,
+  ): Promise<string | null>;
+
+  /**
+   * Overwrite the full text of a memo document.
+   * Optional — when absent the runtime falls back to writing the host file.
+   */
+  writeMemoryDocument?(
+    tenantId: string,
+    ownerId: string,
+    scope: MemoDocumentScope,
+    name: MemoDocumentName,
+    content: string,
+  ): Promise<void>;
+
+  /**
+   * Append text to a memo document (e.g. appending a compaction summary to NOTES.md).
+   * Optional — when absent the runtime falls back to appending to the host file.
+   */
+  appendMemoryDocument?(
+    tenantId: string,
+    ownerId: string,
+    scope: MemoDocumentScope,
+    name: MemoDocumentName,
+    content: string,
+  ): Promise<void>;
+
+  // ─── Tool-Result Artifacts ─────────────────────────────────────────────────
+
+  /**
+   * Read a compacted tool-result artifact by its tool-call ID.
+   * Artifacts are exposed to the agent at
+   * `/workspace/memo/session/tool-results/{toolCallId}.txt`.
+   * Optional — when absent the runtime falls back to reading the host file.
+   */
+  readToolResultArtifact?(sessionRef: SessionRef, toolCallId: string): Promise<string | null>;
+
+  /**
+   * Persist a compacted tool-result artifact.
+   * Optional — when absent the runtime falls back to writing the host file.
+   */
+  writeToolResultArtifact?(
+    sessionRef: SessionRef,
+    toolCallId: string,
+    content: string,
   ): Promise<void>;
 }
 

@@ -18,6 +18,7 @@ import type { ContextProvider, TransformContextFn, UserMessage } from "@agentrai
 export interface DefaultCapabilityContextState {
   cachedContextMsgs: UserMessage[] | null;
   cacheExpiry: number;
+  /** @deprecated No longer used; `writeToolResultArtifact` is passed through options. */
   capturedSessionDir?: string;
 }
 
@@ -25,7 +26,6 @@ export function createDefaultCapabilityContextState(): DefaultCapabilityContextS
   return {
     cachedContextMsgs: null,
     cacheExpiry: 0,
-    capturedSessionDir: undefined,
   };
 }
 
@@ -89,7 +89,6 @@ async function ensureCachedContextMessages(
     }
   }
 
-  state.capturedSessionDir = rawIndex.sessionDir;
   state.cachedContextMsgs = built;
   state.cacheExpiry = now + cacheTtlMs;
 
@@ -107,7 +106,11 @@ export function createDefaultCapabilityTransformContext(
 
   return async (messages) => {
     await ensureCachedContextMessages(options, state);
-    return Promise.resolve(compactMessages(messages, { sessionDir: state.capturedSessionDir }));
+    return Promise.resolve(
+      compactMessages(messages, {
+        writeToolResultArtifact: options.writeToolResultArtifact,
+      }),
+    );
   };
 }
 

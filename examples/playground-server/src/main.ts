@@ -19,7 +19,7 @@ import { sessions } from "@/routes/sessions.js";
 import { stream } from "@/routes/stream.js";
 import { trace } from "@/routes/trace.js";
 import { runPluginLifecycle, type PluginErrorHandler } from "@agentrail/app";
-import { createInspectorRoute } from "@agentrail/app/advanced";
+import { createFilesystemInspectorDataSource, createInspectorRoute } from "@agentrail/app/advanced";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
@@ -49,7 +49,10 @@ app.route("/api/sessions", deepResearch);
 app.route("/api/sessions", trace);
 app.route("/api/knowledge", knowledge);
 
-app.route("/__inspector", createInspectorRoute(config.dataDir));
+app.route(
+  "/__inspector",
+  createInspectorRoute(createFilesystemInspectorDataSource(config.dataDir)),
+);
 
 const onPluginError: PluginErrorHandler = ({ plugin, hook, error }) => {
   console.warn(`[plugin] "${plugin}" threw in ${hook}:`, error);
