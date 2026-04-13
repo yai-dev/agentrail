@@ -76,13 +76,13 @@ That path is especially useful when you want to compose:
 
 The current implementation lives in:
 
-- [packages/capabilities/src/memory/context.ts](../../packages/capabilities/src/memory/context.ts)
+- [packages/capabilities/src/memory/context.ts](https://github.com/yai-dev/agentrail/blob/main/packages/capabilities/src/memory/context.ts)
 
 ## Repository Example
 
 The playground example builds request context here:
 
-- [examples/playground-server/src/context/index.ts](../../examples/playground-server/src/context/index.ts)
+- [examples/playground-server/src/context/index.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/context/index.ts)
 
 That file is a good example of how to:
 

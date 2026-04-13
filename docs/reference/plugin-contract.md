@@ -34,7 +34,7 @@ It is not the right place for core agent reasoning behavior. That belongs in pro
 
 The current plugin contract is defined by `AgentrailPlugin` in:
 
-- [packages/app/src/host/types.ts](../../packages/app/src/host/types.ts)
+- [packages/app/src/host/types.ts](https://github.com/yai-dev/agentrail/blob/main/packages/app/src/host/types.ts)
 
 ### `AgentrailPlugin` interface
 
@@ -455,7 +455,7 @@ When `onPluginError` is omitted, the default behavior is to log to `console.warn
 
 The current plugin runtime helpers live in:
 
-- [packages/app/src/host/plugins.ts](../../packages/app/src/host/plugins.ts)
+- [packages/app/src/host/plugins.ts](https://github.com/yai-dev/agentrail/blob/main/packages/app/src/host/plugins.ts)
 
 Important characteristics of the current model:
 
@@ -469,7 +469,7 @@ Important characteristics of the current model:
 
 The playground example assembles plugins here:
 
-- [examples/playground-server/src/plugins/index.ts](../../examples/playground-server/src/plugins/index.ts)
+- [examples/playground-server/src/plugins/index.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/plugins/index.ts)
 
 Current example plugins include:
 

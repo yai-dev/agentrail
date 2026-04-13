@@ -191,13 +191,13 @@ Both routes share the same surrounding infrastructure. The stream route adds:
 
 ## Source Files To Read
 
-| File                                                                                            | What it shows                            |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| [routes/stream.ts](../../examples/playground-server/src/routes/stream.ts)                       | Full `createStreamRoute` options         |
-| [profiles/default-profile.ts](../../examples/playground-server/src/profiles/default-profile.ts) | `defineProfile` + capability descriptors |
-| [prompts/index.ts](../../examples/playground-server/src/prompts/index.ts)                       | Fragment + bundle composition            |
-| [plugins/index.ts](../../examples/playground-server/src/plugins/index.ts)                       | Plugin registration                      |
-| [context/index.ts](../../examples/playground-server/src/context/index.ts)                       | Singleton managers                       |
+| File                                                                                                                                     | What it shows                            |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| [routes/stream.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/routes/stream.ts)                       | Full `createStreamRoute` options         |
+| [profiles/default-profile.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/profiles/default-profile.ts) | `defineProfile` + capability descriptors |
+| [prompts/index.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/prompts/index.ts)                       | Fragment + bundle composition            |
+| [plugins/index.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/plugins/index.ts)                       | Plugin registration                      |
+| [context/index.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/context/index.ts)                       | Singleton managers                       |
 
 ## What Is Framework-Level vs Example-Level
 

@@ -71,7 +71,7 @@ export const analyticsProfile = defineProfile({
 
 The low-level profile contract is defined by `AgentrailProfile` in:
 
-- [packages/app/src/host/types.ts](../../packages/app/src/host/types.ts)
+- [packages/app/src/host/types.ts](https://github.com/yai-dev/agentrail/blob/main/packages/app/src/host/types.ts)
 
 ```ts
 interface AgentrailProfileContext {
@@ -179,7 +179,7 @@ A well-shaped profile usually does **not** own:
 
 The current recommended example is:
 
-- [examples/playground-server/src/profiles/default-profile.ts](../../examples/playground-server/src/profiles/default-profile.ts)
+- [examples/playground-server/src/profiles/default-profile.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/profiles/default-profile.ts)
 
 That file shows:
 

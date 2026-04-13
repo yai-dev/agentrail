@@ -254,8 +254,8 @@ async function chatNonStream(message: string): Promise<string> {
 Read in this order to understand the full client-server loop:
 
 1. [Examples: Playground Server](playground-server.md) — how the server produces events
-2. [examples/playground-ui/src/api.ts](../../examples/playground-ui/src/api.ts) — how the UI calls the API
-3. [examples/playground-ui/src/App.tsx](../../examples/playground-ui/src/App.tsx) — top-level state and routing
+2. [examples/playground-ui/src/api.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-ui/src/api.ts) — how the UI calls the API
+3. [examples/playground-ui/src/App.tsx](https://github.com/yai-dev/agentrail/blob/main/examples/playground-ui/src/App.tsx) — top-level state and routing
 4. [Reference: Events](../reference/events.md) — full event type reference
 
 ## Related Docs

@@ -32,16 +32,16 @@ That separation is one of the main design goals of Agentrail.
 Start with these files:
 
 - example route wiring:
-  - [examples/deep-research/src/routes/run.ts](../../examples/deep-research/src/routes/run.ts)
-  - [examples/deep-research/src/routes/deep-research.ts](../../examples/deep-research/src/routes/deep-research.ts)
+  - [examples/deep-research/src/routes/run.ts](https://github.com/yai-dev/agentrail/blob/main/examples/deep-research/src/routes/run.ts)
+  - [examples/deep-research/src/routes/deep-research.ts](https://github.com/yai-dev/agentrail/blob/main/examples/deep-research/src/routes/deep-research.ts)
 - example runtime config:
-  - [examples/deep-research/src/config.ts](../../examples/deep-research/src/config.ts)
+  - [examples/deep-research/src/config.ts](https://github.com/yai-dev/agentrail/blob/main/examples/deep-research/src/config.ts)
 - workflow package entrypoint:
-  - [packages/deep-research/src/index.ts](../../packages/deep-research/src/index.ts)
+  - [packages/deep-research/src/index.ts](https://github.com/yai-dev/agentrail/blob/main/packages/deep-research/src/index.ts)
 - workflow coordinator:
-  - [packages/deep-research/src/coordinator.ts](../../packages/deep-research/src/coordinator.ts)
+  - [packages/deep-research/src/coordinator.ts](https://github.com/yai-dev/agentrail/blob/main/packages/deep-research/src/coordinator.ts)
 - workflow prompt assembly:
-  - [packages/deep-research/src/prompts.ts](../../packages/deep-research/src/prompts.ts)
+  - [packages/deep-research/src/prompts.ts](https://github.com/yai-dev/agentrail/blob/main/packages/deep-research/src/prompts.ts)
 
 ## Execution Shape
 
