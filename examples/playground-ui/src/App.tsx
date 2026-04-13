@@ -9,7 +9,6 @@ import {
   fetchCompactedMessages,
   fetchSessionMessages,
   fetchSlashCommands,
-  respondToPermission,
   runCommand,
   streamChat,
   type CompactionMarker,
@@ -29,6 +28,7 @@ import { DeepResearchRunCard } from "./components/DeepResearchRunCard";
 import { InputBar, type PendingAttachment } from "./components/InputBar";
 import { MessageBubble } from "./components/MessageBubble";
 import { OnboardingTour, shouldShowTour } from "./components/OnboardingTour";
+import { PermissionApprovalPrompt } from "./components/PermissionApprovalPrompt";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { SettingsModal } from "./components/SettingsModal";
 import { TokenGate } from "./components/TokenGate";
@@ -36,7 +36,6 @@ import {
   WaitingQuestionPrompt,
   type WaitingQuestionState,
 } from "./components/WaitingQuestionPrompt";
-import { PermissionApprovalPrompt } from "./components/PermissionApprovalPrompt";
 import { useAuth } from "./hooks/useAuth";
 import { useDeepResearchState } from "./hooks/useDeepResearchState";
 import { useIdentity } from "./hooks/useIdentity";
@@ -578,7 +577,11 @@ export default function App() {
               toolName: string;
               reason?: string;
             };
-            setPendingPermission({ toolCallId: pr.toolCallId, toolName: pr.toolName, reason: pr.reason });
+            setPendingPermission({
+              toolCallId: pr.toolCallId,
+              toolName: pr.toolName,
+              reason: pr.reason,
+            });
           } else if (event.type === "permission_resolved") {
             setPendingPermission(null);
           } else if (event.type === "turn.complete") {
@@ -999,4 +1002,3 @@ export default function App() {
     </div>
   );
 }
-

@@ -14,7 +14,11 @@ import type {
 } from "@/types/agent.types.js";
 import type { AssistantMessage, Message, ToolResultMessage } from "@/types/message.types.js";
 import type { RuntimeEvent, RuntimeTracingFields } from "@/types/result.types.js";
-import type { PermissionApprovalHandler, RuntimeTool, ToolInterceptor } from "@/types/tool.types.js";
+import type {
+  PermissionApprovalHandler,
+  RuntimeTool,
+  ToolInterceptor,
+} from "@/types/tool.types.js";
 import type { Usage } from "@/types/usage.types.js";
 import { randomUUID } from "node:crypto";
 

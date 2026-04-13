@@ -109,7 +109,9 @@ describe("defineProfile – permissionPolicy assembly hop", () => {
   });
 
   it("passes undefined permissionPolicy when none is set on profileCtx", async () => {
-    const capturedCtx: { permissionPolicy?: ToolPermissionPolicy } = { permissionPolicy: "sentinel" as never };
+    const capturedCtx: { permissionPolicy?: ToolPermissionPolicy } = {
+      permissionPolicy: "sentinel" as never,
+    };
     const cap = {
       type: "spy-cap-2",
       buildTools: vi.fn(async (ctx) => {

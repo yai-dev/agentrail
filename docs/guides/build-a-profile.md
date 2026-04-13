@@ -77,7 +77,7 @@ const app = createAgentApp({
 
 The playground example follows this pattern in:
 
-- [examples/playground-server/src/profiles/default-profile.ts](../../examples/playground-server/src/profiles/default-profile.ts)
+- [examples/playground-server/src/profiles/default-profile.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/profiles/default-profile.ts)
 
 That profile:
 

@@ -46,7 +46,7 @@ import { createChatRoute, createStreamRoute } from "@agentrail/app/advanced";
 
 Defined in:
 
-- [packages/app/src/routes/chat-route.ts](../../packages/app/src/routes/chat-route.ts)
+- [packages/app/src/routes/chat-route.ts](https://github.com/yai-dev/agentrail/blob/main/packages/app/src/routes/chat-route.ts)
 
 This is the non-streaming host entry point.
 
@@ -152,7 +152,7 @@ app.route(
 
 Defined in:
 
-- [packages/app/src/routes/stream-route.ts](../../packages/app/src/routes/stream-route.ts)
+- [packages/app/src/routes/stream-route.ts](https://github.com/yai-dev/agentrail/blob/main/packages/app/src/routes/stream-route.ts)
 
 This is the streaming host entry point.
 
@@ -288,7 +288,7 @@ Composes multiple rewrite transforms left-to-right before provider injection. Us
 
 Defined in:
 
-- [packages/app/src/host/context-pipeline.ts](../../packages/app/src/host/context-pipeline.ts)
+- [packages/app/src/host/context-pipeline.ts](https://github.com/yai-dev/agentrail/blob/main/packages/app/src/host/context-pipeline.ts)
 
 Converts an ordered list of `ContextProvider`s into the runtime `transformContext` function shape. It can also accept a base rewrite transform; in that case, providers run against the rewritten history and their messages are prepended afterward.
 
@@ -296,7 +296,7 @@ Converts an ordered list of `ContextProvider`s into the runtime `transformContex
 
 Also defined in:
 
-- [packages/app/src/host/context-pipeline.ts](../../packages/app/src/host/context-pipeline.ts)
+- [packages/app/src/host/context-pipeline.ts](https://github.com/yai-dev/agentrail/blob/main/packages/app/src/host/context-pipeline.ts)
 
 Adapts legacy or runtime-style transform logic back into provider form.
 
@@ -308,7 +308,7 @@ This helper is now legacy-only. It should be used only for prepend-only adapters
 
 Defined in:
 
-- [packages/app/src/host/orchestration-registry.ts](../../packages/app/src/host/orchestration-registry.ts)
+- [packages/app/src/host/orchestration-registry.ts](https://github.com/yai-dev/agentrail/blob/main/packages/app/src/host/orchestration-registry.ts)
 
 Manages per-session orchestration managers and lazy run initialization.
 

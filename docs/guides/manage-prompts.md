@@ -93,7 +93,7 @@ const systemPromptBuilder = createPromptBuilder(
 
 This is the same style used by the playground example in:
 
-- [examples/playground-server/src/prompts/index.ts](../../examples/playground-server/src/prompts/index.ts)
+- [examples/playground-server/src/prompts/index.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/prompts/index.ts)
 
 ## Layering Strategy
 
@@ -148,9 +148,9 @@ For example:
 Current examples in this repository:
 
 - playground hosted system prompt:
-  - [examples/playground-server/src/prompts/index.ts](../../examples/playground-server/src/prompts/index.ts)
+  - [examples/playground-server/src/prompts/index.ts](https://github.com/yai-dev/agentrail/blob/main/examples/playground-server/src/prompts/index.ts)
 - deep-research workflow prompts:
-  - [packages/deep-research/src/prompts.ts](../../packages/deep-research/src/prompts.ts)
+  - [packages/deep-research/src/prompts.ts](https://github.com/yai-dev/agentrail/blob/main/packages/deep-research/src/prompts.ts)
 
 These show two useful patterns:
 

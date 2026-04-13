@@ -112,10 +112,10 @@ export type { TelemetrySink, TelemetrySinkEvent } from "@/telemetry/sink.js";
 export {
   DEFAULT_CONFIG_RELATIVE_PATH,
   DEFAULT_DATA_DIR,
+  configPermissionsToPolicy,
   getDeepResearchConfig,
   getPlaygroundServerConfig,
   getPlaygroundUiConfig,
-  configPermissionsToPolicy,
   loadAgentrailConfig,
   parseAgentrailConfig,
   resolveAgentrailConfigPath,
