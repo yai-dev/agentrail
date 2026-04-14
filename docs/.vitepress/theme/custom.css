@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Press+Start+2P&display=swap");
 
 /* ─── BRAND & FONTS ─── */
 :root {
@@ -9,12 +9,25 @@
 
   --vp-font-family-base: "DM Sans", system-ui, sans-serif;
   --vp-font-family-mono: "DM Mono", "Courier New", monospace;
+  --at-pixel-font: "Press Start 2P", monospace;
+  --at-font-family-display: "DM Serif Display", Georgia, serif;
+  --at-font-family-label: var(--at-pixel-font);
+  --at-font-family-ui-strong: var(--vp-font-family-mono);
 
   /* accent shortcuts used by HomeLayout */
   --at-accent: #c4ff2e;
   --at-accent-dim: #8ab520;
   --at-accent-faint: rgba(196, 255, 46, 0.08);
   --at-accent-faint-2: rgba(196, 255, 46, 0.04);
+}
+
+html[lang="zh-CN"] {
+  --vp-font-family-base:
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
+    system-ui, sans-serif;
+  --at-font-family-display: var(--vp-font-family-base);
+  --at-font-family-label: var(--vp-font-family-base);
+  --at-font-family-ui-strong: var(--vp-font-family-base);
 }
 
 /* ─── DARK PALETTE ─── */
@@ -60,7 +73,7 @@
 }
 
 .VPNavBarTitle .title {
-  font-family: "DM Serif Display", Georgia, serif !important;
+  font-family: var(--at-font-family-display) !important;
   letter-spacing: 0.05em;
   color: var(--vp-c-text-1) !important;
 }
@@ -85,7 +98,7 @@
 .vp-doc h2,
 .vp-doc h3,
 .vp-doc h4 {
-  font-family: "DM Serif Display", Georgia, serif;
+  font-family: var(--at-font-family-display);
   letter-spacing: -0.01em;
 }
 
@@ -116,7 +129,7 @@
   background: var(--at-accent) !important;
   border-color: var(--at-accent) !important;
   color: #060606 !important;
-  font-family: "DM Mono", monospace !important;
+  font-family: var(--at-font-family-ui-strong) !important;
   font-size: 0.82rem !important;
   letter-spacing: 0.04em !important;
   border-radius: 2px !important;
@@ -132,10 +145,24 @@
   background: transparent !important;
   border-color: #262626 !important;
   color: #b8b6b0 !important;
-  font-family: "DM Mono", monospace !important;
+  font-family: var(--at-font-family-ui-strong) !important;
   font-size: 0.82rem !important;
   letter-spacing: 0.04em !important;
   border-radius: 2px !important;
+}
+
+html[lang="zh-CN"] .VPNavBarTitle .title,
+html[lang="zh-CN"] .vp-doc h1,
+html[lang="zh-CN"] .vp-doc h2,
+html[lang="zh-CN"] .vp-doc h3,
+html[lang="zh-CN"] .vp-doc h4 {
+  font-style: normal;
+  letter-spacing: -0.02em;
+}
+
+html[lang="zh-CN"] .VPButton.brand,
+html[lang="zh-CN"] .VPButton.alt {
+  letter-spacing: 0.01em !important;
 }
 
 .VPButton.alt:hover {

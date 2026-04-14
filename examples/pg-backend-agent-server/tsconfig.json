@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": {
+      "@agentrail/core": ["../../packages/core/src/index.ts"],
+      "@agentrail/core/providers": ["../../packages/core/src/llm/providers/index.ts"],
+      "@agentrail/app": ["../../packages/app/src/index.ts"],
+      "@agentrail/storage-postgres": ["../../packages/storage-postgres/src/index.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/core" },
+    { "path": "../../packages/app" },
+    { "path": "../../packages/storage-postgres" }
+  ]
+}

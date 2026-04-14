@@ -1,0 +1,26 @@
+{
+  "name": "@agentrail/with-custom-skills-example",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Agentrail server example demonstrating custom skills via SkillManager.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "node --import=tsx/esm --watch src/main.ts",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -b --force --pretty false"
+  },
+  "dependencies": {
+    "@agentrail/app": "workspace:*",
+    "@agentrail/capabilities": "workspace:*",
+    "@agentrail/core": "workspace:*",
+    "@hono/node-server": "^1.19.13",
+    "hono": "^4.12.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.19.3"
+  },
+  "license": "Apache-2.0"
+}
