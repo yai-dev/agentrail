@@ -1,5 +1,12 @@
 # @agentrail/cli
 
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @agentrail/app@0.7.1
+
 ## 0.2.6
 
 ### Patch Changes
