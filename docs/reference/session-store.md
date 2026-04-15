@@ -20,7 +20,7 @@ Read this page when:
 - _(optional)_ read/write memo documents (`NOTES.md`, `TODO.md`, `USER.md`)
 - _(optional)_ read/write tool result artifacts
 
-The default implementation is the filesystem-backed `SessionManager` from `@agentrail/app`. A PostgreSQL implementation is available in `@agentrail/storage-postgres`.
+The default implementation is the filesystem-backed `SessionManager` from `@agentrail/app`.
 
 ## Interface
 
@@ -167,15 +167,7 @@ writeToolResultArtifact?(
 
 Writes a compacted tool result artifact. Called by `compactToolResults` when tool outputs are too large to keep inline.
 
-### `listToolResultArtifactIds` _(optional)_
-
-```ts
-listToolResultArtifactIds?(sessionRef: SessionRef): Promise<string[]>
-```
-
-Returns all tool-call IDs whose artifacts are stored for this session. Used by `SandboxManager` at sandbox creation time to pre-populate the `/workspace/memo/session/tool-results/` directory so the agent can read compacted artifacts from inside the container.
-
-When not implemented, the tool-results directory starts empty inside the sandbox. Already-stored artifacts will not be accessible unless the session happens to use the filesystem backend (where they live at the expected path automatically).
+> **Note:** `listToolResultArtifactIds` is **not** part of `AgentrailSessionStore`. It belongs to the `SandboxMemoProvider` interface (`@agentrail/capabilities`). Implement it on your store class when also passing that instance as `memoProvider` to `SandboxManager`. See [Build a Storage Backend](../guides/build-a-storage-backend.md#6-sandboxmemoprovider-sandboxmanager-option) for details.
 
 ---
 
@@ -289,23 +281,6 @@ const app = createAgentApp({
 });
 ```
 
-### Production database backend
+### Custom backend
 
-For a production database-backed implementation, replace the `Map` with queries to your database in `loadMessages`, `appendMessages`, and `compactIfNeeded`. The interface is intentionally small so each method maps cleanly to one or two queries.
-
-A full PostgreSQL implementation is available out of the box:
-
-```ts
-import { PostgresSessionStore, createSqlClient } from "@agentrail/storage-postgres";
-
-const sql = createSqlClient({ connectionString: process.env.DATABASE_URL! });
-
-const app = createAgentApp({
-  sessionStore: new PostgresSessionStore(sql),
-  traceStoreFactory: (sessionRef) => new PostgresSessionTraceStore(sql, sessionRef),
-  inspector: new PostgresInspectorDataSource(sql),
-  profiles: [defaultProfile],
-});
-```
-
-`PostgresSessionStore` implements all required methods plus the optional memo document and tool result artifact methods, so all host features work without additional configuration.
+For a custom backend, replace the `Map` with queries to your data store in `loadMessages`, `appendMessages`, and `compactIfNeeded`. The interface is intentionally small so each method maps cleanly to one or two queries. See [Build a Storage Backend](../guides/build-a-storage-backend.md) for a complete guide covering all six storage contracts.

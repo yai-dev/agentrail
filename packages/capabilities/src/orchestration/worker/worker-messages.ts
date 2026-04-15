@@ -16,9 +16,7 @@ export interface WorkerConfigMessage {
  * correct `OrchestrationPersistence` without coupling to the parent's
  * runtime context.
  */
-export type WorkerStorageConfig =
-  | { type: "filesystem"; dataDir: string }
-  | { type: "postgres"; connectionString: string; schema?: string };
+export type WorkerStorageConfig = { type: "filesystem"; dataDir: string };
 
 /** Parent-to-worker initialization payload sent once after fork. */
 export interface WorkerInitMessage {

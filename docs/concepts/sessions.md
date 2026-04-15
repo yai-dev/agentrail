@@ -43,7 +43,7 @@ The required contract includes:
 | `recordTurn`             | After agent completes — persists token usage                                |
 | `compactIfNeeded`        | During each request — summarizes old history if token threshold is exceeded |
 
-Additional optional methods (`readMemoryDocument`, `writeMemoryDocument`, `readToolResultArtifact`, `writeToolResultArtifact`, `listToolResultArtifactIds`) unlock memo tools and full `/workspace/memo/**` sandbox access. See [Session Store Reference](../reference/session-store.md) for the complete interface.
+Additional optional methods (`readMemoryDocument`, `writeMemoryDocument`, `readToolResultArtifact`, `writeToolResultArtifact`) unlock memo tools and tool-result compaction. When also passing your store as `memoProvider` to `SandboxManager`, implement `listToolResultArtifactIds` as part of the `SandboxMemoProvider` contract to enable full `/workspace/memo/**` sandbox access. See [Session Store Reference](../reference/session-store.md) for the complete interface.
 
 ## Default Implementation: `SessionManager`
 
@@ -55,7 +55,7 @@ import { SessionManager } from "@agentrail/app";
 const sessionManager = new SessionManager("/tmp/agentrail-sessions");
 ```
 
-The path is the root directory under which all tenant/session data is stored. In production, use a persistent volume or replace `SessionManager` with a database-backed implementation.
+The path is the root directory under which all tenant/session data is stored. In production, point `dataDir` at a persistent volume so sessions survive container restarts. For multi-instance deployments, mount a shared filesystem (NFS, EFS, etc.) at the same path on all instances.
 
 ## Turn Persistence
 
@@ -85,14 +85,9 @@ For long-running single requests, Agentrail can also apply in-loop reactive comp
 
 ## Implementing a Custom Store
 
-Any object that satisfies the `AgentrailSessionStore` interface can be used as a session store. Common reasons to build a custom one:
+For most deployments, `SessionManager` with a persistent or shared volume is the recommended approach. For advanced use cases where the `AgentrailSessionStore` interface needs to be implemented from scratch (for example, integrating with an existing message persistence layer or adding custom access controls), any object satisfying the interface can be passed via `sessionStore`.
 
-- storing sessions in a database instead of the filesystem
-- adding multi-tenant access controls
-- integrating with an existing message persistence layer
-- adding search or audit capabilities over session history
-
-See the [Session Store Reference](../reference/session-store.md) for the full interface.
+See the [Session Store Reference](../reference/session-store.md) for the full interface and [Build a Storage Backend](../guides/build-a-storage-backend.md) for a complete implementation guide.
 
 ## Related Concepts
 

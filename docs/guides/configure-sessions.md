@@ -166,6 +166,7 @@ Stores that also implement the optional memo and tool-result methods unlock agen
 
 ```ts
 // In DatabaseSessionStore (or a subclass):
+// These are optional methods of AgentrailSessionStore:
 
 async readMemoryDocument(tenantId, ownerId, scope, name) {
   return db.memoDocuments.findOne({ tenantId, ownerId, scope, name }) ?? null;
@@ -188,6 +189,8 @@ async writeToolResultArtifact(sessionRef, toolCallId, content) {
   await db.toolResultArtifacts.upsert({ sessionRef, toolCallId, content });
 }
 
+// listToolResultArtifactIds belongs to SandboxMemoProvider, not AgentrailSessionStore.
+// Implement it here if passing this store as memoProvider to SandboxManager:
 async listToolResultArtifactIds(sessionRef) {
   return db.toolResultArtifacts.findIds({ sessionRef });
 }
@@ -218,25 +221,13 @@ When `memoProvider` is set, the `SandboxManager`:
 2. Bind-mounts that directory to `/workspace/memo/` in the container as **read-only** — Bash cannot bypass the structured Write/Edit tools to write memo files.
 3. Propagates agent `Write` / `Edit` writes to memo paths back to the store via `writeMemoryDocument` / `writeToolResultArtifact`.
 
-A full PostgreSQL implementation is available out of the box via `@agentrail/storage-postgres`. See [Session Store Reference](../reference/session-store.md) for the complete interface.
+See [Session Store Reference](../reference/session-store.md) for the complete `AgentrailSessionStore` interface, and [Build a Storage Backend](../guides/build-a-storage-backend.md) for a guide covering all six storage contracts.
 
 ## Horizontal Scaling Considerations
 
-`SessionManager` writes to the local filesystem, which means sessions are tied to one server instance. For horizontal scaling across multiple instances, you need either:
+`SessionManager` writes to the local filesystem, which means sessions are tied to one server instance. For horizontal scaling across multiple instances, mount a **shared filesystem** (NFS, EFS, etc.) at the same `dataDir` path on all instances. This is the recommended approach and requires no code changes.
 
-- a **shared filesystem** (NFS, EFS, etc.) mounted at the same path on all instances
-- a **custom `AgentrailSessionStore`** backed by a database (PostgreSQL, Redis, etc.)
-
-The session store interface is designed to make this swap straightforward — implement `AgentrailSessionStore` and pass it to `createAgentApp({ sessionStore })`:
-
-```ts
-import { createAgentApp } from "@agentrail/app";
-
-const app = createAgentApp({
-  sessionStore: new DatabaseSessionStore(),
-  profiles: [defaultProfile],
-});
-```
+For advanced cases where a shared filesystem is not available, you can implement a custom `AgentrailSessionStore` and pass it via `sessionStore`. See [Build a Storage Backend](../guides/build-a-storage-backend.md) for the full implementation guide.
 
 ## Related Concepts
 

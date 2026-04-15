@@ -1,10 +1,8 @@
 # Build a Storage Backend
 
-This guide explains every interface a custom storage backend must implement to fully replace the default filesystem layer in an Agentrail host.
+This is an **advanced guide**. For most deployments, `SessionManager` with a persistent volume or shared filesystem (NFS, EFS, etc.) is the recommended approach and requires no custom implementation.
 
-## When to read this
-
-Read this guide when you need to run Agentrail with a storage backend other than the local filesystem — for example PostgreSQL, MySQL, SQLite, Redis, or a managed object store. The built-in `@agentrail/storage-postgres` package implements all of the contracts below and serves as the reference implementation.
+Read this guide only when you have a specific requirement that cannot be met by the default filesystem layer — for example, integrating with an existing persistence layer, adding custom access controls, or building a deeply embedded deployment where a shared filesystem is not available.
 
 ## Prerequisites
 
@@ -121,12 +119,9 @@ async writeToolResultArtifact(sessionRef, toolCallId, content) {
   await db.toolResultArtifacts.upsert({ sessionRef, toolCallId, content });
 }
 
-async listToolResultArtifactIds(sessionRef) {
-  return db.toolResultArtifacts.findIds({ sessionRef });
-}
 ```
 
-`listToolResultArtifactIds` is used by `SandboxManager` at sandbox-creation time to pre-populate `/workspace/memo/session/tool-results/` inside the container. Without it, that directory starts empty even if artifacts exist in the store.
+> **Note:** `listToolResultArtifactIds` is **not** part of `AgentrailSessionStore`. It belongs to the `SandboxMemoProvider` interface (see [section 6](#6-sandboxmemoprovider-sandboxmanager-option) below). Implement it when also passing your store instance as `memoProvider` to `SandboxManager`.
 
 ---
 
@@ -447,39 +442,6 @@ consolidationService.start();
 The framework does not enforce transactions across contracts. If your backend requires consistency guarantees (e.g. atomically updating messages and usage), wrap them in a database transaction inside `appendMessages` + `recordTurn`. The call order is always `appendMessages` then `recordTurn` within a single turn.
 
 Trace and orchestration persistence calls are fire-and-forget from the framework's perspective — write failures are logged but never propagated to the agent.
-
----
-
-## 10. Reference implementation
-
-`@agentrail/storage-postgres` implements all seven contracts for PostgreSQL and can be used directly or studied as a reference:
-
-```ts
-import {
-  PostgresSessionStore,
-  PostgresSessionTraceStore,
-  PostgresOrchestrationPersistence,
-  PostgresInspectorDataSource,
-  createSqlClient,
-} from "@agentrail/storage-postgres";
-
-const sql = createSqlClient({ connectionString: process.env.DATABASE_URL! });
-
-const store = new PostgresSessionStore(sql);
-const sandboxManager = new SandboxManager(dataDir, { memoProvider: store });
-
-const app = createAgentApp({
-  sessionStore: store,
-  sandboxManager,
-  traceStoreFactory: (sessionRef) => new PostgresSessionTraceStore(sql, sessionRef),
-  createOrchestrationPersistence: (sessionRef) =>
-    new PostgresOrchestrationPersistence(sql, sessionRef),
-  inspector: new PostgresInspectorDataSource(sql),
-  profiles: [defaultProfile],
-});
-```
-
-`PostgresSessionStore` implements `AgentrailSessionStore`, `UserSessionLister`, and `SandboxMemoProvider` in a single class, so passing the same instance to multiple slots is correct and intended.
 
 ---
 

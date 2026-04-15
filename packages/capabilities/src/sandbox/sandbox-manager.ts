@@ -36,8 +36,8 @@ const MAX_OUTPUT_BYTES = 1024 * 1024; // 1 MB
  *   memo paths are propagated back to the underlying store so the backing
  *   store stays consistent with what the agent sees in the sandbox.
  *
- * Both `SessionManager` and `PostgresSessionStore` implement all methods of
- * this interface and can be passed directly.
+ * `SessionManager` from `@agentrail/app` implements all methods of this
+ * interface and can be passed directly.
  */
 export interface SandboxMemoProvider {
   // ── Read ──────────────────────────────────────────────────────────────────
@@ -154,8 +154,8 @@ export interface SandboxManagerOptions {
    * while the sandbox is running are not automatically reflected (the container
    * must be restarted to pick up changes).
    *
-   * Pass your session store directly — both `SessionManager` and
-   * `PostgresSessionStore` implement the required `readMemoryDocument` method.
+   * Pass your session store directly — `SessionManager` implements the required
+   * `readMemoryDocument` method, as will any custom `AgentrailSessionStore`.
    */
   memoProvider?: SandboxMemoProvider;
 }

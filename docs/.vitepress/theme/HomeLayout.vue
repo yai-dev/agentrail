@@ -1,27 +1,30 @@
 <template>
-  <div class="at-home">
-    <!-- ─── HERO ─── -->
+  <div class="at-home" :class="{ 'at-home-zh': isZh }">
     <section class="at-hero">
       <div class="at-hero-left">
-        <p class="at-eyebrow">Open Source · Pre-GA · Apache 2.0</p>
+        <p class="at-eyebrow">{{ t.eyebrow }}</p>
         <h1 class="at-hero-title">
-          Build, host, and<br />
-          orchestrate <em>tool-using</em><br />
-          AI agents.
+          <template v-for="(line, index) in t.heroTitleLines" :key="line">
+            <template v-if="index === 1">
+              {{ line.before }}<em>{{ line.emphasis }}</em
+              >{{ line.after }}
+            </template>
+            <template v-else>
+              {{ line.text }}
+            </template>
+            <br v-if="index < t.heroTitleLines.length - 1" />
+          </template>
         </h1>
-        <p class="at-hero-desc">
-          Agentrail gives you a composable runtime, a hosted server layer, multi-agent
-          orchestration, and a clear extension model — without locking you into any platform.
-        </p>
+        <p class="at-hero-desc">{{ t.heroDesc }}</p>
         <div class="at-hero-actions">
-          <a href="/guides/quickstart" class="at-btn at-btn-primary"> Quickstart → </a>
+          <a :href="t.quickstartLink" class="at-btn at-btn-primary"> {{ t.quickstartCta }} </a>
           <a
             href="https://github.com/yai-dev/agentrail"
             target="_blank"
             rel="noopener"
             class="at-btn at-btn-secondary"
           >
-            View on GitHub
+            {{ t.githubCta }}
           </a>
           <a href="/llms.txt" class="at-btn at-btn-secondary"> llms.txt </a>
         </div>
@@ -58,161 +61,86 @@
       </div>
     </section>
 
-    <!-- ─── WHY AGENTRAIL ─── -->
     <section class="at-why-wrap">
       <div class="at-why-inner">
-        <p class="at-section-label">Why Agentrail</p>
-        <h2 class="at-section-title">The right level of abstraction.</h2>
-        <p class="at-section-sub">
-          Most teams land between two extremes — scripts that break at scale and platforms that make
-          you dependent. Agentrail is designed to sit in between.
-        </p>
+        <p class="at-section-label">{{ t.why.label }}</p>
+        <h2 class="at-section-title">{{ t.why.title }}</h2>
+        <p class="at-section-sub">{{ t.why.desc }}</p>
 
         <div class="at-why-grid">
           <div class="at-why-col">
-            <p class="at-why-col-label">Too little structure</p>
-            <h3 class="at-why-col-title">Ad hoc scripts</h3>
+            <p class="at-why-col-label">{{ t.why.left.label }}</p>
+            <h3 class="at-why-col-title">{{ t.why.left.title }}</h3>
             <ul class="at-why-list">
-              <li>No session management</li>
-              <li>Tool contracts are implicit</li>
-              <li>Orchestration is bespoke every time</li>
-              <li>Testing is painful</li>
-              <li>Hard to extend without rewriting</li>
+              <li v-for="item in t.why.left.items" :key="item">{{ item }}</li>
             </ul>
           </div>
 
           <div class="at-why-col at-why-featured">
-            <p class="at-why-col-label">Just right</p>
-            <h3 class="at-why-col-title">Agentrail</h3>
+            <p class="at-why-col-label">{{ t.why.center.label }}</p>
+            <h3 class="at-why-col-title">{{ t.why.center.title }}</h3>
             <ul class="at-why-list">
-              <li>Composable runtime with clear contracts</li>
-              <li>Host layer for chat &amp; stream lifecycles</li>
-              <li>First-class multi-agent orchestration</li>
-              <li>Plugin &amp; context provider extension model</li>
-              <li>No platform lock-in, fully self-hosted</li>
+              <li v-for="item in t.why.center.items" :key="item">{{ item }}</li>
             </ul>
           </div>
 
           <div class="at-why-col">
-            <p class="at-why-col-label">Too much lock-in</p>
-            <h3 class="at-why-col-title">Hosted platforms</h3>
+            <p class="at-why-col-label">{{ t.why.right.label }}</p>
+            <h3 class="at-why-col-title">{{ t.why.right.title }}</h3>
             <ul class="at-why-list">
-              <li>Opaque internals</li>
-              <li>Metered billing surprises</li>
-              <li>Limited extensibility</li>
-              <li>Vendor controls your data</li>
-              <li>GUI-first, not code-first</li>
+              <li v-for="item in t.why.right.items" :key="item">{{ item }}</li>
             </ul>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ─── FEATURE GRID ─── -->
     <section class="at-section">
-      <p class="at-section-label">What's included</p>
-      <h2 class="at-section-title">Everything you need to ship agents.</h2>
-      <p class="at-section-sub">
-        A focused set of packages — each with a clear responsibility, each independently usable.
-      </p>
+      <p class="at-section-label">{{ t.features.label }}</p>
+      <h2 class="at-section-title">{{ t.features.title }}</h2>
+      <p class="at-section-sub">{{ t.features.desc }}</p>
 
       <div class="at-feature-grid">
-        <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/core</p>
-          <h3 class="at-feature-title">Agent Runtime</h3>
-          <p class="at-feature-desc">
-            Define agents with typed tool contracts. The LLM loop, tool dispatch, provider
-            abstractions, prompt SDK, and usage tracking — all in one stable core.
-          </p>
-        </div>
-
-        <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/capabilities</p>
-          <h3 class="at-feature-title">Capabilities</h3>
-          <p class="at-feature-desc">
-            Sandboxed filesystem and browser tools, knowledge-base retrieval, skills registry, and
-            multi-agent orchestration — each independently usable via
-            <code>defineProfile({ capabilities: [...] })</code>.
-          </p>
-        </div>
-
-        <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/app</p>
-          <h3 class="at-feature-title">Host Layer</h3>
-          <p class="at-feature-desc">
-            <code>createAgentApp</code> mounts chat and stream endpoints in one call.
-            <code>defineProfile</code> wires model, prompt, and capabilities. Includes session
-            management, plugins, slash-commands, and typed config loading.
-          </p>
-        </div>
-
-        <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/capabilities · orchestration</p>
-          <h3 class="at-feature-title">Multi-Agent Orchestration</h3>
-          <p class="at-feature-desc">
-            Spawn sub-agents, send typed work, wait on conditions, and recover from failures.
-            Persistent state across restarts via JSONL-backed mailboxes.
-          </p>
-        </div>
-
-        <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/app · SessionManager</p>
-          <h3 class="at-feature-title">Session Management</h3>
-          <p class="at-feature-desc">
-            Filesystem-backed session storage with append-only JSONL history, automatic context
-            compaction, and conversation branching.
-          </p>
-        </div>
-
-        <div class="at-feature-card">
-          <p class="at-feature-pkg">@agentrail/capabilities · sandbox</p>
-          <h3 class="at-feature-title">Sandboxed Execution</h3>
-          <p class="at-feature-desc">
-            Docker-based isolated execution environment. Browser automation, shell commands, and
-            file I/O — all safely contained per session.
-          </p>
+        <div class="at-feature-card" v-for="card in t.features.cards" :key="card.pkg">
+          <p class="at-feature-pkg">{{ card.pkg }}</p>
+          <h3 class="at-feature-title">{{ card.title }}</h3>
+          <p class="at-feature-desc" v-html="card.desc"></p>
         </div>
       </div>
     </section>
 
-    <!-- ─── INSTALL ─── -->
     <div class="at-install-strip">
       <div class="at-install-inner">
-        <p class="at-install-label">Get started in minutes.</p>
+        <p class="at-install-label">{{ t.install.label }}</p>
         <div class="at-install-cmd">
-          <code>npm create agentrail-app@latest</code>
+          <code>npx @agentrail/cli@latest create</code>
           <button class="at-copy-btn" @click="copyInstall" :class="{ copied: installCopied }">
-            {{ installCopied ? "copied!" : "copy" }}
+            {{ installCopied ? t.install.copied : t.install.copy }}
           </button>
         </div>
-        <a href="/guides/quickstart" class="at-btn at-btn-primary"> Read the quickstart → </a>
+        <a :href="t.quickstartLink" class="at-btn at-btn-primary"> {{ t.install.cta }} </a>
       </div>
     </div>
 
-    <!-- ─── ARCHITECTURE ─── -->
     <section class="at-section">
-      <p class="at-section-label">Architecture</p>
-      <h2 class="at-section-title">Layered by design.</h2>
-      <p class="at-section-sub" style="margin-bottom: 48px">
-        Start with the opinionated SDK, then drop to lower-level primitives only when you need
-        tighter control.
-      </p>
+      <p class="at-section-label">{{ t.architecture.label }}</p>
+      <h2 class="at-section-title">{{ t.architecture.title }}</h2>
+      <p class="at-section-sub" style="margin-bottom: 48px">{{ t.architecture.desc }}</p>
 
       <div class="at-arch-diagram">
         <div class="at-arch-layer at-arch-app">
           <div class="at-arch-header">
             <span class="at-arch-num">4</span>
-            <span class="at-arch-name">Your App</span>
+            <span class="at-arch-name">{{ t.architecture.layers.app.name }}</span>
           </div>
           <div class="at-arch-chips">
-            <span class="at-chip">Profiles</span>
-            <span class="at-chip">Routes</span>
-            <span class="at-chip">UI</span>
-            <span class="at-chip">Business Logic</span>
+            <span class="at-chip" v-for="chip in t.architecture.layers.app.chips" :key="chip">
+              {{ chip }}
+            </span>
           </div>
         </div>
 
-        <div class="at-arch-arrow">↓ depends on</div>
+        <div class="at-arch-arrow">{{ t.architecture.dependsOn }}</div>
 
         <div class="at-arch-layer at-arch-host">
           <div class="at-arch-header">
@@ -220,16 +148,13 @@
             <span class="at-arch-name">@agentrail/app</span>
           </div>
           <div class="at-arch-chips">
-            <span class="at-chip">createAgentApp</span>
-            <span class="at-chip">defineProfile</span>
-            <span class="at-chip">SessionManager</span>
-            <span class="at-chip">Plugins</span>
-            <span class="at-chip">Slash Commands</span>
-            <span class="at-chip">Config</span>
+            <span class="at-chip" v-for="chip in t.architecture.layers.host.chips" :key="chip">
+              {{ chip }}
+            </span>
           </div>
         </div>
 
-        <div class="at-arch-arrow">↓ depends on</div>
+        <div class="at-arch-arrow">{{ t.architecture.dependsOn }}</div>
 
         <div class="at-arch-layer at-arch-plugins">
           <div class="at-arch-header">
@@ -237,40 +162,36 @@
             <span class="at-arch-name">@agentrail/capabilities</span>
           </div>
           <div class="at-arch-consumed">
-            <span class="at-consumed-label">includes →</span>
+            <span class="at-consumed-label">{{ t.architecture.includes }}</span>
             <div class="at-arch-chips">
-              <span class="at-chip at-chip-accent">filesystem</span>
-              <span class="at-chip at-chip-accent">browser</span>
-              <span class="at-chip at-chip-accent">knowledge</span>
-              <span class="at-chip at-chip-accent">skills</span>
-              <span class="at-chip at-chip-accent">orchestration</span>
-              <span class="at-chip at-chip-accent">tools</span>
-              <span class="at-chip at-chip-accent">sandbox</span>
-              <span class="at-chip at-chip-accent">memoryContext</span>
+              <span
+                class="at-chip at-chip-accent"
+                v-for="chip in t.architecture.layers.capabilities.chips"
+                :key="chip"
+              >
+                {{ chip }}
+              </span>
             </div>
           </div>
         </div>
 
-        <div class="at-arch-arrow">↓ depends on</div>
+        <div class="at-arch-arrow">{{ t.architecture.dependsOn }}</div>
 
         <div class="at-arch-layer at-arch-core">
           <div class="at-arch-header">
             <span class="at-arch-num">1</span>
             <span class="at-arch-name">@agentrail/core</span>
-            <span class="at-arch-badge">foundation</span>
+            <span class="at-arch-badge">{{ t.architecture.foundation }}</span>
           </div>
           <div class="at-arch-chips">
-            <span class="at-chip">Agent Loop</span>
-            <span class="at-chip">Tool Contract</span>
-            <span class="at-chip">LLM Provider API</span>
-            <span class="at-chip">Prompt SDK</span>
-            <span class="at-chip">Session Types</span>
+            <span class="at-chip" v-for="chip in t.architecture.layers.core.chips" :key="chip">
+              {{ chip }}
+            </span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ─── FOOTER ─── -->
     <footer class="at-footer">
       <div class="at-footer-inner">
         <div class="at-footer-logo">
@@ -278,36 +199,319 @@
           Agentrail
         </div>
         <ul class="at-footer-links">
-          <li><a href="/guides/quickstart">Docs</a></li>
-          <li><a href="/roadmap">Roadmap</a></li>
           <li>
-            <a href="https://github.com/yai-dev/agentrail" target="_blank" rel="noopener">GitHub</a>
+            <a :href="t.quickstartLink">{{ t.footer.docs }}</a>
+          </li>
+          <li>
+            <a href="/roadmap">{{ t.footer.roadmap }}</a>
+          </li>
+          <li>
+            <a href="https://github.com/yai-dev/agentrail" target="_blank" rel="noopener">
+              GitHub
+            </a>
           </li>
           <li>
             <a
               href="https://github.com/yai-dev/agentrail/blob/master/LICENSE"
               target="_blank"
               rel="noopener"
-              >Apache 2.0</a
             >
+              Apache 2.0
+            </a>
           </li>
         </ul>
-        <p class="at-footer-meta">
-          Pre-GA · APIs may change before GA · © 2026 Agentrail contributors
-        </p>
+        <p class="at-footer-meta">{{ t.footer.meta }}</p>
       </div>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { withBase } from "vitepress";
+import { computed, onMounted, ref } from "vue";
+import { useRoute, withBase } from "vitepress";
+
+const route = useRoute();
+const isZh = computed(() => route.path.startsWith("/zh/"));
+
+const copy = {
+  en: {
+    eyebrow: "Open Source · Pre-GA · Apache 2.0",
+    heroTitleLines: [
+      { text: "Build, host, and" },
+      { before: "orchestrate ", emphasis: "tool-using", after: "" },
+      { text: "AI agents." },
+    ],
+    heroDesc:
+      "Agentrail gives you a composable runtime, a hosted server layer, multi-agent orchestration, and a clear extension model without locking you into any platform.",
+    quickstartCta: "Quickstart →",
+    githubCta: "View on GitHub",
+    quickstartLink: "/guides/quickstart",
+    why: {
+      label: "Why Agentrail",
+      title: "The right level of abstraction.",
+      desc: "Most teams land between two extremes: scripts that break at scale and platforms that create lock-in. Agentrail is designed to sit in between.",
+      left: {
+        label: "Too little structure",
+        title: "Ad hoc scripts",
+        items: [
+          "No session management",
+          "Tool contracts are implicit",
+          "Orchestration is bespoke every time",
+          "Testing is painful",
+          "Hard to extend without rewriting",
+        ],
+      },
+      center: {
+        label: "Just right",
+        title: "Agentrail",
+        items: [
+          "Composable runtime with clear contracts",
+          "Host layer for chat and stream lifecycles",
+          "First-class multi-agent orchestration",
+          "Plugin and context provider extension model",
+          "No platform lock-in, fully self-hosted",
+        ],
+      },
+      right: {
+        label: "Too much lock-in",
+        title: "Hosted platforms",
+        items: [
+          "Opaque internals",
+          "Metered billing surprises",
+          "Limited extensibility",
+          "Vendor controls your data",
+          "GUI-first, not code-first",
+        ],
+      },
+    },
+    features: {
+      label: "What's included",
+      title: "Everything you need to ship agents.",
+      desc: "A focused set of packages. Each has a clear responsibility and can be used independently.",
+      cards: [
+        {
+          pkg: "@agentrail/core",
+          title: "Agent Runtime",
+          desc: "Define agents with typed tool contracts. The LLM loop, tool dispatch, provider abstractions, prompt SDK, and usage tracking sit in one stable core.",
+        },
+        {
+          pkg: "@agentrail/capabilities",
+          title: "Capabilities",
+          desc: "Sandboxed filesystem and browser tools, knowledge-base retrieval, skills registry, and multi-agent orchestration. They can be mounted with <code>defineProfile({ capabilities: [...] })</code>.",
+        },
+        {
+          pkg: "@agentrail/app",
+          title: "Host Layer",
+          desc: "<code>createAgentApp</code> mounts chat and stream endpoints in one call. <code>defineProfile</code> wires model, prompt, and capabilities. Session management, plugins, slash commands, and typed config loading are included.",
+        },
+        {
+          pkg: "@agentrail/capabilities · orchestration",
+          title: "Multi-Agent Orchestration",
+          desc: "Spawn sub-agents, send typed work, wait on conditions, and recover from failures. State can persist across restarts through JSONL-backed mailboxes.",
+        },
+        {
+          pkg: "@agentrail/app · SessionManager",
+          title: "Session Management",
+          desc: "Filesystem-backed session storage with append-only JSONL history, automatic context compaction, and conversation branching.",
+        },
+        {
+          pkg: "@agentrail/capabilities · sandbox",
+          title: "Sandboxed Execution",
+          desc: "Docker-based isolated execution for browser automation, shell commands, and file I/O. Execution is contained per session.",
+        },
+      ],
+    },
+    install: {
+      label: "Get started in minutes.",
+      copy: "copy",
+      copied: "copied!",
+      cta: "Read the quickstart →",
+    },
+    architecture: {
+      label: "Architecture",
+      title: "Layered by design.",
+      desc: "Start with the recommended SDK path, then drop to lower-level primitives only when tighter control is needed.",
+      dependsOn: "↓ depends on",
+      includes: "includes →",
+      foundation: "foundation",
+      layers: {
+        app: { name: "Your App", chips: ["Profiles", "Routes", "UI", "Business Logic"] },
+        host: {
+          chips: [
+            "createAgentApp",
+            "defineProfile",
+            "SessionManager",
+            "Plugins",
+            "Slash Commands",
+            "Config",
+          ],
+        },
+        capabilities: {
+          chips: [
+            "filesystem",
+            "browser",
+            "knowledge",
+            "skills",
+            "orchestration",
+            "tools",
+            "sandbox",
+            "memoryContext",
+          ],
+        },
+        core: {
+          chips: ["Agent Loop", "Tool Contract", "LLM Provider API", "Prompt SDK", "Session Types"],
+        },
+      },
+    },
+    footer: {
+      docs: "Docs",
+      roadmap: "Roadmap",
+      meta: "Pre-GA · APIs may change before GA · © 2026 Agentrail contributors",
+    },
+  },
+  zh: {
+    eyebrow: "开源 · Pre-GA · Apache 2.0",
+    heroTitleLines: [
+      { text: "构建、托管并编排" },
+      { before: "", emphasis: "可调用工具的", after: "" },
+      { text: "AI Agent" },
+    ],
+    heroDesc:
+      "Agentrail 提供可组合的运行时、面向托管场景的服务层、多 Agent 编排能力，以及清晰的扩展模型，同时保留自托管与自行组合的空间。",
+    quickstartCta: "快速开始 →",
+    githubCta: "查看 GitHub",
+    quickstartLink: "/zh/guides/quickstart",
+    why: {
+      label: "为什么是 Agentrail",
+      title: "处在合适的抽象层级。",
+      desc: "很多团队会落在两个极端之间：一边是难以扩展的脚本集合，另一边是带来强绑定的平台。Agentrail 位于两者之间。",
+      left: {
+        label: "结构过少",
+        title: "临时脚本",
+        items: [
+          "缺少 Session 管理",
+          "工具契约隐含在代码中",
+          "编排方式每次都要重写",
+          "测试成本高",
+          "后续扩展常常需要返工",
+        ],
+      },
+      center: {
+        label: "恰当的结构",
+        title: "Agentrail",
+        items: [
+          "可组合的运行时与清晰契约",
+          "覆盖 `/chat` 与 `/stream` 的 Host 层",
+          "内建支持的多 Agent 编排",
+          "Plugin 与 Context Provider 扩展模型",
+          "无平台锁定，可完全自托管",
+        ],
+      },
+      right: {
+        label: "绑定过强",
+        title: "托管平台",
+        items: [
+          "内部实现不透明",
+          "计费方式难以预估",
+          "扩展能力受限",
+          "数据受制于供应方",
+          "以 GUI 为主，而非以代码为主",
+        ],
+      },
+    },
+    features: {
+      label: "包含内容",
+      title: "覆盖交付 Agent 所需的核心部分。",
+      desc: "文档与包结构按职责划分。每个包职责明确，也可以单独使用。",
+      cards: [
+        {
+          pkg: "@agentrail/core",
+          title: "Agent 运行时",
+          desc: "用于定义 Agent 与类型化工具契约。LLM 循环、工具调度、LLM Provider 抽象、Prompt SDK 与用量统计都位于这一层。",
+        },
+        {
+          pkg: "@agentrail/capabilities",
+          title: "能力包",
+          desc: "提供沙箱文件系统与浏览器工具、知识库检索、技能注册以及多 Agent 编排，可通过 <code>defineProfile({ capabilities: [...] })</code> 组合到 Profile 中。",
+        },
+        {
+          pkg: "@agentrail/app",
+          title: "Host 层",
+          desc: "<code>createAgentApp</code> 一次挂载聊天与流式接口，<code>defineProfile</code> 负责连接模型、Prompt 与能力。Session 管理、Plugin、Slash Command 与配置加载也位于这一层。",
+        },
+        {
+          pkg: "@agentrail/capabilities · orchestration",
+          title: "多 Agent 编排",
+          desc: "用于创建子 Agent、分发结构化任务、等待条件完成，并在失败后恢复。状态可通过基于 JSONL 的邮箱机制跨重启保留。",
+        },
+        {
+          pkg: "@agentrail/app · SessionManager",
+          title: "Session 管理",
+          desc: "基于文件系统的 Session 存储，使用追加式 JSONL 历史记录，并支持自动上下文压缩与会话分支。",
+        },
+        {
+          pkg: "@agentrail/capabilities · sandbox",
+          title: "沙箱执行",
+          desc: "基于 Docker 的隔离执行环境，用于浏览器自动化、Shell 命令与文件读写，并按 Session 维度隔离。",
+        },
+      ],
+    },
+    install: {
+      label: "几分钟内完成初始化。",
+      copy: "复制",
+      copied: "已复制",
+      cta: "阅读快速开始 →",
+    },
+    architecture: {
+      label: "架构",
+      title: "按层组织。",
+      desc: "优先使用推荐的 SDK 入口；需要更细控制时，再下探到底层原语。",
+      dependsOn: "↓ 依赖于",
+      includes: "包含 →",
+      foundation: "基础层",
+      layers: {
+        app: { name: "业务应用", chips: ["Profile", "路由", "UI", "业务逻辑"] },
+        host: {
+          chips: [
+            "createAgentApp",
+            "defineProfile",
+            "SessionManager",
+            "Plugin",
+            "Slash Command",
+            "Config",
+          ],
+        },
+        capabilities: {
+          chips: [
+            "Filesystem",
+            "Browser",
+            "Knowledge",
+            "Skills",
+            "Orchestration",
+            "Tools",
+            "Sandbox",
+            "Memory Context",
+          ],
+        },
+        core: {
+          chips: ["Agent Loop", "Tool Contract", "LLM Provider API", "Prompt SDK", "Session Types"],
+        },
+      },
+    },
+    footer: {
+      docs: "文档",
+      roadmap: "路线图（英文）",
+      meta: "Pre-GA · 在 GA 之前 API 可能继续调整 · © 2026 Agentrail contributors",
+    },
+  },
+} as const;
+
+const t = computed(() => (isZh.value ? copy.zh : copy.en));
 
 const installCopied = ref(false);
 
 function copyInstall() {
-  navigator.clipboard.writeText("npm create agentrail-app@latest").then(() => {
+  navigator.clipboard.writeText("npx @agentrail/cli@latest create").then(() => {
     installCopied.value = true;
     setTimeout(() => {
       installCopied.value = false;
@@ -349,19 +553,22 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 80px 40px 80px;
+  background-image: radial-gradient(circle, rgba(196, 255, 46, 0.14) 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
 }
 
 .at-eyebrow {
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
+  font-family: var(--at-font-family-label);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--at-accent);
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  line-height: 2;
 }
 
 .at-hero-title {
-  font-family: "DM Serif Display", Georgia, serif;
+  font-family: var(--at-font-family-display);
   font-size: clamp(2.6rem, 4vw, 4.2rem);
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -391,7 +598,7 @@ onMounted(() => {
 /* ─── BUTTONS ─── */
 .at-btn {
   display: inline-block;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--at-font-family-ui-strong);
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   padding: 11px 22px;
@@ -430,10 +637,29 @@ onMounted(() => {
 /* ─── CODE WINDOW ─── */
 .at-code-window {
   background: #0a0a0a;
-  border: 1px solid #1c1c1c;
+  border: 1px solid rgba(196, 255, 46, 0.25);
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(196, 255, 46, 0.08),
+    0 0 24px rgba(196, 255, 46, 0.06),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+  position: relative;
+}
+
+.at-code-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(0, 0, 0, 0.13) 3px,
+    rgba(0, 0, 0, 0.13) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
 }
 
 .at-code-bar {
@@ -556,16 +782,17 @@ onMounted(() => {
 }
 
 .at-section-label {
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
+  font-family: var(--at-font-family-label);
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
   color: var(--at-accent);
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 22px;
+  line-height: 2;
 }
 
 .at-section-title {
-  font-family: "DM Serif Display", Georgia, serif;
+  font-family: var(--at-font-family-display);
   font-size: clamp(2rem, 3vw, 2.8rem);
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -584,6 +811,8 @@ onMounted(() => {
 /* ─── WHY SECTION ─── */
 .at-why-wrap {
   background: #0a0a0a;
+  background-image: radial-gradient(circle, rgba(196, 255, 46, 0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
   border-top: 1px solid #1c1c1c;
   border-bottom: 1px solid #1c1c1c;
 }
@@ -618,6 +847,45 @@ onMounted(() => {
   border-right: 1px solid var(--at-accent);
   margin: -1px;
   z-index: 1;
+  position: relative;
+}
+
+.at-why-featured::before,
+.at-why-featured::after {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  pointer-events: none;
+  background: var(--at-accent);
+}
+
+.at-why-featured::before {
+  top: -1px;
+  left: -1px;
+  box-shadow:
+    4px 0 0 0 var(--at-accent),
+    8px 0 0 0 var(--at-accent),
+    12px 0 0 0 var(--at-accent),
+    16px 0 0 0 var(--at-accent),
+    0 4px 0 0 var(--at-accent),
+    0 8px 0 0 var(--at-accent),
+    0 12px 0 0 var(--at-accent),
+    0 16px 0 0 var(--at-accent);
+}
+
+.at-why-featured::after {
+  bottom: -1px;
+  right: -1px;
+  box-shadow:
+    -4px 0 0 0 var(--at-accent),
+    -8px 0 0 0 var(--at-accent),
+    -12px 0 0 0 var(--at-accent),
+    -16px 0 0 0 var(--at-accent),
+    0 -4px 0 0 var(--at-accent),
+    0 -8px 0 0 var(--at-accent),
+    0 -12px 0 0 var(--at-accent),
+    0 -16px 0 0 var(--at-accent);
 }
 
 .at-why-col-label {
@@ -630,11 +898,14 @@ onMounted(() => {
 }
 
 .at-why-featured .at-why-col-label {
-  color: var(--at-accent-dim);
+  font-family: var(--at-pixel-font);
+  font-size: 0.42rem;
+  line-height: 2;
+  color: var(--at-accent);
 }
 
 .at-why-col-title {
-  font-family: "DM Serif Display", Georgia, serif;
+  font-family: var(--at-font-family-display);
   font-size: 1.3rem;
   margin-bottom: 20px;
   color: var(--vp-c-text-1);
@@ -670,7 +941,10 @@ onMounted(() => {
 }
 
 .at-why-featured .at-why-list li::before {
+  content: "▶";
   color: var(--at-accent);
+  font-size: 0.5rem;
+  top: 0.15em;
 }
 
 /* ─── FEATURE GRID ─── */
@@ -685,11 +959,18 @@ onMounted(() => {
 .at-feature-card {
   background: var(--vp-c-bg);
   padding: 28px 26px;
-  transition: background 0.2s;
+  transition:
+    background 0.15s,
+    outline-color 0.15s,
+    box-shadow 0.15s;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
 }
 
 .at-feature-card:hover {
-  background: #0a0a0a;
+  background: #080808;
+  outline-color: var(--at-accent);
+  box-shadow: inset 0 0 20px rgba(196, 255, 46, 0.04);
 }
 
 .at-feature-pkg {
@@ -717,6 +998,8 @@ onMounted(() => {
 /* ─── INSTALL STRIP ─── */
 .at-install-strip {
   background: #0a0a0a;
+  background-image: radial-gradient(circle, rgba(196, 255, 46, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
   border-top: 1px solid #1c1c1c;
   border-bottom: 1px solid #1c1c1c;
 }
@@ -732,7 +1015,7 @@ onMounted(() => {
 }
 
 .at-install-label {
-  font-family: "DM Serif Display", Georgia, serif;
+  font-family: var(--at-font-family-display);
   font-size: 1.1rem;
   color: var(--vp-c-text-1);
   margin: 0;
@@ -869,7 +1152,7 @@ onMounted(() => {
 }
 
 .at-arch-name {
-  font-family: "DM Serif Display", Georgia, serif;
+  font-family: var(--at-font-family-display);
   font-size: 1rem;
   color: var(--vp-c-text-1);
 }
@@ -880,13 +1163,14 @@ onMounted(() => {
 }
 
 .at-arch-badge {
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
+  font-family: var(--at-font-family-label);
+  font-size: 0.46rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   background: var(--at-accent);
   color: #060606;
-  padding: 2px 8px;
+  padding: 5px 10px;
+  line-height: 1.6;
 }
 
 .at-arch-chips {
@@ -918,7 +1202,7 @@ onMounted(() => {
 }
 
 .at-consumed-label {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--at-font-family-ui-strong);
   font-size: 0.65rem;
   letter-spacing: 0.1em;
   color: #333330;
@@ -942,7 +1226,7 @@ onMounted(() => {
 }
 
 .at-footer-logo {
-  font-family: "DM Serif Display", Georgia, serif;
+  font-family: var(--at-font-family-display);
   font-size: 1rem;
   display: flex;
   align-items: center;
@@ -971,11 +1255,42 @@ onMounted(() => {
 }
 
 .at-footer-meta {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--at-font-family-ui-strong);
   font-size: 0.7rem;
   color: #333330;
   margin: 0;
   flex-shrink: 0;
+}
+
+.at-home-zh .at-eyebrow,
+.at-home-zh .at-section-label,
+.at-home-zh .at-why-col-label,
+.at-home-zh .at-arch-badge,
+.at-home-zh .at-consumed-label,
+.at-home-zh .at-copy-btn,
+.at-home-zh .at-arch-arrow,
+.at-home-zh .at-footer-meta {
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.at-home-zh .at-eyebrow,
+.at-home-zh .at-section-label {
+  font-size: 0.72rem;
+  line-height: 1.8;
+}
+
+.at-home-zh .at-hero-title em {
+  font-style: normal;
+}
+
+.at-home-zh .at-btn {
+  letter-spacing: 0.01em;
+}
+
+.at-home-zh .at-why-featured .at-why-col-label {
+  font-size: 0.65rem;
+  line-height: 1.7;
 }
 
 /* ─── RESPONSIVE ─── */

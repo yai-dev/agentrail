@@ -200,13 +200,11 @@ When omitted and `dataDir` is set, `createAgentApp` falls back to the default fi
 
 ```ts
 import { createAgentApp, createFileSystemSessionTraceStore } from "@agentrail/app";
-import { PostgresSessionTraceStore } from "@agentrail/storage-postgres";
 
-// PostgreSQL example
 const app = createAgentApp({
-  sessionStore: new PostgresSessionStore(sql),
+  sessionStore: mySessionStore,
   profiles: [myProfile],
-  traceStoreFactory: (sessionRef) => new PostgresSessionTraceStore(sql, sessionRef),
+  traceStoreFactory: (sessionRef) => createMySessionTraceStore(sessionRef),
 });
 ```
 
@@ -222,15 +220,11 @@ Factory that creates an `OrchestrationPersistence` for each session. When provid
 
 ```ts
 import { createAgentApp } from "@agentrail/app";
-import { PostgresOrchestrationPersistence, createSqlClient } from "@agentrail/storage-postgres";
-
-const sql = createSqlClient({ connectionString: process.env.DATABASE_URL! });
 
 const app = createAgentApp({
-  sessionStore: new PostgresSessionStore(sql),
+  sessionStore: mySessionStore,
   profiles: [myProfile],
-  createOrchestrationPersistence: (sessionRef) =>
-    new PostgresOrchestrationPersistence(sql, sessionRef),
+  createOrchestrationPersistence: (sessionRef) => createMyOrchestrationPersistence(sessionRef),
 });
 ```
 
@@ -263,18 +257,17 @@ Mounts the read-only Inspector API at `/__inspector`, consumed by the [Agentrail
 Three variants:
 
 - **`true`** — automatically creates a filesystem data source from `dataDir`. **Requires `dataDir`** and is incompatible with a custom `sessionStore`. An error is thrown at startup if either constraint is violated.
-- **`InspectorDataSource`** — use a custom data source (e.g. a PostgreSQL backend). Works with any `sessionStore` configuration.
+- **`InspectorDataSource`** — use a custom data source. Works with any `sessionStore` configuration.
 
 ```ts
 // Filesystem backend (default)
 createAgentApp({ dataDir: "./data", profiles: [...], inspector: true });
 
 // Custom backend
-import { PostgresInspectorDataSource } from "@agentrail/storage-postgres";
 createAgentApp({
-  sessionStore: new PostgresSessionStore(sql),
+  sessionStore: mySessionStore,
   profiles: [...],
-  inspector: new PostgresInspectorDataSource(sql),
+  inspector: new MyInspectorDataSource(),
 });
 ```
 

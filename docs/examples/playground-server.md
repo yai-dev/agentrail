@@ -84,7 +84,7 @@ Both chat and stream routes share the same session store, profile resolver, and 
 
 ### Inspector Route
 
-The Inspector API is mounted as a sub-app. Pass an `InspectorDataSource` to `createInspectorRoute` — for filesystem-backed setups use `createFilesystemInspectorDataSource`; for database backends, pass a `PostgresInspectorDataSource` or your own implementation:
+The Inspector API is mounted as a sub-app. Pass an `InspectorDataSource` to `createInspectorRoute` — for filesystem-backed setups use `createFilesystemInspectorDataSource`; for custom backends, pass your own `InspectorDataSource` implementation:
 
 ```ts
 // examples/playground-server/src/main.ts (simplified)
@@ -95,13 +95,9 @@ app.route(
   "/__inspector",
   createInspectorRoute(createFilesystemInspectorDataSource(config.dataDir)),
 );
-
-// PostgreSQL backend — swap the data source, everything else stays the same
-// import { PostgresInspectorDataSource } from "@agentrail/storage-postgres";
-// app.route("/__inspector", createInspectorRoute(new PostgresInspectorDataSource(sql)));
 ```
 
-`createInspectorRoute` is backend-agnostic: it only calls methods on the `InspectorDataSource` interface, so switching from filesystem to PostgreSQL is a one-line change.
+`createInspectorRoute` is backend-agnostic: it only calls methods on the `InspectorDataSource` interface, so a custom data source can be swapped in without changing any other code.
 
 ### Profile Definition
 

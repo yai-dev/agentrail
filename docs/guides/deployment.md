@@ -220,9 +220,9 @@ The default `SessionManager` writes to the local filesystem, which ties sessions
 
 Mount the same `dataDir` path on all instances. This works for moderate scale with a small number of instances.
 
-**Option 2 — Custom `AgentrailSessionStore`**
+**Option 2 — Custom `AgentrailSessionStore`** (advanced)
 
-Implement `AgentrailSessionStore` backed by a database (PostgreSQL, Redis, etc.) and pass it to your route factories. The interface is designed so this swap requires no changes to route or profile code.
+Implement `AgentrailSessionStore` for cases where a shared filesystem is not available. The interface is designed so this swap requires no changes to route or profile code. See [Build a Storage Backend](build-a-storage-backend.md) for the full implementation guide.
 
 See [Configure Sessions](configure-sessions.md) for the custom store implementation guide.
 
