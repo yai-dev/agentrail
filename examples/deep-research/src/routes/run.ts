@@ -20,6 +20,7 @@ const run = createDeepResearchRunRoute({
     tavilyApiKey: config.tavilyApiKey,
     braveApiKey: config.braveApiKey,
     jinaApiKey: config.jinaApiKey,
+    exaApiKey: config.exaApiKey,
     sandbox: config.sandbox,
     orchestration: config.orchestration,
   },

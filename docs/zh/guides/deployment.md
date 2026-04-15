@@ -13,6 +13,7 @@
 | `TAVILY_API_KEY`        | 使用 Web Search 时 | Tavily Search                    |
 | `BRAVE_SEARCH_API_KEY`  | 使用 Web Search 时 | Brave Search                     |
 | `JINA_API_KEY`          | 使用 Web Search 时 | Jina Search                      |
+| `EXA_API_KEY`           | 使用 Web Search 时 | Exa Search                       |
 | `AGENTRAIL_DATA_DIR`    | 推荐配置           | Session、知识库、Skills 的根目录 |
 | `AGENTRAIL_CONFIG_PATH` | 可选               | 覆盖配置文件位置                 |
 | `UI_SECRET_TOKEN`       | UI 对公网开放时    | `/api/*` 路由的 Bearer Token     |

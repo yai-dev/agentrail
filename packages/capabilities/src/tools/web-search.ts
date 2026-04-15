@@ -46,6 +46,29 @@ export interface JinaSearchProviderOptions {
   timeoutMs?: number;
 }
 
+export interface ExaSearchProviderOptions {
+  apiKey: string;
+  /** Override the search type (default: "auto"). */
+  searchType?: "auto" | "neural" | "fast" | "deep-lite" | "deep" | "deep-reasoning" | "instant";
+  /** Optional category filter, e.g. "news", "research paper", "company". */
+  category?:
+    | "company"
+    | "research paper"
+    | "news"
+    | "personal site"
+    | "financial report"
+    | "people";
+  includeDomains?: string[];
+  excludeDomains?: string[];
+  includeText?: string[];
+  excludeText?: string[];
+  startPublishedDate?: string;
+  endPublishedDate?: string;
+  /** Two-letter ISO country code applied to all queries. */
+  userLocation?: string;
+  timeoutMs?: number;
+}
+
 interface TavilySearchResult {
   title?: string;
   url?: string;
@@ -68,6 +91,19 @@ interface JinaSearchResult {
   snippet?: string;
   publishedAt?: string;
   published_at?: string;
+}
+
+interface ExaSearchResult {
+  title?: string | null;
+  url?: string;
+  text?: string;
+  summary?: string;
+  highlights?: string[];
+  publishedDate?: string | null;
+}
+
+interface ExaSearchResponse {
+  results?: ExaSearchResult[];
 }
 
 function createTimedSignal(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
@@ -218,6 +254,67 @@ function coerceJinaResults(payload: unknown): JinaSearchResult[] {
     if (Array.isArray(record.items)) return record.items as JinaSearchResult[];
   }
   return [];
+}
+
+/** Creates an Exa-backed search provider adapter. */
+export function createExaSearchProvider(options: ExaSearchProviderOptions): WebSearchProvider {
+  return {
+    async search(query, searchOptions = {}) {
+      const body: Record<string, unknown> = {
+        query,
+        numResults: searchOptions.maxResults ?? DEFAULT_MAX_RESULTS,
+        type: options.searchType ?? "auto",
+        contents: {
+          text: { maxCharacters: 500 },
+          highlights: { maxCharacters: 200 },
+        },
+      };
+
+      if (options.category) body.category = options.category;
+      if (options.includeDomains?.length) body.includeDomains = options.includeDomains;
+      if (options.excludeDomains?.length) body.excludeDomains = options.excludeDomains;
+      if (options.includeText?.length) body.includeText = options.includeText;
+      if (options.excludeText?.length) body.excludeText = options.excludeText;
+      if (options.startPublishedDate) body.startPublishedDate = options.startPublishedDate;
+      if (options.endPublishedDate) body.endPublishedDate = options.endPublishedDate;
+      if (options.userLocation) body.userLocation = options.userLocation;
+
+      const response = await fetch("https://api.exa.ai/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": options.apiKey,
+          "x-exa-integration": "agentrail",
+        },
+        body: JSON.stringify(body),
+        signal: createTimedSignal(searchOptions.signal, options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Exa search failed with status ${response.status}`);
+      }
+
+      const data = (await response.json()) as ExaSearchResponse;
+      return (data.results ?? [])
+        .map((item) => {
+          const snippet =
+            (Array.isArray(item.highlights) && item.highlights.length > 0
+              ? item.highlights.join(" ")
+              : undefined) ??
+            item.summary ??
+            item.text ??
+            "";
+
+          return sanitizeSearchResult({
+            title: item.title ?? item.url ?? "Untitled",
+            url: item.url ?? "",
+            snippet,
+            publishedAt: item.publishedDate ?? undefined,
+          });
+        })
+        .filter((item): item is WebSearchResult => Boolean(item));
+    },
+  };
 }
 
 /** Creates a Jina-backed search provider adapter. */

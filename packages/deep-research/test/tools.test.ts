@@ -118,6 +118,48 @@ describe("deep-research tool adapters", () => {
     });
   });
 
+  it("selects Exa when configured", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            results: [
+              {
+                title: "OpenAI",
+                url: "https://openai.com",
+                highlights: ["AI research"],
+                publishedDate: "2026-04-09T00:00:00.000Z",
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const tool = createWebSearchTool({
+      dataDir: "/tmp/agentrail",
+      model: { provider: "mock", modelId: "mock-model" },
+      searchProvider: "exa",
+      exaApiKey: "exa-key",
+    });
+
+    const result = await tool.execute("call-exa", { query: "openai" });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.exa.ai/search");
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      headers: expect.objectContaining({
+        "x-api-key": "exa-key",
+        "x-exa-integration": "agentrail",
+      }),
+    });
+    expect((result.details as { items: Array<{ fetchStatus: string }> }).items[0]).toMatchObject({
+      title: "OpenAI",
+      fetchStatus: "skipped",
+      evidenceLevel: "snippet_only",
+    });
+  });
+
   it("maps successful fetches into deep research fetch payloads", async () => {
     const fetchMock = vi.fn(
       async () =>

@@ -45,6 +45,22 @@ describe("Agentrail config search settings", () => {
       jinaApiKey: "jina-key",
     });
   });
+
+  it("parses and exposes the exa API key", () => {
+    const resolved = getDeepResearchConfig(
+      parseAgentrailConfig({
+        search: {
+          provider: "exa",
+          exaApiKey: "exa-key",
+        },
+      }),
+    );
+
+    expect(resolved).toMatchObject({
+      searchProvider: "exa",
+      exaApiKey: "exa-key",
+    });
+  });
 });
 
 describe("parseAgentrailConfig — permissions block", () => {

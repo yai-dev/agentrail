@@ -37,6 +37,7 @@ This file controls non-sensitive runtime settings such as:
 | `ANTHROPIC_API_KEY` | Anthropic LLM provider key    |
 | `OPENAI_API_KEY`    | OpenAI LLM provider key       |
 | `TAVILY_API_KEY`    | Tavily search integration key |
+| `EXA_API_KEY`       | Exa search integration key    |
 
 Store secrets in environment variables only. Do not add real credentials to `config/agentrail.yaml`.
 

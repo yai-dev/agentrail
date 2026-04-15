@@ -42,6 +42,7 @@ async function checkEnvVars(
         tavilyApiKey?: string;
         braveApiKey?: string;
         jinaApiKey?: string;
+        exaApiKey?: string;
       }
     | undefined;
 
@@ -91,6 +92,17 @@ async function checkEnvVars(
   const jinaInConfig = Boolean(searchConfig?.jinaApiKey);
   if (!jinaInConfig && searchConfig?.provider === "jina") {
     const key = "JINA_API_KEY";
+    const present = Boolean(process.env[key]);
+    results.push({
+      name: `env.${key}`,
+      status: present ? "ok" : "fail",
+      message: present ? `${key} found` : `${key} missing — set it in env or config`,
+    });
+  }
+
+  const exaInConfig = Boolean(searchConfig?.exaApiKey);
+  if (!exaInConfig && searchConfig?.provider === "exa") {
+    const key = "EXA_API_KEY";
     const present = Boolean(process.env[key]);
     results.push({
       name: `env.${key}`,

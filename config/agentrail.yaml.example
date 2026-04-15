@@ -21,6 +21,8 @@ search:
   braveApiKey: ""
   # Optional Jina Search API key. Default: "".
   jinaApiKey: ""
+  # Optional Exa Search API key. Default: "".
+  exaApiKey: ""
 
 # Shared filesystem paths for local development data.
 paths:
