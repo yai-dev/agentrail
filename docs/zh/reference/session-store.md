@@ -22,7 +22,7 @@ Host 层依赖的是 `AgentrailSessionStore` 契约，而不是某个具体存�
 - 可选地读写 Memo 文档，例如 `NOTES.md`、`TODO.md`、`USER.md`
 - 可选地读写 Tool Result Artifacts
 
-默认实现是 `@agentrail/app` 提供的文件系统版 `SessionManager`。如果需要 PostgreSQL，可直接使用 `@agentrail/storage-postgres`。
+默认实现是 `@agentrail/app` 提供的文件系统版 `SessionManager`。
 
 ## 接口
 
@@ -169,15 +169,7 @@ writeToolResultArtifact?(
 
 写入 Tool Result Artifact。当 Tool 输出过大，不适合内联存储时，`compactToolResults` 会调用它。
 
-### `listToolResultArtifactIds`（可选）
-
-```ts
-listToolResultArtifactIds?(sessionRef: SessionRef): Promise<string[]>
-```
-
-返回当前 Session 中所有已保存 Tool Result Artifact 的 `toolCallId`。`SandboxManager` 会在 Sandbox 创建时调用它，用来预先填充容器内部的 `/workspace/memo/session/tool-results/` 目录。
-
-如果未实现，Sandbox 内对应目录会从空目录开始，即便外部存储里实际上已有 Artifact。
+> **注意：** `listToolResultArtifactIds` **不属于** `AgentrailSessionStore`，而是属于 `SandboxMemoProvider` 接口（`@agentrail/capabilities`）。如果需要将同一个 Store 实例同时作为 `memoProvider` 传给 `SandboxManager`，再在该类上实现此方法。详见[构建存储后端](../guides/build-a-storage-backend.md)。
 
 ## 实现自定义 Store
 
@@ -226,26 +218,9 @@ const app = createAgentApp({
 });
 ```
 
-### 生产数据库实现
+### 自定义后端
 
-在生产环境中，可把内存 `Map` 替换成数据库查询，把 `loadMessages`、`appendMessages` 与 `compactIfNeeded` 分别映射到具体 SQL 或存储操作。
-
-仓库内已经提供了完整的 PostgreSQL 实现：
-
-```ts
-import { PostgresSessionStore, createSqlClient } from "@agentrail/storage-postgres";
-
-const sql = createSqlClient({ connectionString: process.env.DATABASE_URL! });
-
-const app = createAgentApp({
-  sessionStore: new PostgresSessionStore(sql),
-  traceStoreFactory: (sessionRef) => new PostgresSessionTraceStore(sql, sessionRef),
-  inspector: new PostgresInspectorDataSource(sql),
-  profiles: [defaultProfile],
-});
-```
-
-`PostgresSessionStore` 已实现所有必需方法，以及 Memo 文档和 Tool Result Artifacts 的可选方法，因此 Host 相关功能可以直接使用。
+在生产环境中，可把内存 `Map` 替换成对应数据存储的查询操作，将 `loadMessages`、`appendMessages` 与 `compactIfNeeded` 分别映射到具体存储操作。接口方法数量较少，每个方法通常对应一到两个查询。完整的实现指引（涵盖全部 6 组契约）见[构建存储后端](../guides/build-a-storage-backend.md)。
 
 ## 说明
 

@@ -20,24 +20,21 @@ const app = createAgentApp({
 
 The route is mounted at the fixed path `/__inspector`. The Agentrail Inspector Docker image's nginx proxy hardcodes this prefix, so the mount path is not configurable in v1.
 
-### Custom data source (database backend)
+### Custom data source
 
-Pass an `InspectorDataSource` object as the `inspector` option:
+Pass any object implementing `InspectorDataSource` as the `inspector` option:
 
 ```ts
 import { createAgentApp } from "@agentrail/app";
-import { PostgresInspectorDataSource, createSqlClient } from "@agentrail/storage-postgres";
-
-const sql = createSqlClient({ connectionString: process.env.DATABASE_URL! });
 
 const app = createAgentApp({
-  sessionStore: new PostgresSessionStore(sql),
+  sessionStore: mySessionStore,
   profiles: [myProfile],
-  inspector: new PostgresInspectorDataSource(sql),
+  inspector: new MyInspectorDataSource(),
 });
 ```
 
-Any object implementing the `InspectorDataSource` interface is accepted — you can write a custom adapter for any storage backend.
+Any object implementing the `InspectorDataSource` interface is accepted — you can write a custom adapter for any storage backend. See [Build a Storage Backend](../guides/build-a-storage-backend.md) for the full `InspectorDataSource` contract.
 
 **Constraints:**
 
@@ -204,8 +201,7 @@ const app = new Hono();
 app.route("/__inspector", createInspectorRoute(createFilesystemInspectorDataSource("./data")));
 
 // Or a custom backend
-import { PostgresInspectorDataSource } from "@agentrail/storage-postgres";
-app.route("/__inspector", createInspectorRoute(new PostgresInspectorDataSource(sql)));
+app.route("/__inspector", createInspectorRoute(new MyInspectorDataSource()));
 ```
 
 ## Implementing a custom `InspectorDataSource`

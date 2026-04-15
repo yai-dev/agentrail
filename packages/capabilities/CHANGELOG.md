@@ -1,5 +1,11 @@
 # @agentrail/capabilities
 
+## 0.5.0
+
+### Minor Changes
+
+- **Remove PostgreSQL storage backend support** — `WorkerStorageConfig` no longer includes a `postgres` branch. The type is now `{ type: "filesystem"; dataDir: string }` only. If you were passing `storageConfig: { type: "postgres", ... }` to sub-agent workers, migrate to a shared filesystem mount for horizontal scaling.
+
 ## 0.4.0
 
 ### Minor Changes

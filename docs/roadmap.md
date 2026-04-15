@@ -82,7 +82,7 @@ onMounted(() => {
     <div class="rm-items">
       <div class="rm-item"><span class="rm-icon rm-icon-plan">·</span><span>Define a storage-agnostic <code>SessionStore</code> interface (remove filesystem path leakage)</span></div>
       <div class="rm-item"><span class="rm-icon rm-icon-plan">·</span><span>Define a storage-agnostic <code>OrchestrationStore</code> interface</span></div>
-      <div class="rm-item"><span class="rm-icon rm-icon-plan">·</span><span>Provide reference implementations for PostgreSQL and SQLite</span></div>
+      <div class="rm-item"><span class="rm-icon rm-icon-plan">·</span><span>Provide a reference implementation for SQLite</span></div>
     </div>
   </div>
 

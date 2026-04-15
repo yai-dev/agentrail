@@ -34,14 +34,11 @@ Route 会固定挂载在 `/__inspector`。当前 v1 中，这个挂载路径不�
 
 ```ts
 import { createAgentApp } from "@agentrail/app";
-import { PostgresInspectorDataSource, createSqlClient } from "@agentrail/storage-postgres";
-
-const sql = createSqlClient({ connectionString: process.env.DATABASE_URL! });
 
 const app = createAgentApp({
-  sessionStore: new PostgresSessionStore(sql),
+  sessionStore: mySessionStore,
   profiles: [myProfile],
-  inspector: new PostgresInspectorDataSource(sql),
+  inspector: new MyInspectorDataSource(),
 });
 ```
 

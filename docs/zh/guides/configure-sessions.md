@@ -164,9 +164,11 @@ export class DatabaseSessionStore implements AgentrailSessionStore {
 
 ### 补充 Memo 文档与 Sandbox 支持
 
-如果 Store 还实现了可选的 Memo 与 Tool Result 方法，就可以启用 `write_notes`、`write_todo` 这类工具，以及 Sandbox 内部完整的 `/workspace/memo/**` 访问：
+如果 Store 还实现了以下可选的 Memo 与 Tool Result 方法（均属于 `AgentrailSessionStore`），就可以启用 `write_notes`、`write_todo` 这类工具，以及 Sandbox 内部完整的 `/workspace/memo/**` 访问：
 
 ```ts
+// 以下为 AgentrailSessionStore 的可选方法：
+
 async readMemoryDocument(tenantId, ownerId, scope, name) {
   return db.memoDocuments.findOne({ tenantId, ownerId, scope, name }) ?? null;
 }
@@ -188,6 +190,8 @@ async writeToolResultArtifact(sessionRef, toolCallId, content) {
   await db.toolResultArtifacts.upsert({ sessionRef, toolCallId, content });
 }
 
+// listToolResultArtifactIds 属于 SandboxMemoProvider，不属于 AgentrailSessionStore。
+// 仅当把该 Store 实例同时作为 memoProvider 传给 SandboxManager 时，才需要实现此方法：
 async listToolResultArtifactIds(sessionRef) {
   return db.toolResultArtifacts.findIds({ sessionRef });
 }
@@ -197,12 +201,9 @@ async listToolResultArtifactIds(sessionRef) {
 
 ## 横向扩展时的注意点
 
-`SessionManager` 写入的是本地文件系统，因此 Session 天然绑定到单个服务实例。如果需要多实例横向扩展，需要满足以下两种条件之一：
+`SessionManager` 写入的是本地文件系统，因此 Session 天然绑定到单个服务实例。推荐的横向扩展方式是在所有实例上挂载同一共享文件系统（如 NFS、EFS），将其路径作为 `dataDir` 传入，无需修改代码。
 
-- 所有实例共享同一套文件系统，例如 NFS、EFS
-- 使用数据库或其他共享存储实现自定义 `AgentrailSessionStore`
-
-Session Store 接口本身就是为这种替换准备的。实现 `AgentrailSessionStore` 后，直接传给 `createAgentApp({ sessionStore })` 即可。
+如果共享文件系统不可用，也可以自行实现 `AgentrailSessionStore` 接口并通过 `sessionStore` 传入。完整实现说明见[构建存储后端](./build-a-storage-backend.md)。
 
 ## 相关概念
 

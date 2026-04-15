@@ -164,12 +164,11 @@ traceStoreFactory?: (sessionRef: SessionRef) => SessionTraceStore<WorkflowTraceE
 
 ```ts
 import { createAgentApp } from "@agentrail/app";
-import { PostgresSessionStore, createPostgresSessionTraceStore } from "@agentrail/storage-postgres";
 
 const app = createAgentApp({
-  sessionStore: new PostgresSessionStore(sql),
+  sessionStore: mySessionStore,
   profiles: [myProfile],
-  traceStoreFactory: createPostgresSessionTraceStore(sql),
+  traceStoreFactory: (sessionRef) => createMySessionTraceStore(sessionRef),
 });
 ```
 
@@ -198,7 +197,7 @@ inspector?: true | InspectorDataSource
 用于挂载只读的 Inspector API。
 
 - `true`：使用文件系统数据源，要求提供 `dataDir`
-- `InspectorDataSource`：使用自定义数据源，如 PostgreSQL
+- `InspectorDataSource`：使用自定义数据源
 
 ### `health`
 

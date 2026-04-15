@@ -4,9 +4,9 @@
 
 ## 适用时机
 
-当需要在 Agentrail 中使用本地文件系统以外的存储后端时，可先阅读本页，例如 PostgreSQL、MySQL、SQLite、Redis 或托管对象存储。
+本页为**高级指引**。对于大多数部署场景，推荐使用 `SessionManager` 搭配持久化卷或共享文件系统（NFS、EFS 等），无需自定义实现。
 
-内建的 `@agentrail/storage-postgres` 已实现下文涉及的大多数契约，也可作为参考实现。
+仅当有特定需求无法通过默认文件系统层满足时，例如与已有持久化层集成、添加自定义访问控制，再阅读本页。
 
 ## 前置阅读
 
@@ -118,10 +118,9 @@ async writeToolResultArtifact(sessionRef, toolCallId, content) {
   await db.toolResultArtifacts.upsert({ sessionRef, toolCallId, content });
 }
 
-async listToolResultArtifactIds(sessionRef) {
-  return db.toolResultArtifacts.findIds({ sessionRef });
-}
 ```
+
+> **注意：** `listToolResultArtifactIds` **不属于** `AgentrailSessionStore`，而是属于 `SandboxMemoProvider` 接口（见下文第 6 节）。如需将同一实例同时作为 `memoProvider` 传给 `SandboxManager`，再在该类上实现此方法。
 
 ## 2. `UserSessionLister`
 
@@ -271,26 +270,6 @@ const app = createAgentApp({
 框架本身不会跨这些契约强制事务。如果后端需要更强的一致性保障，例如消息写入与用量记录必须原子完成，应在 `appendMessages` 与 `recordTurn` 内部自行使用数据库事务。
 
 Trace 与编排持久化从框架视角看属于旁路写入。写入失败会记录日志，但不会传播到 Agent。
-
-## 10. 参考实现
-
-`@agentrail/storage-postgres` 已经实现了上述大多数契约，可直接使用，也可作为参考：
-
-```ts
-import {
-  PostgresSessionStore,
-  PostgresSessionTraceStore,
-  PostgresOrchestrationPersistence,
-  PostgresInspectorDataSource,
-  createSqlClient,
-} from "@agentrail/storage-postgres";
-```
-
-同一个 `PostgresSessionStore` 实例可以同时充当：
-
-- `AgentrailSessionStore`
-- `UserSessionLister`
-- `SandboxMemoProvider`
 
 ## 相关文档
 
