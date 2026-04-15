@@ -1,0 +1,82 @@
+# Agentrail
+
+> Build, host, and orchestrate tool-using AI agents. Open-source TypeScript framework with a composable runtime core, hosted server layer, reusable capability packages, and optional multi-agent workflows.
+
+## Getting started
+
+- [Quickstart](https://agentrail.run/guides/quickstart): Fastest path to a working hosted agent
+- [Architecture Overview](https://agentrail.run/architecture/): Layered framework overview and request lifecycle
+
+## Core concepts
+
+- [Agents](https://agentrail.run/concepts/agents): `defineAgent`, model config, tools, and runtime behavior
+- [Host](https://agentrail.run/concepts/host): Hosted app model, routes, and lifecycle responsibilities
+- [Profiles](https://agentrail.run/concepts/profiles): `defineProfile`, profile resolution, and per-request agent creation
+- [Tools](https://agentrail.run/concepts/tools): Tool definitions, execution model, and capability tooling
+- [Plugins](https://agentrail.run/concepts/plugins): Lifecycle hooks and extension model
+- [Events](https://agentrail.run/concepts/events): Runtime and host event taxonomy
+- [Sessions](https://agentrail.run/concepts/sessions): Session persistence, message history, and turn accounting
+- [Orchestration](https://agentrail.run/concepts/orchestration): Sub-agents, waits, mailboxing, and orchestration state
+- [Prompts](https://agentrail.run/concepts/prompts): Prompt fragments, bundles, and render order
+- [Context and Compaction](https://agentrail.run/concepts/context-and-compaction): Request-time context assembly and history compaction
+
+## Guides
+
+- [Quickstart](https://agentrail.run/guides/quickstart): Create and run a minimal app
+- [Build a Profile](https://agentrail.run/guides/build-a-profile): Define static and dynamic profiles
+- [Add Tools](https://agentrail.run/guides/add-tools): Add custom tools and capability tools
+- [Add Context](https://agentrail.run/guides/add-context): Inject memory, identity, and runtime context
+- [Manage Prompts](https://agentrail.run/guides/manage-prompts): Organize prompt fragments and bundles
+- [Write a Plugin](https://agentrail.run/guides/write-a-plugin): Extend the hosted lifecycle with plugins
+- [Multi-Agent](https://agentrail.run/guides/multi-agent): Use orchestration and sub-agents
+- [Configure Sessions](https://agentrail.run/guides/configure-sessions): Configure session persistence and compaction
+- [Build a Storage Backend](https://agentrail.run/guides/build-a-storage-backend): Implement all storage contracts for a custom backend (DB, Redis, etc.)
+- [Consume Stream](https://agentrail.run/guides/consume-stream): Handle SSE events from `/stream`
+- [Deployment](https://agentrail.run/guides/deployment): Deploy the server and docs examples
+- [Troubleshooting](https://agentrail.run/guides/troubleshooting): Fix common runtime and environment problems
+- [Tool Permissions](https://agentrail.run/guides/tool-permissions): Configure allow/deny/ask policies for tool execution
+- [Use Capability Packages](https://agentrail.run/guides/use-capability-packages): Compose capabilities into hosted profiles
+- [Use OpenAI-Compatible Providers](https://agentrail.run/guides/use-openai-compatible-providers): Point Agentrail at compatible LLM APIs
+
+## Reference
+
+- [createAgentApp](https://agentrail.run/reference/create-agent-app): High-level hosted app entrypoint
+- [Host Primitives](https://agentrail.run/reference/host-primitives): Lower-level chat/stream/orchestration building blocks
+- [Compatibility APIs](https://agentrail.run/reference/host-defaults): Migration-only compat helpers retained for older hosts
+- [Profile Contract](https://agentrail.run/reference/profile-contract): `AgentrailProfile` and profile context types
+- [Plugin Contract](https://agentrail.run/reference/plugin-contract): `AgentrailPlugin` lifecycle hook contract
+- [Session Store](https://agentrail.run/reference/session-store): `AgentrailSessionStore` interface
+- [Prompt SDK](https://agentrail.run/reference/prompt-sdk): Prompt file loading, bundles, and rendering
+- [Events Reference](https://agentrail.run/reference/events): Host-facing event types and payloads
+- [Telemetry Sink](https://agentrail.run/reference/telemetry-sink): Telemetry sink contract and default sinks
+- [Inspector Route](https://agentrail.run/reference/inspector-route): Read-only inspection API
+
+## Built-in tools
+
+- [Tools Index](https://agentrail.run/tools/): Overview of built-in hosted and orchestration tools
+- [Ask User Question](https://agentrail.run/tools/ask-user-question): Suspend execution and wait for a user reply
+- [Bash](https://agentrail.run/tools/bash): Run shell commands in the host or sandbox
+- [Browser Action](https://agentrail.run/tools/browser-action): Click, type, and interact with web pages
+- [Browser Content](https://agentrail.run/tools/browser-content): Read the current page content from the browser
+- [Browser Navigate](https://agentrail.run/tools/browser-navigate): Open URLs and move the browser to a new page
+- [Browser Scroll](https://agentrail.run/tools/browser-scroll): Scroll the active browser page
+- [Close Agent](https://agentrail.run/tools/close-agent): Close a managed sub-agent
+- [Edit](https://agentrail.run/tools/edit): In-place string replacement for files
+- [Glob](https://agentrail.run/tools/glob): Match files by glob pattern
+- [Grep](https://agentrail.run/tools/grep): Search file contents with ripgrep-style matching
+- [Python](https://agentrail.run/tools/python): Run Python code in the sandbox and capture outputs
+- [Read](https://agentrail.run/tools/read): Read file contents from the host or sandbox
+- [Send Input](https://agentrail.run/tools/send-input): Send follow-up input to an existing managed agent
+- [Sleep](https://agentrail.run/tools/sleep): Pause execution for a bounded duration
+- [Spawn Agent](https://agentrail.run/tools/spawn-agent): Create a managed sub-agent
+- [TodoWrite](https://agentrail.run/tools/todo-write): Maintain the session TODO list
+- [Wait Agent](https://agentrail.run/tools/wait-agent): Wait for a managed agent to finish
+- [Web Fetch](https://agentrail.run/tools/web-fetch): Fetch and summarize a web page
+- [Web Search](https://agentrail.run/tools/web-search): Search the web and return concise results
+- [Write](https://agentrail.run/tools/write): Write a file in the host or sandbox
+
+## Examples
+
+- [Playground Server](https://agentrail.run/examples/playground-server): Full hosted app example
+- [Playground UI](https://agentrail.run/examples/playground-ui): Browser UI consuming the hosted stream API
+- [Deep Research](https://agentrail.run/examples/deep-research): Multi-agent deep research workflow example
