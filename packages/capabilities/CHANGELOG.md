@@ -4,6 +4,18 @@
 
 ### Minor Changes
 
+- [#146](https://github.com/yai-dev/agentrail/pull/146) [`d1280e1`](https://github.com/yai-dev/agentrail/commit/d1280e18f26aa7a13a2defb3bcc62d4817688255) Thanks [@yai-dev](https://github.com/yai-dev)! - Remove the first-party PostgreSQL storage backend.
+
+  `@agentrail/storage-postgres` has been removed. The package was incomplete — `listToolResultArtifactIds`, `createTodoStorage`, and `persistSkillSubAgentLog` were defined in the schema but never implemented — and its documentation overstated its capabilities.
+
+  **Migration:** For horizontal scaling, mount a shared filesystem (NFS, EFS, etc.) at the same `dataDir` path on all instances. The `AgentrailSessionStore` interface remains available as an advanced extension point for custom implementations.
+
+  `WorkerStorageConfig` in `@agentrail/capabilities` no longer includes a `postgres` branch. If you were passing `storageConfig: { type: "postgres", ... }` to sub-agent workers, switch to `{ type: "filesystem", dataDir }` with a shared volume.
+
+## 0.5.0
+
+### Minor Changes
+
 - **Remove PostgreSQL storage backend support** — `WorkerStorageConfig` no longer includes a `postgres` branch. The type is now `{ type: "filesystem"; dataDir: string }` only. If you were passing `storageConfig: { type: "postgres", ... }` to sub-agent workers, migrate to a shared filesystem mount for horizontal scaling.
 
 ## 0.4.0

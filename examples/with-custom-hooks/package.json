@@ -1,6 +1,6 @@
 {
   "name": "@agentrail/with-custom-hooks-example",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Agentrail server example demonstrating app-layer tool and request lifecycle hooks.",
   "type": "module",
