@@ -267,6 +267,7 @@ export function createExaSearchProvider(options: ExaSearchProviderOptions): WebS
         contents: {
           text: { maxCharacters: 500 },
           highlights: { maxCharacters: 200 },
+          summary: true,
         },
       };
 

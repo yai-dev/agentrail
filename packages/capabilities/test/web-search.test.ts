@@ -150,6 +150,7 @@ describe("createWebSearchTool", () => {
       contents: {
         text: { maxCharacters: 500 },
         highlights: { maxCharacters: 200 },
+        summary: true,
       },
     });
     expect(results).toEqual([
