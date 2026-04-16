@@ -160,6 +160,7 @@ export {
   createBashTool,
   createBraveSearchProvider,
   createEditTool,
+  createExaSearchProvider,
   createGlobTool,
   createJinaSearchProvider,
   createReadTool,
@@ -177,6 +178,7 @@ export {
 export type {
   BraveSearchProviderOptions,
   EditToolOptions,
+  ExaSearchProviderOptions,
   JinaSearchProviderOptions,
   ReadToolOptions,
   SleepToolOptions,

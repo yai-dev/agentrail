@@ -26,12 +26,14 @@ export type {
 } from "@/tools/web-fetch.js";
 export {
   createBraveSearchProvider,
+  createExaSearchProvider,
   createJinaSearchProvider,
   createTavilySearchProvider,
   createWebSearchTool,
 } from "@/tools/web-search.js";
 export type {
   BraveSearchProviderOptions,
+  ExaSearchProviderOptions,
   JinaSearchProviderOptions,
   TavilySearchProviderOptions,
   WebSearchOptions,

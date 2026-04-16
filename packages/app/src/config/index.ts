@@ -79,6 +79,7 @@ export interface AgentrailConfig {
     tavilyApiKey: string;
     braveApiKey: string;
     jinaApiKey: string;
+    exaApiKey: string;
   };
   paths: {
     dataDir: string;
@@ -171,6 +172,7 @@ export interface SharedResolvedAppConfig {
   tavilyApiKey?: string;
   braveApiKey?: string;
   jinaApiKey?: string;
+  exaApiKey?: string;
   dataDir: string;
   uiSecretToken?: string;
   sandbox: SandboxRuntimeConfig;
@@ -213,6 +215,7 @@ export const DEFAULT_AGENTRAIL_CONFIG: AgentrailConfig = {
     tavilyApiKey: "",
     braveApiKey: "",
     jinaApiKey: "",
+    exaApiKey: "",
   },
   paths: {
     dataDir: DEFAULT_DATA_DIR,
@@ -447,7 +450,7 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
   const search = getObject(root, "search", [], DEFAULT_AGENTRAIL_CONFIG.search as UnknownRecord);
   assertNoUnknownKeys(
     search,
-    ["provider", "tavilyApiKey", "braveApiKey", "jinaApiKey"],
+    ["provider", "tavilyApiKey", "braveApiKey", "jinaApiKey", "exaApiKey"],
     ["search"],
   );
 
@@ -600,6 +603,12 @@ export function parseAgentrailConfig(raw: unknown): AgentrailConfig {
         "jinaApiKey",
         ["search"],
         DEFAULT_AGENTRAIL_CONFIG.search.jinaApiKey,
+      ),
+      exaApiKey: getString(
+        search,
+        "exaApiKey",
+        ["search"],
+        DEFAULT_AGENTRAIL_CONFIG.search.exaApiKey,
       ),
     },
     paths: {
@@ -877,6 +886,7 @@ function resolveSharedFields(config: AgentrailConfig): SharedResolvedAppConfig {
   const tavilyApiKey = normalizeOptionalString(config.search.tavilyApiKey);
   const braveApiKey = normalizeOptionalString(config.search.braveApiKey);
   const jinaApiKey = normalizeOptionalString(config.search.jinaApiKey);
+  const exaApiKey = normalizeOptionalString(config.search.exaApiKey);
   const uiSecretToken = normalizeOptionalString(config.auth.uiSecretToken);
 
   return {
@@ -887,6 +897,7 @@ function resolveSharedFields(config: AgentrailConfig): SharedResolvedAppConfig {
     ...(tavilyApiKey ? { tavilyApiKey } : {}),
     ...(braveApiKey ? { braveApiKey } : {}),
     ...(jinaApiKey ? { jinaApiKey } : {}),
+    ...(exaApiKey ? { exaApiKey } : {}),
     dataDir: config.paths.dataDir,
     ...(uiSecretToken ? { uiSecretToken } : {}),
     sandbox: {

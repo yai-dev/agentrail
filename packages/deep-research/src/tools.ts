@@ -7,6 +7,7 @@ import type { DeepResearchRuntimeConfig } from "@/runtime.js";
 import { normalizeResearchUrl } from "@/utils.js";
 import {
   createBraveSearchProvider,
+  createExaSearchProvider,
   createWebFetchTool as createGenericWebFetchTool,
   createWebSearchTool as createGenericWebSearchTool,
   createJinaSearchProvider,
@@ -52,6 +53,10 @@ function resolveSearchProvider(runtime: DeepResearchRuntimeConfig): WebSearchPro
 
   if (runtime.searchProvider === "jina" && runtime.jinaApiKey) {
     return createJinaSearchProvider({ apiKey: runtime.jinaApiKey });
+  }
+
+  if (runtime.searchProvider === "exa" && runtime.exaApiKey) {
+    return createExaSearchProvider({ apiKey: runtime.exaApiKey });
   }
 
   throw new Error(
